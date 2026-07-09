@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Inhaler Flow Monitor (Single File)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+        }
+        .header { margin-bottom: 20px; }
+        .control-panel {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn.accent { background-color: #1f4e79; color: white; }
+        .btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .chart-container {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            height: 450px;
+        }
+        .statusbar {
+            margin-top: 15px;
+            padding: 8px;
+            background: #1f4e79;
+            color: white;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Inhaler Flow Monitor</h1>
+        <p>Acoustic inhaler flow visualization</p>
+    </div>
+
+    <div class="control-panel">
+        <button id="connectBtn" class="btn accent">Connect</button>
+        <button id="startBtn" class="btn" disabled>Start</button>
+        <button id="clearBtn" class="btn">Clear</button>
+        <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
+        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
+        <span id="recordCount">Records: 0</span>
+        <span id="peakFlow">Peak: — L/min</span>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="flowChart"></canvas>
+    </div>
+
+    <div class="statusbar" id="status">Not connected</div>
+
+    <script>
+        let port;
+        let reader;
+        let isMeasuring = false;
+        let records = [];
+        let lastFFT = {};
+        let startTime = null;
+
+        // Chart.js 初始化
+        const ctx = document.getElementById('flowChart').getContext('2d');
+        const flowChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Patient Flow',
+                    data: [],
+                    borderColor: '#c0392b',
+                    borderWidth: 2.4,
+                    fill: false,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
+                    y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
+                }
+            }
+        });
+
+        document.getElementById('connectBtn').addEventListener('click', toggleConnection);
+        document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
+        document.getElementById('clearBtn').addEventListener('click', clearPlot);
+        document.getElementById('saveBtn').addEventListener('click', saveCSV);
+
+        async function toggleConnection() {
+            if (!port) {
+                try {
+                    port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 115200 });
+                    document.getElementById('connectBtn').innerText = 'Disconnect';
+                    document.getElementById('startBtn').disabled = false;
+                    updateStatus('Connected. Press Start to begin.');
+                    readLoop();
+                } catch (err) {
+                    updateStatus('Connection failed: ' + err);
+                }
+            } else {
+                if (reader) await reader.cancel();
+                await port.close();
+                port = null;
+                document.getElementById('connectBtn').innerText = 'Connect';
+                document.getElementById('startBtn').disabled = true;
+                updateStatus('Disconnected');
+            }
+        }
+
+        async function readLoop() {
+            const textDecoder = new TextDecoderStream();
+            port.readable.pipeTo(textDecoder.writable);
+            reader = textDecoder.readable.getReader();
+            let buffer = '';
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += value;
+                    let lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (isMeasuring) parseLine(line);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                reader.releaseLock();
+            }
+        }
+
+        function parseLine(line) {
+            // [DETECT] 解析
+            if (line.includes('[DETECT]')) {
+                const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
+                const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
+                const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
+                
+                if (!flowMatch) return;
+                
+                let flowYes = flowMatch[1].toUpperCase() === 'YES';
+                let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
+                let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
+                
+                if (startTime === null) startTime = Date.now();
+                let elapsed = (Date.now() - startTime) / 1000;
+                
+                records.push({ elapsed, flowYes, est, lowE });
+                document.getElementById('recordCount').innerText = `Records: ${records.length}`;
+                document.getElementById('saveBtn').disabled = false;
+                
+                updateChart(elapsed, est);
+            }
+        }
+
+        function updateChart(t, value) {
+            flowChart.data.datasets[0].data.push({ x: t, y: value });
+            let windowStart = Math.floor(t / 20) * 20;
+            flowChart.options.scales.x.min = windowStart;
+            flowChart.options.scales.x.max = windowStart + 20;
+            flowChart.update('none');
+        }
+
+        function toggleMeasuring() {
+            isMeasuring = !isMeasuring;
+            if (isMeasuring) {
+                if (!startTime) startTime = Date.now();
+                document.getElementById('startBtn').innerText = 'Stop';
+                updateStatus('Measuring...');
+            } else {
+                document.getElementById('startBtn').innerText = 'Start';
+                updateStatus('Measurement stopped.');
+            }
+        }
+
+        function clearPlot() {
+            startTime = null;
+            records = [];
+            flowChart.data.datasets[0].data = [];
+            flowChart.options.scales.x.min = 0;
+            flowChart.options.scales.x.max = 20;
+            flowChart.update();
+            document.getElementById('recordCount').innerText = 'Records: 0';
+            document.getElementById('saveBtn').disabled = true;
+        }
+
+        function saveCSV() {
+            let patientId = document.getElementById('patientId').value || 'inhaler_data';
+            let csvContent = "data:text/csv;charset=utf-8,elapsed_s,flow,est_flow_Lpm,low_energy\n";
+            records.forEach(r => {
+                csvContent += `${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est},${r.lowE}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${patientId}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('status').innerText = msg;
+        }
+    </script>
+</body>
+</html>
