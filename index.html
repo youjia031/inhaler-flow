@@ -675,7 +675,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎵 自選音樂上傳分析 + 選項切換 + 太鼓/飛行員雙引擎  -->
+    <!--  🥁 太鼓專屬《祭典熱血進行曲》BGM 與真實木質鼓身音效  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -692,16 +692,26 @@
                 <label>
                     難度: 
                     <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (慢速 / 寬容度高)</option>
-                        <option value="normal" selected>標準 (中速 / 均衡演算法)</option>
-                        <option value="hard">專家 (快速 / 頻率高靈敏)</option>
+                        <option value="easy">輕鬆 (寬容度高)</option>
+                        <option value="normal" selected>標準 (均衡演算法)</option>
+                        <option value="hard">專家 (高靈敏)</option>
+                    </select>
+                </label>
+                <label>
+                    ⚡ 倍速: 
+                    <select id="gameSpeedSelect">
+                        <option value="0.8">0.8x (慢速輕鬆)</option>
+                        <option value="1.0" selected>1.0x (標準速度)</option>
+                        <option value="1.5">1.5x (快速反應)</option>
+                        <option value="2.0">2.0x (疾速挑戰)</option>
+                        <option value="2.5">2.5x (極速高超)</option>
                     </select>
                 </label>
                 <label class="music-upload-btn">
                     🎵 自選音樂 MP3
                     <input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)">
                 </label>
-                <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">內建進行曲</span>
+                <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">預設主題曲</span>
                 <label>
                     <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 開啟音樂
                 </label>
@@ -709,7 +719,6 @@
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
-        // 🎵 Web Audio API 即時分析與音訊播載引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let bgmInterval = null;
         let bgmStep = 0;
@@ -740,16 +749,17 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // 音樂旋律庫：飛行員電子曲 vs 太鼓祭典日式鼓曲
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
-        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99, A5 = 880.00;
+        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61, E3 = 164.81;
 
-        const themeLead = [
-            C4, E4, G4, C5,  G4, E4, G4, C5,  
-            D5, C5, B4, A4,  G4, E4, C4, G4,
-            A4, C5, E5, D5,  C5, B4, C5, D5,  
-            E5, G5, E5, C5,  G4, B4, C5, C5
-        ];
+        // 飛行員主題曲 (Pilot BGM)
+        const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
+        
+        // 🥁 太鼓專屬《祭典熱血曲》（日式五聲調式 A-Minor Pentatonic）
+        const taikoMatsuriMelody = [A4, C5, D5, E5, G5, A5, G5, E5, D5, C5, A4, E4, A4, C5, D5, E5];
+        const taikoMatsuriBass = [A3, A3, E3, A3, D4, D4, A3, D4, E3, E3, B4, E3, A3, A3, E3, A3];
 
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -757,39 +767,55 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                let now = audioCtx.currentTime;
+                
+                // 🥁 專屬太鼓音效：真實大太鼓（DON）與鼓邊木胴（KA）
+                if (type === 'don') { // 🔴 吸氣 咚
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(32, now + 0.18);
 
-                if (type === 'don') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
-                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-                } else if (type === 'ka') {
+                    gain.gain.setValueAtTime(0.8, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.18);
+                } else if (type === 'ka') { // 🔵 吐氣 咔
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.08);
-                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+                    osc.frequency.setValueAtTime(850, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.06);
+
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.06);
                 } else if (type === 'coin') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
-                    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
-                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                    osc.frequency.setValueAtTime(987.77, now);
+                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.start(); osc.stop(now + 0.25);
                 } else if (type === 'hit') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.2);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(); osc.stop(now + 0.2);
                 }
             } catch(e) {}
         }
@@ -799,8 +825,9 @@
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
+            let currentView = document.getElementById('viewModeSelect')?.value;
+
             if (isUsingCustomMusic && customAudioBuffer) {
-                // 🎧 播放使用者自選的音樂，並串接 AnalyserNode 做即時頻譜節奏分析
                 customAudioSource = audioCtx.createBufferSource();
                 customAudioSource.buffer = customAudioBuffer;
                 customAudioSource.loop = true;
@@ -813,28 +840,51 @@
                 audioAnalyser.connect(audioCtx.destination);
                 customAudioSource.start(0);
             } else {
-                // 🎺 播放預設《氣流進行曲》
                 bgmInterval = setInterval(() => {
                     if (audioCtx.state === 'suspended') audioCtx.resume();
                     try {
                         let now = audioCtx.currentTime;
-                        let idx = bgmStep % themeLead.length;
 
-                        const leadOsc = audioCtx.createOscillator();
-                        const leadGain = audioCtx.createGain();
-                        leadOsc.type = 'sawtooth';
-                        leadOsc.frequency.setValueAtTime(themeLead[idx], now);
-                        leadGain.gain.setValueAtTime(0.18, now);
-                        leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                        if (currentView === 'taiko') {
+                            // 🥁 播放日式祭典太鼓風格獨奏 BGM
+                            let idx = bgmStep % taikoMatsuriMelody.length;
 
-                        leadOsc.connect(leadGain);
-                        leadGain.connect(audioCtx.destination);
-                        leadOsc.start(now);
-                        leadOsc.stop(now + 0.16);
+                            // 1. 三味線/篠笛 主旋律
+                            const melOsc = audioCtx.createOscillator();
+                            const melGain = audioCtx.createGain();
+                            melOsc.type = 'sawtooth';
+                            melOsc.frequency.setValueAtTime(taikoMatsuriMelody[idx], now);
+                            melGain.gain.setValueAtTime(0.12, now);
+                            melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                            melOsc.connect(melGain); melGain.connect(audioCtx.destination);
+                            melOsc.start(now); melOsc.stop(now + 0.15);
+
+                            // 2. 祭典伴奏和弦
+                            const bassOsc = audioCtx.createOscillator();
+                            const bassGain = audioCtx.createGain();
+                            bassOsc.type = 'triangle';
+                            bassOsc.frequency.setValueAtTime(taikoMatsuriBass[idx], now);
+                            bassGain.gain.setValueAtTime(0.18, now);
+                            bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                            bassOsc.connect(bassGain); bassGain.connect(audioCtx.destination);
+                            bassOsc.start(now); bassOsc.stop(now + 0.16);
+
+                        } else {
+                            // 🎮 播放飛行員進行曲 BGM
+                            let idx = bgmStep % pilotTheme.length;
+                            const leadOsc = audioCtx.createOscillator();
+                            const leadGain = audioCtx.createGain();
+                            leadOsc.type = 'sawtooth';
+                            leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
+                            leadGain.gain.setValueAtTime(0.18, now);
+                            leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                            leadOsc.connect(leadGain); leadGain.connect(audioCtx.destination);
+                            leadOsc.start(now); leadOsc.stop(now + 0.16);
+                        }
 
                         bgmStep++;
                     } catch(e) {}
-                }, 180);
+                }, 170); // BPM 176 活潑日式慶典節奏
             }
         }
 
@@ -851,7 +901,6 @@
             else startBGM();
         }
 
-        // 🔀 視窗切換核心邏輯
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
@@ -885,7 +934,7 @@
         }
 
         // =====================================================
-        // 🥁 太鼓達人專屬遊戲引擎 (支援自選音樂即時解析)
+        // 🥁 太鼓達人專屬遊戲引擎 (視覺衝擊與經典打擊特效)
         // =====================================================
         const taikoCanvas = document.getElementById('taikoCanvas');
         const taikoCtx = taikoCanvas.getContext('2d');
@@ -897,6 +946,7 @@
         let taikoCombo = 0;
         let hitFeedback = "";
         let hitFeedbackTimer = 0;
+        let drumPulseTimer = 0; // 擊中鼓面擴散光圈特效
 
         function resizeTaikoCanvas() {
             if (taikoCanvas && taikoCanvas.parentElement) {
@@ -927,6 +977,7 @@
         function taikoLoop() {
             if (!isTaikoRunning) return;
 
+            // 🏮 和風太鼓賽道背景
             taikoCtx.fillStyle = '#1e272e';
             taikoCtx.fillRect(0, 0, taikoCanvas.width, taikoCanvas.height);
 
@@ -935,12 +986,28 @@
             taikoCtx.fillStyle = '#2f3542';
             taikoCtx.fillRect(0, trackY - trackHeight / 2, taikoCanvas.width, trackHeight);
 
+            // 上下賽道金邊
+            taikoCtx.fillStyle = '#f1c40f';
+            taikoCtx.fillRect(0, trackY - trackHeight / 2 - 4, taikoCanvas.width, 4);
+            taikoCtx.fillRect(0, trackY + trackHeight / 2, taikoCanvas.width, 4);
+
+            // 🥁 左側打擊判定圈
             let targetX = 140;
+
+            // 打擊時的金黃波紋
+            if (drumPulseTimer > 0) {
+                drumPulseTimer--;
+                taikoCtx.beginPath();
+                taikoCtx.arc(targetX, trackY, 36 + (15 - drumPulseTimer) * 2, 0, Math.PI * 2);
+                taikoCtx.fillStyle = `rgba(241, 196, 15, ${drumPulseTimer / 15})`;
+                taikoCtx.fill();
+            }
+
             taikoCtx.beginPath();
             taikoCtx.arc(targetX, trackY, 36, 0, Math.PI * 2);
             taikoCtx.fillStyle = '#ffffff';
             taikoCtx.fill();
-            taikoCtx.strokeStyle = '#a4b0be';
+            taikoCtx.strokeStyle = '#e74c3c';
             taikoCtx.lineWidth = 6;
             taikoCtx.stroke();
 
@@ -948,13 +1015,14 @@
 
             if (activeMeasuring) {
                 let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
-                let noteSpeed = (diff === 'easy') ? 3.5 : (diff === 'hard') ? 6.5 : 4.8;
+                let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
+                let baseSpeed = (diff === 'easy') ? 3.5 : (diff === 'hard') ? 6.5 : 4.8;
+                let finalNoteSpeed = baseSpeed * userSpeedMult;
 
-                // 🎵 根據自選音樂即時聲波頻率生成音符！
                 if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
                     audioAnalyser.getByteFrequencyData(audioDataArray);
-                    let bassEnergy = audioDataArray[1]; // 低音重拍 (Bass)
-                    let trebleEnergy = audioDataArray[12]; // 高音響板 (Treble)
+                    let bassEnergy = audioDataArray[1];
+                    let trebleEnergy = audioDataArray[12];
 
                     if (bassEnergy > 210 && Math.random() < 0.2) {
                         taikoNotes.push({ x: taikoCanvas.width + 40, y: trackY, type: 'don', hit: false });
@@ -962,7 +1030,6 @@
                         taikoNotes.push({ x: taikoCanvas.width + 40, y: trackY, type: 'ka', hit: false });
                     }
                 } else {
-                    // 隨機演算法模式
                     if (Math.random() < (diff === 'hard' ? 0.035 : 0.02)) {
                         let type = (Math.random() < 0.5) ? 'don' : 'ka';
                         taikoNotes.push({ x: taikoCanvas.width + 40, y: trackY, type: type, hit: false });
@@ -973,7 +1040,7 @@
                 let currentModeType = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
 
                 taikoNotes.forEach((n) => {
-                    n.x -= noteSpeed;
+                    n.x -= finalNoteSpeed;
 
                     taikoCtx.beginPath();
                     taikoCtx.arc(n.x, n.y, 28, 0, Math.PI * 2);
@@ -996,10 +1063,11 @@
 
                         if (isMatched) {
                             n.hit = true;
+                            drumPulseTimer = 15; // 觸發鼓面金光波圈
                             if (dist < 18) {
-                                hitFeedback = "PERFECT!!"; taikoScore += 120;
+                                hitFeedback = "良 (PERFECT)"; taikoScore += 120;
                             } else {
-                                hitFeedback = "GREAT!"; taikoScore += 80;
+                                hitFeedback = "可 (GREAT)"; taikoScore += 80;
                             }
                             taikoCombo++; hitFeedbackTimer = 30;
                             playAudioEffect(n.type === 'don' ? 'don' : 'ka');
@@ -1009,18 +1077,19 @@
 
                 taikoNotes.forEach((n) => {
                     if (n.x < targetX - 50 && !n.hit) {
-                        n.hit = true; hitFeedback = "MISS"; taikoCombo = 0; hitFeedbackTimer = 30;
+                        n.hit = true; hitFeedback = "不可 (MISS)"; taikoCombo = 0; hitFeedbackTimer = 30;
                     }
                 });
                 taikoNotes = taikoNotes.filter(n => n.x > -40 && !n.hit);
             }
 
+            // 浮空評定語音書法文字
             if (hitFeedbackTimer > 0) {
                 hitFeedbackTimer--;
-                taikoCtx.font = 'bold 28px Segoe UI';
-                taikoCtx.fillStyle = (hitFeedback.includes("PERFECT")) ? '#f1c40f' : (hitFeedback.includes("GREAT")) ? '#2ecc71' : '#e74c3c';
+                taikoCtx.font = 'bold 30px Microsoft JhengHei, Segoe UI';
+                taikoCtx.fillStyle = (hitFeedback.includes("良")) ? '#f1c40f' : (hitFeedback.includes("可")) ? '#2ecc71' : '#e74c3c';
                 taikoCtx.textAlign = 'center';
-                taikoCtx.fillText(hitFeedback, targetX, trackY - 60);
+                taikoCtx.fillText(hitFeedback, targetX, trackY - 65);
             }
 
             document.getElementById('taikoScore').innerText = taikoScore;
@@ -1030,7 +1099,7 @@
         }
 
         // =====================================================
-        // 🎮 氣流飛行員引擎 (支援自選音樂高低起伏)
+        // 🎮 氣流飛行員引擎
         // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
@@ -1180,9 +1249,11 @@
             gameCtx.fillStyle = '#0d1117';
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
+            let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
+
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
-                s.x -= s.speed;
+                s.x -= s.speed * userSpeedMult;
                 if (s.x < 0) s.x = gameCanvas.width;
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
@@ -1212,37 +1283,36 @@
                     if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none';
                 }
 
-                // 🎵 音樂波形即時導向金幣產生位置
                 let spawnY = Math.random() * (gameCanvas.height - 100) + 50;
                 if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
                     audioAnalyser.getByteFrequencyData(audioDataArray);
-                    let freqVal = audioDataArray[5]; // 主旋律音高
+                    let freqVal = audioDataArray[5];
                     spawnY = gameCanvas.height - (freqVal / 255) * (gameCanvas.height - 80);
                 }
 
                 if (Math.random() < 0.03) {
-                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, speed: 3, collected: false });
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, speed: 3 * userSpeedMult, collected: false });
                 }
                 
                 if (Math.random() < 0.015) {
-                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, speed: 2.5, collected: false });
+                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, speed: 2.5 * userSpeedMult, collected: false });
                 }
 
                 if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.012) {
-                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, speed: 2.5, collected: false });
+                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, speed: 2.5 * userSpeedMult, collected: false });
                 }
 
                 if (diff === 'hard') {
                     if (Math.random() < 0.01 && feverTimer === 0) {
-                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, speed: 3.5, collected: false });
+                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, speed: 3.5 * userSpeedMult, collected: false });
                     }
                     if (Math.random() < 0.015) {
-                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: spawnY, radius: 12, speed: 6, hit: false });
+                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: spawnY, radius: 12, speed: 6 * userSpeedMult, hit: false });
                     }
                 }
 
                 if (Math.random() < (diff === 'hard' ? 0.02 : 0.01)) {
-                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, speed: 4, hit: false });
+                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, speed: 4 * userSpeedMult, hit: false });
                 }
 
                 collectibles.forEach((c) => {
