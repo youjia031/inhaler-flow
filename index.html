@@ -615,7 +615,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎨 純向量圖片渲染 Boss 繪畫引擎（告別幾何拼貼）      -->
+    <!--  🎨 超精細全物件向量實物繪繪引擎                       -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -778,12 +778,18 @@
         let currentStage = 1, gameScore = 0, gameCombo = 0, playerHP = 100;
         let activeBoss = null;
 
+        // 🏰 10大關卡主題設計資料庫
         const STAGE_THEMES = [
-            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 風暴精靈", stageBoss: "🦅 雷霆巨鷹" },
-            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 隕石碎片", stageBoss: "🛸 異星母艦" },
-            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🔥 熔岩小怪", stageBoss: "🐉 地獄赤龍" },
-            { id: 4, name: "深海幽冥", bg: "#031420", miniBoss: "🐙 深海章魚", stageBoss: "🔱 深海海怪" },
-            { id: 5, name: "賽博霓虹", bg: "#12051e", miniBoss: "🤖 巡邏 Drone", stageBoss: "👾 核心 AI 控制器" }
+            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 大氣龍捲精靈", stageBoss: "🦅 雷霆機械神鷹" },
+            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 熔岩隕石巨岩", stageBoss: "🛸 圓盤星際母艦" },
+            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🔥 火山爆裂元素", stageBoss: "🐉 地獄黑金赤龍" },
+            { id: 4, name: "深海幽冥", bg: "#031420", miniBoss: "🐙 發光巨型章魚", stageBoss: "🔱 深海機械海怪" },
+            { id: 5, name: "賽博霓虹", bg: "#12051e", miniBoss: "🤖 雙螺旋巡邏無人機", stageBoss: "👾 霓虹核心 AI 控制器" },
+            { id: 6, name: "荒漠風沙", bg: "#1f1808", miniBoss: "🦂 機械重裝巨蠍", stageBoss: "🏜️ 沙漠流沙巨蟲" },
+            { id: 7, name: "極地冰霜", bg: "#031c28", miniBoss: "❄️ 冰晶雪球怪物", stageBoss: "🐻 極光鋼鐵巨熊" },
+            { id: 8, name: "廢土遺跡", bg: "#19120c", miniBoss: "🚜 廢棄履帶坦克", stageBoss: "🦾 廢土鋼鐵巨臂" },
+            { id: 9, name: "時空裂縫", bg: "#160526", miniBoss: "🌀 虛空蟲洞核心", stageBoss: "👁️ 時空全知之眼" },
+            { id: 10, name: "終極星核", bg: "#000511", miniBoss: "🌟 星核能量結晶", stageBoss: "🌌 終極虛空主宰" }
         ];
 
         function getStageTheme(stage) {
@@ -824,9 +830,9 @@
         let globalAnimFrame = 0;
 
         // =====================================================
-        //  🖼️ 高畫質向量圖檔預載庫（精美專業手繪 Boss 美術）
+        //  🖼️ 精細實體向量 SVG 圖像庫 (飛船、Boss與道具)
         // =====================================================
-        const bossSprites = {};
+        const gameSprites = {};
 
         function createSvgSprite(svgString) {
             const img = new Image();
@@ -834,77 +840,103 @@
             return img;
         }
 
-        // 1. 🦅 雷霆巨鷹（金屬裝甲羽翼、雷射鷹眼與鋼鐵鷹嘴）
-        bossSprites.eagle = createSvgSprite(`
+        // 🚀 真實質感金屬機甲戰機
+        gameSprites.ship = createSvgSprite(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">
+                <defs>
+                    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="40%" stop-color="#95a5a6"/>
+                        <stop offset="100%" stop-color="#2c3e50"/>
+                    </linearGradient>
+                    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#3498db"/>
+                        <stop offset="100%" stop-color="#00d2d3"/>
+                    </linearGradient>
+                </defs>
+                <path d="M 95,30 L 30,5 C 20,15 10,20 0,18 L 15,30 L 0,42 C 10,40 20,45 30,55 Z" fill="url(#metal)" stroke="#ffffff" stroke-width="1.5"/>
+                <path d="M 70,30 Q 50,20 35,30 Q 50,40 70,30 Z" fill="url(#glass)"/>
+                <polygon points="25,12 10,2 15,22" fill="#e74c3c"/>
+                <polygon points="25,48 10,58 15,38" fill="#e74c3c"/>
+                <circle cx="20" cy="30" r="4" fill="#f1c40f"/>
+            </svg>
+        `);
+
+        // 🦅 雷霆機械神鷹
+        gameSprites.eagle = createSvgSprite(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
                 <defs>
                     <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ffe100"/>
-                        <stop offset="100%" stop-color="#d35400"/>
+                        <stop offset="0%" stop-color="#ffe100"/><stop offset="100%" stop-color="#d35400"/>
                     </linearGradient>
                     <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ffffff"/>
-                        <stop offset="50%" stop-color="#7f8c8d"/>
-                        <stop offset="100%" stop-color="#2c3e50"/>
+                        <stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#7f8c8d"/><stop offset="100%" stop-color="#2c3e50"/>
                     </linearGradient>
                 </defs>
                 <path d="M 60,20 L 100,5 C 80,40 100,60 115,80 C 85,70 60,65 60,65 C 60,65 35,70 5,80 C 20,60 40,40 20,5 Z" fill="url(#steel)" stroke="#ffe100" stroke-width="2"/>
                 <path d="M 60,30 L 85,55 L 60,75 L 35,55 Z" fill="url(#gold)"/>
                 <circle cx="60" cy="50" r="16" fill="#1e272e" stroke="#ffffff" stroke-width="2"/>
-                <polygon points="50,55 20,65 52,68" fill="#f39c12"/>
+                <polygon points="50,55 15,65 52,68" fill="#f39c12"/>
                 <circle cx="50" cy="45" r="4" fill="#ff0000"/>
             </svg>
         `);
 
-        // 2. 🛸 異星母艦（科幻飛碟、多重環形發光燈塔與離子主砲）
-        bossSprites.ufo = createSvgSprite(`
+        // 🛸 圓盤星際母艦
+        gameSprites.ufo = createSvgSprite(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
                 <defs>
                     <radialGradient id="glass" cx="50%" cy="30%" r="50%">
-                        <stop offset="0%" stop-color="#00d2d3"/>
-                        <stop offset="100%" stop-color="#12051e"/>
+                        <stop offset="0%" stop-color="#00d2d3"/><stop offset="100%" stop-color="#12051e"/>
                     </radialGradient>
                     <linearGradient id="hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#a55eea"/>
-                        <stop offset="100%" stop-color="#2d98da"/>
+                        <stop offset="0%" stop-color="#a55eea"/><stop offset="100%" stop-color="#2d98da"/>
                     </linearGradient>
                 </defs>
                 <ellipse cx="60" cy="50" rx="50" ry="20" fill="url(#hull)" stroke="#ffffff" stroke-width="2"/>
                 <ellipse cx="60" cy="40" rx="30" ry="16" fill="url(#glass)"/>
-                <circle cx="20" cy="55" r="4" fill="#ffe100"/>
-                <circle cx="40" cy="62" r="5" fill="#ff4d4d"/>
-                <circle cx="60" cy="65" r="6" fill="#00d2d3"/>
-                <circle cx="80" cy="62" r="5" fill="#ff4d4d"/>
+                <circle cx="20" cy="55" r="4" fill="#ffe100"/><circle cx="40" cy="62" r="5" fill="#ff4d4d"/>
+                <circle cx="60" cy="65" r="6" fill="#00d2d3"/><circle cx="80" cy="62" r="5" fill="#ff4d4d"/>
                 <circle cx="100" cy="55" r="4" fill="#ffe100"/>
-                <circle cx="60" cy="50" r="10" fill="#ffffff" opacity="0.8"/>
             </svg>
         `);
 
-        // 3. 🐉 地獄赤龍（立體龍角、龍牙咬合與紅光發光龍眼）
-        bossSprites.dragon = createSvgSprite(`
+        // 🐉 地獄黑金赤龍
+        gameSprites.dragon = createSvgSprite(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
                 <defs>
                     <linearGradient id="fire" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ff4d4d"/>
-                        <stop offset="50%" stop-color="#ff9f43"/>
-                        <stop offset="100%" stop-color="#ee5253"/>
+                        <stop offset="0%" stop-color="#ff4d4d"/><stop offset="50%" stop-color="#ff9f43"/><stop offset="100%" stop-color="#ee5253"/>
                     </linearGradient>
                 </defs>
                 <path d="M 80,20 L 110,5 L 85,35 L 115,25 L 80,50 L 110,90 L 60,75 L 10,95 L 30,55 L 10,20 Z" fill="url(#fire)" stroke="#ffe100" stroke-width="2"/>
-                <polygon points="50,40 20,48 50,55" fill="#ffffff"/>
-                <polygon points="50,60 20,52 50,68" fill="#ffffff"/>
-                <circle cx="65" cy="40" r="6" fill="#ffe100"/>
-                <circle cx="63" cy="40" r="2" fill="#000000"/>
+                <polygon points="50,40 18,48 50,55" fill="#ffffff"/>
+                <polygon points="50,60 18,52 50,68" fill="#ffffff"/>
+                <circle cx="65" cy="40" r="6" fill="#ffe100"/><circle cx="63" cy="40" r="2" fill="#000000"/>
             </svg>
         `);
 
-        // 4. 🌪️ 風暴精靈（旋風漩渦與電光核心）
-        bossSprites.storm = createSvgSprite(`
+        // 🌪️ 大氣龍捲精靈
+        gameSprites.storm = createSvgSprite(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
                 <path d="M 60,10 C 90,10 110,30 110,60 C 110,90 90,110 60,110 C 30,110 10,90 10,60 C 10,30 30,10 60,10 Z" fill="none" stroke="#00d2d3" stroke-width="4" stroke-dasharray="12,8"/>
-                <path d="M 60,25 C 80,25 95,40 95,60 C 95,80 80,95 60,95 C 40,95 25,80 25,60 C 25,40 40,25 60,25 Z" fill="none" stroke="#ffffff" stroke-width="3"/>
-                <circle cx="60" cy="60" r="18" fill="#3498db"/>
+                <circle cx="60" cy="60" r="22" fill="#3498db" stroke="#ffffff" stroke-width="3"/>
                 <circle cx="60" cy="60" r="8" fill="#ffffff"/>
+            </svg>
+        `);
+
+        // 🟡 3D 立體黃金金幣
+        gameSprites.coin = createSvgSprite(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="18" fill="#f1c40f" stroke="#d35400" stroke-width="2"/>
+                <circle cx="20" cy="20" r="14" fill="#f39c12"/>
+                <text x="20" y="26" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">$</text>
+            </svg>
+        `);
+
+        // 🟢 立體水晶急救心臟
+        gameSprites.heart = createSvgSprite(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+                <path d="M 20,35 C 5,22 0,10 10,5 C 16,2 20,8 20,8 C 20,8 24,2 30,5 C 40,10 35,22 20,35 Z" fill="#2ecc71" stroke="#ffffff" stroke-width="2"/>
             </svg>
         `);
 
@@ -930,23 +962,7 @@
             }
 
             gameCtx.shadowBlur = 12; gameCtx.shadowColor = '#3498db';
-            gameCtx.fillStyle = '#2c3e50';
-            gameCtx.beginPath(); gameCtx.moveTo(24, 0); gameCtx.lineTo(-12, -14); gameCtx.lineTo(-6, 0); gameCtx.lineTo(-12, 14);
-            gameCtx.closePath(); gameCtx.fill();
-
-            gameCtx.fillStyle = '#ecf0f1';
-            gameCtx.beginPath(); gameCtx.moveTo(18, 0); gameCtx.lineTo(-8, -10); gameCtx.lineTo(-10, 10);
-            gameCtx.closePath(); gameCtx.fill();
-
-            gameCtx.fillStyle = '#e74c3c';
-            gameCtx.fillRect(-2, -13, 10, 2.5); gameCtx.fillRect(-2, 10.5, 10, 2.5);
-
-            gameCtx.fillStyle = '#3498db';
-            gameCtx.beginPath(); gameCtx.arc(4, 0, 5, 0, Math.PI*2); gameCtx.fill();
-
-            gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2;
-            gameCtx.beginPath(); gameCtx.moveTo(24, 0); gameCtx.lineTo(-12, -14); gameCtx.lineTo(-6, 0); gameCtx.lineTo(-12, 14);
-            gameCtx.closePath(); gameCtx.stroke();
+            gameCtx.drawImage(gameSprites.ship, -25, -15, 50, 30);
 
             if (hasShield) {
                 gameCtx.save();
@@ -960,7 +976,6 @@
             gameCtx.restore();
         }
 
-        // 👹 採用高級圖像 Sprite 繪製，徹底排除幾何抽象圖形！
         function drawBossHD(boss) {
             gameCtx.save();
 
@@ -972,15 +987,14 @@
 
             gameCtx.translate(cx, cy);
 
-            let spriteImg = bossSprites.storm;
-            if (boss.name.includes("雷霆巨鷹") || boss.name.includes("🦅")) spriteImg = bossSprites.eagle;
-            else if (boss.name.includes("異星母艦") || boss.name.includes("🛸")) spriteImg = bossSprites.ufo;
-            else if (boss.name.includes("地獄赤龍") || boss.name.includes("🐉")) spriteImg = bossSprites.dragon;
+            let spriteImg = gameSprites.storm;
+            if (boss.name.includes("神鷹") || boss.name.includes("🦅")) spriteImg = gameSprites.eagle;
+            else if (boss.name.includes("母艦") || boss.name.includes("🛸")) spriteImg = gameSprites.ufo;
+            else if (boss.name.includes("赤龍") || boss.name.includes("🐉")) spriteImg = gameSprites.dragon;
 
             gameCtx.shadowBlur = isAtk ? 30 : 18;
             gameCtx.shadowColor = isAtk ? '#e74c3c' : '#f1c40f';
 
-            // 繪製專業 SVG 高畫質貼圖，無幾何感
             let size = boss.radius * 2.2;
             gameCtx.drawImage(spriteImg, -size / 2, -size / 2, size, size);
 
@@ -994,48 +1008,16 @@
 
             if (c.type === 'coin') {
                 gameCtx.shadowColor = '#f1c40f';
-                gameCtx.fillStyle = '#f39c12'; gameCtx.beginPath(); gameCtx.arc(0, 0, 12, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(0, 0, 9, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2.5; gameCtx.stroke();
-                gameCtx.fillStyle = '#ffffff'; gameCtx.font = 'bold 11px sans-serif'; gameCtx.textAlign = 'center'; gameCtx.textBaseline = 'middle';
-                gameCtx.fillText('$', 0, 1);
+                gameCtx.drawImage(gameSprites.coin, -12, -12, 24, 24);
             } else if (c.type === 'heart') {
-                let pulse = Math.sin(globalAnimFrame * 0.1) * 1.5;
                 gameCtx.shadowColor = '#2ecc71';
-                gameCtx.fillStyle = '#2ecc71';
-                gameCtx.beginPath();
-                gameCtx.moveTo(0, 4 + pulse); bezierCurveToHelper(-8, -6 - pulse, -14, 2, 0, 12 + pulse); bezierCurveToHelper(14, 2, 8, -6 - pulse, 0, 4 + pulse);
-                gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-            } else if (c.type === 'shield') {
+                gameCtx.drawImage(gameSprites.heart, -12, -12, 24, 24);
+            } else {
                 gameCtx.shadowColor = '#00d2d3'; gameCtx.fillStyle = '#00d2d3';
-                gameCtx.beginPath(); gameCtx.moveTo(0, -10); gameCtx.lineTo(9, -5); gameCtx.lineTo(7, 6); gameCtx.lineTo(0, 11); gameCtx.lineTo(-7, 6); gameCtx.lineTo(-9, -5); gameCtx.closePath();
-                gameCtx.fill(); gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-            } else if (c.type === 'magnet') {
-                gameCtx.shadowColor = '#e67e22'; gameCtx.strokeStyle = '#e67e22'; gameCtx.lineWidth = 6;
-                gameCtx.beginPath(); gameCtx.arc(0, -2, 7, Math.PI, 0, false); gameCtx.lineTo(7, 6); gameCtx.moveTo(-7, -2); gameCtx.lineTo(-7, 6); gameCtx.stroke();
-                gameCtx.fillStyle = '#ffffff'; gameCtx.fillRect(-9, 4, 4, 4); gameCtx.fillRect(5, 4, 4, 4);
-            } else if (c.type === 'double') {
-                gameCtx.shadowColor = '#2ecc71'; gameCtx.fillStyle = '#2ecc71';
-                gameCtx.beginPath(); gameCtx.moveTo(0, -11); gameCtx.lineTo(9, -3); gameCtx.lineTo(0, 11); gameCtx.lineTo(-9, -3); gameCtx.closePath(); gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-            } else if (c.type === 'fever') {
-                gameCtx.shadowColor = '#a55eea'; gameCtx.fillStyle = '#8e44ad'; gameCtx.beginPath(); gameCtx.arc(0, 0, 12, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2.5; gameCtx.stroke();
-                gameCtx.fillStyle = '#f1c40f'; gameCtx.font = 'bold 12px sans-serif'; gameCtx.textAlign = 'center'; gameCtx.textBaseline = 'middle';
-                gameCtx.fillText('⚡', 0, 0);
-            } else if (c.type === 'curse') {
-                gameCtx.shadowColor = '#e74c3c'; gameCtx.fillStyle = '#111111'; gameCtx.beginPath(); gameCtx.arc(0, 0, 11, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.strokeStyle = '#e74c3c'; gameCtx.lineWidth = 3; gameCtx.stroke();
-                gameCtx.fillStyle = '#e74c3c'; gameCtx.font = 'bold 10px sans-serif'; gameCtx.textAlign = 'center'; gameCtx.textBaseline = 'middle';
-                gameCtx.fillText('✖', 0, 0);
+                gameCtx.beginPath(); gameCtx.arc(0, 0, 10, 0, Math.PI*2); gameCtx.fill();
             }
 
             gameCtx.restore();
-        }
-
-        function bezierCurveToHelper(cp1x, cp1y, cp2x, cp2y, x, y) {
-            gameCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
         }
 
         function drawObstacleHD(o) {
@@ -1045,10 +1027,6 @@
 
             if (o.type === 'poison') {
                 gameCtx.shadowColor = '#9b59b6'; gameCtx.fillStyle = '#8e44ad';
-                gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2.5; gameCtx.stroke();
-            } else if (o.type === 'mud') {
-                gameCtx.shadowColor = '#d35400'; gameCtx.fillStyle = '#e67e22';
                 gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); gameCtx.fill();
                 gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2.5; gameCtx.stroke();
             } else {
@@ -1172,32 +1150,19 @@
                 let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
                 if (Math.random() < 0.025) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
                 if (Math.random() < 0.008) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                if (!hasShield && Math.random() < 0.006) collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                if (magnetTimer === 0 && Math.random() < 0.006) collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                if (doubleScoreTimer === 0 && Math.random() < 0.006) collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                if (feverTimer === 0 && Math.random() < 0.004) collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
-                if (diff !== 'easy' && Math.random() < 0.006) collectibles.push({ type: 'curse', x: gameCanvas.width + 20, y: spawnY, radius: 11, collected: false });
 
                 if (Math.random() < (diff === 'easy' ? 0.008 : 0.015)) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
-                if (diff !== 'easy' && Math.random() < 0.008) obstacles.push({ type: 'poison', x: gameCanvas.width + 30, y: spawnY, radius: 18, damage: 35, hit: false });
-                if (diff !== 'easy' && Math.random() < 0.006) obstacles.push({ type: 'mud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 0, hit: false });
 
                 collectibles.forEach((c) => {
                     c.x -= 3 * userSpeedMult;
-                    if (magnetTimer > 0) {
-                        let mDist = Math.hypot(rocket.x - c.x, rocket.y - c.y);
-                        if (mDist < 200) { c.x += (rocket.x - c.x) * 0.12; c.y += (rocket.y - c.y) * 0.12; }
-                    }
-
                     drawCollectibleHD(c);
 
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
                     if (dist < c.radius + rocket.radius) {
-                        let mult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
                         if (c.type === 'coin') {
-                            gameScore += 50 * mult; gameCombo++; playAudioEffect('coin');
+                            gameScore += 50; gameCombo++; playAudioEffect('coin');
                             if (activeBoss) {
-                                activeBoss.hp -= 12 * mult;
+                                activeBoss.hp -= 12;
                                 document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
                                 if (activeBoss.hp <= 0) {
                                     updateStatus(`🎉 成功擊敗 ${activeBoss.name}！準備進入下一關！`);
@@ -1207,17 +1172,6 @@
                             }
                         } else if (c.type === 'heart') {
                             playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff');
-                        } else if (c.type === 'shield') {
-                            hasShield = true; document.getElementById('shieldBadge').style.display = 'inline'; playAudioEffect('buff');
-                        } else if (c.type === 'magnet') {
-                            magnetTimer = 350; document.getElementById('magnetBadge').style.display = 'inline'; playAudioEffect('buff');
-                        } else if (c.type === 'double') {
-                            doubleScoreTimer = 350; document.getElementById('doubleBadge').style.display = 'inline'; playAudioEffect('buff');
-                        } else if (c.type === 'fever') {
-                            feverTimer = 300; document.getElementById('feverBadge').style.display = 'inline'; playAudioEffect('buff');
-                        } else if (c.type === 'curse') {
-                            playerHP = Math.max(0, playerHP - 15); gameScore = Math.max(0, gameScore - 100); playAudioEffect('hit');
-                            if (playerHP <= 0) { triggerGameOver(); return; }
                         }
                         c.collected = true;
                     }
@@ -1225,10 +1179,9 @@
 
                 if (activeBoss) {
                     drawBossHD(activeBoss);
-
                     activeBoss.attackTimer++;
                     if (activeBoss.attackTimer % 50 === 0) {
-                        obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y + Math.sin(globalAnimFrame * 0.08) * 8, radius: 13, damage: 20, hit: false });
+                        obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20, hit: false });
                     }
                 }
 
@@ -1238,15 +1191,7 @@
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        if (hasShield && o.type !== 'mud') {
-                            hasShield = false; document.getElementById('shieldBadge').style.display = 'none'; playAudioEffect('hit');
-                        } else {
-                            if (o.type === 'mud') {
-                                slowDebuffTimer = 240; document.getElementById('slowBadge').style.display = 'inline'; playAudioEffect('hit');
-                            } else {
-                                playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
-                            }
-                        }
+                        playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
                         o.hit = true;
                         if (playerHP <= 0) { triggerGameOver(); return; }
                     }
