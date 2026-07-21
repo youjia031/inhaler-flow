@@ -36,22 +36,19 @@
             border-radius: 8px;
             margin-bottom: 15px;
             display: flex;
-            gap: 12px;
+            gap: 15px;
             align-items: center;
             flex-wrap: wrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .btn {
             padding: 8px 16px; border: none; border-radius: 4px;
-            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s;
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
         }
-        .btn:active { transform: scale(0.98); }
         .btn.accent { background-color: #1f4e79; color: white; }
         .btn.accent:hover { background-color: #163d5e; }
         .btn.game-btn { background-color: #27ae60; color: white; }
         .btn.game-btn:hover { background-color: #219653; }
-        .btn.purple-btn { background-color: #8e44ad; color: white; }
-        .btn.purple-btn:hover { background-color: #71368a; }
         .btn.danger-btn { background-color: #e74c3c; color: white; }
         .btn.danger-btn:hover { background-color: #c0392b; }
         .btn:hover { background-color: #e1e8ee; }
@@ -65,7 +62,7 @@
         }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
-        /* 🎮 遊戲 UI 容器樣式 */
+        /* 🎮 遊戲 UI 樣式 */
         .game-container {
             display: none;
             background: #0d1117;
@@ -77,19 +74,6 @@
             overflow: hidden;
             border: 2px solid #30363d;
         }
-
-        /* 🖥️ 全螢幕模式樣式 */
-        .game-container.fullscreen {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 99999 !important;
-            border-radius: 0 !important;
-            border: none !important;
-        }
-
         #gameCanvas {
             width: 100%;
             height: 100%;
@@ -111,43 +95,64 @@
             z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.88);
+            background: rgba(22, 27, 34, 0.85);
             padding: 8px 16px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(6px);
+            backdrop-filter: blur(4px);
             pointer-events: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
         }
         .hp-bar-bg {
-            width: 120px; height: 14px; background: rgba(255,255,255,0.1);
-            border-radius: 7px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.4);
-            display: inline-block; vertical-align: middle; margin-left: 4px;
+            width: 120px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 1.5px solid rgba(255,255,255,0.4);
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
         }
-        .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
+        .hp-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4d4d, #2ecc71);
+            transition: width 0.1s linear;
+        }
         .start-prompt-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(13, 17, 23, 0.75); color: white; display: flex;
-            flex-direction: column; justify-content: center; align-items: center;
-            font-size: 22px; font-weight: bold; z-index: 10; pointer-events: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.75);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
         }
         .modal-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(13, 17, 23, 0.92); color: white; display: flex;
-            flex-direction: column; justify-content: center; align-items: center;
-            border-radius: 8px; z-index: 20; backdrop-filter: blur(8px);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.92);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            z-index: 20;
+            backdrop-filter: blur(8px);
         }
         .modal-card {
-            background: rgba(255,255,255,0.05); padding: 30px 50px;
-            border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;
+            background: rgba(255,255,255,0.05);
+            padding: 30px 50px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
         }
-        .music-upload-btn {
-            background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-block;
-        }
-        .music-upload-btn:hover { background: #9b59b6; }
     </style>
 </head>
 <body>
@@ -156,7 +161,7 @@
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
-        <p>Acoustic inhaler flow visualization & Flight Game</p>
+        <p>Acoustic inhaler flow visualization</p>
     </div>
 
     <!-- 控制面版 -->
@@ -187,32 +192,30 @@
         <canvas id="flowChart"></canvas>
     </div>
 
-    <!-- 🎮 氣流飛行員遊戲畫面容器 -->
+    <!-- 🎮 炫彩遊戲畫面容器 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-
+        
         <div class="start-prompt-overlay" id="gameStartPrompt">
             <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
             </div>
         </div>
-        
+
         <div class="game-ui-overlay">
             <div class="hud-badge">
                 🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span> 
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
-                <span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER 2X!</span>
-                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
-                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
-                <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X SCORE</span>
-                <span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOWED</span>
+                <span id="feverBadge" style="display:none; color:#a55eea; margin-left:10px;">⚡ FEVER 2X!</span>
+                <span id="shieldBadge" style="display:none; color:#00d2d3; margin-left:10px;">🛡️ SHIELD</span>
             </div>
             <div class="hud-badge">
-                <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕 🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置分數</button>
-                <span style="margin-left:5px;">❤️ HP</span> 
-                <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
+                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px; margin-left:5px;" onclick="restartGameEngine()">重置分數</button>
+                <span style="margin-left:10px;">❤️ HP</span> 
+                <div class="hp-bar-bg">
+                    <div class="hp-bar-fill" id="hpFill"></div>
+                </div>
             </div>
         </div>
 
@@ -220,7 +223,9 @@
             <div class="modal-card">
                 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
                 <p style="color: #ccc; font-size: 16px;">血條已用盡，飛行員請重新準備！</p>
-                <div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">最終得分: <span id="finalScore">0</span></div>
+                <div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">
+                    最終得分: <span id="finalScore">0</span>
+                </div>
                 <button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
             </div>
         </div>
@@ -684,7 +689,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🚀 動態難度與氣流飛行員核心遊戲引擎                 -->
+    <!--  🎮 氣流飛行員 - 高機率道具掉落與炫彩繪圖引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -695,34 +700,18 @@
                     <select id="viewModeSelect" onchange="switchViewMode(this.value)">
                         <option value="chart">📊 專業圖表</option>
                         <option value="game">🎮 氣流飛行員 (Game)</option>
-                        <option value="both" selected>全模式 (併排顯示 📊+🎮)</option>
                     </select>
                 </label>
                 <label>
                     難度: 
                     <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (溫和無痛)</option>
-                        <option value="normal" selected>標準 (均衡演算法)</option>
-                        <option value="hard">專家 (極速高懲罰)</option>
+                        <option value="easy">輕鬆 (補血藥包)</option>
+                        <option value="normal" selected>標準 (護盾+藥包)</option>
+                        <option value="hard">專家 (狂暴+閃電球)</option>
                     </select>
                 </label>
                 <label>
-                    ⚡ 倍速: 
-                    <select id="gameSpeedSelect">
-                        <option value="0.8">0.8x (慢速輕鬆)</option>
-                        <option value="1.0" selected>1.0x (標準速度)</option>
-                        <option value="1.5">1.5x (快速反應)</option>
-                        <option value="2.0">2.0x (疾速挑戰)</option>
-                        <option value="2.5">2.5x (極速高超)</option>
-                    </select>
-                </label>
-                <label class="music-upload-btn">
-                    🎵 自選音樂 MP3
-                    <input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)">
-                </label>
-                <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">預設主題曲</span>
-                <label>
-                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 開啟音樂
+                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂與音效
                 </label>
             `;
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
@@ -732,36 +721,23 @@
         let bgmInterval = null;
         let bgmStep = 0;
 
-        let customAudioBuffer = null;
-        let customAudioSource = null;
-        let audioAnalyser = null;
-        let audioDataArray = null;
-        let isUsingCustomMusic = false;
-
-        function handleCustomMusicUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            updateStatus(`正在解析自選音樂: ${file.name}...`);
-            reader.onload = function(e) {
-                audioCtx.decodeAudioData(e.target.result, (buffer) => {
-                    customAudioBuffer = buffer;
-                    isUsingCustomMusic = true;
-                    document.getElementById('musicStatus').innerText = `🎶 自選: ${file.name.substring(0, 10)}...`;
-                    updateStatus(`✅ 音樂解析成功！將自動根據音樂節奏生成遊戲物件。`);
-                    if (isMeasuring) startBGM();
-                }, (err) => {
-                    alert("音訊檔案解析失敗，請上傳標準 MP3 或 WAV 格式。");
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
         const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
+        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
 
-        const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
+        const themeLead = [
+            C4, E4, G4, C5,  G4, E4, G4, C5,  
+            D5, C5, B4, A4,  G4, E4, C4, G4,
+            A4, C5, E5, D5,  C5, B4, C5, D5,  
+            E5, G5, E5, C5,  G4, B4, C5, C5
+        ];
+
+        const themeBass = [
+            C3, C3, G3, C3,  C3, C3, G3, C3,
+            F3, F3, C3, F3,  G3, G3, D4, G3,
+            A3, A3, E4, A3,  F3, F3, C3, F3,
+            C3, C3, G3, C3,  G3, G3, C3, C3
+        ];
 
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -769,37 +745,53 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             try {
-                let now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
                 if (type === 'coin') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(987.77, now);
-                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
-                    gain.gain.setValueAtTime(0.35, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                    osc.start(); osc.stop(now + 0.25);
-                } else if (type === 'buff') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'heal') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(880.00, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'shield') {
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(); osc.stop(now + 0.3);
-                } else if (type === 'hit') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(440.00, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'fever') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(200, now);
-                    osc.frequency.linearRampToValueAtTime(40, now + 0.2);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.start(); osc.stop(now + 0.2);
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'gameover') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.8);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.8);
                 }
             } catch(e) {}
         }
@@ -809,120 +801,74 @@
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
-            if (isUsingCustomMusic && customAudioBuffer) {
-                customAudioSource = audioCtx.createBufferSource();
-                customAudioSource.buffer = customAudioBuffer;
-                customAudioSource.loop = true;
+            bgmInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (!isGameRunning || isGamePaused || isGameOver || isResting) return;
 
-                audioAnalyser = audioCtx.createAnalyser();
-                audioAnalyser.fftSize = 64;
-                audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+                try {
+                    let now = audioCtx.currentTime;
+                    let idx = bgmStep % themeLead.length;
 
-                customAudioSource.connect(audioAnalyser);
-                audioAnalyser.connect(audioCtx.destination);
-                customAudioSource.start(0);
-            } else {
-                bgmInterval = setInterval(() => {
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                    try {
-                        let now = audioCtx.currentTime;
-                        let idx = bgmStep % pilotTheme.length;
+                    const leadOsc = audioCtx.createOscillator();
+                    const leadGain = audioCtx.createGain();
+                    leadOsc.type = 'sawtooth';
+                    leadOsc.frequency.setValueAtTime(themeLead[idx], now);
 
-                        const leadOsc = audioCtx.createOscillator();
-                        const leadGain = audioCtx.createGain();
-                        leadOsc.type = 'sawtooth';
-                        leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-                        leadGain.gain.setValueAtTime(0.18, now);
-                        leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    leadGain.gain.setValueAtTime(0.18, now);
+                    leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
-                        leadOsc.connect(leadGain);
-                        leadGain.connect(audioCtx.destination);
-                        leadOsc.start(now);
-                        leadOsc.stop(now + 0.16);
+                    leadOsc.connect(leadGain);
+                    leadGain.connect(audioCtx.destination);
+                    leadOsc.start(now);
+                    leadOsc.stop(now + 0.16);
 
-                        bgmStep++;
-                    } catch(e) {}
-                }, 180);
-            }
+                    const bassOsc = audioCtx.createOscillator();
+                    const bassGain = audioCtx.createGain();
+                    bassOsc.type = 'square';
+                    bassOsc.frequency.setValueAtTime(themeBass[idx], now);
+
+                    bassGain.gain.setValueAtTime(0.15, now);
+                    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+                    bassOsc.connect(bassGain);
+                    bassGain.connect(audioCtx.destination);
+                    bassOsc.start(now);
+                    bassOsc.stop(now + 0.18);
+
+                    if (idx % 2 === 1) {
+                        const snareOsc = audioCtx.createOscillator();
+                        const snareGain = audioCtx.createGain();
+                        snareOsc.type = 'triangle';
+                        snareOsc.frequency.setValueAtTime(120, now);
+                        snareGain.gain.setValueAtTime(0.1, now);
+                        snareGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+                        snareOsc.connect(snareGain);
+                        snareGain.connect(audioCtx.destination);
+                        snareOsc.start(now);
+                        snareOsc.stop(now + 0.08);
+                    }
+
+                    bgmStep++;
+                } catch(e) {}
+            }, 180);
         }
 
         function stopBGM() {
-            if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
-            if (customAudioSource) {
-                try { customAudioSource.stop(); customAudioSource.disconnect(); } catch(e){}
-                customAudioSource = null;
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
             }
         }
 
         function toggleSoundSetting(enabled) {
-            if (!enabled) stopBGM();
-            else startBGM();
-        }
-
-        // 🔀 全模式/單獨立模式切換
-        function switchViewMode(mode) {
-            const chartBox = document.querySelector('.chart-container');
-            const gameBox = document.getElementById('gameContainer');
-
-            if (mode === 'both') {
-                chartBox.style.display = 'block';
-                gameBox.style.display = 'block';
-                chartBox.style.marginBottom = '15px';
-            } else if (mode === 'game') {
-                chartBox.style.display = 'none';
-                gameBox.style.display = 'block';
-            } else {
-                chartBox.style.display = 'block';
-                gameBox.style.display = 'none';
-            }
-
-            stopGameEngine();
-            if (mode === 'game' || mode === 'both') {
-                resizeGameCanvas();
-                restartGameEngine();
+            if (!enabled) {
+                stopBGM();
+            } else if (isGameRunning && !isGamePaused && !isGameOver) {
+                startBGM();
             }
         }
 
-        // 初始化全模式狀態
-        setTimeout(() => { switchViewMode('both'); }, 100);
-
-        function updateGameMeasurementState(measuring) {
-            document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
-            if (measuring) startBGM();
-            else stopBGM();
-        }
-
-        // 🖥️ 全螢幕切換功能
-        function toggleFullscreen() {
-            const gameBox = document.getElementById('gameContainer');
-            if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
-                if (gameBox.requestFullscreen) {
-                    gameBox.requestFullscreen();
-                } else {
-                    gameBox.classList.add('fullscreen');
-                }
-            } else {
-                if (document.exitFullscreen && document.fullscreenElement) {
-                    document.exitFullscreen();
-                }
-                gameBox.classList.remove('fullscreen');
-            }
-            setTimeout(resizeGameCanvas, 150);
-        }
-
-        document.addEventListener('fullscreenchange', () => {
-            const gameBox = document.getElementById('gameContainer');
-            if (!document.fullscreenElement) {
-                gameBox.classList.remove('fullscreen');
-            } else {
-                gameBox.classList.add('fullscreen');
-            }
-            setTimeout(resizeGameCanvas, 150);
-        });
-
-        // =====================================================
-        // 🎮 氣流飛行員遊戲引擎
-        // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         let gameAnimationId = null;
@@ -939,13 +885,8 @@
         let gameScore = 0;
         let gameCombo = 0;
         let playerHP = 100;
-        
-        // 道具與負面狀態計時器
         let hasShield = false;
         let feverTimer = 0;
-        let magnetTimer = 0;       // 🧲 強力磁鐵
-        let doubleScoreTimer = 0;  // 💎 雙倍積分
-        let slowDebuffTimer = 0;   // 🕸️ 減速 Debuff
 
         let restTimer = null;
         let isResting = false;
@@ -957,8 +898,10 @@
             let h = gameCanvas.height || 480;
             for(let i=0; i<50; i++) {
                 stars.push({
-                    x: Math.random() * w, y: Math.random() * h,
-                    size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: Math.random() * 2 + 1,
+                    speed: Math.random() * 2 + 0.5
                 });
             }
         }
@@ -973,17 +916,54 @@
         }
         window.addEventListener('resize', resizeGameCanvas);
 
+        function switchViewMode(mode) {
+            const chartBox = document.querySelector('.chart-container');
+            const gameBox = document.getElementById('gameContainer');
+
+            if (mode === 'game') {
+                chartBox.style.display = 'none';
+                gameBox.style.display = 'block';
+                resizeGameCanvas();
+                restartGameEngine();
+            } else {
+                chartBox.style.display = 'block';
+                gameBox.style.display = 'none';
+                stopGameEngine();
+            }
+        }
+
+        function updateGameMeasurementState(measuring) {
+            const promptEl = document.getElementById('gameStartPrompt');
+            if (promptEl) {
+                promptEl.style.display = measuring ? 'none' : 'flex';
+            }
+            if (measuring) {
+                sessionStartTime = Date.now();
+                startBGM();
+            } else {
+                stopBGM();
+            }
+        }
+
         function restartGameEngine() {
             stopGameEngine();
             isGameRunning = true;
             isGamePaused = false;
             isGameOver = false;
-            playerHP = 100; gameScore = 0; gameCombo = 0;
-            hasShield = false; feverTimer = 0; magnetTimer = 0; doubleScoreTimer = 0; slowDebuffTimer = 0;
-            particles = []; collectibles = []; obstacles = []; bgmStep = 0;
+            playerHP = 100;
+            gameScore = 0;
+            gameCombo = 0;
+            hasShield = false;
+            feverTimer = 0;
+            particles = [];
+            collectibles = [];
+            obstacles = [];
+            bgmStep = 0;
             
             let h = gameCanvas.height || 480;
-            rocket.x = 120; rocket.y = h / 2; rocket.angle = 0;
+            rocket.x = 120;
+            rocket.y = h / 2;
+            rocket.angle = 0;
 
             sessionStartTime = Date.now();
             document.getElementById('gamePauseBtn').innerText = "暫停";
@@ -991,13 +971,8 @@
             document.getElementById('restScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('hpFill').style.width = '100%';
-            
-            // 隱藏 Hud Badges
             document.getElementById('feverBadge').style.display = 'none';
             document.getElementById('shieldBadge').style.display = 'none';
-            document.getElementById('magnetBadge').style.display = 'none';
-            document.getElementById('doubleBadge').style.display = 'none';
-            document.getElementById('slowBadge').style.display = 'none';
             
             updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
@@ -1008,16 +983,20 @@
             isGamePaused = !isGamePaused;
             const btn = document.getElementById('gamePauseBtn');
             if (isGamePaused) {
-                btn.innerText = "繼續"; btn.style.backgroundColor = "#f39c12"; stopBGM();
+                btn.innerText = "繼續";
+                btn.style.backgroundColor = "#f39c12";
+                stopBGM();
             } else {
-                btn.innerText = "暫停"; btn.style.backgroundColor = "#27ae60"; startBGM();
+                btn.innerText = "暫停";
+                btn.style.backgroundColor = "#27ae60";
+                startBGM();
             }
         }
 
         function triggerGameOver() {
             isGameOver = true;
             stopBGM();
-            playAudioEffect('hit');
+            playAudioEffect('gameover');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
             stopGameEngine();
@@ -1025,6 +1004,7 @@
 
         function stopGameEngine() {
             isGameRunning = false;
+            stopBGM();
             if (gameAnimationId) {
                 cancelAnimationFrame(gameAnimationId);
                 gameAnimationId = null;
@@ -1033,7 +1013,10 @@
 
         function drawRocket(x, y, angle, isExhale, flowMagnitude) {
             if (isNaN(x) || isNaN(y) || isNaN(angle)) {
-                rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2; rocket.angle = 0; return;
+                rocket.x = 120;
+                rocket.y = (gameCanvas.height || 480) / 2;
+                rocket.angle = 0;
+                return;
             }
 
             gameCtx.save();
@@ -1041,39 +1024,39 @@
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
-            // 護盾防護罩繪製
             if (hasShield) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
-                gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3; gameCtx.stroke();
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
+                gameCtx.strokeStyle = '#00d2d3';
+                gameCtx.lineWidth = 3;
+                gameCtx.stroke();
             }
 
-            // 狂熱模式外輝光
             if (feverTimer > 0) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
-                gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)'; gameCtx.fill();
-            }
-
-            // 磁鐵磁場繪製
-            if (magnetTimer > 0) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 100, 0, Math.PI * 2);
-                gameCtx.strokeStyle = 'rgba(243, 156, 18, 0.25)'; gameCtx.lineWidth = 2; gameCtx.stroke();
-            }
-
-            // 🕸️ 減速黏液干擾外殼
-            if (slowDebuffTimer > 0) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 22, 0, Math.PI * 2);
-                gameCtx.fillStyle = 'rgba(230, 126, 34, 0.35)'; gameCtx.fill();
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
+                gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)';
+                gameCtx.fill();
             }
 
             gameCtx.fillStyle = '#ecf0f1';
             gameCtx.beginPath();
-            gameCtx.moveTo(20, 0); gameCtx.lineTo(-12, -10); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-12, 10);
-            gameCtx.closePath(); gameCtx.fill();
+            gameCtx.moveTo(20, 0);
+            gameCtx.lineTo(-12, -10);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-12, 10);
+            gameCtx.closePath();
+            gameCtx.fill();
 
             gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
             gameCtx.beginPath();
-            gameCtx.moveTo(-4, -6); gameCtx.lineTo(-14, -14); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 14); gameCtx.lineTo(-4, 6);
-            gameCtx.closePath(); gameCtx.fill();
+            gameCtx.moveTo(-4, -6);
+            gameCtx.lineTo(-14, -14);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-14, 14);
+            gameCtx.lineTo(-4, 6);
+            gameCtx.closePath();
+            gameCtx.fill();
 
             gameCtx.restore();
 
@@ -1081,9 +1064,13 @@
                 let pColor = isExhale ? '#f39c12' : '#00d2d3';
                 if (feverTimer > 0) pColor = '#a55eea';
                 particles.push({
-                    x: x - Math.cos(angle) * 15, y: y - Math.sin(angle) * 15,
-                    vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2, vy: (Math.random() - 0.5) * 2,
-                    size: Math.random() * 5 + 2, color: pColor, life: 1.0
+                    x: x - Math.cos(angle) * 15,
+                    y: y - Math.sin(angle) * 15,
+                    vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: Math.random() * 5 + 2,
+                    color: pColor,
+                    life: 1.0
                 });
             }
         }
@@ -1095,21 +1082,20 @@
             gameCtx.fillStyle = '#0d1117';
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            // 🎯 難度參數動態調整
-            let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
-            
-            // 速度連動難度：專家模式整體速度 +30%
-            let speedMultByDiff = (diff === 'hard') ? 1.3 : (diff === 'easy' ? 0.85 : 1.0);
-            let baseSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0') * speedMultByDiff;
-            let userSpeedMult = (slowDebuffTimer > 0) ? (baseSpeedMult * 0.5) : baseSpeedMult;
-
-            // 背景星空滾動
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
-                s.x -= s.baseSpeed * userSpeedMult;
+                s.x -= s.speed;
                 if (s.x < 0) s.x = gameCanvas.width;
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
+
+            gameCtx.beginPath();
+            gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            gameCtx.setLineDash([8, 8]);
+            gameCtx.moveTo(0, gameCanvas.height / 2);
+            gameCtx.lineTo(gameCanvas.width, gameCanvas.height / 2);
+            gameCtx.stroke();
+            gameCtx.setLineDash([]);
 
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
@@ -1118,8 +1104,8 @@
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
                 let flowMag = Math.abs(flow);
 
-                // 氣流操控靈敏度（輕鬆模式反應寬容；專家模式非常敏感需要精準控制）
-                let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard') ? 0.8 : 1.2;
+                let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+                let sensitivity = (diff === 'easy') ? 1.6 : (diff === 'hard') ? 0.9 : 1.2;
 
                 let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
                 if (isNaN(targetY)) targetY = gameCanvas.height / 2;
@@ -1128,202 +1114,127 @@
                 let dy = targetY - rocket.y;
                 if (isNaN(dy)) dy = 0;
                 
-                // 飛船跟隨反應速度
-                let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
-                rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
+                rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                // 道具與 Debuff 倒數計時處理
                 if (feverTimer > 0) {
                     feverTimer--;
                     if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none';
                 }
-                if (magnetTimer > 0) {
-                    magnetTimer--;
-                    if (magnetTimer === 0) document.getElementById('magnetBadge').style.display = 'none';
-                }
-                if (doubleScoreTimer > 0) {
-                    doubleScoreTimer--;
-                    if (doubleScoreTimer === 0) document.getElementById('doubleBadge').style.display = 'none';
-                }
-                if (slowDebuffTimer > 0) {
-                    slowDebuffTimer--;
-                    if (slowDebuffTimer === 0) document.getElementById('slowBadge').style.display = 'none';
-                }
 
-                let spawnY = Math.random() * (gameCanvas.height - 100) + 50;
-                if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
-                    audioAnalyser.getByteFrequencyData(audioDataArray);
-                    let freqVal = audioDataArray[5];
-                    spawnY = gameCanvas.height - (freqVal / 255) * (gameCanvas.height - 80);
-                }
-
-                // 🎁 正面道具生成（輕鬆模式加成補血與護盾；專家模式稍降率）
-                let buffMult = (diff === 'easy') ? 1.4 : (diff === 'hard') ? 0.8 : 1.0;
-                if (Math.random() < 0.028 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, baseSpeed: 3, collected: false });
-                }
-                if (Math.random() < 0.010 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, baseSpeed: 2.5, collected: false });
-                }
-                if (!hasShield && Math.random() < 0.007 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.5, collected: false });
-                }
-                if (magnetTimer === 0 && Math.random() < 0.007 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
-                }
-                if (doubleScoreTimer === 0 && Math.random() < 0.007 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
-                }
-                if (Math.random() < 0.005 * userSpeedMult * buffMult && feverTimer === 0) {
-                    collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, baseSpeed: 3.5, collected: false });
-                }
-
-                // ⚠️ 偽裝陷阱：💎 詛咒黑寶石（輕鬆模式不生成）
-                if (diff !== 'easy' && Math.random() < (diff === 'hard' ? 0.012 : 0.006) * userSpeedMult) {
-                    collectibles.push({ type: 'curse', x: gameCanvas.width + 20, y: spawnY, radius: 11, baseSpeed: 3.2, collected: false });
-                }
-
-                // ⛈️ 障礙物生成與動態傷害調整
-                // 1. 普通雷暴烏雲 (輕鬆扣 10，標準扣 25，專家扣 35)
-                let cloudDmg = (diff === 'easy') ? 10 : (diff === 'hard') ? 35 : 25;
-                if (Math.random() < (diff === 'easy' ? 0.006 : diff === 'hard' ? 0.022 : 0.012) * userSpeedMult) {
-                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, baseSpeed: 4, damage: cloudDmg, hit: false });
+                // 🎁 大幅提升專屬道具掉落機率 (1.5% ~ 2% 掉落率)
+                if (Math.random() < 0.03) {
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3, collected: false });
                 }
                 
-                // 2. 🟣 紫色高濃度毒霧 (輕鬆不生成；標準扣 40；專家扣 50)
-                if (diff !== 'easy') {
-                    let poisonDmg = (diff === 'hard') ? 50 : 40;
-                    if (Math.random() < (diff === 'hard' ? 0.015 : 0.006) * userSpeedMult) {
-                        obstacles.push({ type: 'poison', x: gameCanvas.width + 30, y: spawnY, radius: 22, baseSpeed: 2.8, damage: poisonDmg, hit: false });
+                // 🟢 補血心心 (Heart)
+                if (Math.random() < 0.015) {
+                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 12, speed: 2.5, collected: false });
+                }
+
+                // 🟡 藍色護盾 (Shield)
+                if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.012) {
+                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 13, speed: 2.5, collected: false });
+                }
+
+                // 🔴 專家模式專屬：狂暴星 (Fever) & 閃電球 (Hazard)
+                if (diff === 'hard') {
+                    if (Math.random() < 0.01 && feverTimer === 0) {
+                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 3.5, collected: false });
+                    }
+                    if (Math.random() < 0.015) {
+                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 12, speed: 6, hit: false });
                     }
                 }
-                
-                // 3. 🕸️ 減速黏液怪 (輕鬆不生成)
-                if (diff !== 'easy' && Math.random() < (diff === 'hard' ? 0.010 : 0.006) * userSpeedMult) {
-                    obstacles.push({ type: 'mud', x: gameCanvas.width + 30, y: spawnY, radius: 15, baseSpeed: 4.5, damage: 0, hit: false });
+
+                // 一般障礙物 (雷雲)
+                if (Math.random() < (diff === 'hard' ? 0.02 : 0.01)) {
+                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4, hit: false });
                 }
 
-                // 🎁 道具與金幣移動與磁鐵吸附邏輯
+                // 繪製與碰撞
                 collectibles.forEach((c) => {
-                    c.x -= c.baseSpeed * userSpeedMult;
-
-                    // 🧲 強力磁鐵主動吸附效果
-                    if (magnetTimer > 0) {
-                        let mDist = Math.hypot(rocket.x - c.x, rocket.y - c.y);
-                        if (mDist < 200) {
-                            c.x += (rocket.x - c.x) * 0.12;
-                            c.y += (rocket.y - c.y) * 0.12;
-                        }
-                    }
-
+                    c.x -= c.speed;
                     gameCtx.beginPath();
+                    
                     if (c.type === 'coin') {
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#f1c40f'; gameCtx.fill();
+                        gameCtx.fillStyle = '#f1c40f';
+                        gameCtx.fill();
                     } else if (c.type === 'heart') {
+                        // 🟢 綠色愛心 + 發光圈
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
+                        gameCtx.fillStyle = '#2ecc71';
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#ffffff';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
                     } else if (c.type === 'shield') {
+                        // 🟡 藍色護盾 + 發光圈
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#00d2d3'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'magnet') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#e67e22'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#f39c12'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'double') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
+                        gameCtx.fillStyle = '#00d2d3';
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#ffffff';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
                     } else if (c.type === 'fever') {
+                        // 🔴 紫色狂暴星 + 發光圈
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#a55eea'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'curse') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#2c3e50'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#e74c3c'; gameCtx.lineWidth = 2; gameCtx.stroke();
+                        gameCtx.fillStyle = '#a55eea';
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#f1c40f';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
                     }
 
                     let pickupRadius = (feverTimer > 0) ? (rocket.radius + 35) : rocket.radius;
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
 
                     if (dist < c.radius + pickupRadius) {
-                        let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
-                        
                         if (c.type === 'coin') {
-                            gameScore += 50 * scoreMult;
-                            gameCombo++; playAudioEffect('coin');
+                            gameScore += (feverTimer > 0) ? 100 : 50;
+                            gameCombo++;
+                            playAudioEffect('coin');
                         } else if (c.type === 'heart') {
-                            playerHP = Math.min(100, playerHP + 25);
-                            playAudioEffect('buff');
+                            playerHP = Math.min(100, playerHP + 20);
+                            playAudioEffect('heal');
                         } else if (c.type === 'shield') {
                             hasShield = true;
                             document.getElementById('shieldBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'magnet') {
-                            magnetTimer = 350;
-                            document.getElementById('magnetBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'double') {
-                            doubleScoreTimer = 350;
-                            document.getElementById('doubleBadge').style.display = 'inline';
-                            playAudioEffect('buff');
+                            playAudioEffect('shield');
                         } else if (c.type === 'fever') {
                             feverTimer = 300;
                             document.getElementById('feverBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'curse') {
-                            let curseDmg = (diff === 'hard') ? 25 : 15;
-                            playerHP = Math.max(0, playerHP - curseDmg);
-                            gameScore = Math.max(0, gameScore - 100);
-                            if (diff !== 'easy') gameCombo = 0;
-                            playAudioEffect('hit');
-                            if (playerHP <= 0) { triggerGameOver(); return; }
+                            playAudioEffect('fever');
                         }
                         c.collected = true;
                     }
                 });
 
-                // ⛈️ 障礙物碰撞邏輯
                 obstacles.forEach((o) => {
-                    o.x -= o.baseSpeed * userSpeedMult;
+                    o.x -= o.speed;
                     gameCtx.beginPath();
                     gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
-                    
-                    if (o.type === 'poison') {
-                        gameCtx.fillStyle = '#8e44ad';
-                    } else if (o.type === 'mud') {
-                        gameCtx.fillStyle = '#d35400';
-                    } else {
-                        gameCtx.fillStyle = '#e74c3c';
-                    }
+                    gameCtx.fillStyle = (o.type === 'hazard') ? '#8e44ad' : '#e74c3c';
                     gameCtx.fill();
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        if (hasShield && o.type !== 'mud') {
+                        if (hasShield && o.type !== 'hazard') {
                             hasShield = false;
                             document.getElementById('shieldBadge').style.display = 'none';
                             playAudioEffect('hit');
                         } else {
-                            if (o.type === 'mud') {
-                                // 專家模式減速時間加倍
-                                slowDebuffTimer = (diff === 'hard') ? 360 : 240;
-                                document.getElementById('slowBadge').style.display = 'inline';
-                                playAudioEffect('hit');
-                            } else {
-                                playerHP = Math.max(0, playerHP - o.damage);
-                                if (diff !== 'easy') gameCombo = 0; // 輕鬆模式碰撞不中斷 Combo
-                                playAudioEffect('hit');
-                            }
+                            let dmg = (o.type === 'hazard') ? 40 : 25;
+                            playerHP = Math.max(0, playerHP - dmg);
+                            gameCombo = 0;
+                            playAudioEffect('hit');
                         }
                         o.hit = true;
 
                         if (playerHP <= 0) {
-                            triggerGameOver(); return;
+                            triggerGameOver();
+                            return;
                         }
                     }
                 });
@@ -1333,8 +1244,7 @@
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
 
-                let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
-                if (flowMag > 10) gameScore += 1 * scoreMult;
+                if (flowMag > 10) gameScore += (feverTimer > 0) ? 2 : 1;
 
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) triggerRestStop();
@@ -1346,11 +1256,12 @@
             }
 
             particles.forEach((p) => {
-                p.x += p.vx * userSpeedMult; p.y += p.vy; p.life -= 0.04;
+                p.x += p.vx; p.y += p.vy; p.life -= 0.04;
                 if (p.life > 0) {
                     gameCtx.beginPath();
                     gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
-                    gameCtx.fillStyle = p.color; gameCtx.globalAlpha = Math.max(0, p.life);
+                    gameCtx.fillStyle = p.color;
+                    gameCtx.globalAlpha = Math.max(0, p.life);
                     gameCtx.fill();
                 }
             });
@@ -1370,7 +1281,8 @@
         }
 
         function triggerRestStop() {
-            isResting = true; stopBGM();
+            isResting = true;
+            stopBGM();
             const restScreen = document.getElementById('restScreen');
             const countdownEl = document.getElementById('restCountdown');
             let countdown = 15;
