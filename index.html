@@ -133,7 +133,6 @@
             z-index: 10;
             pointer-events: none;
         }
-        /* Game Over & 休息站遮罩面板 */
         .modal-screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -691,7 +690,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 包含 Game Over 結算之完整遊戲引擎  -->
+    <!--  🎮 氣流飛行員 - 包含 Game Over 結算與強制凍結機制  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -761,7 +760,7 @@
         let gameAnimationId = null;
         let isGameRunning = false;
         let isGamePaused = false;
-        let isGameOver = false;
+        let isGameOver = false; // 💡 遊戲結束狀態鎖
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
         let stars = [];
@@ -830,7 +829,7 @@
             stopGameEngine();
             isGameRunning = true;
             isGamePaused = false;
-            isGameOver = false;
+            isGameOver = false; // 解鎖遊戲狀態
             playerHP = 100;
             gameScore = 0;
             gameCombo = 0;
@@ -848,6 +847,7 @@
             document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
             document.getElementById('restScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('hpFill').style.width = '100%';
             
             updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
@@ -871,6 +871,7 @@
             playAudioEffect('gameover');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
+            stopGameEngine(); // 💡 徹底凍結並結束 RequestAnimationFrame 迴圈
         }
 
         function stopGameEngine() {
@@ -930,7 +931,8 @@
         }
 
         function gameLoop() {
-            if (!isGameRunning) return;
+            // 💡 強制攔截：一旦遊戲停止或進入 Game Over，立刻斷開迴圈！
+            if (!isGameRunning || isGameOver) return;
 
             gameCtx.globalAlpha = 1.0;
             gameCtx.fillStyle = '#0d1117';
@@ -953,8 +955,7 @@
 
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
-            // 💡 未進入 Game Over、未暫停且正在量測時才計算遊戲實體
-            if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
+            if (activeMeasuring && !isGamePaused && !isResting) {
                 let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
                 let flowMag = Math.abs(flow);
@@ -1004,17 +1005,21 @@
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        playerHP = Math.max(0, playerHP - 25); // 扣血放大為 25%
+                        playerHP = Math.max(0, playerHP - 25);
                         gameCombo = 0;
                         playAudioEffect('hit');
                         o.hit = true;
 
-                        // 💡 檢查血量是否歸零，觸發 Game Over 結算
+                        // 💡 一旦血量歸零，立刻觸發 Game Over，中斷後續動畫！
                         if (playerHP <= 0) {
                             triggerGameOver();
+                            return; // 立即跳出 parse 邏輯
                         }
                     }
                 });
+
+                // 如果剛剛碰撞觸發了 Game Over，不繼續往下繪製
+                if (isGameOver) return;
 
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
