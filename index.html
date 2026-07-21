@@ -6,7 +6,7 @@
     <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 引入 ONNX Runtime Web -->
+    <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
         body {
@@ -61,12 +61,14 @@
 </head>
 <body>
 
+    <!-- 頂部標題區域 -->
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
         <p>Acoustic inhaler flow visualization</p>
     </div>
 
+    <!-- 控制面版 -->
     <div class="control-panel">
         <button id="connectBtn" class="btn accent">Connect</button>
         <button id="startBtn" class="btn" disabled>Start</button>
@@ -89,15 +91,17 @@
         <span id="detectedMode" class="info-text">Detected: —</span>
     </div>
 
+    <!-- 圖表顯示區域 -->
     <div class="chart-container">
         <canvas id="flowChart"></canvas>
     </div>
 
+    <!-- 狀態列 -->
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
         // =====================================================
-        //  完整 36 段教育引導線計畫表 (完全還原)
+        //  完整 36 段教育引導線計畫表 (含靜止區段)
         // =====================================================
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -170,6 +174,7 @@
         let pklSegments = [];
         let onnxSession = null;
         let predictionBuffer = [];
+        let lastConfirmedMode = "inhalation"; // 低流速慣性鎖定
 
         async function loadPKLModel() {
             try {
@@ -224,7 +229,7 @@
         });
 
         // =====================================================
-        //  推論邏輯
+        //  低流速強化與抗飄移推論邏輯
         // =====================================================
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
@@ -232,10 +237,16 @@
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
             let totalE = e1 + e2 + e3 + e4 + e5;
             
-            if (totalE < 100000) return "inhalation";
+            // 1. 如果能量極低，代表完全沒有氣流 (Idle)，重置平滑視窗
+            if (totalE < 50000) {
+                predictionBuffer = [];
+                lastConfirmedMode = "inhalation";
+                return "inhalation";
+            }
 
             let rawMode = "inhalation";
 
+            // 2. 執行推論
             if (onnxSession) {
                 try {
                     const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
@@ -245,15 +256,29 @@
                     console.error("PKL 推論失敗", e);
                 }
             } else {
+                // 備用規則：針對低流速調整門檻
                 let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
-                rawMode = (ratio_3to1 > 0.75) ? "exhalation" : "inhalation";
+                let threshold = (totalE < 300000) ? 0.55 : 0.75;
+                rawMode = (ratio_3to1 > threshold) ? "exhalation" : "inhalation";
             }
 
+            // 3. 多數決平滑 (3 幀滑動視窗)
             predictionBuffer.push(rawMode);
             if (predictionBuffer.length > 3) predictionBuffer.shift();
 
             let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
-            return (exhCount >= 2) ? "exhalation" : "inhalation";
+            let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
+
+            // 4. 💡 低流速慣性鎖定 (State Lock)：
+            // 氣流逐漸轉弱時 (5萬~30萬)，如果剛才已經確定是吐氣，防止波形突然向上彈跳
+            if (totalE < 300000 && lastConfirmedMode === "exhalation" && currentVote === "inhalation") {
+                if (predictionBuffer.filter(m => m === "inhalation").length < 3) {
+                    currentVote = "exhalation";
+                }
+            }
+
+            lastConfirmedMode = currentVote;
+            return currentVote;
         }
 
         async function runPKLIndexSegmentation() {
@@ -268,7 +293,7 @@
             for (let i = 0; i < records.length; i++) {
                 let rec = records[i];
                 if (!rec.flowYes || Math.abs(rec.est) < 5.0) {
-                    predictions.push(-1);
+                    predictions.push(-1); // 靜止/無數據不塗顏色
                 } else {
                     let mode = await detectBreathModePKL(rec.fft);
                     predictions.push(mode === "inhalation" ? 0 : 1);
@@ -315,7 +340,7 @@
         }
 
         // =====================================================
-        //  UI 狀態與串口連線管理
+        //  UI 狀態與 Web Serial 連線保護機制
         // =====================================================
         function resetUIState() {
             port = null; reader = null; isMeasuring = false;
@@ -325,10 +350,12 @@
             updateStatus('Disconnected / Ready to connect');
         }
 
+        // 監聽硬體拔出事件
         if ('serial' in navigator) {
             navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
         }
 
+        // 頁面重整/關閉時自動釋放串口
         window.addEventListener('beforeunload', async () => {
             try {
                 if (reader) await reader.cancel();
@@ -379,6 +406,7 @@
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
 
+                    // 防止 Buffer 堆積卡死
                     if (lines.length > 10) lines = lines.slice(-3);
 
                     for (let line of lines) {
@@ -458,6 +486,7 @@
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
                 document.getElementById('saveBtn').disabled = false;
 
+                // 更新 Dataset 2 (Patient Flow)
                 flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
                 let windowStart = Math.floor(elapsed / 20) * 20;
                 flowChart.options.scales.x.min = windowStart;
@@ -485,6 +514,7 @@
 
         function clearPlot() {
             startTime = null; records = []; flowHistory = []; pklSegments = []; predictionBuffer = [];
+            lastConfirmedMode = "inhalation";
             flowChart.data.datasets[2].data = [];
             flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
             flowChart.update();
