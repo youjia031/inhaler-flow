@@ -15,6 +15,7 @@
             color: #2c3e50;
             margin: 0;
             padding: 20px;
+            transition: background-color 0.3s;
         }
         .header {
             margin-bottom: 20px;
@@ -43,12 +44,15 @@
         }
         .btn {
             padding: 8px 16px; border: none; border-radius: 4px;
-            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s;
         }
+        .btn:active { transform: scale(0.98); }
         .btn.accent { background-color: #1f4e79; color: white; }
         .btn.accent:hover { background-color: #163d5e; }
         .btn.game-btn { background-color: #27ae60; color: white; }
         .btn.game-btn:hover { background-color: #219653; }
+        .btn.purple-btn { background-color: #8e44ad; color: white; }
+        .btn.purple-btn:hover { background-color: #71368a; }
         .btn.danger-btn { background-color: #e74c3c; color: white; }
         .btn.danger-btn:hover { background-color: #c0392b; }
         .btn:hover { background-color: #e1e8ee; }
@@ -74,6 +78,19 @@
             overflow: hidden;
             border: 2px solid #30363d;
         }
+
+        /* 🖥️ 全螢幕模式樣式 */
+        .game-container.fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            border-radius: 0 !important;
+            border: none !important;
+        }
+
         #gameCanvas {
             width: 100%;
             height: 100%;
@@ -95,17 +112,21 @@
             z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.85);
+            background: rgba(22, 27, 34, 0.88);
             padding: 8px 16px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
             pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
         .hp-bar-bg {
             width: 120px; height: 14px; background: rgba(255,255,255,0.1);
             border-radius: 7px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.4);
-            display: inline-block; vertical-align: middle; margin-left: 8px;
+            display: inline-block; vertical-align: middle; margin-left: 4px;
         }
         .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
         .start-prompt-overlay {
@@ -128,6 +149,31 @@
             background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-block;
         }
         .music-upload-btn:hover { background: #9b59b6; }
+
+        /* 浮空提示 Toast */
+        .toast-msg {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 30;
+            display: none;
+            animation: fadeInOut 2s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, 10px); }
+            15% { opacity: 1; transform: translate(-50%, 0); }
+            85% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -10px); }
+        }
     </style>
 </head>
 <body>
@@ -136,7 +182,7 @@
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
-        <p>Acoustic inhaler flow visualization</p>
+        <p>Acoustic inhaler flow visualization & Flight Game</p>
     </div>
 
     <!-- 控制面版 -->
@@ -167,28 +213,38 @@
         <canvas id="flowChart"></canvas>
     </div>
 
-    <!-- 🎮 飛行員遊戲畫面容器 -->
+    <!-- 🎮 氣流飛行員遊戲畫面容器 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
+
+        <div class="toast-msg" id="gameToast">🌀 警告：瘋狂隨機機制觸發中！</div>
+
         <div class="start-prompt-overlay" id="gameStartPrompt">
             <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
             </div>
         </div>
+        
         <div class="game-ui-overlay">
             <div class="hud-badge">
                 🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span> 
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
-                <span id="feverBadge" style="display:none; color:#a55eea; margin-left:10px;">⚡ FEVER 2X!</span>
-                <span id="shieldBadge" style="display:none; color:#00d2d3; margin-left:10px;">🛡️ SHIELD</span>
+                <span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER 2X!</span>
+                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
+                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
+                <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X SCORE</span>
+                <span id="crazyBadge" style="display:none; color:#e74c3c; font-weight:bold;">🌀 CRAZY RANDOM</span>
             </div>
             <div class="hud-badge">
+                <!-- 全螢幕切換按鈕 -->
+                <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕 🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px; margin-left:5px;" onclick="restartGameEngine()">重置分數</button>
-                <span style="margin-left:10px;">❤️ HP</span> 
+                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置分數</button>
+                <span style="margin-left:5px;">❤️ HP</span> 
                 <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
             </div>
         </div>
+
         <div class="modal-screen" id="gameOverScreen" style="display: none;">
             <div class="modal-card">
                 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
@@ -197,6 +253,7 @@
                 <button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
             </div>
         </div>
+
         <div class="modal-screen" id="restScreen" style="display: none;">
             <div class="modal-card">
                 <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
@@ -656,7 +713,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🚀 氣流飛行員 - 核心遊戲與 MP3 音樂分析引擎         -->
+    <!--  🚀 全視窗/全模式/新道具/動態隨機 氣流飛行員引擎       -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -667,6 +724,7 @@
                     <select id="viewModeSelect" onchange="switchViewMode(this.value)">
                         <option value="chart">📊 專業圖表</option>
                         <option value="game">🎮 氣流飛行員 (Game)</option>
+                        <option value="both" selected>全模式 (併排顯示 📊+🎮)</option>
                     </select>
                 </label>
                 <label>
@@ -675,6 +733,8 @@
                         <option value="easy">輕鬆 (寬容度高)</option>
                         <option value="normal" selected>標準 (均衡演算法)</option>
                         <option value="hard">專家 (高靈敏)</option>
+                        <option value="random">🎲 隨機模式 (開局隨機設定)</option>
+                        <option value="crazy_random">🌀 完全隨機模式 (動態隨機變換)</option>
                     </select>
                 </label>
                 <label>
@@ -731,7 +791,6 @@
 
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
         const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
-        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
 
         const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
 
@@ -752,6 +811,16 @@
                     gain.gain.setValueAtTime(0.35, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                     osc.start(); osc.stop(now + 0.25);
+                } else if (type === 'buff') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(); osc.stop(now + 0.3);
                 } else if (type === 'hit') {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
@@ -821,23 +890,32 @@
             else startBGM();
         }
 
+        // 🔀 全模式/單獨立模式切換 logic
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
 
-            chartBox.style.display = 'none';
-            gameBox.style.display = 'none';
-
-            stopGameEngine();
-
-            if (mode === 'game') {
+            if (mode === 'both') {
+                chartBox.style.display = 'block';
                 gameBox.style.display = 'block';
-                resizeGameCanvas();
-                restartGameEngine();
+                chartBox.style.marginBottom = '15px';
+            } else if (mode === 'game') {
+                chartBox.style.display = 'none';
+                gameBox.style.display = 'block';
             } else {
                 chartBox.style.display = 'block';
+                gameBox.style.display = 'none';
+            }
+
+            stopGameEngine();
+            if (mode === 'game' || mode === 'both') {
+                resizeGameCanvas();
+                restartGameEngine();
             }
         }
+
+        // 初始化全模式狀態
+        setTimeout(() => { switchViewMode('both'); }, 100);
 
         function updateGameMeasurementState(measuring) {
             document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
@@ -845,8 +923,36 @@
             else stopBGM();
         }
 
+        // 🖥️ 全螢幕切換功能
+        function toggleFullscreen() {
+            const gameBox = document.getElementById('gameContainer');
+            if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
+                if (gameBox.requestFullscreen) {
+                    gameBox.requestFullscreen();
+                } else {
+                    gameBox.classList.add('fullscreen');
+                }
+            } else {
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                gameBox.classList.remove('fullscreen');
+            }
+            setTimeout(resizeGameCanvas, 150);
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const gameBox = document.getElementById('gameContainer');
+            if (!document.fullscreenElement) {
+                gameBox.classList.remove('fullscreen');
+            } else {
+                gameBox.classList.add('fullscreen');
+            }
+            setTimeout(resizeGameCanvas, 150);
+        });
+
         // =====================================================
-        // 🎮 氣流飛行員遊戲繪製引擎 (動態倍速修正)
+        // 🎮 氣流飛行員遊戲引擎 (包含新道具與完全動態隨機)
         // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
@@ -864,12 +970,27 @@
         let gameScore = 0;
         let gameCombo = 0;
         let playerHP = 100;
+        
+        // 道具狀態計時器
         let hasShield = false;
         let feverTimer = 0;
+        let magnetTimer = 0;       // 🧲 強力磁鐵
+        let doubleScoreTimer = 0;  // 💎 雙倍積分
+
+        // 🌀 完全隨機模式 (Crazy Random Dynamic Mutation)
+        let crazyRandomInterval = null;
 
         let restTimer = null;
         let isResting = false;
         let sessionStartTime = 0;
+
+        function showToast(msg) {
+            const toast = document.getElementById('gameToast');
+            if (!toast) return;
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
 
         function initStars() {
             stars = [];
@@ -893,17 +1014,55 @@
         }
         window.addEventListener('resize', resizeGameCanvas);
 
+        // 🎲 隨機設定產生器
+        function applyRandomSettings() {
+            const speeds = ["0.8", "1.0", "1.5", "2.0", "2.5"];
+            const randSpeed = speeds[Math.floor(Math.random() * speeds.length)];
+            const speedSelect = document.getElementById('gameSpeedSelect');
+            if (speedSelect) speedSelect.value = randSpeed;
+
+            const modes = ["auto", "inhalation", "exhalation"];
+            const randMode = modes[Math.floor(Math.random() * modes.length)];
+            const modeSelect = document.getElementById('modeSelect');
+            if (modeSelect) modeSelect.value = randMode;
+        }
+
         function restartGameEngine() {
             stopGameEngine();
             isGameRunning = true;
             isGamePaused = false;
             isGameOver = false;
             playerHP = 100; gameScore = 0; gameCombo = 0;
-            hasShield = false; feverTimer = 0;
+            hasShield = false; feverTimer = 0; magnetTimer = 0; doubleScoreTimer = 0;
             particles = []; collectibles = []; obstacles = []; bgmStep = 0;
             
             let h = gameCanvas.height || 480;
             rocket.x = 120; rocket.y = h / 2; rocket.angle = 0;
+
+            const diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+
+            // 🎲 如果是單次隨機模式
+            if (diff === 'random') {
+                applyRandomSettings();
+                showToast("🎲 隨機模式：已隨機套用遊戲速度與模式！");
+            }
+
+            // 🌀 如果是完全隨機模式 (動態持續突變)
+            if (crazyRandomInterval) clearInterval(crazyRandomInterval);
+            if (diff === 'crazy_random') {
+                applyRandomSettings();
+                document.getElementById('crazyBadge').style.display = 'inline';
+                showToast("🌀 瘋狂隨機模式啟動！每隔 5 秒設定會自動突變！");
+
+                crazyRandomInterval = setInterval(() => {
+                    if (isGameRunning && !isGamePaused && !isGameOver) {
+                        applyRandomSettings();
+                        showToast("🌀 突變警告！倍速與模式已隨機變動！");
+                    }
+                }, 5000);
+            } else {
+                document.getElementById('crazyBadge').style.display = 'none';
+            }
 
             sessionStartTime = Date.now();
             document.getElementById('gamePauseBtn').innerText = "暫停";
@@ -911,8 +1070,12 @@
             document.getElementById('restScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('hpFill').style.width = '100%';
+            
+            // 隱藏 Hud Badges
             document.getElementById('feverBadge').style.display = 'none';
             document.getElementById('shieldBadge').style.display = 'none';
+            document.getElementById('magnetBadge').style.display = 'none';
+            document.getElementById('doubleBadge').style.display = 'none';
             
             updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
@@ -932,6 +1095,7 @@
         function triggerGameOver() {
             isGameOver = true;
             stopBGM();
+            if (crazyRandomInterval) clearInterval(crazyRandomInterval);
             playAudioEffect('hit');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
@@ -940,6 +1104,7 @@
 
         function stopGameEngine() {
             isGameRunning = false;
+            if (crazyRandomInterval) { clearInterval(crazyRandomInterval); crazyRandomInterval = null; }
             if (gameAnimationId) {
                 cancelAnimationFrame(gameAnimationId);
                 gameAnimationId = null;
@@ -956,14 +1121,22 @@
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
+            // 護盾防護罩繪製
             if (hasShield) {
                 gameCtx.beginPath(); gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
                 gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3; gameCtx.stroke();
             }
 
+            // 狂熱模式外輝光
             if (feverTimer > 0) {
                 gameCtx.beginPath(); gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
                 gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)'; gameCtx.fill();
+            }
+
+            // 磁鐵磁場繪製
+            if (magnetTimer > 0) {
+                gameCtx.beginPath(); gameCtx.arc(0, 0, 100, 0, Math.PI * 2);
+                gameCtx.strokeStyle = 'rgba(243, 156, 18, 0.25)'; gameCtx.lineWidth = 2; gameCtx.stroke();
             }
 
             gameCtx.fillStyle = '#ecf0f1';
@@ -999,7 +1172,7 @@
             // ⚡ 實時倍速：每一幀都讀取當前下拉選單數值
             let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
 
-            // ⚡ 背景星空連動加速
+            // 背景星空滾動
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.baseSpeed * userSpeedMult;
@@ -1024,13 +1197,21 @@
                 let dy = targetY - rocket.y;
                 if (isNaN(dy)) dy = 0;
                 
-                // ⚡ 飛船響應速度隨倍速調高，讓高倍速下依然跟得上操作
                 rocket.y += dy * Math.min(0.25, 0.1 * userSpeedMult);
                 rocket.angle = Math.atan2(dy, 25);
 
+                // 道具倒數計時處理
                 if (feverTimer > 0) {
                     feverTimer--;
                     if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none';
+                }
+                if (magnetTimer > 0) {
+                    magnetTimer--;
+                    if (magnetTimer === 0) document.getElementById('magnetBadge').style.display = 'none';
+                }
+                if (doubleScoreTimer > 0) {
+                    doubleScoreTimer--;
+                    if (doubleScoreTimer === 0) document.getElementById('doubleBadge').style.display = 'none';
                 }
 
                 let spawnY = Math.random() * (gameCanvas.height - 100) + 50;
@@ -1040,37 +1221,50 @@
                     spawnY = gameCanvas.height - (freqVal / 255) * (gameCanvas.height - 80);
                 }
 
-                // ⚡ 物件生成機率連動倍速，確保密度均勻不變稀疏
+                // 🎁 豐富道具庫隨機生成
                 if (Math.random() < 0.03 * userSpeedMult) {
                     collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, baseSpeed: 3, collected: false });
                 }
-                
-                if (Math.random() < 0.015 * userSpeedMult) {
+                if (Math.random() < 0.012 * userSpeedMult) {
                     collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, baseSpeed: 2.5, collected: false });
                 }
-
-                if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.012 * userSpeedMult) {
+                if (!hasShield && Math.random() < 0.008 * userSpeedMult) {
                     collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.5, collected: false });
                 }
-
-                if (diff === 'hard') {
-                    if (Math.random() < 0.01 * userSpeedMult && feverTimer === 0) {
-                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, baseSpeed: 3.5, collected: false });
-                    }
-                    if (Math.random() < 0.015 * userSpeedMult) {
-                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: spawnY, radius: 12, baseSpeed: 6, hit: false });
-                    }
+                // 🧲 磁鐵道具生成
+                if (magnetTimer === 0 && Math.random() < 0.008 * userSpeedMult) {
+                    collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
+                }
+                // 💎 雙倍得分道具生成
+                if (doubleScoreTimer === 0 && Math.random() < 0.008 * userSpeedMult) {
+                    collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
+                }
+                if (Math.random() < 0.006 * userSpeedMult && feverTimer === 0) {
+                    collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, baseSpeed: 3.5, collected: false });
                 }
 
-                if (Math.random() < (diff === 'hard' ? 0.02 : 0.01) * userSpeedMult) {
+                // 障礙物生成
+                if (Math.random() < (diff === 'hard' ? 0.025 : 0.012) * userSpeedMult) {
                     obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, baseSpeed: 4, hit: false });
                 }
+                if ((diff === 'hard' || diff === 'crazy_random') && Math.random() < 0.015 * userSpeedMult) {
+                    obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: spawnY, radius: 12, baseSpeed: 6, hit: false });
+                }
 
-                // ⚡ 物件即時移動：每幀用 baseSpeed * userSpeedMult 計算
+                // 🎁 道具與金幣移動與磁鐵吸附邏輯
                 collectibles.forEach((c) => {
                     c.x -= c.baseSpeed * userSpeedMult;
+
+                    // 🧲 強力磁鐵主動吸附效果
+                    if (magnetTimer > 0) {
+                        let mDist = Math.hypot(rocket.x - c.x, rocket.y - c.y);
+                        if (mDist < 200) {
+                            c.x += (rocket.x - c.x) * 0.12;
+                            c.y += (rocket.y - c.y) * 0.12;
+                        }
+                    }
+
                     gameCtx.beginPath();
-                    
                     if (c.type === 'coin') {
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
                         gameCtx.fillStyle = '#f1c40f'; gameCtx.fill();
@@ -1082,6 +1276,14 @@
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
                         gameCtx.fillStyle = '#00d2d3'; gameCtx.fill();
                         gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
+                    } else if (c.type === 'magnet') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#e67e22'; gameCtx.fill();
+                        gameCtx.strokeStyle = '#f39c12'; gameCtx.lineWidth = 2; gameCtx.stroke();
+                    } else if (c.type === 'double') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
+                        gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
                     } else if (c.type === 'fever') {
                         gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
                         gameCtx.fillStyle = '#a55eea'; gameCtx.fill();
@@ -1092,25 +1294,36 @@
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
 
                     if (dist < c.radius + pickupRadius) {
+                        let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
+                        
                         if (c.type === 'coin') {
-                            gameScore += (feverTimer > 0) ? 100 : 50;
+                            gameScore += 50 * scoreMult;
                             gameCombo++; playAudioEffect('coin');
                         } else if (c.type === 'heart') {
-                            playerHP = Math.min(100, playerHP + 20);
-                            playAudioEffect('coin');
+                            playerHP = Math.min(100, playerHP + 25);
+                            playAudioEffect('buff');
                         } else if (c.type === 'shield') {
                             hasShield = true;
                             document.getElementById('shieldBadge').style.display = 'inline';
-                            playAudioEffect('coin');
+                            playAudioEffect('buff');
+                        } else if (c.type === 'magnet') {
+                            magnetTimer = 350; // 磁鐵持續約 6 秒
+                            document.getElementById('magnetBadge').style.display = 'inline';
+                            playAudioEffect('buff');
+                        } else if (c.type === 'double') {
+                            doubleScoreTimer = 350; // 雙倍得分持續約 6 秒
+                            document.getElementById('doubleBadge').style.display = 'inline';
+                            playAudioEffect('buff');
                         } else if (c.type === 'fever') {
                             feverTimer = 300;
                             document.getElementById('feverBadge').style.display = 'inline';
-                            playAudioEffect('coin');
+                            playAudioEffect('buff');
                         }
                         c.collected = true;
                     }
                 });
 
+                // 障礙物邏輯
                 obstacles.forEach((o) => {
                     o.x -= o.baseSpeed * userSpeedMult;
                     gameCtx.beginPath();
@@ -1142,7 +1355,8 @@
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
 
-                if (flowMag > 10) gameScore += (feverTimer > 0) ? 2 : 1;
+                let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
+                if (flowMag > 10) gameScore += 1 * scoreMult;
 
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) triggerRestStop();
