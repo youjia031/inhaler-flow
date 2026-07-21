@@ -62,7 +62,7 @@
         }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
-        /* 🎮 遊戲 UI 容器通用樣式 */
+        /* 🎮 遊戲 UI 容器樣式 */
         .game-container {
             display: none;
             background: #0d1117;
@@ -74,7 +74,7 @@
             overflow: hidden;
             border: 2px solid #30363d;
         }
-        #gameCanvas, #taikoCanvas {
+        #gameCanvas {
             width: 100%;
             height: 100%;
             display: block;
@@ -203,25 +203,6 @@
                 <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
                 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
                 <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🥁 太鼓達人遊戲畫面容器 -->
-    <div class="game-container" id="taikoContainer">
-        <canvas id="taikoCanvas"></canvas>
-        <div class="start-prompt-overlay" id="taikoStartPrompt">
-            <div style="background: rgba(192, 57, 43, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #e74c3c; text-align: center;">
-                🥁 請點擊上方「Start」按鈕開始太鼓呼吸大師！
-            </div>
-        </div>
-        <div class="game-ui-overlay">
-            <div class="hud-badge">
-                🥁 SCORE: <span id="taikoScore" style="color:#f1c40f">0</span> 
-                | 🔥 COMBO: <span id="taikoCombo" style="color:#e74c3c">0</span>
-            </div>
-            <div class="hud-badge">
-                <span style="color:#2ecc71;">🔴 吸氣 (DON) | 🔵 吐氣 (KA)</span>
             </div>
         </div>
     </div>
@@ -675,7 +656,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🥁 太鼓專屬《祭典熱血進行曲》BGM 與真實木質鼓身音效  -->
+    <!--  🚀 氣流飛行員 - 核心遊戲與 MP3 音樂分析引擎         -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -686,7 +667,6 @@
                     <select id="viewModeSelect" onchange="switchViewMode(this.value)">
                         <option value="chart">📊 專業圖表</option>
                         <option value="game">🎮 氣流飛行員 (Game)</option>
-                        <option value="taiko">🥁 太鼓呼吸大師 (Taiko)</option>
                     </select>
                 </label>
                 <label>
@@ -749,17 +729,11 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // 音樂旋律庫：飛行員電子曲 vs 太鼓祭典日式鼓曲
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99, A5 = 880.00;
-        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61, E3 = 164.81;
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
+        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
 
-        // 飛行員主題曲 (Pilot BGM)
         const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
-        
-        // 🥁 太鼓專屬《祭典熱血曲》（日式五聲調式 A-Minor Pentatonic）
-        const taikoMatsuriMelody = [A4, C5, D5, E5, G5, A5, G5, E5, D5, C5, A4, E4, A4, C5, D5, E5];
-        const taikoMatsuriBass = [A3, A3, E3, A3, D4, D4, A3, D4, E3, E3, B4, E3, A3, A3, E3, A3];
 
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -768,35 +742,7 @@
 
             try {
                 let now = audioCtx.currentTime;
-                
-                // 🥁 專屬太鼓音效：真實大太鼓（DON）與鼓邊木胴（KA）
-                if (type === 'don') { // 🔴 吸氣 咚
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(140, now);
-                    osc.frequency.exponentialRampToValueAtTime(32, now + 0.18);
-
-                    gain.gain.setValueAtTime(0.8, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now); osc.stop(now + 0.18);
-                } else if (type === 'ka') { // 🔵 吐氣 咔
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(850, now);
-                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.06);
-
-                    gain.gain.setValueAtTime(0.5, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now); osc.stop(now + 0.06);
-                } else if (type === 'coin') {
+                if (type === 'coin') {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
@@ -825,8 +771,6 @@
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
-            let currentView = document.getElementById('viewModeSelect')?.value;
-
             if (isUsingCustomMusic && customAudioBuffer) {
                 customAudioSource = audioCtx.createBufferSource();
                 customAudioSource.buffer = customAudioBuffer;
@@ -844,47 +788,23 @@
                     if (audioCtx.state === 'suspended') audioCtx.resume();
                     try {
                         let now = audioCtx.currentTime;
+                        let idx = bgmStep % pilotTheme.length;
 
-                        if (currentView === 'taiko') {
-                            // 🥁 播放日式祭典太鼓風格獨奏 BGM
-                            let idx = bgmStep % taikoMatsuriMelody.length;
+                        const leadOsc = audioCtx.createOscillator();
+                        const leadGain = audioCtx.createGain();
+                        leadOsc.type = 'sawtooth';
+                        leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
+                        leadGain.gain.setValueAtTime(0.18, now);
+                        leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
-                            // 1. 三味線/篠笛 主旋律
-                            const melOsc = audioCtx.createOscillator();
-                            const melGain = audioCtx.createGain();
-                            melOsc.type = 'sawtooth';
-                            melOsc.frequency.setValueAtTime(taikoMatsuriMelody[idx], now);
-                            melGain.gain.setValueAtTime(0.12, now);
-                            melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                            melOsc.connect(melGain); melGain.connect(audioCtx.destination);
-                            melOsc.start(now); melOsc.stop(now + 0.15);
-
-                            // 2. 祭典伴奏和弦
-                            const bassOsc = audioCtx.createOscillator();
-                            const bassGain = audioCtx.createGain();
-                            bassOsc.type = 'triangle';
-                            bassOsc.frequency.setValueAtTime(taikoMatsuriBass[idx], now);
-                            bassGain.gain.setValueAtTime(0.18, now);
-                            bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                            bassOsc.connect(bassGain); bassGain.connect(audioCtx.destination);
-                            bassOsc.start(now); bassOsc.stop(now + 0.16);
-
-                        } else {
-                            // 🎮 播放飛行員進行曲 BGM
-                            let idx = bgmStep % pilotTheme.length;
-                            const leadOsc = audioCtx.createOscillator();
-                            const leadGain = audioCtx.createGain();
-                            leadOsc.type = 'sawtooth';
-                            leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-                            leadGain.gain.setValueAtTime(0.18, now);
-                            leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                            leadOsc.connect(leadGain); leadGain.connect(audioCtx.destination);
-                            leadOsc.start(now); leadOsc.stop(now + 0.16);
-                        }
+                        leadOsc.connect(leadGain);
+                        leadGain.connect(audioCtx.destination);
+                        leadOsc.start(now);
+                        leadOsc.stop(now + 0.16);
 
                         bgmStep++;
                     } catch(e) {}
-                }, 170); // BPM 176 活潑日式慶典節奏
+                }, 180);
             }
         }
 
@@ -904,23 +824,16 @@
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
-            const taikoBox = document.getElementById('taikoContainer');
 
             chartBox.style.display = 'none';
             gameBox.style.display = 'none';
-            taikoBox.style.display = 'none';
 
             stopGameEngine();
-            stopTaikoEngine();
 
             if (mode === 'game') {
                 gameBox.style.display = 'block';
                 resizeGameCanvas();
                 restartGameEngine();
-            } else if (mode === 'taiko') {
-                taikoBox.style.display = 'block';
-                resizeTaikoCanvas();
-                restartTaikoEngine();
             } else {
                 chartBox.style.display = 'block';
             }
@@ -928,178 +841,12 @@
 
         function updateGameMeasurementState(measuring) {
             document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
-            document.getElementById('taikoStartPrompt').style.display = measuring ? 'none' : 'flex';
             if (measuring) startBGM();
             else stopBGM();
         }
 
         // =====================================================
-        // 🥁 太鼓達人專屬遊戲引擎 (視覺衝擊與經典打擊特效)
-        // =====================================================
-        const taikoCanvas = document.getElementById('taikoCanvas');
-        const taikoCtx = taikoCanvas.getContext('2d');
-        let taikoAnimationId = null;
-        let isTaikoRunning = false;
-
-        let taikoNotes = [];
-        let taikoScore = 0;
-        let taikoCombo = 0;
-        let hitFeedback = "";
-        let hitFeedbackTimer = 0;
-        let drumPulseTimer = 0; // 擊中鼓面擴散光圈特效
-
-        function resizeTaikoCanvas() {
-            if (taikoCanvas && taikoCanvas.parentElement) {
-                taikoCanvas.width = taikoCanvas.parentElement.clientWidth || 800;
-                taikoCanvas.height = taikoCanvas.parentElement.clientHeight || 480;
-            }
-        }
-        window.addEventListener('resize', resizeTaikoCanvas);
-
-        function restartTaikoEngine() {
-            stopTaikoEngine();
-            isTaikoRunning = true;
-            taikoNotes = [];
-            taikoScore = 0;
-            taikoCombo = 0;
-            updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
-            taikoLoop();
-        }
-
-        function stopTaikoEngine() {
-            isTaikoRunning = false;
-            if (taikoAnimationId) {
-                cancelAnimationFrame(taikoAnimationId);
-                taikoAnimationId = null;
-            }
-        }
-
-        function taikoLoop() {
-            if (!isTaikoRunning) return;
-
-            // 🏮 和風太鼓賽道背景
-            taikoCtx.fillStyle = '#1e272e';
-            taikoCtx.fillRect(0, 0, taikoCanvas.width, taikoCanvas.height);
-
-            let trackY = taikoCanvas.height / 2;
-            let trackHeight = 110;
-            taikoCtx.fillStyle = '#2f3542';
-            taikoCtx.fillRect(0, trackY - trackHeight / 2, taikoCanvas.width, trackHeight);
-
-            // 上下賽道金邊
-            taikoCtx.fillStyle = '#f1c40f';
-            taikoCtx.fillRect(0, trackY - trackHeight / 2 - 4, taikoCanvas.width, 4);
-            taikoCtx.fillRect(0, trackY + trackHeight / 2, taikoCanvas.width, 4);
-
-            // 🥁 左側打擊判定圈
-            let targetX = 140;
-
-            // 打擊時的金黃波紋
-            if (drumPulseTimer > 0) {
-                drumPulseTimer--;
-                taikoCtx.beginPath();
-                taikoCtx.arc(targetX, trackY, 36 + (15 - drumPulseTimer) * 2, 0, Math.PI * 2);
-                taikoCtx.fillStyle = `rgba(241, 196, 15, ${drumPulseTimer / 15})`;
-                taikoCtx.fill();
-            }
-
-            taikoCtx.beginPath();
-            taikoCtx.arc(targetX, trackY, 36, 0, Math.PI * 2);
-            taikoCtx.fillStyle = '#ffffff';
-            taikoCtx.fill();
-            taikoCtx.strokeStyle = '#e74c3c';
-            taikoCtx.lineWidth = 6;
-            taikoCtx.stroke();
-
-            let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
-
-            if (activeMeasuring) {
-                let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
-                let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
-                let baseSpeed = (diff === 'easy') ? 3.5 : (diff === 'hard') ? 6.5 : 4.8;
-                let finalNoteSpeed = baseSpeed * userSpeedMult;
-
-                if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
-                    audioAnalyser.getByteFrequencyData(audioDataArray);
-                    let bassEnergy = audioDataArray[1];
-                    let trebleEnergy = audioDataArray[12];
-
-                    if (bassEnergy > 210 && Math.random() < 0.2) {
-                        taikoNotes.push({ x: taikoCanvas.width + 40, y: trackY, type: 'don', hit: false });
-                    } else if (trebleEnergy > 160 && Math.random() < 0.2) {
-                        taikoNotes.push({ x: taikoCanvas.width + 40, y: trackY, type: 'ka', hit: false });
-                    }
-                } else {
-                    if (Math.random() < (diff === 'hard' ? 0.035 : 0.02)) {
-                        let type = (Math.random() < 0.5) ? 'don' : 'ka';
-                        taikoNotes.push({ x: taikoCanvas.width + 40, y: trackY, type: type, hit: false });
-                    }
-                }
-
-                let currentFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-                let currentModeType = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
-
-                taikoNotes.forEach((n) => {
-                    n.x -= finalNoteSpeed;
-
-                    taikoCtx.beginPath();
-                    taikoCtx.arc(n.x, n.y, 28, 0, Math.PI * 2);
-                    taikoCtx.fillStyle = (n.type === 'don') ? '#e74c3c' : '#3498db';
-                    taikoCtx.fill();
-                    taikoCtx.strokeStyle = '#ffffff';
-                    taikoCtx.lineWidth = 3;
-                    taikoCtx.stroke();
-
-                    taikoCtx.fillStyle = '#ffffff';
-                    taikoCtx.font = 'bold 16px Segoe UI';
-                    taikoCtx.textAlign = 'center';
-                    taikoCtx.textBaseline = 'middle';
-                    taikoCtx.fillText(n.type === 'don' ? '吸' : '吐', n.x, n.y);
-
-                    let dist = Math.abs(n.x - targetX);
-                    if (dist < 40 && !n.hit && Math.abs(currentFlow) > 12) {
-                        let isMatched = (n.type === 'don' && currentModeType === 'inhalation') ||
-                                        (n.type === 'ka' && currentModeType === 'exhalation');
-
-                        if (isMatched) {
-                            n.hit = true;
-                            drumPulseTimer = 15; // 觸發鼓面金光波圈
-                            if (dist < 18) {
-                                hitFeedback = "良 (PERFECT)"; taikoScore += 120;
-                            } else {
-                                hitFeedback = "可 (GREAT)"; taikoScore += 80;
-                            }
-                            taikoCombo++; hitFeedbackTimer = 30;
-                            playAudioEffect(n.type === 'don' ? 'don' : 'ka');
-                        }
-                    }
-                });
-
-                taikoNotes.forEach((n) => {
-                    if (n.x < targetX - 50 && !n.hit) {
-                        n.hit = true; hitFeedback = "不可 (MISS)"; taikoCombo = 0; hitFeedbackTimer = 30;
-                    }
-                });
-                taikoNotes = taikoNotes.filter(n => n.x > -40 && !n.hit);
-            }
-
-            // 浮空評定語音書法文字
-            if (hitFeedbackTimer > 0) {
-                hitFeedbackTimer--;
-                taikoCtx.font = 'bold 30px Microsoft JhengHei, Segoe UI';
-                taikoCtx.fillStyle = (hitFeedback.includes("良")) ? '#f1c40f' : (hitFeedback.includes("可")) ? '#2ecc71' : '#e74c3c';
-                taikoCtx.textAlign = 'center';
-                taikoCtx.fillText(hitFeedback, targetX, trackY - 65);
-            }
-
-            document.getElementById('taikoScore').innerText = taikoScore;
-            document.getElementById('taikoCombo').innerText = taikoCombo;
-
-            taikoAnimationId = requestAnimationFrame(taikoLoop);
-        }
-
-        // =====================================================
-        // 🎮 氣流飛行員引擎
+        // 🎮 氣流飛行員遊戲繪製引擎
         // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
