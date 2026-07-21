@@ -994,7 +994,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🚀 高畫質與休息時間 Bug 完全修復引擎                 -->
+    <!--  🚀 超高品質向量繪製與極致細節 Boss 繪圖引擎         -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -1275,7 +1275,7 @@
         let magnetTimer = 0;
         let doubleScoreTimer = 0;
         let slowDebuffTimer = 0;
-        let isResting = false; // 🍵 休息狀態標記
+        let isResting = false;
         let sessionStartTime = 0;
         let globalAnimFrame = 0;
 
@@ -1360,7 +1360,9 @@
             gameCtx.restore();
         }
 
-        // 👹 專屬且畫質完全與主角一致的立體向量 Boss 繪製器
+        // =====================================================
+        //  🎨 極致精細且完全不再抽象的遊戲 Boss 繪圖庫
+        // =====================================================
         function drawBossHD(boss) {
             gameCtx.save();
 
@@ -1373,190 +1375,273 @@
             gameCtx.translate(cx, cy);
 
             if (boss.name.includes("風暴精靈") || boss.name.includes("🌪️")) {
-                // 🌪️ 風暴精靈：雙層旋風結構 + 發光中心核心 + 風刃與電波
+                // 🌪️ 風暴精靈：雙向交錯風暴雲霧、發光脈動風刃與氣流顆粒
                 gameCtx.save();
-                gameCtx.rotate(globalAnimFrame * 0.12);
-                gameCtx.shadowBlur = 25;
+                gameCtx.shadowBlur = 30;
                 gameCtx.shadowColor = isAtk ? '#00d2d3' : '#3498db';
-                
-                // 外層旋風刃
+
+                // 外層逆時針旋轉氣流
+                gameCtx.save();
+                gameCtx.rotate(-globalAnimFrame * 0.08);
+                for (let i = 0; i < 8; i++) {
+                    gameCtx.rotate(Math.PI / 4);
+                    let grad = gameCtx.createRadialGradient(25, -10, 2, 25, -10, 20);
+                    grad.addColorStop(0, isAtk ? '#ffffff' : '#00d2d3');
+                    grad.addColorStop(1, 'transparent');
+                    gameCtx.fillStyle = grad;
+                    gameCtx.beginPath();
+                    gameCtx.ellipse(25, -10, 22, 10, Math.PI / 6, 0, Math.PI * 2);
+                    gameCtx.fill();
+                }
+                gameCtx.restore();
+
+                // 內層順時針旋轉銳利風刃
+                gameCtx.save();
+                gameCtx.rotate(globalAnimFrame * 0.15);
                 for (let i = 0; i < 6; i++) {
                     gameCtx.rotate(Math.PI / 3);
-                    gameCtx.fillStyle = isAtk ? '#ffffff' : '#00d2d3';
+                    gameCtx.fillStyle = '#ffffff';
                     gameCtx.beginPath();
                     gameCtx.moveTo(0, 0);
-                    gameCtx.quadraticCurveTo(25, -20, 48, -8);
-                    gameCtx.quadraticCurveTo(25, 8, 0, 0);
+                    gameCtx.quadraticCurveTo(20, -25, 45, -12);
+                    gameCtx.quadraticCurveTo(25, 5, 0, 0);
                     gameCtx.fill();
-                    gameCtx.strokeStyle = '#ffffff';
+                    gameCtx.strokeStyle = '#3498db';
                     gameCtx.lineWidth = 1.5;
                     gameCtx.stroke();
                 }
                 gameCtx.restore();
 
-                // 內層脈動風暴核
-                gameCtx.fillStyle = '#ffffff';
+                // 核心風暴能量中心
+                let coreRadius = isAtk ? 20 : 14 + Math.sin(globalAnimFrame * 0.2) * 3;
+                let coreGrad = gameCtx.createRadialGradient(0, 0, 0, 0, 0, coreRadius);
+                coreGrad.addColorStop(0, '#ffffff');
+                coreGrad.addColorStop(0.6, '#00d2d3');
+                coreGrad.addColorStop(1, '#1f4e79');
+                gameCtx.fillStyle = coreGrad;
                 gameCtx.beginPath();
-                gameCtx.arc(0, 0, 16, 0, Math.PI*2);
+                gameCtx.arc(0, 0, coreRadius, 0, Math.PI * 2);
                 gameCtx.fill();
 
+                gameCtx.restore();
+
             } else if (boss.name.includes("雷霆巨鷹") || boss.name.includes("🦅")) {
-                // 🦅 雷霆巨鷹：鋼鐵羽翼 + 機翼漸層裝甲 + 鷹嘴與發光鷹眼
-                let wingAngle = Math.sin(globalAnimFrame * 0.2) * 0.35;
-                gameCtx.shadowBlur = 22;
-                gameCtx.shadowColor = isAtk ? '#e74c3c' : '#f1c40f';
-                
-                // 雙翅揮動與立體機翼
+                // 🦅 雷霆巨鷹：機甲鷹頭、多層立體鋼鐵羽翼、銳利鷹爪與電光鷹嘴
+                let wingAngle = Math.sin(globalAnimFrame * 0.18) * 0.38;
+                gameCtx.shadowBlur = 25;
+                gameCtx.shadowColor = isAtk ? '#ff0000' : '#f1c40f';
+
+                // 雙翅多層羽毛結構
                 [-1, 1].forEach(dir => {
                     gameCtx.save();
                     gameCtx.scale(1, dir);
                     gameCtx.rotate(wingAngle);
-                    
-                    // 翅膀外側鋼鐵底座
-                    gameCtx.fillStyle = '#2c3e50';
+
+                    // 主翅骨架
+                    gameCtx.fillStyle = '#1a252f';
                     gameCtx.beginPath();
                     gameCtx.moveTo(0, 0);
-                    gameCtx.lineTo(-25, -55);
-                    gameCtx.lineTo(20, -25);
-                    gameCtx.closePath();
-                    gameCtx.fill();
-                    
-                    // 羽翼白鋼內裝
-                    gameCtx.fillStyle = '#ecf0f1';
-                    gameCtx.beginPath();
-                    gameCtx.moveTo(-5, -5);
-                    gameCtx.lineTo(-20, -45);
-                    gameCtx.lineTo(12, -20);
+                    gameCtx.lineTo(-25, -60);
+                    gameCtx.lineTo(25, -25);
                     gameCtx.closePath();
                     gameCtx.fill();
 
-                    gameCtx.strokeStyle = '#f1c40f';
-                    gameCtx.lineWidth = 2;
-                    gameCtx.stroke();
+                    // 分層鋼鐵羽毛（外層裝甲）
+                    for (let f = 0; f < 5; f++) {
+                        gameCtx.fillStyle = (f % 2 === 0) ? '#ecf0f1' : '#34495e';
+                        gameCtx.beginPath();
+                        gameCtx.moveTo(-5 - f * 3, -10 - f * 9);
+                        gameCtx.lineTo(-20 - f * 2, -25 - f * 8);
+                        gameCtx.lineTo(10 - f * 2, -15 - f * 6);
+                        gameCtx.closePath();
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#f1c40f';
+                        gameCtx.lineWidth = 1;
+                        gameCtx.stroke();
+                    }
+
                     gameCtx.restore();
                 });
 
-                // 鷹頭主體與白鋼護甲
-                gameCtx.fillStyle = '#34495e';
+                // 鷹頭幾何白鋼護甲
+                gameCtx.fillStyle = '#2c3e50';
                 gameCtx.beginPath();
-                gameCtx.arc(0, 0, 22, 0, Math.PI*2);
-                gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff';
-                gameCtx.lineWidth = 2.5;
-                gameCtx.stroke();
-
-                // 發光銳利鷹嘴
-                gameCtx.fillStyle = '#f39c12';
-                gameCtx.beginPath();
-                gameCtx.moveTo(-12, -4);
-                gameCtx.lineTo(-40, 6);
-                gameCtx.lineTo(-14, 16);
+                gameCtx.moveTo(20, 0);
+                gameCtx.lineTo(-10, -22);
+                gameCtx.lineTo(-25, -12);
+                gameCtx.lineTo(-20, 12);
+                gameCtx.lineTo(-10, 22);
                 gameCtx.closePath();
                 gameCtx.fill();
 
-                // 鷹眼發光體
+                gameCtx.fillStyle = '#ecf0f1';
+                gameCtx.beginPath();
+                gameCtx.moveTo(15, 0);
+                gameCtx.lineTo(-5, -16);
+                gameCtx.lineTo(-18, 0);
+                gameCtx.lineTo(-5, 16);
+                gameCtx.closePath();
+                gameCtx.fill();
+
+                // 銳利電光鷹嘴
+                gameCtx.fillStyle = '#f39c12';
+                gameCtx.beginPath();
+                gameCtx.moveTo(-10, -5);
+                gameCtx.lineTo(-42, 8);
+                gameCtx.lineTo(-12, 18);
+                gameCtx.closePath();
+                gameCtx.fill();
+
+                // 雷射鷹眼
                 gameCtx.fillStyle = isAtk ? '#ff0000' : '#e74c3c';
                 gameCtx.beginPath();
-                gameCtx.arc(-6, -6, 5, 0, Math.PI*2);
+                gameCtx.arc(-2, -8, 5, 0, Math.PI * 2);
+                gameCtx.fill();
+                gameCtx.fillStyle = '#ffffff';
+                gameCtx.beginPath();
+                gameCtx.arc(-4, -9, 2, 0, Math.PI * 2);
                 gameCtx.fill();
 
             } else if (boss.name.includes("異星母艦") || boss.name.includes("🛸")) {
-                // 🛸 異星母艦：立體圓盤體 + 多重離子陣列燈光 + 底部主砲聚光
-                gameCtx.shadowBlur = 28;
+                // 🛸 異星母艦：雙層立體飛碟盤體、半透明防護罩與聚能發光主砲
+                gameCtx.shadowBlur = 30;
                 gameCtx.shadowColor = isAtk ? '#a55eea' : '#00d2d3';
-                
-                // 飛碟主體底盤
-                gameCtx.fillStyle = '#2c3e50';
+
+                // 外圍半透明能量罩
+                gameCtx.fillStyle = 'rgba(0, 210, 211, 0.15)';
                 gameCtx.beginPath();
-                gameCtx.ellipse(0, 0, 52, 22, 0, 0, Math.PI*2);
+                gameCtx.ellipse(0, 0, 58, 28, 0, 0, Math.PI * 2);
                 gameCtx.fill();
-                
-                gameCtx.fillStyle = '#34495e';
+
+                // 下盤裝甲
+                gameCtx.fillStyle = '#1e272e';
                 gameCtx.beginPath();
-                gameCtx.ellipse(0, -4, 42, 16, 0, 0, Math.PI*2);
+                gameCtx.ellipse(0, 4, 48, 20, 0, 0, Math.PI * 2);
+                gameCtx.fill();
+
+                // 上盤亮面金屬裝甲
+                let discGrad = gameCtx.createLinearGradient(-40, -15, 40, 15);
+                discGrad.addColorStop(0, '#485460');
+                discGrad.addColorStop(0.5, '#d2dae2');
+                discGrad.addColorStop(1, '#1e272e');
+                gameCtx.fillStyle = discGrad;
+                gameCtx.beginPath();
+                gameCtx.ellipse(0, -4, 40, 15, 0, 0, Math.PI * 2);
                 gameCtx.fill();
                 gameCtx.strokeStyle = '#ffffff';
-                gameCtx.lineWidth = 3;
+                gameCtx.lineWidth = 2;
                 gameCtx.stroke();
-                
-                // 順時針旋轉燈光陣列
+
+                // 頂部旋轉發光控制台
+                gameCtx.fillStyle = '#00d2d3';
+                gameCtx.beginPath();
+                gameCtx.ellipse(0, -10, 18, 7, 0, 0, Math.PI * 2);
+                gameCtx.fill();
+
+                // 巡邏燈光陣列
                 gameCtx.save();
-                gameCtx.rotate(globalAnimFrame * 0.08);
-                for(let i = 0; i < 8; i++) {
+                gameCtx.rotate(globalAnimFrame * 0.06);
+                for (let i = 0; i < 8; i++) {
                     gameCtx.rotate(Math.PI / 4);
-                    gameCtx.fillStyle = isAtk ? '#e74c3c' : '#00d2d3';
+                    gameCtx.fillStyle = isAtk ? '#e74c3c' : '#f1c40f';
                     gameCtx.beginPath();
-                    gameCtx.arc(38, 0, 4, 0, Math.PI*2);
+                    gameCtx.arc(36, 0, 3.5, 0, Math.PI * 2);
                     gameCtx.fill();
                 }
                 gameCtx.restore();
-                
-                // 底部巨型發光砲口
+
+                // 底部巨型發光主砲口
                 gameCtx.fillStyle = isAtk ? '#ff0000' : '#8e44ad';
                 gameCtx.beginPath();
-                gameCtx.arc(-22, 0, isAtk ? 12 : 8, 0, Math.PI*2);
+                gameCtx.arc(-24, 0, isAtk ? 13 : 8, 0, Math.PI * 2);
                 gameCtx.fill();
 
             } else if (boss.name.includes("地獄赤龍") || boss.name.includes("🐉")) {
-                // 🐉 地獄赤龍：龍角、立體雙層嘴部咬合 + 劇烈龍眼 + 火焰氣流
-                let jawOpen = isAtk ? 15 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
-                gameCtx.shadowBlur = 25;
+                // 🐉 地獄赤龍：立體龍角、銳利上下排龍牙、發光龍眼與龍鱗
+                let jawOpen = isAtk ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 9);
+                gameCtx.shadowBlur = 28;
                 gameCtx.shadowColor = '#e74c3c';
-                
-                // 上顎與銳利龍角
-                gameCtx.fillStyle = '#c0392b';
+
+                // 龍頭後腦與龍鱗底座
+                gameCtx.fillStyle = '#78281f';
                 gameCtx.beginPath();
-                gameCtx.moveTo(18, -jawOpen);
-                gameCtx.lineTo(-30, -24 - jawOpen);
-                gameCtx.lineTo(-12, -6);
+                gameCtx.arc(15, 0, 22, 0, Math.PI * 2);
+                gameCtx.fill();
+
+                // 雙立體赤龍角
+                gameCtx.fillStyle = '#f1c40f';
+                gameCtx.beginPath();
+                gameCtx.moveTo(5, -12 - jawOpen);
+                gameCtx.lineTo(28, -48 - jawOpen);
+                gameCtx.lineTo(-5, -22 - jawOpen);
                 gameCtx.closePath();
                 gameCtx.fill();
 
-                gameCtx.fillStyle = '#f1c40f';
+                // 上顎龍頭
+                gameCtx.fillStyle = '#b03a2e';
                 gameCtx.beginPath();
-                gameCtx.moveTo(0, -18 - jawOpen);
-                gameCtx.lineTo(20, -42 - jawOpen);
-                gameCtx.lineTo(-12, -24 - jawOpen);
+                gameCtx.moveTo(18, -jawOpen);
+                gameCtx.lineTo(-32, -25 - jawOpen);
+                gameCtx.lineTo(-12, -4);
+                gameCtx.closePath();
                 gameCtx.fill();
 
                 // 下顎
-                gameCtx.fillStyle = '#962d22';
+                gameCtx.fillStyle = '#943126';
                 gameCtx.beginPath();
                 gameCtx.moveTo(18, jawOpen);
-                gameCtx.lineTo(-30, 24 + jawOpen);
-                gameCtx.lineTo(-12, 6);
+                gameCtx.lineTo(-32, 25 + jawOpen);
+                gameCtx.lineTo(-12, 4);
                 gameCtx.closePath();
                 gameCtx.fill();
 
-                // 龍牙白線
-                gameCtx.strokeStyle = '#ffffff';
-                gameCtx.lineWidth = 2;
-                gameCtx.beginPath();
-                gameCtx.moveTo(-10, -jawOpen);
-                gameCtx.lineTo(-20, -jawOpen + 4);
-                gameCtx.moveTo(-10, jawOpen);
-                gameCtx.lineTo(-20, jawOpen - 4);
-                gameCtx.stroke();
+                // 銳利白鋼龍牙
+                gameCtx.fillStyle = '#ffffff';
+                for (let t = 0; t < 4; t++) {
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(-8 - t * 6, -jawOpen);
+                    gameCtx.lineTo(-12 - t * 6, -jawOpen + 7);
+                    gameCtx.lineTo(-14 - t * 6, -jawOpen);
+                    gameCtx.fill();
 
-                // 發光深邃龍眼
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(-8 - t * 6, jawOpen);
+                    gameCtx.lineTo(-12 - t * 6, jawOpen - 7);
+                    gameCtx.lineTo(-14 - t * 6, jawOpen);
+                    gameCtx.fill();
+                }
+
+                // 吐息烈焰與發光龍眼
+                if (isAtk) {
+                    let flameGrad = gameCtx.createLinearGradient(-30, 0, -60, 0);
+                    flameGrad.addColorStop(0, '#f1c40f');
+                    flameGrad.addColorStop(1, 'transparent');
+                    gameCtx.fillStyle = flameGrad;
+                    gameCtx.beginPath();
+                    gameCtx.arc(-30, 0, 16, 0, Math.PI * 2);
+                    gameCtx.fill();
+                }
+
                 gameCtx.fillStyle = '#f1c40f';
                 gameCtx.beginPath();
-                gameCtx.arc(-4, -12 - jawOpen, 5, 0, Math.PI*2);
+                gameCtx.arc(-2, -12 - jawOpen, 6, 0, Math.PI * 2);
                 gameCtx.fill();
+                gameCtx.fillStyle = '#000000';
+                gameCtx.fillRect(-3, -15 - jawOpen, 2, 6);
 
             } else {
                 gameCtx.shadowBlur = 20;
                 gameCtx.shadowColor = isAtk ? '#e74c3c' : '#f1c40f';
                 gameCtx.fillStyle = '#2c3e50';
                 gameCtx.beginPath();
-                gameCtx.arc(0, 0, boss.radius, 0, Math.PI*2);
+                gameCtx.arc(0, 0, boss.radius, 0, Math.PI * 2);
                 gameCtx.fill();
                 gameCtx.strokeStyle = '#ffffff';
                 gameCtx.lineWidth = 3;
                 gameCtx.stroke();
                 gameCtx.fillStyle = isAtk ? '#e74c3c' : '#3498db';
                 gameCtx.beginPath();
-                gameCtx.arc(0, 0, 14, 0, Math.PI*2);
+                gameCtx.arc(0, 0, 14, 0, Math.PI * 2);
                 gameCtx.fill();
             }
 
