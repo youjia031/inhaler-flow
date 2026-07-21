@@ -846,7 +846,7 @@
         }
 
         // =====================================================
-        // 🎮 氣流飛行員遊戲繪製引擎
+        // 🎮 氣流飛行員遊戲繪製引擎 (動態倍速修正)
         // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
@@ -878,7 +878,7 @@
             for(let i=0; i<50; i++) {
                 stars.push({
                     x: Math.random() * w, y: Math.random() * h,
-                    size: Math.random() * 2 + 1, speed: Math.random() * 2 + 0.5
+                    size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5
                 });
             }
         }
@@ -996,11 +996,13 @@
             gameCtx.fillStyle = '#0d1117';
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
+            // ⚡ 實時倍速：每一幀都讀取當前下拉選單數值
             let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
 
+            // ⚡ 背景星空連動加速
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
-                s.x -= s.speed * userSpeedMult;
+                s.x -= s.baseSpeed * userSpeedMult;
                 if (s.x < 0) s.x = gameCanvas.width;
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
@@ -1022,7 +1024,8 @@
                 let dy = targetY - rocket.y;
                 if (isNaN(dy)) dy = 0;
                 
-                rocket.y += dy * 0.1;
+                // ⚡ 飛船響應速度隨倍速調高，讓高倍速下依然跟得上操作
+                rocket.y += dy * Math.min(0.25, 0.1 * userSpeedMult);
                 rocket.angle = Math.atan2(dy, 25);
 
                 if (feverTimer > 0) {
@@ -1037,33 +1040,35 @@
                     spawnY = gameCanvas.height - (freqVal / 255) * (gameCanvas.height - 80);
                 }
 
-                if (Math.random() < 0.03) {
-                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, speed: 3 * userSpeedMult, collected: false });
+                // ⚡ 物件生成機率連動倍速，確保密度均勻不變稀疏
+                if (Math.random() < 0.03 * userSpeedMult) {
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, baseSpeed: 3, collected: false });
                 }
                 
-                if (Math.random() < 0.015) {
-                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, speed: 2.5 * userSpeedMult, collected: false });
+                if (Math.random() < 0.015 * userSpeedMult) {
+                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, baseSpeed: 2.5, collected: false });
                 }
 
-                if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.012) {
-                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, speed: 2.5 * userSpeedMult, collected: false });
+                if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.012 * userSpeedMult) {
+                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.5, collected: false });
                 }
 
                 if (diff === 'hard') {
-                    if (Math.random() < 0.01 && feverTimer === 0) {
-                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, speed: 3.5 * userSpeedMult, collected: false });
+                    if (Math.random() < 0.01 * userSpeedMult && feverTimer === 0) {
+                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, baseSpeed: 3.5, collected: false });
                     }
-                    if (Math.random() < 0.015) {
-                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: spawnY, radius: 12, speed: 6 * userSpeedMult, hit: false });
+                    if (Math.random() < 0.015 * userSpeedMult) {
+                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: spawnY, radius: 12, baseSpeed: 6, hit: false });
                     }
                 }
 
-                if (Math.random() < (diff === 'hard' ? 0.02 : 0.01)) {
-                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, speed: 4 * userSpeedMult, hit: false });
+                if (Math.random() < (diff === 'hard' ? 0.02 : 0.01) * userSpeedMult) {
+                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, baseSpeed: 4, hit: false });
                 }
 
+                // ⚡ 物件即時移動：每幀用 baseSpeed * userSpeedMult 計算
                 collectibles.forEach((c) => {
-                    c.x -= c.speed;
+                    c.x -= c.baseSpeed * userSpeedMult;
                     gameCtx.beginPath();
                     
                     if (c.type === 'coin') {
@@ -1107,7 +1112,7 @@
                 });
 
                 obstacles.forEach((o) => {
-                    o.x -= o.speed;
+                    o.x -= o.baseSpeed * userSpeedMult;
                     gameCtx.beginPath();
                     gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
                     gameCtx.fillStyle = (o.type === 'hazard') ? '#8e44ad' : '#e74c3c';
@@ -1149,7 +1154,7 @@
             }
 
             particles.forEach((p) => {
-                p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+                p.x += p.vx * userSpeedMult; p.y += p.vy; p.life -= 0.04;
                 if (p.life > 0) {
                     gameCtx.beginPath();
                     gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
