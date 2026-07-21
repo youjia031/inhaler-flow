@@ -133,7 +133,8 @@
             z-index: 10;
             pointer-events: none;
         }
-        .rest-screen {
+        /* Game Over & 休息站遮罩面板 */
+        .modal-screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(13, 17, 23, 0.92);
@@ -146,7 +147,7 @@
             z-index: 20;
             backdrop-filter: blur(8px);
         }
-        .rest-card {
+        .modal-card {
             background: rgba(255,255,255,0.05);
             padding: 30px 50px;
             border-radius: 16px;
@@ -196,6 +197,7 @@
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         
+        <!-- 未開始量測時的覆蓋遮罩 -->
         <div class="start-prompt-overlay" id="gameStartPrompt">
             <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
@@ -217,8 +219,21 @@
             </div>
         </div>
 
-        <div class="rest-screen" id="restScreen" style="display: none;">
-            <div class="rest-card">
+        <!-- 💀 Game Over 畫面 -->
+        <div class="modal-screen" id="gameOverScreen" style="display: none;">
+            <div class="modal-card">
+                <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
+                <p style="color: #ccc; font-size: 16px;">血條已用盡，飛行員請重新準備！</p>
+                <div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">
+                    最終得分: <span id="finalScore">0</span>
+                </div>
+                <button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
+            </div>
+        </div>
+
+        <!-- 🍵 換氣休息站畫面 -->
+        <div class="modal-screen" id="restScreen" style="display: none;">
+            <div class="modal-card">
                 <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
                 <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
                 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
@@ -676,7 +691,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 獨立且完全除錯的遊戲引擎  -->
+    <!--  🎮 氣流飛行員 - 包含 Game Over 結算之完整遊戲引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -730,6 +745,13 @@
                     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'gameover') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.6);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.6);
                 }
             } catch(e) {}
         }
@@ -739,6 +761,7 @@
         let gameAnimationId = null;
         let isGameRunning = false;
         let isGamePaused = false;
+        let isGameOver = false;
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
         let stars = [];
@@ -807,6 +830,7 @@
             stopGameEngine();
             isGameRunning = true;
             isGamePaused = false;
+            isGameOver = false;
             playerHP = 100;
             gameScore = 0;
             gameCombo = 0;
@@ -823,13 +847,14 @@
             document.getElementById('gamePauseBtn').innerText = "暫停";
             document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
             document.getElementById('restScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
             
             updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
         }
 
         function toggleGamePause() {
-            if (!isGameRunning) return;
+            if (!isGameRunning || isGameOver) return;
             isGamePaused = !isGamePaused;
             const btn = document.getElementById('gamePauseBtn');
             if (isGamePaused) {
@@ -839,6 +864,13 @@
                 btn.innerText = "暫停";
                 btn.style.backgroundColor = "#27ae60";
             }
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            playAudioEffect('gameover');
+            document.getElementById('finalScore').innerText = gameScore;
+            document.getElementById('gameOverScreen').style.display = 'flex';
         }
 
         function stopGameEngine() {
@@ -921,7 +953,8 @@
 
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
-            if (activeMeasuring && !isGamePaused && !isResting) {
+            // 💡 未進入 Game Over、未暫停且正在量測時才計算遊戲實體
+            if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
                 let flowMag = Math.abs(flow);
@@ -971,10 +1004,15 @@
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        playerHP = Math.max(0, playerHP - 15);
+                        playerHP = Math.max(0, playerHP - 25); // 扣血放大為 25%
                         gameCombo = 0;
                         playAudioEffect('hit');
                         o.hit = true;
+
+                        // 💡 檢查血量是否歸零，觸發 Game Over 結算
+                        if (playerHP <= 0) {
+                            triggerGameOver();
+                        }
                     }
                 });
 
