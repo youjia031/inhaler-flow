@@ -58,61 +58,81 @@
         }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
-        /* 🎮 遊戲外掛 CSS 樣式 */
+        /* 🎮 精緻化遊戲 UI 樣式 */
         .game-container {
             display: none;
-            background: #1a252f;
-            padding: 15px;
+            background: #0d1117;
+            padding: 0;
             border-radius: 8px;
             height: 480px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
             position: relative;
             overflow: hidden;
+            border: 2px solid #30363d;
         }
         #gameCanvas {
             width: 100%;
             height: 100%;
-            border-radius: 4px;
-            background: linear-gradient(to bottom, #1a1c29, #10121a);
+            display: block;
         }
         .game-ui-overlay {
             position: absolute;
-            top: 25px;
-            left: 25px;
-            right: 25px;
+            top: 15px;
+            left: 20px;
+            right: 20px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             color: #ffffff;
-            font-family: monospace;
-            font-size: 16px;
+            font-family: 'Segoe UI', monospace;
+            font-size: 15px;
+            font-weight: 600;
             pointer-events: none;
+            z-index: 5;
+        }
+        .hud-badge {
+            background: rgba(22, 27, 34, 0.75);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
         }
         .hp-bar-bg {
-            width: 150px;
-            height: 16px;
-            background: #444;
-            border-radius: 8px;
+            width: 140px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 7px;
             overflow: hidden;
-            border: 2px solid #fff;
+            border: 1.5px solid rgba(255,255,255,0.4);
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
         }
         .hp-bar-fill {
             width: 100%;
             height: 100%;
-            background: #e74c3c;
-            transition: width 0.2s;
+            background: linear-gradient(90deg, #ff4d4d, #2ecc71);
+            transition: width 0.2s ease-out;
         }
         .rest-screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(13, 17, 23, 0.92);
             color: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 20px;
             border-radius: 8px;
-            z-index: 10;
+            z-index: 20;
+            backdrop-filter: blur(8px);
+        }
+        .rest-card {
+            background: rgba(255,255,255,0.05);
+            padding: 30px 50px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
         }
     </style>
 </head>
@@ -153,15 +173,16 @@
         <canvas id="flowChart"></canvas>
     </div>
 
-    <!-- 🎮 遊戲畫面容器 (預設隱藏，切換模式時顯示) -->
+    <!-- 🎮 炫彩遊戲畫面容器 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div class="game-ui-overlay">
-            <div>
-                SCORE: <span id="gameScore">0</span> | COMBO: <span id="gameCombo">0</span>
+            <div class="hud-badge">
+                🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span> 
+                | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                HP:
+            <div class="hud-badge">
+                ❤️ HP 
                 <div class="hp-bar-bg">
                     <div class="hp-bar-fill" id="hpFill"></div>
                 </div>
@@ -169,9 +190,12 @@
         </div>
         <!-- 換氣休息站畫面 -->
         <div class="rest-screen" id="restScreen" style="display: none;">
-            <h2>🍵 換氣休息時間</h2>
-            <p>做得很好！深呼吸休息一下，避免頭暈...</p>
-            <p>倒數 <span id="restCountdown">15</span> 秒後繼續</p>
+            <div class="rest-card">
+                <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
+                <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
+                <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
+                <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
+            </div>
         </div>
     </div>
 
@@ -317,7 +341,6 @@
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
             let totalE = e1 + e2 + e3 + e4 + e5;
             
-            // 1. 完全無氣流 (靜止底噪門檻降至 20,000，捕捉微弱氣流)
             if (totalE < 20000) {
                 predictionBuffer = [];
                 lastConfirmedMode = "inhalation";
@@ -327,7 +350,6 @@
             let rawMode = "inhalation";
             let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
-            // 2. 小力吹 / 低流速動態放寬門檻
             if (totalE < 250000) {
                 if (ratio_3to1 > 0.45) {
                     rawMode = "exhalation";
@@ -348,14 +370,12 @@
                 }
             }
 
-            // 3. 多數決平滑 (3 幀滑動視窗)
             predictionBuffer.push(rawMode);
             if (predictionBuffer.length > 3) predictionBuffer.shift();
 
             let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
             let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
 
-            // 4. 小力吹慣性鎖定 (State Lock)
             if (totalE < 300000 && lastConfirmedMode === "exhalation") {
                 if (predictionBuffer.filter(m => m === "inhalation").length < 3) {
                     currentVote = "exhalation";
@@ -631,10 +651,10 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流訓練遊戲外掛模組 (獨立外掛，不破壞原本邏輯)  -->
+    <!--  🎮 氣流飛行員 - 精緻娛樂視覺外掛模組 (零破壞獨立架構)  -->
     <!-- ===================================================== -->
     <script>
-        // 1. 動態插入控制按鈕到原本的 control-panel 裡面
+        // 1. 動態加入選單控制介面
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
             const gameControlHTML = `
@@ -648,9 +668,9 @@
                 <label>
                     難度: 
                     <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (容錯 ±30%)</option>
-                        <option value="normal" selected>標準 (容錯 ±15%)</option>
-                        <option value="hard">專家 (容錯 ±5%)</option>
+                        <option value="easy">輕鬆 (容錯大/障礙少)</option>
+                        <option value="normal" selected>標準 (均衡挑戰)</option>
+                        <option value="hard">專家 (高靈敏/多障礙)</option>
                     </select>
                 </label>
                 <label>
@@ -660,54 +680,87 @@
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
-        // 2. 音效生成器 (利用 Web Audio API，無需外部音檔)
+        // 2. Web Audio API 動態音效引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+        function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
+
+                if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime); // B5
+                    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08); // E6
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'frenzy') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+                }
             } catch(e) {}
         }
 
-        // 3. 遊戲核心變數與畫布設定
+        // 3. 遊戲畫布與狀態設定
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         let gameAnimationId = null;
         let isGameRunning = false;
 
-        // 遊戲角色與狀態
-        let player = { x: 100, y: 240, radius: 15, vy: 0 };
+        // 遊戲物件狀態
+        let rocket = { x: 120, y: 240, vy: 0, angle: 0, radius: 18 };
+        let stars = [];         // 背景滾動星辰
+        let particles = [];     // 噴射尾焰/粒子
+        let collectibles = [];  // 金幣星星
+        let obstacles = [];     // 雷雲障礙物
+
         let gameScore = 0;
         let gameCombo = 0;
         let playerHP = 100;
+        let frenzyTimer = 0;    // 狂暴模式倒數
         let restTimer = null;
         let isResting = false;
         let sessionStartTime = 0;
 
-        // 調整畫布尺寸
+        function initStars() {
+            stars = [];
+            for(let i=0; i<60; i++) {
+                stars.push({
+                    x: Math.random() * gameCanvas.width,
+                    y: Math.random() * gameCanvas.height,
+                    size: Math.random() * 2,
+                    speed: Math.random() * 2 + 0.5
+                });
+            }
+        }
+
         function resizeGameCanvas() {
             if (gameCanvas) {
-                gameCanvas.width = gameCanvas.parentElement.clientWidth - 30;
-                gameCanvas.height = gameCanvas.parentElement.clientHeight - 30;
+                gameCanvas.width = gameCanvas.parentElement.clientWidth;
+                gameCanvas.height = gameCanvas.parentElement.clientHeight;
+                initStars();
             }
         }
         window.addEventListener('resize', resizeGameCanvas);
 
-        // 切換 📊 圖表 vs 🎮 遊戲 畫面
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
@@ -724,13 +777,15 @@
             }
         }
 
-        // 啟動遊戲迴圈
         function startGameEngine() {
             if (isGameRunning) return;
             isGameRunning = true;
             playerHP = 100;
             gameScore = 0;
             gameCombo = 0;
+            particles = [];
+            collectibles = [];
+            obstacles = [];
             sessionStartTime = Date.now();
             gameLoop();
         }
@@ -740,61 +795,194 @@
             if (gameAnimationId) cancelAnimationFrame(gameAnimationId);
         }
 
-        // 4. 主遊戲渲染迴圈 (Game Loop)
+        // 4. 繪製精緻火箭角色
+        function drawRocket(x, y, angle, isExhale, flowMagnitude) {
+            gameCtx.save();
+            gameCtx.translate(x, y);
+            gameCtx.rotate(angle);
+
+            // 火箭主體
+            gameCtx.fillStyle = '#ecf0f1';
+            gameCtx.beginPath();
+            gameCtx.moveTo(20, 0);
+            gameCtx.lineTo(-12, -10);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-12, 10);
+            gameCtx.closePath();
+            gameCtx.fill();
+
+            // 火箭機翼
+            gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
+            gameCtx.beginPath();
+            gameCtx.moveTo(-4, -6);
+            gameCtx.lineTo(-14, -14);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-14, 14);
+            gameCtx.lineTo(-4, 6);
+            gameCtx.closePath();
+            gameCtx.fill();
+
+            // 駕駛艙車窗
+            gameCtx.fillStyle = '#2c3e50';
+            gameCtx.beginPath();
+            gameCtx.arc(4, 0, 4, 0, Math.PI*2);
+            gameCtx.fill();
+
+            gameCtx.restore();
+
+            // 💡 生成噴射粒子特效
+            if (flowMagnitude > 5) {
+                let pColor = isExhale ? '#f39c12' : '#00d2d3';
+                particles.push({
+                    x: x - Math.cos(angle) * 15,
+                    y: y - Math.sin(angle) * 15,
+                    vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: Math.random() * 5 + 2,
+                    color: pColor,
+                    life: 1.0
+                });
+            }
+        }
+
+        // 5. 核心遊戲邏輯迴圈 (Game Loop)
         function gameLoop() {
             if (!isGameRunning) return;
 
             // 清除畫布
-            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.fillStyle = frenzyTimer > 0 ? '#100e23' : '#0d1117';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            // 渲染背景星空
+            gameCtx.fillStyle = '#ffffff';
+            stars.forEach(s => {
+                s.x -= s.speed * (frenzyTimer > 0 ? 2 : 1);
+                if (s.x < 0) s.x = gameCanvas.width;
+                gameCtx.fillRect(s.x, s.y, s.size, s.size);
+            });
 
             if (!isResting) {
-                // 讀取原本程式碼的全域即時變數
                 let flow = (typeof smoothedEst !== 'undefined') ? smoothedEst : 0;
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
+                let flowMag = Math.abs(flow);
 
-                // 根據難度設定容錯與移動靈敏度
                 let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
-                let sensitivity = (diff === 'easy') ? 1.5 : (diff === 'hard') ? 0.8 : 1.0;
+                let sensitivity = (diff === 'easy') ? 1.6 : (diff === 'hard') ? 0.9 : 1.2;
 
-                // 💡 氣流控制角色 Y 軸位置 (吸氣往上，吐氣往下)
-                let targetY = gameCanvas.height / 2 - (flow * 2 * sensitivity);
-                player.y += (targetY - player.y) * 0.1; // 平滑跟隨
+                // 控制火箭 Y 軸位置與角度
+                let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
+                targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
+                
+                let dy = targetY - rocket.y;
+                rocket.y += dy * 0.1;
+                rocket.angle = Math.atan2(dy, 20); // 隨運動俯仰傾斜
 
-                // 繪製目標軌道 (中間的預設路線)
+                // 繪製微弱的中線軌道引導
                 gameCtx.beginPath();
-                gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                gameCtx.setLineDash([10, 10]);
+                gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                gameCtx.setLineDash([8, 8]);
                 gameCtx.moveTo(0, gameCanvas.height / 2);
                 gameCtx.lineTo(gameCanvas.width, gameCanvas.height / 2);
                 gameCtx.stroke();
                 gameCtx.setLineDash([]);
 
-                // 繪製角色 (飛行員/小光點)
-                gameCtx.beginPath();
-                gameCtx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-                gameCtx.fillStyle = (mode === 'exhalation') ? '#e74c3c' : '#2ecc71';
-                gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff';
-                gameCtx.lineWidth = 3;
-                gameCtx.stroke();
-
-                // 計分與血條邏輯 (氣流越大加越多分)
-                if (Math.abs(flow) > 10) {
-                    gameScore += Math.floor(Math.abs(flow) * 0.1);
-                    gameCombo++;
-                    if (gameCombo % 50 === 0) playBeep(880, 'sine', 0.15); // Combo 提示音
-                } else {
-                    gameCombo = 0;
-                    // 停滯太久扣血
-                    playerHP = Math.max(0, playerHP - 0.05);
+                // 生成金幣與障礙物 (隨時間移動)
+                if (Math.random() < 0.025) {
+                    collectibles.push({
+                        x: gameCanvas.width + 20,
+                        y: Math.random() * (gameCanvas.height - 100) + 50,
+                        radius: 8,
+                        speed: 3
+                    });
+                }
+                if (Math.random() < (diff === 'hard' ? 0.015 : 0.008)) {
+                    obstacles.push({
+                        x: gameCanvas.width + 30,
+                        y: Math.random() * (gameCanvas.height - 100) + 50,
+                        radius: 14,
+                        speed: 4
+                    });
                 }
 
-                // 更新 UI 數據
+                // 渲染金幣 (星星)
+                collectibles.forEach((c, idx) => {
+                    c.x -= c.speed;
+                    gameCtx.beginPath();
+                    gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                    gameCtx.fillStyle = '#f1c40f';
+                    gameCtx.fill();
+
+                    // 碰撞檢測 (吃金幣)
+                    let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
+                    if (dist < c.radius + rocket.radius) {
+                        gameScore += 50;
+                        gameCombo++;
+                        playAudioEffect('coin');
+                        collectibles.splice(idx, 1);
+
+                        // 觸發狂暴模式
+                        if (gameCombo > 0 && gameCombo % 25 === 0) {
+                            frenzyTimer = 180; // 狂暴 3 秒
+                            playAudioEffect('frenzy');
+                        }
+                    }
+                });
+
+                // 渲染雷雲障礙物
+                obstacles.forEach((o, idx) => {
+                    o.x -= o.speed;
+                    gameCtx.beginPath();
+                    gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
+                    gameCtx.fillStyle = '#e74c3c';
+                    gameCtx.fill();
+
+                    // 碰撞檢測 (撞障礙物)
+                    let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
+                    if (dist < o.radius + rocket.radius) {
+                        playerHP = Math.max(0, playerHP - 15);
+                        gameCombo = 0;
+                        playAudioEffect('hit');
+                        obstacles.splice(idx, 1);
+                    }
+                });
+
+                // 清除超出畫面的物件
+                collectibles = collectibles.filter(c => c.x > -20);
+                obstacles = obstacles.filter(o => o.x > -20);
+
+                // 更新粒子特效
+                particles.forEach((p, idx) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.04;
+                    if (p.life <= 0) particles.splice(idx, 1);
+
+                    gameCtx.beginPath();
+                    gameCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                    gameCtx.fillStyle = p.color;
+                    gameCtx.globalAlpha = p.life;
+                    gameCtx.fill();
+                    gameCtx.globalAlpha = 1.0;
+                });
+
+                // 繪製火箭角色
+                drawRocket(rocket.x, rocket.y, rocket.angle, mode === "exhalation", flowMag);
+
+                // 計算得分與 HP 扣減
+                if (flowMag > 10) {
+                    gameScore += (frenzyTimer > 0) ? 3 : 1;
+                } else {
+                    playerHP = Math.max(0, playerHP - 0.03); // 停滯微幅扣血
+                }
+
+                if (frenzyTimer > 0) frenzyTimer--;
+
+                // 更新 UI 文字
                 document.getElementById('gameScore').innerText = gameScore;
                 document.getElementById('gameCombo').innerText = gameCombo;
                 document.getElementById('hpFill').style.width = `${playerHP}%`;
 
-                // 💡 換氣休息站機制 (每 90 秒強制休息 15 秒，防止過度換氣頭暈)
+                // 換氣休息站機制 (每 90 秒強制休息 15 秒)
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) {
                     triggerRestStop();
@@ -804,7 +992,6 @@
             gameAnimationId = requestAnimationFrame(gameLoop);
         }
 
-        // 換氣休息站觸發器
         function triggerRestStop() {
             isResting = true;
             const restScreen = document.getElementById('restScreen');
@@ -812,7 +999,7 @@
             let countdown = 15;
 
             restScreen.style.display = 'flex';
-            playBeep(523, 'triangle', 0.3);
+            playAudioEffect('frenzy');
 
             restTimer = setInterval(() => {
                 countdown--;
@@ -821,7 +1008,7 @@
                     clearInterval(restTimer);
                     restScreen.style.display = 'none';
                     isResting = false;
-                    sessionStartTime = Date.now(); // 重置計時器
+                    sessionStartTime = Date.now();
                 }
             }, 1000);
         }
