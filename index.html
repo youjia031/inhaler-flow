@@ -229,7 +229,7 @@
         });
 
         // =====================================================
-        //  低流速強化與抗飄移推論邏輯
+        //  小力吹與低流速優化推論邏輯
         // =====================================================
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
@@ -237,29 +237,37 @@
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
             let totalE = e1 + e2 + e3 + e4 + e5;
             
-            // 1. 如果能量極低，代表完全沒有氣流 (Idle)，重置平滑視窗
-            if (totalE < 50000) {
+            // 1. 完全無氣流 (靜止底噪門檻降至 20,000，捕捉微弱氣流)
+            if (totalE < 20000) {
                 predictionBuffer = [];
                 lastConfirmedMode = "inhalation";
                 return "inhalation";
             }
 
             let rawMode = "inhalation";
+            let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
-            // 2. 執行推論
-            if (onnxSession) {
-                try {
-                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
-                    const results = await onnxSession.run({ float_input: inputTensor });
-                    rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
-                } catch (e) {
-                    console.error("PKL 推論失敗", e);
+            // 2. 💡 小力吹 / 低流速動態放寬門檻
+            if (totalE < 250000) {
+                // 當總能量較小，將吐氣判定的比值門檻降至 0.45，提高靈敏度
+                if (ratio_3to1 > 0.45) {
+                    rawMode = "exhalation";
+                } else {
+                    rawMode = "inhalation";
                 }
             } else {
-                // 備用規則：針對低流速調整門檻
-                let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
-                let threshold = (totalE < 300000) ? 0.55 : 0.75;
-                rawMode = (ratio_3to1 > threshold) ? "exhalation" : "inhalation";
+                // 正常力道使用 ONNX 模型或標準門檻
+                if (onnxSession) {
+                    try {
+                        const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
+                        const results = await onnxSession.run({ float_input: inputTensor });
+                        rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
+                    } catch (e) {
+                        rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
+                    }
+                } else {
+                    rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
+                }
             }
 
             // 3. 多數決平滑 (3 幀滑動視窗)
@@ -269,9 +277,9 @@
             let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
             let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
 
-            // 4. 💡 低流速慣性鎖定 (State Lock)：
-            // 氣流逐漸轉弱時 (5萬~30萬)，如果剛才已經確定是吐氣，防止波形突然向上彈跳
-            if (totalE < 300000 && lastConfirmedMode === "exhalation" && currentVote === "inhalation") {
+            // 4. 💡 小力吹慣性鎖定 (State Lock)：
+            // 小力吹氣時訊號容易波動，只要剛才已經觸發吐氣，且能量尚未歸零，鎖定在吐氣
+            if (totalE < 300000 && lastConfirmedMode === "exhalation") {
                 if (predictionBuffer.filter(m => m === "inhalation").length < 3) {
                     currentVote = "exhalation";
                 }
@@ -350,12 +358,10 @@
             updateStatus('Disconnected / Ready to connect');
         }
 
-        // 監聽硬體拔出事件
         if ('serial' in navigator) {
             navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
         }
 
-        // 頁面重整/關閉時自動釋放串口
         window.addEventListener('beforeunload', async () => {
             try {
                 if (reader) await reader.cancel();
@@ -406,7 +412,6 @@
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
 
-                    // 防止 Buffer 堆積卡死
                     if (lines.length > 10) lines = lines.slice(-3);
 
                     for (let line of lines) {
@@ -486,7 +491,6 @@
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
                 document.getElementById('saveBtn').disabled = false;
 
-                // 更新 Dataset 2 (Patient Flow)
                 flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
                 let windowStart = Math.floor(elapsed / 20) * 20;
                 flowChart.options.scales.x.min = windowStart;
