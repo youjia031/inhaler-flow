@@ -196,7 +196,6 @@
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- 未開始量測時的覆蓋遮罩 -->
         <div class="start-prompt-overlay" id="gameStartPrompt">
             <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
@@ -218,7 +217,6 @@
             </div>
         </div>
 
-        <!-- 換氣休息站畫面 -->
         <div class="rest-screen" id="restScreen" style="display: none;">
             <div class="rest-card">
                 <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
@@ -229,7 +227,6 @@
         </div>
     </div>
 
-    <!-- 狀態列 -->
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
@@ -521,7 +518,7 @@
         async function readLoop() {
             if (!port || !port.readable) return;
             const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = port.readable.pipeTo(textDecoder.readable);
+            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
             reader = textDecoder.readable.getReader();
             let buffer = '';
 
@@ -679,7 +676,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 徹底修正角色消失 Bug 之堅固遊戲引擎  -->
+    <!--  🎮 氣流飛行員 - 獨立且完全除錯的遊戲引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -743,7 +740,6 @@
         let isGameRunning = false;
         let isGamePaused = false;
 
-        // 火箭角色狀態
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
         let stars = [];
         let particles = [];
@@ -818,7 +814,6 @@
             collectibles = [];
             obstacles = [];
             
-            // 安全重置火箭位置
             let h = gameCanvas.height || 480;
             rocket.x = 120;
             rocket.y = h / 2;
@@ -854,9 +849,7 @@
             }
         }
 
-        // 💡 堅固繪製火箭角色 (確保全球 Alpha 不被污染)
         function drawRocket(x, y, angle, isExhale, flowMagnitude) {
-            // 安全檢查：若座標無效不予繪製並恢復預設值
             if (isNaN(x) || isNaN(y) || isNaN(angle)) {
                 rocket.x = 120;
                 rocket.y = (gameCanvas.height || 480) / 2;
@@ -865,11 +858,10 @@
             }
 
             gameCtx.save();
-            gameCtx.globalAlpha = 1.0; // 強制恢復繪圖不透明度，防止角色消失！
+            gameCtx.globalAlpha = 1.0;
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
-            // 繪製火箭主體
             gameCtx.fillStyle = '#ecf0f1';
             gameCtx.beginPath();
             gameCtx.moveTo(20, 0);
@@ -879,7 +871,6 @@
             gameCtx.closePath();
             gameCtx.fill();
 
-            // 繪製火箭機翼
             gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
             gameCtx.beginPath();
             gameCtx.moveTo(-4, -6);
@@ -892,7 +883,6 @@
 
             gameCtx.restore();
 
-            // 生成粒子
             if (flowMagnitude > 5) {
                 let pColor = isExhale ? '#f39c12' : '#00d2d3';
                 particles.push({
@@ -907,16 +897,13 @@
             }
         }
 
-        // 5. 堅固 60 FPS 遊戲主迴圈
         function gameLoop() {
             if (!isGameRunning) return;
 
-            // 清除畫布背景，並強制透明度歸位 1.0
             gameCtx.globalAlpha = 1.0;
             gameCtx.fillStyle = '#0d1117';
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            // 繪製星空
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.speed;
@@ -924,7 +911,6 @@
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
 
-            // 繪製軌道引導線
             gameCtx.beginPath();
             gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             gameCtx.setLineDash([8, 8]);
@@ -943,7 +929,6 @@
                 let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
                 let sensitivity = (diff === 'easy') ? 1.6 : (diff === 'hard') ? 0.9 : 1.2;
 
-                // 💡 計算位置防呆防 NaN
                 let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
                 if (isNaN(targetY)) targetY = gameCanvas.height / 2;
                 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
@@ -954,15 +939,13 @@
                 rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                // 生成物件
                 if (Math.random() < 0.025) {
-                    collectibles.push({ x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3 });
+                    collectibles.push({ x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3, collected: false });
                 }
                 if (Math.random() < (diff === 'hard' ? 0.015 : 0.008)) {
-                    obstacles.push({ x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4 });
+                    obstacles.push({ x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4, hit: false });
                 }
 
-                // 金幣碰撞
                 collectibles.forEach((c) => {
                     c.x -= c.speed;
                     gameCtx.beginPath();
@@ -979,7 +962,6 @@
                     }
                 });
 
-                // 雷雲碰撞
                 obstacles.forEach((o) => {
                     o.x -= o.speed;
                     gameCtx.beginPath();
@@ -996,7 +978,6 @@
                     }
                 });
 
-                // 💡 安全淨化陣列（防止邊執行邊 Splice 引發繪圖 Bug）
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
 
@@ -1005,14 +986,12 @@
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) triggerRestStop();
             } else {
-                // 靜止時平滑復位
                 let centerTarget = gameCanvas.height / 2;
                 if (isNaN(rocket.y)) rocket.y = centerTarget;
                 rocket.y += (centerTarget - rocket.y) * 0.05;
                 rocket.angle = 0;
             }
 
-            // 更新與繪製粒子 (繪製完成後強制還原 Alpha)
             particles.forEach((p) => {
                 p.x += p.vx; p.y += p.vy; p.life -= 0.04;
                 if (p.life > 0) {
@@ -1025,14 +1004,12 @@
             });
             particles = particles.filter(p => p.life > 0);
             
-            // 💡 關鍵修復：畫火箭前強制還原Alpha = 1.0，火箭再也不會隱形！
             gameCtx.globalAlpha = 1.0;
 
             let activeFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
             let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
             drawRocket(rocket.x, rocket.y, rocket.angle, activeMode === "exhalation", activeFlow);
 
-            // 更新 HUD 文字
             document.getElementById('gameScore').innerText = gameScore;
             document.getElementById('gameCombo').innerText = gameCombo;
             document.getElementById('hpFill').style.width = `${playerHP}%`;
