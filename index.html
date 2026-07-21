@@ -687,7 +687,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 大音量主題進行曲 Web Audio 樂章引擎  -->
+    <!--  🎮 氣流飛行員 - 音調穩定、聲部完整進行曲樂章引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -720,12 +720,12 @@
         let bgmInterval = null;
         let bgmStep = 0;
 
-        // 音符頻率對照表 (C4 ~ C6 進行曲音階)
+        // 音符頻率對照表 (C4 ~ C6 標準進行曲樂章)
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
         const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
         const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
 
-        // 🎶 《氣流飛行進行曲》完整主題曲雙樂段 (32 拍樂句)
+        // 🎶 《氣流飛行進行曲》完整 32 拍雙樂段主題曲
         const themeLead = [
             // A 段：啟航 (Glorious Takeoff)
             C4, E4, G4, C5,  G4, E4, G4, C5,  
@@ -758,14 +758,14 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
                     osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
-                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime); // 音量放大
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.25);
                 } else if (type === 'hit') {
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(200, audioCtx.currentTime);
                     osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime); // 音量放大
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
                 } else if (type === 'gameover') {
@@ -779,7 +779,7 @@
             } catch(e) {}
         }
 
-        // 🎺 4-Part 進行曲主題曲多樂器合成器
+        // 🎺 4-Part 穩定和弦進行曲主題曲
         function startBGM() {
             stopBGM();
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -793,16 +793,13 @@
                     let now = audioCtx.currentTime;
                     let idx = bgmStep % themeLead.length;
 
-                    // 1. 主旋律 Lead Synth (鋸齒波 Sawtooth)
+                    // 1. 主旋律 Lead Synth (穩定音高，不受角色氣流變動影響)
                     const leadOsc = audioCtx.createOscillator();
                     const leadGain = audioCtx.createGain();
                     leadOsc.type = 'sawtooth';
+                    leadOsc.frequency.setValueAtTime(themeLead[idx], now);
 
-                    // 動態音高：呼氣/吸氣強度增強時，主題曲自動動態調頻昇華！
-                    let flowShift = Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) * 1.8;
-                    leadOsc.frequency.setValueAtTime(themeLead[idx] + flowShift, now);
-
-                    leadGain.gain.setValueAtTime(0.18, now); // 🔊 大幅調高音量
+                    leadGain.gain.setValueAtTime(0.18, now); // 大聲且清晰
                     leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
                     leadOsc.connect(leadGain);
@@ -810,13 +807,13 @@
                     leadOsc.start(now);
                     leadOsc.stop(now + 0.16);
 
-                    // 2. 節奏低音 Bassliner (方波 Square)
+                    // 2. 節奏低音 Bassliner (穩健包覆感低音)
                     const bassOsc = audioCtx.createOscillator();
                     const bassGain = audioCtx.createGain();
                     bassOsc.type = 'square';
                     bassOsc.frequency.setValueAtTime(themeBass[idx], now);
 
-                    bassGain.gain.setValueAtTime(0.15, now); // 🔊 震撼低音
+                    bassGain.gain.setValueAtTime(0.15, now);
                     bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
 
                     bassOsc.connect(bassGain);
@@ -824,7 +821,7 @@
                     bassOsc.start(now);
                     bassOsc.stop(now + 0.18);
 
-                    // 3. 打擊小鼓 Snare/Hi-Hat Noise
+                    // 3. 節奏鼓組 Snare
                     if (idx % 2 === 1) {
                         const snareOsc = audioCtx.createOscillator();
                         const snareGain = audioCtx.createGain();
@@ -841,7 +838,7 @@
 
                     bgmStep++;
                 } catch(e) {}
-            }, 180); // BPM 166 節奏激昂進行曲速度
+            }, 180); // BPM 166 穩健進行曲速度
         }
 
         function stopBGM() {
