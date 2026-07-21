@@ -206,6 +206,8 @@
             <div class="hud-badge">
                 🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span> 
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
+                <span id="feverBadge" style="display:none; color:#a55eea; margin-left:10px;">⚡ FEVER 2X!</span>
+                <span id="shieldBadge" style="display:none; color:#00d2d3; margin-left:10px;">🛡️ SHIELD</span>
             </div>
             <div class="hud-badge">
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
@@ -687,7 +689,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 音調穩定、聲部完整進行曲樂章引擎  -->
+    <!--  🎮 氣流飛行員 - 難度專屬道具與豐富遊戲機制引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -703,9 +705,9 @@
                 <label>
                     難度: 
                     <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (容錯大/障礙少)</option>
-                        <option value="normal" selected>標準 (均衡挑戰)</option>
-                        <option value="hard">專家 (高靈敏/多障礙)</option>
+                        <option value="easy">輕鬆 (補血藥包)</option>
+                        <option value="normal" selected>標準 (護盾+藥包)</option>
+                        <option value="hard">專家 (狂暴+閃電球)</option>
                     </select>
                 </label>
                 <label>
@@ -715,28 +717,22 @@
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
-        // 🎵 Web Audio API 進行曲合奏引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let bgmInterval = null;
         let bgmStep = 0;
 
-        // 音符頻率對照表 (C4 ~ C6 標準進行曲樂章)
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
         const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
         const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
 
-        // 🎶 《氣流飛行進行曲》完整 32 拍雙樂段主題曲
         const themeLead = [
-            // A 段：啟航 (Glorious Takeoff)
             C4, E4, G4, C5,  G4, E4, G4, C5,  
             D5, C5, B4, A4,  G4, E4, C4, G4,
-            // B 段：衝刺 (High-Altitude Sprint)
             A4, C5, E5, D5,  C5, B4, C5, D5,  
             E5, G5, E5, C5,  G4, B4, C5, C5
         ];
 
         const themeBass = [
-            // 重低音四拍節奏 Bassliner
             C3, C3, G3, C3,  C3, C3, G3, C3,
             F3, F3, C3, F3,  G3, G3, D4, G3,
             A3, A3, E4, A3,  F3, F3, C3, F3,
@@ -761,6 +757,27 @@
                     gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'heal') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(880.00, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'shield') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440.00, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'fever') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
                 } else if (type === 'hit') {
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(200, audioCtx.currentTime);
@@ -779,7 +796,6 @@
             } catch(e) {}
         }
 
-        // 🎺 4-Part 穩定和弦進行曲主題曲
         function startBGM() {
             stopBGM();
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -793,13 +809,12 @@
                     let now = audioCtx.currentTime;
                     let idx = bgmStep % themeLead.length;
 
-                    // 1. 主旋律 Lead Synth (穩定音高，不受角色氣流變動影響)
                     const leadOsc = audioCtx.createOscillator();
                     const leadGain = audioCtx.createGain();
                     leadOsc.type = 'sawtooth';
                     leadOsc.frequency.setValueAtTime(themeLead[idx], now);
 
-                    leadGain.gain.setValueAtTime(0.18, now); // 大聲且清晰
+                    leadGain.gain.setValueAtTime(0.18, now);
                     leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
                     leadOsc.connect(leadGain);
@@ -807,7 +822,6 @@
                     leadOsc.start(now);
                     leadOsc.stop(now + 0.16);
 
-                    // 2. 節奏低音 Bassliner (穩健包覆感低音)
                     const bassOsc = audioCtx.createOscillator();
                     const bassGain = audioCtx.createGain();
                     bassOsc.type = 'square';
@@ -821,7 +835,6 @@
                     bassOsc.start(now);
                     bassOsc.stop(now + 0.18);
 
-                    // 3. 節奏鼓組 Snare
                     if (idx % 2 === 1) {
                         const snareOsc = audioCtx.createOscillator();
                         const snareGain = audioCtx.createGain();
@@ -838,7 +851,7 @@
 
                     bgmStep++;
                 } catch(e) {}
-            }, 180); // BPM 166 穩健進行曲速度
+            }, 180);
         }
 
         function stopBGM() {
@@ -872,6 +885,9 @@
         let gameScore = 0;
         let gameCombo = 0;
         let playerHP = 100;
+        let hasShield = false;
+        let feverTimer = 0; // 狂暴倒數
+
         let restTimer = null;
         let isResting = false;
         let sessionStartTime = 0;
@@ -937,6 +953,8 @@
             playerHP = 100;
             gameScore = 0;
             gameCombo = 0;
+            hasShield = false;
+            feverTimer = 0;
             particles = [];
             collectibles = [];
             obstacles = [];
@@ -953,6 +971,8 @@
             document.getElementById('restScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('hpFill').style.width = '100%';
+            document.getElementById('feverBadge').style.display = 'none';
+            document.getElementById('shieldBadge').style.display = 'none';
             
             updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
@@ -1004,6 +1024,23 @@
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
+            // 如果有護盾，發出藍色光圈
+            if (hasShield) {
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
+                gameCtx.strokeStyle = '#00d2d3';
+                gameCtx.lineWidth = 3;
+                gameCtx.stroke();
+            }
+
+            // 狂暴模式紫色光芒
+            if (feverTimer > 0) {
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 24, 0, Math.PI * 2);
+                gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)';
+                gameCtx.fill();
+            }
+
             gameCtx.fillStyle = '#ecf0f1';
             gameCtx.beginPath();
             gameCtx.moveTo(20, 0);
@@ -1027,6 +1064,7 @@
 
             if (flowMagnitude > 5) {
                 let pColor = isExhale ? '#f39c12' : '#00d2d3';
+                if (feverTimer > 0) pColor = '#a55eea'; // 狂暴紫色粒子
                 particles.push({
                     x: x - Math.cos(angle) * 15,
                     y: y - Math.sin(angle) * 15,
@@ -1081,41 +1119,109 @@
                 rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                if (Math.random() < 0.025) {
-                    collectibles.push({ x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3, collected: false });
-                }
-                if (Math.random() < (diff === 'hard' ? 0.015 : 0.008)) {
-                    obstacles.push({ x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4, hit: false });
+                // 狂暴計時器倒數
+                if (feverTimer > 0) {
+                    feverTimer--;
+                    if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none';
                 }
 
+                // 🎁 生成難度專屬道具
+                if (Math.random() < 0.025) {
+                    // 金幣
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3, collected: false });
+                }
+                
+                // 🟢 輕鬆/標準：生成補血藥包 (Heart)
+                if (Math.random() < 0.005) {
+                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 10, speed: 2.5, collected: false });
+                }
+
+                // 🟡 標準/專家：生成護盾 (Shield)
+                if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.004) {
+                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 11, speed: 2.5, collected: false });
+                }
+
+                // 🔴 專家模式專屬：狂暴星 (Fever) & 閃電球 (Hazard)
+                if (diff === 'hard') {
+                    if (Math.random() < 0.003 && feverTimer === 0) {
+                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 12, speed: 3.5, collected: false });
+                    }
+                    if (Math.random() < 0.01) {
+                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 12, speed: 6, hit: false });
+                    }
+                }
+
+                // 一般障礙物 (雷雲)
+                if (Math.random() < (diff === 'hard' ? 0.015 : 0.008)) {
+                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4, hit: false });
+                }
+
+                // 道具繪製與吃取邏輯
                 collectibles.forEach((c) => {
                     c.x -= c.speed;
                     gameCtx.beginPath();
-                    gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                    gameCtx.fillStyle = '#f1c40f';
+                    
+                    if (c.type === 'coin') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#f1c40f';
+                    } else if (c.type === 'heart') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#2ecc71'; // 綠色心心
+                    } else if (c.type === 'shield') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#00d2d3'; // 藍色護盾
+                    } else if (c.type === 'fever') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#a55eea'; // 紫色狂暴星
+                    }
                     gameCtx.fill();
 
+                    // 狂暴模式磁鐵吸引/加大磁吸範圍
+                    let pickupRadius = (feverTimer > 0) ? (rocket.radius + 35) : rocket.radius;
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
-                    if (dist < c.radius + rocket.radius) {
-                        gameScore += 50;
-                        gameCombo++;
-                        playAudioEffect('coin');
+
+                    if (dist < c.radius + pickupRadius) {
+                        if (c.type === 'coin') {
+                            gameScore += (feverTimer > 0) ? 100 : 50;
+                            gameCombo++;
+                            playAudioEffect('coin');
+                        } else if (c.type === 'heart') {
+                            playerHP = Math.min(100, playerHP + 20); // 補血 20%
+                            playAudioEffect('heal');
+                        } else if (c.type === 'shield') {
+                            hasShield = true;
+                            document.getElementById('shieldBadge').style.display = 'inline';
+                            playAudioEffect('shield');
+                        } else if (c.type === 'fever') {
+                            feverTimer = 300; // 狂暴 5 秒 (60fps * 5)
+                            document.getElementById('feverBadge').style.display = 'inline';
+                            playAudioEffect('fever');
+                        }
                         c.collected = true;
                     }
                 });
 
+                // 障礙物碰撞邏輯
                 obstacles.forEach((o) => {
                     o.x -= o.speed;
                     gameCtx.beginPath();
                     gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
-                    gameCtx.fillStyle = '#e74c3c';
+                    gameCtx.fillStyle = (o.type === 'hazard') ? '#8e44ad' : '#e74c3c'; // 閃電球紫色 / 雷雲紅色
                     gameCtx.fill();
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        playerHP = Math.max(0, playerHP - 25);
-                        gameCombo = 0;
-                        playAudioEffect('hit');
+                        if (hasShield && o.type !== 'hazard') {
+                            // 護盾抵擋 1 次一般傷害
+                            hasShield = false;
+                            document.getElementById('shieldBadge').style.display = 'none';
+                            playAudioEffect('hit');
+                        } else {
+                            let dmg = (o.type === 'hazard') ? 40 : 25; // 高難度黑色閃電扣 40% 血
+                            playerHP = Math.max(0, playerHP - dmg);
+                            gameCombo = 0;
+                            playAudioEffect('hit');
+                        }
                         o.hit = true;
 
                         if (playerHP <= 0) {
@@ -1130,7 +1236,7 @@
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
 
-                if (flowMag > 10) gameScore += 1;
+                if (flowMag > 10) gameScore += (feverTimer > 0) ? 2 : 1;
 
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) triggerRestStop();
