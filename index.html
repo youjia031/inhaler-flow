@@ -57,6 +57,63 @@
             height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
         }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
+
+        /* 🎮 遊戲外掛 CSS 樣式 */
+        .game-container {
+            display: none;
+            background: #1a252f;
+            padding: 15px;
+            border-radius: 8px;
+            height: 480px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(to bottom, #1a1c29, #10121a);
+        }
+        .game-ui-overlay {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            right: 25px;
+            display: flex;
+            justify-content: space-between;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 16px;
+            pointer-events: none;
+        }
+        .hp-bar-bg {
+            width: 150px;
+            height: 16px;
+            background: #444;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #fff;
+        }
+        .hp-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: #e74c3c;
+            transition: width 0.2s;
+        }
+        .rest-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            border-radius: 8px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -91,9 +148,31 @@
         <span id="detectedMode" class="info-text">Detected: —</span>
     </div>
 
-    <!-- 圖表顯示區域 -->
+    <!-- 📊 專業圖表顯示區域 -->
     <div class="chart-container">
         <canvas id="flowChart"></canvas>
+    </div>
+
+    <!-- 🎮 遊戲畫面容器 (預設隱藏，切換模式時顯示) -->
+    <div class="game-container" id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-ui-overlay">
+            <div>
+                SCORE: <span id="gameScore">0</span> | COMBO: <span id="gameCombo">0</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                HP:
+                <div class="hp-bar-bg">
+                    <div class="hp-bar-fill" id="hpFill"></div>
+                </div>
+            </div>
+        </div>
+        <!-- 換氣休息站畫面 -->
+        <div class="rest-screen" id="restScreen" style="display: none;">
+            <h2>🍵 換氣休息時間</h2>
+            <p>做得很好！深呼吸休息一下，避免頭暈...</p>
+            <p>倒數 <span id="restCountdown">15</span> 秒後繼續</p>
+        </div>
     </div>
 
     <!-- 狀態列 -->
@@ -171,6 +250,7 @@
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [], windowHistory = [false, false, false];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
+        let smoothedEst = 0; // 供遊戲模組讀取的平滑流速全域變數
         let pklSegments = [];
         let onnxSession = null;
         let predictionBuffer = [];
@@ -247,16 +327,14 @@
             let rawMode = "inhalation";
             let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
-            // 2. 💡 小力吹 / 低流速動態放寬門檻
+            // 2. 小力吹 / 低流速動態放寬門檻
             if (totalE < 250000) {
-                // 當總能量較小，將吐氣判定的比值門檻降至 0.45，提高靈敏度
                 if (ratio_3to1 > 0.45) {
                     rawMode = "exhalation";
                 } else {
                     rawMode = "inhalation";
                 }
             } else {
-                // 正常力道使用 ONNX 模型或標準門檻
                 if (onnxSession) {
                     try {
                         const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
@@ -277,8 +355,7 @@
             let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
             let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
 
-            // 4. 💡 小力吹慣性鎖定 (State Lock)：
-            // 小力吹氣時訊號容易波動，只要剛才已經觸發吐氣，且能量尚未歸零，鎖定在吐氣
+            // 4. 小力吹慣性鎖定 (State Lock)
             if (totalE < 300000 && lastConfirmedMode === "exhalation") {
                 if (predictionBuffer.filter(m => m === "inhalation").length < 3) {
                     currentVote = "exhalation";
@@ -301,7 +378,7 @@
             for (let i = 0; i < records.length; i++) {
                 let rec = records[i];
                 if (!rec.flowYes || Math.abs(rec.est) < 5.0) {
-                    predictions.push(-1); // 靜止/無數據不塗顏色
+                    predictions.push(-1);
                 } else {
                     let mode = await detectBreathModePKL(rec.fft);
                     predictions.push(mode === "inhalation" ? 0 : 1);
@@ -485,7 +562,7 @@
 
                 flowHistory.push(est);
                 if (flowHistory.length > 5) flowHistory.shift();
-                let smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
+                smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
 
                 records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
@@ -519,6 +596,7 @@
         function clearPlot() {
             startTime = null; records = []; flowHistory = []; pklSegments = []; predictionBuffer = [];
             lastConfirmedMode = "inhalation";
+            smoothedEst = 0;
             flowChart.data.datasets[2].data = [];
             flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
             flowChart.update();
@@ -550,6 +628,203 @@
         }
 
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
+    </script>
+
+    <!-- ===================================================== -->
+    <!--  🎮 氣流訓練遊戲外掛模組 (獨立外掛，不破壞原本邏輯)  -->
+    <!-- ===================================================== -->
+    <script>
+        // 1. 動態插入控制按鈕到原本的 control-panel 裡面
+        const controlPanel = document.querySelector('.control-panel');
+        if (controlPanel) {
+            const gameControlHTML = `
+                <label style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px;">
+                    視窗: 
+                    <select id="viewModeSelect" onchange="switchViewMode(this.value)">
+                        <option value="chart">📊 專業圖表</option>
+                        <option value="game">🎮 氣流飛行員 (Game)</option>
+                    </select>
+                </label>
+                <label>
+                    難度: 
+                    <select id="gameDifficultySelect">
+                        <option value="easy">輕鬆 (容錯 ±30%)</option>
+                        <option value="normal" selected>標準 (容錯 ±15%)</option>
+                        <option value="hard">專家 (容錯 ±5%)</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" id="soundToggle" checked> 🔊 音效
+                </label>
+            `;
+            controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
+        }
+
+        // 2. 音效生成器 (利用 Web Audio API，無需外部音檔)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+            const soundEnabled = document.getElementById('soundToggle')?.checked;
+            if (!soundEnabled) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // 3. 遊戲核心變數與畫布設定
+        const gameCanvas = document.getElementById('gameCanvas');
+        const gameCtx = gameCanvas.getContext('2d');
+        let gameAnimationId = null;
+        let isGameRunning = false;
+
+        // 遊戲角色與狀態
+        let player = { x: 100, y: 240, radius: 15, vy: 0 };
+        let gameScore = 0;
+        let gameCombo = 0;
+        let playerHP = 100;
+        let restTimer = null;
+        let isResting = false;
+        let sessionStartTime = 0;
+
+        // 調整畫布尺寸
+        function resizeGameCanvas() {
+            if (gameCanvas) {
+                gameCanvas.width = gameCanvas.parentElement.clientWidth - 30;
+                gameCanvas.height = gameCanvas.parentElement.clientHeight - 30;
+            }
+        }
+        window.addEventListener('resize', resizeGameCanvas);
+
+        // 切換 📊 圖表 vs 🎮 遊戲 畫面
+        function switchViewMode(mode) {
+            const chartBox = document.querySelector('.chart-container');
+            const gameBox = document.getElementById('gameContainer');
+
+            if (mode === 'game') {
+                chartBox.style.display = 'none';
+                gameBox.style.display = 'block';
+                resizeGameCanvas();
+                startGameEngine();
+            } else {
+                chartBox.style.display = 'block';
+                gameBox.style.display = 'none';
+                stopGameEngine();
+            }
+        }
+
+        // 啟動遊戲迴圈
+        function startGameEngine() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            playerHP = 100;
+            gameScore = 0;
+            gameCombo = 0;
+            sessionStartTime = Date.now();
+            gameLoop();
+        }
+
+        function stopGameEngine() {
+            isGameRunning = false;
+            if (gameAnimationId) cancelAnimationFrame(gameAnimationId);
+        }
+
+        // 4. 主遊戲渲染迴圈 (Game Loop)
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            // 清除畫布
+            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            if (!isResting) {
+                // 讀取原本程式碼的全域即時變數
+                let flow = (typeof smoothedEst !== 'undefined') ? smoothedEst : 0;
+                let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
+
+                // 根據難度設定容錯與移動靈敏度
+                let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+                let sensitivity = (diff === 'easy') ? 1.5 : (diff === 'hard') ? 0.8 : 1.0;
+
+                // 💡 氣流控制角色 Y 軸位置 (吸氣往上，吐氣往下)
+                let targetY = gameCanvas.height / 2 - (flow * 2 * sensitivity);
+                player.y += (targetY - player.y) * 0.1; // 平滑跟隨
+
+                // 繪製目標軌道 (中間的預設路線)
+                gameCtx.beginPath();
+                gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                gameCtx.setLineDash([10, 10]);
+                gameCtx.moveTo(0, gameCanvas.height / 2);
+                gameCtx.lineTo(gameCanvas.width, gameCanvas.height / 2);
+                gameCtx.stroke();
+                gameCtx.setLineDash([]);
+
+                // 繪製角色 (飛行員/小光點)
+                gameCtx.beginPath();
+                gameCtx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                gameCtx.fillStyle = (mode === 'exhalation') ? '#e74c3c' : '#2ecc71';
+                gameCtx.fill();
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 3;
+                gameCtx.stroke();
+
+                // 計分與血條邏輯 (氣流越大加越多分)
+                if (Math.abs(flow) > 10) {
+                    gameScore += Math.floor(Math.abs(flow) * 0.1);
+                    gameCombo++;
+                    if (gameCombo % 50 === 0) playBeep(880, 'sine', 0.15); // Combo 提示音
+                } else {
+                    gameCombo = 0;
+                    // 停滯太久扣血
+                    playerHP = Math.max(0, playerHP - 0.05);
+                }
+
+                // 更新 UI 數據
+                document.getElementById('gameScore').innerText = gameScore;
+                document.getElementById('gameCombo').innerText = gameCombo;
+                document.getElementById('hpFill').style.width = `${playerHP}%`;
+
+                // 💡 換氣休息站機制 (每 90 秒強制休息 15 秒，防止過度換氣頭暈)
+                let elapsedSession = (Date.now() - sessionStartTime) / 1000;
+                if (elapsedSession > 90) {
+                    triggerRestStop();
+                }
+            }
+
+            gameAnimationId = requestAnimationFrame(gameLoop);
+        }
+
+        // 換氣休息站觸發器
+        function triggerRestStop() {
+            isResting = true;
+            const restScreen = document.getElementById('restScreen');
+            const countdownEl = document.getElementById('restCountdown');
+            let countdown = 15;
+
+            restScreen.style.display = 'flex';
+            playBeep(523, 'triangle', 0.3);
+
+            restTimer = setInterval(() => {
+                countdown--;
+                countdownEl.innerText = countdown;
+                if (countdown <= 0) {
+                    clearInterval(restTimer);
+                    restScreen.style.display = 'none';
+                    isResting = false;
+                    sessionStartTime = Date.now(); // 重置計時器
+                }
+            }, 1000);
+        }
     </script>
 </body>
 </html>
