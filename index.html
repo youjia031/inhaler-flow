@@ -47,6 +47,10 @@
         }
         .btn.accent { background-color: #1f4e79; color: white; }
         .btn.accent:hover { background-color: #163d5e; }
+        .btn.game-btn { background-color: #27ae60; color: white; }
+        .btn.game-btn:hover { background-color: #219653; }
+        .btn.danger-btn { background-color: #e74c3c; color: white; }
+        .btn.danger-btn:hover { background-color: #c0392b; }
         .btn:hover { background-color: #e1e8ee; }
         .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
         label { font-size: 14px; font-weight: 500; }
@@ -91,14 +95,15 @@
             z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.75);
+            background: rgba(22, 27, 34, 0.85);
             padding: 8px 16px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(4px);
+            pointer-events: auto;
         }
         .hp-bar-bg {
-            width: 140px;
+            width: 120px;
             height: 14px;
             background: rgba(255,255,255,0.1);
             border-radius: 7px;
@@ -112,7 +117,7 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, #ff4d4d, #2ecc71);
-            transition: width 0.2s ease-out;
+            transition: width 0.1s linear;
         }
         .rest-screen {
             position: absolute;
@@ -182,7 +187,9 @@
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
             </div>
             <div class="hud-badge">
-                ❤️ HP 
+                <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
+                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px; margin-left:5px;" onclick="restartGameEngine()">重新開始</button>
+                <span style="margin-left:10px;">❤️ HP</span> 
                 <div class="hp-bar-bg">
                     <div class="hp-bar-fill" id="hpFill"></div>
                 </div>
@@ -274,7 +281,7 @@
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [], windowHistory = [false, false, false];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
-        let smoothedEst = 0; // 供遊戲模組讀取的平滑流速全域變數
+        let smoothedEst = 0; // 💡 供遊戲模組同步讀取的平滑流速變數
         let pklSegments = [];
         let onnxSession = null;
         let predictionBuffer = [];
@@ -582,6 +589,8 @@
 
                 flowHistory.push(est);
                 if (flowHistory.length > 5) flowHistory.shift();
+                
+                // 💡 計算即時平滑數值，同步更新全域變數 smoothedEst 供遊戲使用
                 smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
 
                 records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
@@ -651,10 +660,10 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 精緻娛樂視覺外掛模組 (零破壞獨立架構)  -->
+    <!--  🎮 氣流飛行員 - 完全獨立、防閃爍、可暫停重來的遊戲外掛  -->
     <!-- ===================================================== -->
     <script>
-        // 1. 動態加入選單控制介面
+        // 1. 動態加入控制介面按鈕
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
             const gameControlHTML = `
@@ -680,7 +689,7 @@
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
-        // 2. Web Audio API 動態音效引擎
+        // 2. 音效生成引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -695,8 +704,8 @@
 
                 if (type === 'coin') {
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime); // B5
-                    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08); // E6
+                    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
                     gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.25);
@@ -707,46 +716,37 @@
                     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-                } else if (type === 'frenzy') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
-                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
                 }
             } catch(e) {}
         }
 
-        // 3. 遊戲畫布與狀態設定
+        // 3. 遊戲畫布與狀態管理
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
-        let gameAnimationId = null;
+        let gameAnimationId = null; // 動態影格 ID，防止畫面閃爍
         let isGameRunning = false;
+        let isGamePaused = false;
 
-        // 遊戲物件狀態
-        let rocket = { x: 120, y: 240, vy: 0, angle: 0, radius: 18 };
-        let stars = [];         // 背景滾動星辰
-        let particles = [];     // 噴射尾焰/粒子
-        let collectibles = [];  // 金幣星星
-        let obstacles = [];     // 雷雲障礙物
+        let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
+        let stars = [];
+        let particles = [];
+        let collectibles = [];
+        let obstacles = [];
 
         let gameScore = 0;
         let gameCombo = 0;
         let playerHP = 100;
-        let frenzyTimer = 0;    // 狂暴模式倒數
         let restTimer = null;
         let isResting = false;
         let sessionStartTime = 0;
 
         function initStars() {
             stars = [];
-            for(let i=0; i<60; i++) {
+            for(let i=0; i<50; i++) {
                 stars.push({
                     x: Math.random() * gameCanvas.width,
                     y: Math.random() * gameCanvas.height,
-                    size: Math.random() * 2,
+                    size: Math.random() * 2 + 1,
                     speed: Math.random() * 2 + 0.5
                 });
             }
@@ -761,6 +761,7 @@
         }
         window.addEventListener('resize', resizeGameCanvas);
 
+        // 💡 視窗模式切換 (徹底隔離 Chart.js 與 Game Canvas)
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
@@ -769,7 +770,7 @@
                 chartBox.style.display = 'none';
                 gameBox.style.display = 'block';
                 resizeGameCanvas();
-                startGameEngine();
+                restartGameEngine();
             } else {
                 chartBox.style.display = 'block';
                 gameBox.style.display = 'none';
@@ -777,9 +778,11 @@
             }
         }
 
-        function startGameEngine() {
-            if (isGameRunning) return;
+        // 💡 重啟與暫停控制器
+        function restartGameEngine() {
+            stopGameEngine();
             isGameRunning = true;
+            isGamePaused = false;
             playerHP = 100;
             gameScore = 0;
             gameCombo = 0;
@@ -787,15 +790,34 @@
             collectibles = [];
             obstacles = [];
             sessionStartTime = Date.now();
+            document.getElementById('gamePauseBtn').innerText = "暫停";
+            document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
+            document.getElementById('restScreen').style.display = 'none';
             gameLoop();
+        }
+
+        function toggleGamePause() {
+            if (!isGameRunning) return;
+            isGamePaused = !isGamePaused;
+            const btn = document.getElementById('gamePauseBtn');
+            if (isGamePaused) {
+                btn.innerText = "繼續";
+                btn.style.backgroundColor = "#f39c12";
+            } else {
+                btn.innerText = "暫停";
+                btn.style.backgroundColor = "#27ae60";
+            }
         }
 
         function stopGameEngine() {
             isGameRunning = false;
-            if (gameAnimationId) cancelAnimationFrame(gameAnimationId);
+            if (gameAnimationId) {
+                cancelAnimationFrame(gameAnimationId);
+                gameAnimationId = null;
+            }
         }
 
-        // 4. 繪製精緻火箭角色
+        // 4. 繪製火箭角色
         function drawRocket(x, y, angle, isExhale, flowMagnitude) {
             gameCtx.save();
             gameCtx.translate(x, y);
@@ -822,15 +844,9 @@
             gameCtx.closePath();
             gameCtx.fill();
 
-            // 駕駛艙車窗
-            gameCtx.fillStyle = '#2c3e50';
-            gameCtx.beginPath();
-            gameCtx.arc(4, 0, 4, 0, Math.PI*2);
-            gameCtx.fill();
-
             gameCtx.restore();
 
-            // 💡 生成噴射粒子特效
+            // 噴射粒子特效
             if (flowMagnitude > 5) {
                 let pColor = isExhale ? '#f39c12' : '#00d2d3';
                 particles.push({
@@ -845,23 +861,25 @@
             }
         }
 
-        // 5. 核心遊戲邏輯迴圈 (Game Loop)
+        // 5. 獨立順暢的 60 FPS 遊戲主迴圈
         function gameLoop() {
             if (!isGameRunning) return;
 
-            // 清除畫布
-            gameCtx.fillStyle = frenzyTimer > 0 ? '#100e23' : '#0d1117';
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            // 只有在未暫停時才更新位置與進行運算
+            if (!isGamePaused && !isResting) {
+                // 清除畫布
+                gameCtx.fillStyle = '#0d1117';
+                gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            // 渲染背景星空
-            gameCtx.fillStyle = '#ffffff';
-            stars.forEach(s => {
-                s.x -= s.speed * (frenzyTimer > 0 ? 2 : 1);
-                if (s.x < 0) s.x = gameCanvas.width;
-                gameCtx.fillRect(s.x, s.y, s.size, s.size);
-            });
+                // 渲染動態背景星空
+                gameCtx.fillStyle = '#ffffff';
+                stars.forEach(s => {
+                    s.x -= s.speed;
+                    if (s.x < 0) s.x = gameCanvas.width;
+                    gameCtx.fillRect(s.x, s.y, s.size, s.size);
+                });
 
-            if (!isResting) {
+                // 💡 正確讀取即時數據 (全域變數smoothedEst 與 currentMode)
                 let flow = (typeof smoothedEst !== 'undefined') ? smoothedEst : 0;
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
                 let flowMag = Math.abs(flow);
@@ -869,42 +887,32 @@
                 let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
                 let sensitivity = (diff === 'easy') ? 1.6 : (diff === 'hard') ? 0.9 : 1.2;
 
-                // 控制火箭 Y 軸位置與角度
+                // 即時跟隨氣流 (吸氣往上，吐氣往下)
                 let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
                 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
                 
                 let dy = targetY - rocket.y;
-                rocket.y += dy * 0.1;
-                rocket.angle = Math.atan2(dy, 20); // 隨運動俯仰傾斜
+                rocket.y += dy * 0.1; // 柔和跟隨
+                rocket.angle = Math.atan2(dy, 25); // 機頭傾斜角度
 
-                // 繪製微弱的中線軌道引導
+                // 繪製軌道引導虛線
                 gameCtx.beginPath();
-                gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
                 gameCtx.setLineDash([8, 8]);
                 gameCtx.moveTo(0, gameCanvas.height / 2);
                 gameCtx.lineTo(gameCanvas.width, gameCanvas.height / 2);
                 gameCtx.stroke();
                 gameCtx.setLineDash([]);
 
-                // 生成金幣與障礙物 (隨時間移動)
+                // 生成金幣與雷雲
                 if (Math.random() < 0.025) {
-                    collectibles.push({
-                        x: gameCanvas.width + 20,
-                        y: Math.random() * (gameCanvas.height - 100) + 50,
-                        radius: 8,
-                        speed: 3
-                    });
+                    collectibles.push({ x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3 });
                 }
                 if (Math.random() < (diff === 'hard' ? 0.015 : 0.008)) {
-                    obstacles.push({
-                        x: gameCanvas.width + 30,
-                        y: Math.random() * (gameCanvas.height - 100) + 50,
-                        radius: 14,
-                        speed: 4
-                    });
+                    obstacles.push({ x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4 });
                 }
 
-                // 渲染金幣 (星星)
+                // 繪製與碰撞金幣
                 collectibles.forEach((c, idx) => {
                     c.x -= c.speed;
                     gameCtx.beginPath();
@@ -912,23 +920,16 @@
                     gameCtx.fillStyle = '#f1c40f';
                     gameCtx.fill();
 
-                    // 碰撞檢測 (吃金幣)
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
                     if (dist < c.radius + rocket.radius) {
                         gameScore += 50;
                         gameCombo++;
                         playAudioEffect('coin');
                         collectibles.splice(idx, 1);
-
-                        // 觸發狂暴模式
-                        if (gameCombo > 0 && gameCombo % 25 === 0) {
-                            frenzyTimer = 180; // 狂暴 3 秒
-                            playAudioEffect('frenzy');
-                        }
                     }
                 });
 
-                // 渲染雷雲障礙物
+                // 繪製與碰撞障礙物
                 obstacles.forEach((o, idx) => {
                     o.x -= o.speed;
                     gameCtx.beginPath();
@@ -936,7 +937,6 @@
                     gameCtx.fillStyle = '#e74c3c';
                     gameCtx.fill();
 
-                    // 碰撞檢測 (撞障礙物)
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
                         playerHP = Math.max(0, playerHP - 15);
@@ -946,15 +946,12 @@
                     }
                 });
 
-                // 清除超出畫面的物件
                 collectibles = collectibles.filter(c => c.x > -20);
                 obstacles = obstacles.filter(o => o.x > -20);
 
-                // 更新粒子特效
+                // 更新粒子
                 particles.forEach((p, idx) => {
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.life -= 0.04;
+                    p.x += p.vx; p.y += p.vy; p.life -= 0.04;
                     if (p.life <= 0) particles.splice(idx, 1);
 
                     gameCtx.beginPath();
@@ -965,30 +962,29 @@
                     gameCtx.globalAlpha = 1.0;
                 });
 
-                // 繪製火箭角色
+                // 繪製火箭
                 drawRocket(rocket.x, rocket.y, rocket.angle, mode === "exhalation", flowMag);
 
-                // 計算得分與 HP 扣減
+                // 得分與血條計算
                 if (flowMag > 10) {
-                    gameScore += (frenzyTimer > 0) ? 3 : 1;
+                    gameScore += 1;
                 } else {
-                    playerHP = Math.max(0, playerHP - 0.03); // 停滯微幅扣血
+                    playerHP = Math.max(0, playerHP - 0.03); // 無氣流微幅扣血
                 }
 
-                if (frenzyTimer > 0) frenzyTimer--;
-
-                // 更新 UI 文字
+                // 更新 HUD 文字
                 document.getElementById('gameScore').innerText = gameScore;
                 document.getElementById('gameCombo').innerText = gameCombo;
                 document.getElementById('hpFill').style.width = `${playerHP}%`;
 
-                // 換氣休息站機制 (每 90 秒強制休息 15 秒)
+                // 每 90 秒換氣休息站機制
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) {
                     triggerRestStop();
                 }
             }
 
+            // 💡 安全請求下一影格，避免重複觸發引發閃爍
             gameAnimationId = requestAnimationFrame(gameLoop);
         }
 
@@ -999,7 +995,6 @@
             let countdown = 15;
 
             restScreen.style.display = 'flex';
-            playAudioEffect('frenzy');
 
             restTimer = setInterval(() => {
                 countdown--;
