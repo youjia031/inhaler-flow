@@ -196,7 +196,6 @@
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- 未開始量測時的覆蓋遮罩 -->
         <div class="start-prompt-overlay" id="gameStartPrompt">
             <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
@@ -218,7 +217,6 @@
             </div>
         </div>
 
-        <!-- 💀 Game Over 畫面 -->
         <div class="modal-screen" id="gameOverScreen" style="display: none;">
             <div class="modal-card">
                 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
@@ -230,7 +228,6 @@
             </div>
         </div>
 
-        <!-- 🍵 換氣休息站畫面 -->
         <div class="modal-screen" id="restScreen" style="display: none;">
             <div class="modal-card">
                 <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
@@ -640,7 +637,7 @@
             isMeasuring = !isMeasuring;
             if (isMeasuring) {
                 if (startTime === null) startTime = Date.now();
-                document.getElementById('startBtn').innerText = 'Stop';
+                document.getElementById('startBtn').innerText = 'Start';
                 updateStatus('Measuring...');
             } else {
                 document.getElementById('startBtn').innerText = 'Start';
@@ -690,7 +687,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 音樂、音效與 Game Over 完整引擎  -->
+    <!--  🎮 氣流飛行員 - 大音量主題進行曲 Web Audio 樂章引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -718,12 +715,33 @@
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
-        // 🎵 Web Audio API 即時音樂與音效引擎
+        // 🎵 Web Audio API 進行曲合奏引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let bgmInterval = null;
         let bgmStep = 0;
-        // Synthwave 經典旋律音高 (C Major Pentatonic)
-        const bgmNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 392.00, 329.63];
+
+        // 音符頻率對照表 (C4 ~ C6 進行曲音階)
+        const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
+        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
+
+        // 🎶 《氣流飛行進行曲》完整主題曲雙樂段 (32 拍樂句)
+        const themeLead = [
+            // A 段：啟航 (Glorious Takeoff)
+            C4, E4, G4, C5,  G4, E4, G4, C5,  
+            D5, C5, B4, A4,  G4, E4, C4, G4,
+            // B 段：衝刺 (High-Altitude Sprint)
+            A4, C5, E5, D5,  C5, B4, C5, D5,  
+            E5, G5, E5, C5,  G4, B4, C5, C5
+        ];
+
+        const themeBass = [
+            // 重低音四拍節奏 Bassliner
+            C3, C3, G3, C3,  C3, C3, G3, C3,
+            F3, F3, C3, F3,  G3, G3, D4, G3,
+            A3, A3, E4, A3,  F3, F3, C3, F3,
+            C3, C3, G3, C3,  G3, G3, C3, C3
+        ];
 
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -740,28 +758,28 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
                     osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime); // 音量放大
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.25);
                 } else if (type === 'hit') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
                     osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime); // 音量放大
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
                 } else if (type === 'gameover') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.6);
-                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.8);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.8);
                 }
             } catch(e) {}
         }
 
-        // 🎵 背景音樂迴圈控制器 (Synthwave Bass Loop)
+        // 🎺 4-Part 進行曲主題曲多樂器合成器
         function startBGM() {
             stopBGM();
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -772,26 +790,58 @@
                 if (!isGameRunning || isGamePaused || isGameOver || isResting) return;
 
                 try {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
+                    let now = audioCtx.currentTime;
+                    let idx = bgmStep % themeLead.length;
 
-                    // 動態音高：氣流強烈時微幅升調
-                    let flowBonus = Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) * 1.5;
-                    let freq = bgmNotes[bgmStep % bgmNotes.length] + flowBonus;
+                    // 1. 主旋律 Lead Synth (鋸齒波 Sawtooth)
+                    const leadOsc = audioCtx.createOscillator();
+                    const leadGain = audioCtx.createGain();
+                    leadOsc.type = 'sawtooth';
 
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+                    // 動態音高：呼氣/吸氣強度增強時，主題曲自動動態調頻昇華！
+                    let flowShift = Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) * 1.8;
+                    leadOsc.frequency.setValueAtTime(themeLead[idx] + flowShift, now);
 
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.18);
+                    leadGain.gain.setValueAtTime(0.18, now); // 🔊 大幅調高音量
+                    leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+                    leadOsc.connect(leadGain);
+                    leadGain.connect(audioCtx.destination);
+                    leadOsc.start(now);
+                    leadOsc.stop(now + 0.16);
+
+                    // 2. 節奏低音 Bassliner (方波 Square)
+                    const bassOsc = audioCtx.createOscillator();
+                    const bassGain = audioCtx.createGain();
+                    bassOsc.type = 'square';
+                    bassOsc.frequency.setValueAtTime(themeBass[idx], now);
+
+                    bassGain.gain.setValueAtTime(0.15, now); // 🔊 震撼低音
+                    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+                    bassOsc.connect(bassGain);
+                    bassGain.connect(audioCtx.destination);
+                    bassOsc.start(now);
+                    bassOsc.stop(now + 0.18);
+
+                    // 3. 打擊小鼓 Snare/Hi-Hat Noise
+                    if (idx % 2 === 1) {
+                        const snareOsc = audioCtx.createOscillator();
+                        const snareGain = audioCtx.createGain();
+                        snareOsc.type = 'triangle';
+                        snareOsc.frequency.setValueAtTime(120, now);
+                        snareGain.gain.setValueAtTime(0.1, now);
+                        snareGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+                        snareOsc.connect(snareGain);
+                        snareGain.connect(audioCtx.destination);
+                        snareOsc.start(now);
+                        snareOsc.stop(now + 0.08);
+                    }
 
                     bgmStep++;
                 } catch(e) {}
-            }, 200); // 每 200ms 一拍
+            }, 180); // BPM 166 節奏激昂進行曲速度
         }
 
         function stopBGM() {
@@ -876,7 +926,7 @@
             }
             if (measuring) {
                 sessionStartTime = Date.now();
-                startBGM(); // 開始量測時播放音樂
+                startBGM();
             } else {
                 stopBGM();
             }
@@ -893,6 +943,7 @@
             particles = [];
             collectibles = [];
             obstacles = [];
+            bgmStep = 0;
             
             let h = gameCanvas.height || 480;
             rocket.x = 120;
