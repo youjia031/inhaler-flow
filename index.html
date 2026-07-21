@@ -42,7 +42,7 @@
 
         }
 
-        /* 新增的大型中文主標題樣式 */
+        /* 大型中文主標題樣式 */
 
         .header .main-title {
 
@@ -57,8 +57,6 @@
             letter-spacing: 2px;
 
         }
-
-        /* 原本的英文標題改為副標題 */
 
         .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
 
@@ -160,11 +158,11 @@
 
             <select id="modeSelect">
 
-                <option value="auto">auto</option>
+                <option value="auto">auto (PKL自動辨識)</option>
 
-                <option value="inhalation">inhalation</option>
+                <option value="inhalation">inhalation (強制吸氣)</option>
 
-                <option value="exhalation">exhalation</option>
+                <option value="exhalation">exhalation (強制吐氣)</option>
 
             </select>
 
@@ -198,93 +196,83 @@
 
         // =====================================================
 
-        //  100% 完整對應原版 Python 的教育引導線計畫表 (共 27 階段)
+        //  教育引導線計畫表 (僅供背景繪製虛線參考，不干涉真實波形正負方向)
 
         // =====================================================
 
         const EDUCATION_PROGRAM = [
 
-            // === 暖身 ===
+            ["inhalation", 0,   3],
 
-            ["inhalation", 0,   3],    // 0. 預備靜止
+            ["inhalation", 60,  2],
 
-            // === 階段一：節奏訓練 ===
+            ["inhalation", 0,   1],
 
-            ["inhalation", 60,  2],    // 1. 中強吸氣 60
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   1],    // 2. 屏息 ⚡挑戰
+            ["exhalation", 60,  3],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   2],
 
-            ["exhalation", 60,  3],    // 3. 長吐氣 60
+            ["inhalation", 60,  2],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   1],
 
-            ["inhalation", 60,  2],    // 4. 中強吸氣 60
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   1],    // 5. 屏息 ⚡挑戰
+            ["exhalation", 60,  3],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   2],
 
-            ["exhalation", 60,  3],    // 6. 長吐氣 60
+            ["inhalation", 0,   1],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   1],
 
-            // === 階段二：力道挑戰 ===
+            ["inhalation", 90, 1.5],
 
-            ["inhalation", 0,   1],    // 7. 預備
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   1],    // 休息
+            ["exhalation", 50,  6],
 
-            ["inhalation", 90, 1.5],  // 8. 💥爆發吸 90
+            ["inhalation", 0,   1],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   2],
 
-            ["exhalation", 50,  6],    // 9. 持久吐氣 50 🌬️耐力
+            ["inhalation", 90, 1.5],
 
-            ["inhalation", 0,   1],    // 10. 喘息
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   2],    // 休息
+            ["exhalation", 50,  6],
 
-            ["inhalation", 90, 1.5],  // 11. 💥爆發吸 90
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   2],
 
-            ["exhalation", 50,  6],    // 12. 持久吐氣 50
+            ["inhalation", 120, 1],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   1],
 
-            // === 階段三：高峰衝刺 ===
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   2],    // 13. 深呼吸預備
+            ["exhalation", 100, 2],
 
-            ["inhalation", 120, 1],    // 14. 🔥極限吸氣 120 ⭐BOSS
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   1],    // 15. 屏息撐住 ⚡⚡
+            ["inhalation", 40,  3],
 
-            ["inhalation", 0,   2],    // 休息
+            ["inhalation", 0,   2],
 
-            ["exhalation", 100, 2],    // 16. 🔥強吐 100 ⭐BOSS
+            ["exhalation", 40,  4],
 
-            ["inhalation", 0,   2],    // 17. 喘息
+            ["inhalation", 0,   2],
 
-            // === 緩和 ===
+            ["inhalation", 30,  3],
 
-            ["inhalation", 40,  3],    // 18. 慢吸氣 40
+            ["inhalation", 0,   2],
 
-            ["inhalation", 0,   2],    // 休息
+            ["exhalation", 30,  4],
 
-            ["exhalation", 40,  4],    // 19. 慢吐氣 40
-
-            ["inhalation", 0,   2],    // 休息
-
-            ["inhalation", 30,  3],    // 20. 輕吸氣 30
-
-            ["inhalation", 0,   2],    // 休息
-
-            ["exhalation", 30,  4],    // 21. 輕吐氣 30
-
-            ["inhalation", 0,   3]     // 22. 結束靜止
+            ["inhalation", 0,   3]
 
         ];
 
@@ -390,23 +378,19 @@
 
         let records = [], flowHistory = [], windowHistory = [false, false, false];
 
-        let lastFFT = {}, startTime = null, currentMode = "inhalation";
+        let lastFFT = {}, startTime = null;
 
         let lastAchievementSegment = -1;
 
-        let achievementMarkers = []; // 儲存成就點坐標 {x, y}
+        let achievementMarkers = [];
 
 
-
-        // 生成標準引導線繪圖數據點
 
         const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
 
         const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
 
 
-
-        // 自訂繪圖插件：完美還原 Python 的圓圈金幣與 😊 貼圖效果
 
         const achievementPlugin = {
 
@@ -426,8 +410,6 @@
 
                     
 
-                    // 1. 畫金色圓圈
-
                     ctx.beginPath();
 
                     ctx.arc(canvasX, canvasY, 15, 0, 2 * Math.PI);
@@ -440,15 +422,13 @@
 
                     
 
-                    // 2. 畫 😊 貼圖
-
                     ctx.font = '30px sans-serif';
 
                     ctx.textAlign = 'center';
 
                     ctx.textBaseline = 'middle';
 
-                    ctx.fillText('😊', canvasX, canvasY - 40); // 往上飄移顯示
+                    ctx.fillText('😊', canvasX, canvasY - 40);
 
                 });
 
@@ -508,62 +488,6 @@
 
 
 
-        // =====================================================
-
-        //  100% 翻譯自原版 Python 的核心判定演算法
-
-        // =====================================================
-
-        function getEducationMode(elapsedTime) {
-
-            let t = 0.0;
-
-            let prevMode = null;
-
-            for (let i = 0; i < EDUCATION_PROGRAM.length; i++) {
-
-                let [mode, flow, dur] = EDUCATION_PROGRAM[i];
-
-                if (t <= elapsedTime && elapsedTime < t + dur) {
-
-                    if (flow > 0) return mode;
-
-                    let progress = dur > 0 ? (elapsedTime - t) / dur : 0;
-
-                    if (prevMode === null) {
-
-                        for (let j = i - 1; j >= 0; j--) {
-
-                            if (EDUCATION_PROGRAM[j][1] > 0) { prevMode = EDUCATION_PROGRAM[j][0]; break; }
-
-                        }
-
-                    }
-
-                    let nextMode = null;
-
-                    for (let j = i + 1; j < EDUCATION_PROGRAM.length; j++) {
-
-                        if (EDUCATION_PROGRAM[j][1] > 0) { nextMode = EDUCATION_PROGRAM[j][0]; break; }
-
-                    }
-
-                    return (progress < 0.5) ? prevMode : nextMode;
-
-                }
-
-                if (flow > 0) prevMode = mode;
-
-                t += dur;
-
-            }
-
-            return null;
-
-        }
-
-
-
         function checkAchievement(elapsedTime) {
 
             let t = 0.0;
@@ -594,7 +518,7 @@
 
         // =====================================================
 
-        //  PKL 模型推論與動態 Index 切分機制 (替換掉原本 ratio_3to1)
+        //  純 PKL 模型判斷（100% 決定吸/吐狀態與方向）
 
         // =====================================================
 
@@ -606,22 +530,23 @@
 
             
 
-            // 能量門檻判斷
+            // 靜止/低能量過濾
 
             if (e1 + e2 + e3 < 500000) return null;
 
 
 
-            // 1kHz ~ 20kHz 特徵提取 (20個頻段)
-
             let features = [];
+
             for (let i = 1; i <= 20; i++) {
+
                 features.push(fft[i] || 0.0);
+
             }
 
-            // PKL 隨機森林轉譯模型推論
 
-            // (如果有引入由 m2cgen 轉換的 predictBreathMode 函式會優先呼叫，否則使用頻域權重推論)
+
+            // 呼叫轉換後的 PKL 隨機森林模型邏輯
 
             if (typeof predictBreathMode === 'function') {
 
@@ -633,7 +558,7 @@
 
 
 
-            // 預設特徵比對判讀
+            // 若無 PKL 轉譯腳本，預設以 3k/1k 頻率比例推論
 
             let ratio_3to1 = e1 > 0 ? e3 / e1 : 10;
 
@@ -642,8 +567,6 @@
         }
 
 
-
-        // 封裝成原版 detectBreathMode 介面以保持相容性
 
         function detectBreathMode(fft) {
 
@@ -917,61 +840,65 @@
 
 
 
-                // 根據教育引導線與進度條判定吸吐與成就笑臉
+                // ----------------------------------------------------
+
+                // 完全由 PKL 模型決定吸吐狀態與波形正負方向
+
+                // ----------------------------------------------------
 
                 let manualMode = document.getElementById('modeSelect').value;
 
+                let pklDetectedMode = predictBreathModePKL(lastFFT);
+
+                let activeMode = "inhalation"; // 預設值
+
+
+
                 if (manualMode !== "auto") {
 
-                    currentMode = manualMode;
+                    // 手動模式（強制吸氣/吐氣）
+
+                    activeMode = manualMode;
+
+                } else if (pklDetectedMode) {
+
+                    // 自動模式：直接採用 PKL 模型預測出的結果
+
+                    activeMode = pklDetectedMode;
+
+                }
+
+
+
+                // 更新 UI 上顯示的判定結果
+
+                if (est > 0 && pklDetectedMode) {
+
+                    let dFlow = detectFlowRate(pklDetectedMode, est);
+
+                    document.getElementById('detectedMode').innerText = `Detected: ${pklDetectedMode} @ ${dFlow} L/min`;
 
                 } else {
 
-                    let edMode = getEducationMode(elapsed);
+                    document.getElementById('detectedMode').innerText = `Detected: —`;
 
-                    if (edMode) {
+                }
 
-                        currentMode = edMode;
 
-                        let ach = checkAchievement(elapsed);
 
-                        // 100% 還原 Python 的成就判斷：正在活動區、流速不為零、此段進度超過 80%
+                // 成就笑臉檢查
 
-                        if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
+                let ach = checkAchievement(elapsed);
 
-                            if (ach.index !== lastAchievementSegment) {
+                if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
 
-                                lastAchievementSegment = ach.index;
+                    if (ach.index !== lastAchievementSegment) {
 
-                                achievementMarkers.push({ x: elapsed, y: 0 }); // 完美還原 Python 的圓圈打點坐標
+                        lastAchievementSegment = ach.index;
 
-                                updateStatus("😊 達到 80% 貼合度！成就解鎖！");
+                        achievementMarkers.push({ x: elapsed, y: 0 });
 
-                            }
-
-                        }
-
-                    } else {
-
-                        achievementMarkers = [];
-
-                    }
-
-                    
-
-                    if (est > 5) {
-
-                        // 呼叫 PKL 進行動態模式預測
-
-                        let dMode = detectBreathMode(lastFFT);
-
-                        if (dMode) {
-
-                            let dFlow = detectFlowRate(dMode, est);
-
-                            document.getElementById('detectedMode').innerText = `Detected: ${dMode} @ ${dFlow} L/min`;
-
-                        }
+                        updateStatus("😊 達到 80% 貼合度！成就解鎖！");
 
                     }
 
@@ -979,15 +906,23 @@
 
 
 
-                if (currentMode === "exhalation") {
+                // 根據 PKL 計算出的 activeMode 決定最終波形正負方向
 
-                    if (est === 0.0 && lowE > 800000) est = 30.0;
+                // 吸氣 (inhalation) -> 正數 (+)
 
-                    if (est > 0) est = -Math.abs(est);
+                // 吐氣 (exhalation) -> 負數 (-)
 
-                } else if (currentMode === "inhalation" && est < 0) {
+                let flowMagnitude = Math.abs(est);
 
-                    est = Math.abs(est);
+                if (activeMode === "exhalation") {
+
+                    if (flowMagnitude === 0 && lowE > 800000) flowMagnitude = 30.0;
+
+                    smoothedEst = -flowMagnitude; // 吐氣為負向波形
+
+                } else {
+
+                    smoothedEst = flowMagnitude;  // 吸氣為正向波形
 
                 }
 
@@ -995,17 +930,17 @@
 
                 // 5點 Moving Average 移動平均平滑
 
-                flowHistory.push(est);
+                flowHistory.push(smoothedEst);
 
                 if (flowHistory.length > 5) flowHistory.shift();
 
-                let smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
+                let finalSmoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
 
 
 
                 // 儲存記錄
 
-                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
+                records.push({ elapsed, flowYes, est: finalSmoothedEst, lowE, fft: { ...lastFFT } });
 
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
 
@@ -1013,9 +948,9 @@
 
 
 
-                // 更新圖表與跳格視窗 (每 20 秒跳一格)
+                // 更新圖表
 
-                flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
+                flowChart.data.datasets[2].data.push({ x: elapsed, y: finalSmoothedEst });
 
                 let windowStart = Math.floor(elapsed / 20) * 20;
 
@@ -1035,7 +970,7 @@
 
 
 
-                flowChart.update('none'); // 最大化即時渲染效能
+                flowChart.update('none');
 
             }
 
