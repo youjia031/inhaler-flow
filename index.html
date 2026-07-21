@@ -304,7 +304,7 @@
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [], windowHistory = [false, false, false];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
-        let smoothedEst = 0; // 供遊戲同步使用
+        let smoothedEst = 0; 
         let pklSegments = [];
         let onnxSession = null;
         let predictionBuffer = [];
@@ -521,7 +521,7 @@
         async function readLoop() {
             if (!port || !port.readable) return;
             const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+            const readableStreamClosed = port.readable.pipeTo(textDecoder.readable);
             reader = textDecoder.readable.getReader();
             let buffer = '';
 
@@ -636,7 +636,6 @@
                 updateStatus('Measurement stopped (waveform frozen).');
             }
 
-            // 💡 通知遊戲模組量測狀態
             if (typeof updateGameMeasurementState === 'function') {
                 updateGameMeasurementState(isMeasuring);
             }
@@ -680,10 +679,9 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 完全獨立、量測連動、安全防護遊戲模組  -->
+    <!--  🎮 氣流飛行員 - 徹底修正角色消失 Bug 之堅固遊戲引擎  -->
     <!-- ===================================================== -->
     <script>
-        // 1. 動態加入選單按鈕
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
             const gameControlHTML = `
@@ -709,7 +707,6 @@
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
-        // 2. 音效生成引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
@@ -740,13 +737,13 @@
             } catch(e) {}
         }
 
-        // 3. 遊戲畫布與狀態管理
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         let gameAnimationId = null;
         let isGameRunning = false;
         let isGamePaused = false;
 
+        // 火箭角色狀態
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
         let stars = [];
         let particles = [];
@@ -762,10 +759,12 @@
 
         function initStars() {
             stars = [];
+            let w = gameCanvas.width || 800;
+            let h = gameCanvas.height || 480;
             for(let i=0; i<50; i++) {
                 stars.push({
-                    x: Math.random() * gameCanvas.width,
-                    y: Math.random() * gameCanvas.height,
+                    x: Math.random() * w,
+                    y: Math.random() * h,
                     size: Math.random() * 2 + 1,
                     speed: Math.random() * 2 + 0.5
                 });
@@ -773,15 +772,15 @@
         }
 
         function resizeGameCanvas() {
-            if (gameCanvas) {
-                gameCanvas.width = gameCanvas.parentElement.clientWidth;
-                gameCanvas.height = gameCanvas.parentElement.clientHeight;
+            if (gameCanvas && gameCanvas.parentElement) {
+                gameCanvas.width = gameCanvas.parentElement.clientWidth || 800;
+                gameCanvas.height = gameCanvas.parentElement.clientHeight || 480;
+                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = gameCanvas.height / 2;
                 initStars();
             }
         }
         window.addEventListener('resize', resizeGameCanvas);
 
-        // 💡 視窗模式切換
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
@@ -798,7 +797,6 @@
             }
         }
 
-        // 💡 當點擊上方「Start」或「Stop」時調用
         function updateGameMeasurementState(measuring) {
             const promptEl = document.getElementById('gameStartPrompt');
             if (promptEl) {
@@ -819,12 +817,18 @@
             particles = [];
             collectibles = [];
             obstacles = [];
+            
+            // 安全重置火箭位置
+            let h = gameCanvas.height || 480;
+            rocket.x = 120;
+            rocket.y = h / 2;
+            rocket.angle = 0;
+
             sessionStartTime = Date.now();
             document.getElementById('gamePauseBtn').innerText = "暫停";
             document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
             document.getElementById('restScreen').style.display = 'none';
             
-            // 同步遮罩狀態
             updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
         }
@@ -850,13 +854,22 @@
             }
         }
 
-        // 4. 繪製火箭角色
+        // 💡 堅固繪製火箭角色 (確保全球 Alpha 不被污染)
         function drawRocket(x, y, angle, isExhale, flowMagnitude) {
+            // 安全檢查：若座標無效不予繪製並恢復預設值
+            if (isNaN(x) || isNaN(y) || isNaN(angle)) {
+                rocket.x = 120;
+                rocket.y = (gameCanvas.height || 480) / 2;
+                rocket.angle = 0;
+                return;
+            }
+
             gameCtx.save();
+            gameCtx.globalAlpha = 1.0; // 強制恢復繪圖不透明度，防止角色消失！
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
-            // 火箭主體
+            // 繪製火箭主體
             gameCtx.fillStyle = '#ecf0f1';
             gameCtx.beginPath();
             gameCtx.moveTo(20, 0);
@@ -866,7 +879,7 @@
             gameCtx.closePath();
             gameCtx.fill();
 
-            // 火箭機翼
+            // 繪製火箭機翼
             gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
             gameCtx.beginPath();
             gameCtx.moveTo(-4, -6);
@@ -879,7 +892,7 @@
 
             gameCtx.restore();
 
-            // 噴射粒子特效 (只有有氣流時才噴出)
+            // 生成粒子
             if (flowMagnitude > 5) {
                 let pColor = isExhale ? '#f39c12' : '#00d2d3';
                 particles.push({
@@ -894,15 +907,16 @@
             }
         }
 
-        // 5. 獨立順暢的 60 FPS 遊戲主迴圈
+        // 5. 堅固 60 FPS 遊戲主迴圈
         function gameLoop() {
             if (!isGameRunning) return;
 
-            // 清除畫布背景
+            // 清除畫布背景，並強制透明度歸位 1.0
+            gameCtx.globalAlpha = 1.0;
             gameCtx.fillStyle = '#0d1117';
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            // 繪製星空 (即使沒開始量測，背景星空也會飄動)
+            // 繪製星空
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.speed;
@@ -910,7 +924,7 @@
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
 
-            // 繪製軌道引導虛線
+            // 繪製軌道引導線
             gameCtx.beginPath();
             gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             gameCtx.setLineDash([8, 8]);
@@ -919,26 +933,28 @@
             gameCtx.stroke();
             gameCtx.setLineDash([]);
 
-            // 💡 只有在「開始量測」且「未暫停/未休息」時才推進遊戲邏輯
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting) {
-                let flow = (typeof smoothedEst !== 'undefined') ? smoothedEst : 0;
+                let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
                 let flowMag = Math.abs(flow);
 
                 let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
                 let sensitivity = (diff === 'easy') ? 1.6 : (diff === 'hard') ? 0.9 : 1.2;
 
-                // 控制角色位置
+                // 💡 計算位置防呆防 NaN
                 let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
+                if (isNaN(targetY)) targetY = gameCanvas.height / 2;
                 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
                 
                 let dy = targetY - rocket.y;
+                if (isNaN(dy)) dy = 0;
+                
                 rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                // 生成金幣與雷雲
+                // 生成物件
                 if (Math.random() < 0.025) {
                     collectibles.push({ x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3 });
                 }
@@ -946,8 +962,8 @@
                     obstacles.push({ x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4 });
                 }
 
-                // 金幣檢測
-                collectibles.forEach((c, idx) => {
+                // 金幣碰撞
+                collectibles.forEach((c) => {
                     c.x -= c.speed;
                     gameCtx.beginPath();
                     gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
@@ -959,12 +975,12 @@
                         gameScore += 50;
                         gameCombo++;
                         playAudioEffect('coin');
-                        collectibles.splice(idx, 1);
+                        c.collected = true;
                     }
                 });
 
-                // 雷雲檢測 (只有撞到雷雲才會扣血！)
-                obstacles.forEach((o, idx) => {
+                // 雷雲碰撞
+                obstacles.forEach((o) => {
                     o.x -= o.speed;
                     gameCtx.beginPath();
                     gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
@@ -976,38 +992,42 @@
                         playerHP = Math.max(0, playerHP - 15);
                         gameCombo = 0;
                         playAudioEffect('hit');
-                        obstacles.splice(idx, 1);
+                        o.hit = true;
                     }
                 });
 
-                collectibles = collectibles.filter(c => c.x > -20);
-                obstacles = obstacles.filter(o => o.x > -20);
+                // 💡 安全淨化陣列（防止邊執行邊 Splice 引發繪圖 Bug）
+                collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
+                obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
 
                 if (flowMag > 10) gameScore += 1;
 
-                // 換氣休息站機制
                 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
                 if (elapsedSession > 90) triggerRestStop();
             } else {
-                // 未開始量測時，火箭柔和停在中間，不生成障礙物
-                rocket.y += (gameCanvas.height / 2 - rocket.y) * 0.05;
+                // 靜止時平滑復位
+                let centerTarget = gameCanvas.height / 2;
+                if (isNaN(rocket.y)) rocket.y = centerTarget;
+                rocket.y += (centerTarget - rocket.y) * 0.05;
                 rocket.angle = 0;
             }
 
-            // 更新粒子特效
-            particles.forEach((p, idx) => {
+            // 更新與繪製粒子 (繪製完成後強制還原 Alpha)
+            particles.forEach((p) => {
                 p.x += p.vx; p.y += p.vy; p.life -= 0.04;
-                if (p.life <= 0) particles.splice(idx, 1);
-
-                gameCtx.beginPath();
-                gameCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-                gameCtx.fillStyle = p.color;
-                gameCtx.globalAlpha = p.life;
-                gameCtx.fill();
-                gameCtx.globalAlpha = 1.0;
+                if (p.life > 0) {
+                    gameCtx.beginPath();
+                    gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
+                    gameCtx.fillStyle = p.color;
+                    gameCtx.globalAlpha = Math.max(0, p.life);
+                    gameCtx.fill();
+                }
             });
+            particles = particles.filter(p => p.life > 0);
+            
+            // 💡 關鍵修復：畫火箭前強制還原Alpha = 1.0，火箭再也不會隱形！
+            gameCtx.globalAlpha = 1.0;
 
-            // 繪製火箭
             let activeFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
             let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
             drawRocket(rocket.x, rocket.y, rocket.angle, activeMode === "exhalation", activeFlow);
