@@ -113,28 +113,31 @@
             z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.92);
+            background: rgba(22, 27, 34, 0.95);
             padding: 8px 16px;
             border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(6px);
             pointer-events: auto;
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 0 12px rgba(0,0,0,0.6);
         }
         .hp-bar-bg {
-            width: 120px; height: 16px; background: rgba(0,0,0,0.6);
+            width: 120px; height: 16px; background: rgba(0,0,0,0.7);
             border-radius: 8px; overflow: hidden; border: 2px solid #ffffff;
             display: inline-block; vertical-align: middle; margin-left: 4px;
         }
         .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
+        
+        /* 👾 Boss 血條樣式 */
         .boss-hp-bg {
-            width: 200px; height: 14px; background: rgba(0,0,0,0.6);
-            border-radius: 7px; overflow: hidden; border: 2px solid #f1c40f;
+            width: 180px; height: 16px; background: rgba(0,0,0,0.8);
+            border-radius: 8px; overflow: hidden; border: 2px solid #f1c40f;
             display: inline-block; vertical-align: middle; margin-left: 4px;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
         }
         .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); transition: width 0.1s linear; }
 
@@ -159,7 +162,7 @@
         .manual-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0; font-size: 13px;
         }
-        .manual-item { background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f1c40f; }
+        .manual-item { background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f1c40f; }
         .music-upload-btn {
             background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-block;
         }
@@ -226,8 +229,9 @@
                 <span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOW</span>
             </div>
 
+            <!-- Boss HUD 血條 -->
             <div class="hud-badge" id="bossHudBadge" style="display:none;">
-                👾 <span id="bossName">Boss</span>: 
+                <span id="bossName" style="color:#f1c40f; font-weight:bold;">Boss</span>: 
                 <div class="boss-hp-bg"><div class="boss-hp-fill" id="bossHpFill"></div></div>
             </div>
 
@@ -245,12 +249,12 @@
             <div class="modal-card">
                 <h2 style="color: #f1c40f; margin-top:0;">📖 氣流飛行員 - 道具與障礙說明書</h2>
                 <div class="manual-grid">
-                    <div class="manual-item" style="border-color:#f1c40f;">🟡 <b>金幣</b>: 增加 50 分。</div>
+                    <div class="manual-item" style="border-color:#f1c40f;">🟡 <b>金幣</b>: 增加 50 分，並對 Boss 造成攻擊傷害！</div>
                     <div class="manual-item" style="border-color:#2ecc71;">🟢 <b>愛心</b>: 恢復 25 HP 血量。</div>
-                    <div class="manual-item" style="border-color:#00d2d3;">🔵 <b>護盾</b>: 抵擋一次障礙物傷害。</div>
-                    <div class="manual-item" style="border-color:#e67e22;">🟠 <b>磁鐵</b>: 自動吸附周圍寶物。</div>
+                    <div class="manual-item" style="border-color:#00d2d3;">🔵 <b>護盾</b>: 抵擋一次障礙物或 Boss 彈幕傷害。</div>
+                    <div class="manual-item" style="border-color:#e67e22;">🟠 <b>磁鐵</b>: 自動將周圍寶物吸過來。</div>
                     <div class="manual-item" style="border-color:#2ecc71;">💎 <b>雙倍寶石</b>: 得分倍率 x2。</div>
-                    <div class="manual-item" style="border-color:#a55eea;">⚡ <b>狂熱能量</b>: 進入狂熱模式，全屏得分加倍。</div>
+                    <div class="manual-item" style="border-color:#a55eea;">⚡ <b>狂熱能量</b>: 進入狂熱模式，得分與攻擊加倍。</div>
                     <div class="manual-item" style="border-color:#e74c3c;">⛈️ <b>烏雲/毒霧</b>: 碰撞會扣除 HP。</div>
                     <div class="manual-item" style="border-color:#d35400;">🕸️ <b>黏液怪</b>: 暫時降低飛船跟隨速度。</div>
                     <div class="manual-item" style="border-color:#2c3e50;">🖤 <b>詛咒黑寶石</b>: 扣血並降低分數！</div>
@@ -282,6 +286,9 @@
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
+        // =====================================================
+        //  完整 36 段教育引導線計畫表 (做背景參考線，不干涉真實波形正負方向)
+        // =====================================================
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
             ["inhalation", 0,   2], ["exhalation", 60,  3], ["inhalation", 0,   2],
@@ -759,7 +766,7 @@
 
         function playAudioEffect(type) {
             const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return; // 純圖表模式下完全靜音
+            if (currentView === 'chart') return; // 純圖表模式完全靜音
 
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
@@ -786,7 +793,7 @@
         function startBGM() {
             stopBGM();
             const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return; // 純圖表模式不播音樂
+            if (currentView === 'chart') return; // 純圖表模式靜音
 
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
@@ -838,7 +845,7 @@
             if (mode === 'game' || mode === 'both') {
                 resizeGameCanvas(); restartGameEngine();
             } else {
-                stopBGM(); // 切換到純圖表模式時關閉音樂
+                stopBGM(); // 純圖表模式關閉音樂
             }
         }
 
@@ -866,9 +873,8 @@
         // =====================================================
         let currentStage = 1;
         let gameScore = 0, gameCombo = 0, playerHP = 100;
-        let activeBoss = null; // 當前活動 Boss
+        let activeBoss = null;
 
-        // 5 個主題循環
         const STAGE_THEMES = [
             { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 風暴精靈", stageBoss: "🦅 雷霆巨鷹" },
             { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 隕石碎片", stageBoss: "🛸 異星母艦" },
@@ -908,7 +914,6 @@
             }
         }
 
-        // 鍵盤快捷鍵 S 隨時存檔
         window.addEventListener('keydown', (e) => {
             if (e.key === 's' || e.key === 'S') {
                 saveGameProgress(true);
@@ -967,7 +972,7 @@
         function triggerBossSpawn(type) {
             let theme = getStageTheme(currentStage);
             let bName = (type === 'mini') ? theme.miniBoss : (type === 'stage' ? theme.stageBoss : "🌌 終極虛空主宰 (第100關)");
-            let maxHp = 100 + currentStage * 20;
+            let maxHp = 100 + currentStage * 25; // 隨關卡提升 Boss 血量
 
             activeBoss = {
                 type: type,
@@ -982,7 +987,8 @@
 
             document.getElementById('bossName').innerText = bName;
             document.getElementById('bossHudBadge').style.display = 'flex';
-            updateStatus(`⚠️ 警告！${bName} 出現了！`);
+            document.getElementById('bossHpFill').style.width = '100%';
+            updateStatus(`⚠️ 警告！${bName} 出現了！(血量: ${maxHp} HP)`);
         }
 
         function toggleGamePause() {
@@ -1037,16 +1043,16 @@
                 rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                // Boss 出現邏輯 (時間超過 25 秒且尚未有 Boss 時召喚關卡 Boss)
+                // Boss 召喚邏輯 (訓練時間 > 20秒自動召喚)
                 let elapsed = (Date.now() - sessionStartTime) / 1000;
-                if (elapsed > 25 && !activeBoss) {
+                if (elapsed > 20 && !activeBoss) {
                     if (currentStage === 100) triggerBossSpawn('final');
                     else if (currentStage % 10 === 0) triggerBossSpawn('major');
                     else triggerBossSpawn('stage');
                 }
 
-                // 🎯 高對比度正面道具生成
-                if (Math.random() < 0.02) {
+                // 🎯 高對比度金幣生成
+                if (Math.random() < 0.025) {
                     collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 80) + 40, radius: 10, collected: false });
                 }
 
@@ -1055,19 +1061,19 @@
                     gameCtx.beginPath();
                     gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
                     gameCtx.fillStyle = '#f1c40f'; gameCtx.fill();
-                    gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke(); // 高對比度外框
+                    gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke(); // 高對比高亮外框
 
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
                     if (dist < c.radius + rocket.radius) {
                         gameScore += 50; gameCombo++; playAudioEffect('coin');
                         c.collected = true;
 
-                        // 對 Boss 造成傷害
+                        // 擊中金幣對 Boss 造成傷害
                         if (activeBoss) {
-                            activeBoss.hp -= 15;
+                            activeBoss.hp -= 12;
                             document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
                             if (activeBoss.hp <= 0) {
-                                updateStatus(`🎉 成功擊敗 Boss！準備進入下一關！`);
+                                updateStatus(`🎉 成功擊敗 ${activeBoss.name}！準備進入下一關！`);
                                 activeBoss = null;
                                 document.getElementById('bossHudBadge').style.display = 'none';
                                 triggerStageComplete();
@@ -1076,16 +1082,16 @@
                     }
                 });
 
-                // 👹 Boss 繪製與攻擊
+                // 👹 Boss 繪製與高對比外框
                 if (activeBoss) {
                     gameCtx.beginPath();
                     gameCtx.arc(activeBoss.x, activeBoss.y, activeBoss.radius, 0, Math.PI * 2);
                     gameCtx.fillStyle = '#e74c3c'; gameCtx.fill();
-                    gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 4; gameCtx.stroke();
+                    gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 4; gameCtx.stroke(); // 霓虹金色高對比框
                     
-                    // Boss 技能攻擊 (發射彈幕)
+                    // Boss 攻擊發射子彈
                     activeBoss.attackTimer++;
-                    if (activeBoss.attackTimer % 60 === 0) {
+                    if (activeBoss.attackTimer % 50 === 0) {
                         obstacles.push({ x: activeBoss.x, y: activeBoss.y, radius: 12, damage: 20, hit: false });
                     }
                 }
@@ -1096,7 +1102,7 @@
                     gameCtx.beginPath();
                     gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
                     gameCtx.fillStyle = '#e74c3c'; gameCtx.fill();
-                    gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke();
+                    gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke(); // 白色高亮邊框
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
@@ -1128,7 +1134,7 @@
         }
 
         function triggerStageComplete() {
-            saveGameProgress(false); // 擊敗 Boss 後自動存檔
+            saveGameProgress(false); // 通關自動存檔
             currentStage++;
             document.getElementById('gameStage').innerText = currentStage;
             
