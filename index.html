@@ -54,6 +54,8 @@
         .btn.purple-btn:hover { background-color: #71368a; }
         .btn.danger-btn { background-color: #e74c3c; color: white; }
         .btn.danger-btn:hover { background-color: #c0392b; }
+        .btn.info-btn { background-color: #f39c12; color: white; }
+        .btn.info-btn:hover { background-color: #d35400; }
         .btn:hover { background-color: #e1e8ee; }
         .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
         label { font-size: 14px; font-weight: 500; }
@@ -111,23 +113,31 @@
             z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.88);
+            background: rgba(22, 27, 34, 0.92);
             padding: 8px 16px;
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(6px);
             pointer-events: auto;
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
         .hp-bar-bg {
-            width: 120px; height: 14px; background: rgba(255,255,255,0.1);
-            border-radius: 7px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.4);
+            width: 120px; height: 16px; background: rgba(0,0,0,0.6);
+            border-radius: 8px; overflow: hidden; border: 2px solid #ffffff;
             display: inline-block; vertical-align: middle; margin-left: 4px;
         }
         .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
+        .boss-hp-bg {
+            width: 200px; height: 14px; background: rgba(0,0,0,0.6);
+            border-radius: 7px; overflow: hidden; border: 2px solid #f1c40f;
+            display: inline-block; vertical-align: middle; margin-left: 4px;
+        }
+        .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); transition: width 0.1s linear; }
+
         .start-prompt-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(13, 17, 23, 0.75); color: white; display: flex;
@@ -136,14 +146,20 @@
         }
         .modal-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(13, 17, 23, 0.92); color: white; display: flex;
+            background: rgba(13, 17, 23, 0.95); color: white; display: flex;
             flex-direction: column; justify-content: center; align-items: center;
             border-radius: 8px; z-index: 20; backdrop-filter: blur(8px);
+            overflow-y: auto; padding: 20px; box-sizing: border-box;
         }
         .modal-card {
-            background: rgba(255,255,255,0.05); padding: 30px 50px;
-            border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;
+            background: rgba(255,255,255,0.08); padding: 25px 40px;
+            border-radius: 16px; border: 2px solid rgba(255,255,255,0.2); text-align: center;
+            max-width: 650px; width: 90%;
         }
+        .manual-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0; font-size: 13px;
+        }
+        .manual-item { background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f1c40f; }
         .music-upload-btn {
             background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-block;
         }
@@ -167,8 +183,9 @@
         <button id="clearBtn" class="btn">Clear</button>
         <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
         
-        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
-        
+        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..." onchange="loadGameProgress()"></label>
+        <button id="manualSaveBtn" class="btn purple-btn" onclick="saveGameProgress(true)">💾 存檔(S)</button>
+
         <label>Mode: 
             <select id="modeSelect">
                 <option value="auto">auto (PKL 切分)</option>
@@ -192,27 +209,54 @@
         <canvas id="gameCanvas"></canvas>
 
         <div class="start-prompt-overlay" id="gameStartPrompt">
-            <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
+            <div style="background: rgba(31, 78, 121, 0.9); padding: 15px 30px; border-radius: 30px; border: 2px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
             </div>
         </div>
         
         <div class="game-ui-overlay">
             <div class="hud-badge">
-                🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span> 
+                🏰 關卡: <span id="gameStage" style="color:#2ecc71; font-weight:bold;">1</span>
+                | 🚀 得分: <span id="gameScore" style="color:#f1c40f">0</span> 
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
                 <span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER 2X!</span>
                 <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
                 <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
-                <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X SCORE</span>
-                <span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOWED</span>
+                <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X</span>
+                <span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOW</span>
             </div>
+
+            <div class="hud-badge" id="bossHudBadge" style="display:none;">
+                👾 <span id="bossName">Boss</span>: 
+                <div class="boss-hp-bg"><div class="boss-hp-fill" id="bossHpFill"></div></div>
+            </div>
+
             <div class="hud-badge">
+                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 說明</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置分數</button>
                 <span style="margin-left:5px;">❤️ HP</span> 
                 <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
+            </div>
+        </div>
+
+        <!-- 📖 遊戲說明書 Modal -->
+        <div class="modal-screen" id="manualModal" style="display: none;">
+            <div class="modal-card">
+                <h2 style="color: #f1c40f; margin-top:0;">📖 氣流飛行員 - 道具與障礙說明書</h2>
+                <div class="manual-grid">
+                    <div class="manual-item" style="border-color:#f1c40f;">🟡 <b>金幣</b>: 增加 50 分。</div>
+                    <div class="manual-item" style="border-color:#2ecc71;">🟢 <b>愛心</b>: 恢復 25 HP 血量。</div>
+                    <div class="manual-item" style="border-color:#00d2d3;">🔵 <b>護盾</b>: 抵擋一次障礙物傷害。</div>
+                    <div class="manual-item" style="border-color:#e67e22;">🟠 <b>磁鐵</b>: 自動吸附周圍寶物。</div>
+                    <div class="manual-item" style="border-color:#2ecc71;">💎 <b>雙倍寶石</b>: 得分倍率 x2。</div>
+                    <div class="manual-item" style="border-color:#a55eea;">⚡ <b>狂熱能量</b>: 進入狂熱模式，全屏得分加倍。</div>
+                    <div class="manual-item" style="border-color:#e74c3c;">⛈️ <b>烏雲/毒霧</b>: 碰撞會扣除 HP。</div>
+                    <div class="manual-item" style="border-color:#d35400;">🕸️ <b>黏液怪</b>: 暫時降低飛船跟隨速度。</div>
+                    <div class="manual-item" style="border-color:#2c3e50;">🖤 <b>詛咒黑寶石</b>: 扣血並降低分數！</div>
+                    <div class="manual-item" style="border-color:#3498db;">⌨️ <b>快捷鍵 S</b>: 隨時進行進度存檔。</div>
+                </div>
+                <button class="btn game-btn" onclick="closeManualModal()">了解，關閉說明</button>
             </div>
         </div>
 
@@ -227,10 +271,10 @@
 
         <div class="modal-screen" id="restScreen" style="display: none;">
             <div class="modal-card">
-                <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
-                <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
+                <h2 style="color: #2ecc71; margin-top:0;">🍵 關卡完成！換氣休息時間</h2>
+                <p style="color: #ccc;">做得好！自動存檔成功。請放鬆肌肉、深呼吸休息一下...</p>
                 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
-                <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
+                <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動進入下一關</p>
             </div>
         </div>
     </div>
@@ -238,9 +282,6 @@
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
-        // =====================================================
-        //  完整 36 段教育引導線計畫表 (僅做背景參考畫線，不影響真實波形正負方向)
-        // =====================================================
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
             ["inhalation", 0,   2], ["exhalation", 60,  3], ["inhalation", 0,   2],
@@ -303,9 +344,6 @@
         const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
         const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
 
-        // =====================================================
-        //  全域變數與系統狀態
-        // =====================================================
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [], windowHistory = [false, false, false];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
@@ -368,25 +406,18 @@
 
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
-
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
             let totalE = e1 + e2 + e3 + e4 + e5;
             
             if (totalE < 20000) {
-                predictionBuffer = [];
-                lastConfirmedMode = "inhalation";
-                return "inhalation";
+                predictionBuffer = []; lastConfirmedMode = "inhalation"; return "inhalation";
             }
 
             let rawMode = "inhalation";
             let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
             if (totalE < 250000) {
-                if (ratio_3to1 > 0.45) {
-                    rawMode = "exhalation";
-                } else {
-                    rawMode = "inhalation";
-                }
+                rawMode = (ratio_3to1 > 0.45) ? "exhalation" : "inhalation";
             } else {
                 if (onnxSession) {
                     try {
@@ -408,9 +439,7 @@
             let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
 
             if (totalE < 300000 && lastConfirmedMode === "exhalation") {
-                if (predictionBuffer.filter(m => m === "inhalation").length < 3) {
-                    currentVote = "exhalation";
-                }
+                if (predictionBuffer.filter(m => m === "inhalation").length < 3) currentVote = "exhalation";
             }
 
             lastConfirmedMode = currentVote;
@@ -419,10 +448,8 @@
 
         async function runPKLIndexSegmentation() {
             if (records.length === 0) {
-                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");
-                return;
+                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); return;
             }
-
             updateStatus("正在進行 PKL Index 切分中...");
             let predictions = [];
 
@@ -445,24 +472,19 @@
                     if (currentS !== -1) {
                         pklSegments.push({
                             state: (currentS === 0) ? "Inspiration" : "Expiration",
-                            start_index: startIdx,
-                            end_index: i - 1,
-                            start_time: records[startIdx].elapsed,
-                            end_time: records[i - 1].elapsed
+                            start_index: startIdx, end_index: i - 1,
+                            start_time: records[startIdx].elapsed, end_time: records[i - 1].elapsed
                         });
                     }
-                    currentS = predictions[i];
-                    startIdx = i;
+                    currentS = predictions[i]; startIdx = i;
                 }
             }
 
             if (currentS !== -1) {
                 pklSegments.push({
                     state: (currentS === 0) ? "Inspiration" : "Expiration",
-                    start_index: startIdx,
-                    end_index: records.length - 1,
-                    start_time: records[startIdx].elapsed,
-                    end_time: records[records.length - 1].elapsed
+                    start_index: startIdx, end_index: records.length - 1,
+                    start_time: records[startIdx].elapsed, end_time: records[records.length - 1].elapsed
                 });
             }
 
@@ -511,8 +533,7 @@
                     updateStatus('Connected. Press Start to begin.');
                     readLoop();
                 } catch (err) { 
-                    updateStatus('Connection failed: ' + err.message);
-                    resetUIState();
+                    updateStatus('Connection failed: ' + err.message); resetUIState();
                 }
             } else {
                 try {
@@ -537,7 +558,6 @@
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
-
                     if (lines.length > 10) lines = lines.slice(-3);
 
                     for (let line of lines) {
@@ -575,8 +595,7 @@
                 if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
                 if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
 
-                windowHistory.shift();
-                windowHistory.push(isCandidate);
+                windowHistory.shift(); windowHistory.push(isCandidate);
                 let trueCount = windowHistory.filter(x => x === true).length;
                 if (trueCount >= 2) {
                     flowYes = true;
@@ -588,17 +607,10 @@
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
-                // ----------------------------------------------------
-                // 徹底改乾淨：完全由 PKL 模型決定波形正負向，不干涉引導線
-                // ----------------------------------------------------
                 let manualMode = document.getElementById('modeSelect').value;
                 let pklDetected = await detectBreathModePKL(lastFFT);
 
-                if (manualMode !== "auto") {
-                    currentMode = manualMode;
-                } else {
-                    currentMode = pklDetected;
-                }
+                currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
 
                 if (est > 0) {
                     let dFlow = detectFlowRate(currentMode, est);
@@ -607,9 +619,6 @@
                     document.getElementById('detectedMode').innerText = `Detected: Idle`;
                 }
 
-                // 完全根據 PKL 計算出的 currentMode 決定最終波形正負方向
-                // 吸氣 (inhalation) -> 正數 (+)
-                // 吐氣 (exhalation) -> 負數 (-)
                 let flowMag = Math.abs(est);
                 if (currentMode === "exhalation") {
                     if (flowMag === 0.0 && lowE > 800000) flowMag = 30.0;
@@ -693,7 +702,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🚀 動態難度與氣流飛行員核心遊戲引擎                 -->
+    <!--  🚀 動態難度與氣流飛行員核心遊戲引擎 (含 Boss 系統)  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -726,12 +735,12 @@
                     </select>
                 </label>
                 <label class="music-upload-btn">
-                    🎵 自選音樂 MP3
+                    🎵 自選 MP3
                     <input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)">
                 </label>
                 <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">預設主題曲</span>
                 <label>
-                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 開啟音樂
+                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂
                 </label>
             `;
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
@@ -740,39 +749,18 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let bgmInterval = null;
         let bgmStep = 0;
-
         let customAudioBuffer = null;
         let customAudioSource = null;
-        let audioAnalyser = null;
-        let audioDataArray = null;
         let isUsingCustomMusic = false;
 
-        function handleCustomMusicUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            updateStatus(`正在解析自選音樂: ${file.name}...`);
-            reader.onload = function(e) {
-                audioCtx.decodeAudioData(e.target.result, (buffer) => {
-                    customAudioBuffer = buffer;
-                    isUsingCustomMusic = true;
-                    document.getElementById('musicStatus').innerText = `🎶 自選: ${file.name.substring(0, 10)}...`;
-                    updateStatus(`✅ 音樂解析成功！將自動根據音樂節奏生成遊戲物件。`);
-                    if (isMeasuring) startBGM();
-                }, (err) => {
-                    alert("音訊檔案解析失敗，請上傳標準 MP3 或 WAV 格式。");
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
-
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25;
         const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
 
         function playAudioEffect(type) {
+            const currentView = document.getElementById('viewModeSelect')?.value;
+            if (currentView === 'chart') return; // 純圖表模式下完全靜音
+
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -780,34 +768,16 @@
             try {
                 let now = audioCtx.currentTime;
                 if (type === 'coin') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(987.77, now);
-                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
-                    gain.gain.setValueAtTime(0.35, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
+                    gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                     osc.start(); osc.stop(now + 0.25);
-                } else if (type === 'buff') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(); osc.stop(now + 0.3);
                 } else if (type === 'hit') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(200, now);
-                    osc.frequency.linearRampToValueAtTime(40, now + 0.2);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now);
+                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
                     osc.start(); osc.stop(now + 0.2);
                 }
             } catch(e) {}
@@ -815,6 +785,9 @@
 
         function startBGM() {
             stopBGM();
+            const currentView = document.getElementById('viewModeSelect')?.value;
+            if (currentView === 'chart') return; // 純圖表模式不播音樂
+
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
@@ -822,13 +795,7 @@
                 customAudioSource = audioCtx.createBufferSource();
                 customAudioSource.buffer = customAudioBuffer;
                 customAudioSource.loop = true;
-
-                audioAnalyser = audioCtx.createAnalyser();
-                audioAnalyser.fftSize = 64;
-                audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-
-                customAudioSource.connect(audioAnalyser);
-                audioAnalyser.connect(audioCtx.destination);
+                customAudioSource.connect(audioCtx.destination);
                 customAudioSource.start(0);
             } else {
                 bgmInterval = setInterval(() => {
@@ -836,19 +803,12 @@
                     try {
                         let now = audioCtx.currentTime;
                         let idx = bgmStep % pilotTheme.length;
-
                         const leadOsc = audioCtx.createOscillator();
                         const leadGain = audioCtx.createGain();
-                        leadOsc.type = 'sawtooth';
-                        leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-                        leadGain.gain.setValueAtTime(0.18, now);
-                        leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-
-                        leadOsc.connect(leadGain);
-                        leadGain.connect(audioCtx.destination);
-                        leadOsc.start(now);
-                        leadOsc.stop(now + 0.16);
-
+                        leadOsc.type = 'sawtooth'; leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
+                        leadGain.gain.setValueAtTime(0.15, now); leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                        leadOsc.connect(leadGain); leadGain.connect(audioCtx.destination);
+                        leadOsc.start(now); leadOsc.stop(now + 0.16);
                         bgmStep++;
                     } catch(e) {}
                 }, 180);
@@ -857,118 +817,122 @@
 
         function stopBGM() {
             if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
-            if (customAudioSource) {
-                try { customAudioSource.stop(); customAudioSource.disconnect(); } catch(e){}
-                customAudioSource = null;
-            }
+            if (customAudioSource) { try { customAudioSource.stop(); } catch(e){} customAudioSource = null; }
         }
 
-        function toggleSoundSetting(enabled) {
-            if (!enabled) stopBGM();
-            else startBGM();
-        }
+        function toggleSoundSetting(enabled) { if (!enabled) stopBGM(); else startBGM(); }
 
-        // 🔀 全模式/單獨立模式切換
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
 
             if (mode === 'both') {
-                chartBox.style.display = 'block';
-                gameBox.style.display = 'block';
-                chartBox.style.marginBottom = '15px';
+                chartBox.style.display = 'block'; gameBox.style.display = 'block'; chartBox.style.marginBottom = '15px';
             } else if (mode === 'game') {
-                chartBox.style.display = 'none';
-                gameBox.style.display = 'block';
+                chartBox.style.display = 'none'; gameBox.style.display = 'block';
             } else {
-                chartBox.style.display = 'block';
-                gameBox.style.display = 'none';
+                chartBox.style.display = 'block'; gameBox.style.display = 'none';
             }
 
             stopGameEngine();
             if (mode === 'game' || mode === 'both') {
-                resizeGameCanvas();
-                restartGameEngine();
+                resizeGameCanvas(); restartGameEngine();
+            } else {
+                stopBGM(); // 切換到純圖表模式時關閉音樂
             }
         }
 
-        // 初始化全模式狀態
         setTimeout(() => { switchViewMode('both'); }, 100);
 
         function updateGameMeasurementState(measuring) {
             document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
-            if (measuring) startBGM();
-            else stopBGM();
+            if (measuring) startBGM(); else stopBGM();
         }
 
-        // 🖥️ 全螢幕切換功能
         function toggleFullscreen() {
             const gameBox = document.getElementById('gameContainer');
             if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
-                if (gameBox.requestFullscreen) {
-                    gameBox.requestFullscreen();
-                } else {
-                    gameBox.classList.add('fullscreen');
-                }
+                if (gameBox.requestFullscreen) gameBox.requestFullscreen();
+                else gameBox.classList.add('fullscreen');
             } else {
-                if (document.exitFullscreen && document.fullscreenElement) {
-                    document.exitFullscreen();
-                }
+                if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
                 gameBox.classList.remove('fullscreen');
             }
             setTimeout(resizeGameCanvas, 150);
         }
 
-        document.addEventListener('fullscreenchange', () => {
-            const gameBox = document.getElementById('gameContainer');
-            if (!document.fullscreenElement) {
-                gameBox.classList.remove('fullscreen');
-            } else {
-                gameBox.classList.add('fullscreen');
+        // =====================================================
+        //  🏰 關卡、主題與 Boss 系統架構
+        // =====================================================
+        let currentStage = 1;
+        let gameScore = 0, gameCombo = 0, playerHP = 100;
+        let activeBoss = null; // 當前活動 Boss
+
+        // 5 個主題循環
+        const STAGE_THEMES = [
+            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 風暴精靈", stageBoss: "🦅 雷霆巨鷹" },
+            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 隕石碎片", stageBoss: "🛸 異星母艦" },
+            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🔥 熔岩小怪", stageBoss: "🐉 地獄赤龍" },
+            { id: 4, name: "深海幽冥", bg: "#031420", miniBoss: "🐙 深海章魚", stageBoss: "🔱 深海海怪" },
+            { id: 5, name: "賽博霓虹", bg: "#12051e", miniBoss: "🤖 巡邏 Drone", stageBoss: "👾 核心 AI 控制器" }
+        ];
+
+        function getStageTheme(stage) {
+            let idx = (stage - 1) % STAGE_THEMES.length;
+            return STAGE_THEMES[idx];
+        }
+
+        // 💾 本地存檔與快捷鍵功能
+        function saveGameProgress(showNotice = false) {
+            let pid = document.getElementById('patientId').value.trim() || 'default_patient';
+            let saveData = {
+                stage: currentStage,
+                score: gameScore,
+                hp: playerHP,
+                time: new Date().toLocaleString()
+            };
+            localStorage.setItem('inhaler_save_' + pid, JSON.stringify(saveData));
+            if (showNotice) updateStatus(`💾 [${pid}] 遊戲進度已存檔！(關卡: ${currentStage}, 分數: ${gameScore})`);
+        }
+
+        function loadGameProgress() {
+            let pid = document.getElementById('patientId').value.trim() || 'default_patient';
+            let saved = localStorage.getItem('inhaler_save_' + pid);
+            if (saved) {
+                let data = JSON.parse(saved);
+                currentStage = data.stage || 1;
+                gameScore = data.score || 0;
+                playerHP = data.hp || 100;
+                updateStatus(`📂 成功載入患者 [${pid}] 紀錄 (關卡: ${currentStage}, 分數: ${gameScore})`);
+                document.getElementById('gameStage').innerText = currentStage;
             }
-            setTimeout(resizeGameCanvas, 150);
+        }
+
+        // 鍵盤快捷鍵 S 隨時存檔
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 's' || e.key === 'S') {
+                saveGameProgress(true);
+            }
         });
 
         // =====================================================
-        // 🎮 氣流飛行員遊戲引擎
+        //  🎮 氣流飛行員主遊戲 Loop
         // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         let gameAnimationId = null;
-        let isGameRunning = false;
-        let isGamePaused = false;
-        let isGameOver = false;
+        let isGameRunning = false, isGamePaused = false, isGameOver = false;
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
-        let stars = [];
-        let particles = [];
-        let collectibles = [];
-        let obstacles = [];
-
-        let gameScore = 0;
-        let gameCombo = 0;
-        let playerHP = 100;
-        
-        // 道具與負面狀態計時器
-        let hasShield = false;
-        let feverTimer = 0;
-        let magnetTimer = 0;       // 🧲 強力磁鐵
-        let doubleScoreTimer = 0;  // 💎 雙倍積分
-        let slowDebuffTimer = 0;   // 🕸️ 減速 Debuff
-
-        let restTimer = null;
-        let isResting = false;
-        let sessionStartTime = 0;
+        let stars = [], particles = [], collectibles = [], obstacles = [];
+        let hasShield = false, feverTimer = 0, magnetTimer = 0, doubleScoreTimer = 0, slowDebuffTimer = 0;
+        let isResting = false, sessionStartTime = 0;
 
         function initStars() {
             stars = [];
-            let w = gameCanvas.width || 800;
-            let h = gameCanvas.height || 480;
+            let w = gameCanvas.width || 800, h = gameCanvas.height || 480;
             for(let i=0; i<50; i++) {
-                stars.push({
-                    x: Math.random() * w, y: Math.random() * h,
-                    size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5
-                });
+                stars.push({ x: Math.random() * w, y: Math.random() * h, size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5 });
             }
         }
 
@@ -984,49 +948,53 @@
 
         function restartGameEngine() {
             stopGameEngine();
-            isGameRunning = true;
-            isGamePaused = false;
-            isGameOver = false;
-            playerHP = 100; gameScore = 0; gameCombo = 0;
+            isGameRunning = true; isGamePaused = false; isGameOver = false;
+            playerHP = 100; gameScore = 0; gameCombo = 0; activeBoss = null;
             hasShield = false; feverTimer = 0; magnetTimer = 0; doubleScoreTimer = 0; slowDebuffTimer = 0;
-            particles = []; collectibles = []; obstacles = []; bgmStep = 0;
+            particles = []; collectibles = []; obstacles = [];
             
-            let h = gameCanvas.height || 480;
-            rocket.x = 120; rocket.y = h / 2; rocket.angle = 0;
-
+            rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2;
             sessionStartTime = Date.now();
-            document.getElementById('gamePauseBtn').innerText = "暫停";
-            document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
+
+            document.getElementById('bossHudBadge').style.display = 'none';
             document.getElementById('restScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
-            document.getElementById('hpFill').style.width = '100%';
+            document.getElementById('gameStage').innerText = currentStage;
             
-            // 隱藏 Hud Badges
-            document.getElementById('feverBadge').style.display = 'none';
-            document.getElementById('shieldBadge').style.display = 'none';
-            document.getElementById('magnetBadge').style.display = 'none';
-            document.getElementById('doubleBadge').style.display = 'none';
-            document.getElementById('slowBadge').style.display = 'none';
-            
-            updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
+        }
+
+        function triggerBossSpawn(type) {
+            let theme = getStageTheme(currentStage);
+            let bName = (type === 'mini') ? theme.miniBoss : (type === 'stage' ? theme.stageBoss : "🌌 終極虛空主宰 (第100關)");
+            let maxHp = 100 + currentStage * 20;
+
+            activeBoss = {
+                type: type,
+                name: bName,
+                x: gameCanvas.width - 120,
+                y: gameCanvas.height / 2,
+                hp: maxHp,
+                maxHp: maxHp,
+                radius: 40,
+                attackTimer: 0
+            };
+
+            document.getElementById('bossName').innerText = bName;
+            document.getElementById('bossHudBadge').style.display = 'flex';
+            updateStatus(`⚠️ 警告！${bName} 出現了！`);
         }
 
         function toggleGamePause() {
             if (!isGameRunning || isGameOver) return;
             isGamePaused = !isGamePaused;
             const btn = document.getElementById('gamePauseBtn');
-            if (isGamePaused) {
-                btn.innerText = "繼續"; btn.style.backgroundColor = "#f39c12"; stopBGM();
-            } else {
-                btn.innerText = "暫停"; btn.style.backgroundColor = "#27ae60"; startBGM();
-            }
+            if (isGamePaused) { btn.innerText = "繼續"; stopBGM(); }
+            else { btn.innerText = "暫停"; startBGM(); }
         }
 
         function triggerGameOver() {
-            isGameOver = true;
-            stopBGM();
-            playAudioEffect('hit');
+            isGameOver = true; stopBGM(); playAudioEffect('hit');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
             stopGameEngine();
@@ -1034,85 +1002,23 @@
 
         function stopGameEngine() {
             isGameRunning = false;
-            if (gameAnimationId) {
-                cancelAnimationFrame(gameAnimationId);
-                gameAnimationId = null;
-            }
+            if (gameAnimationId) { cancelAnimationFrame(gameAnimationId); gameAnimationId = null; }
         }
 
-        function drawRocket(x, y, angle, isExhale, flowMagnitude) {
-            if (isNaN(x) || isNaN(y) || isNaN(angle)) {
-                rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2; rocket.angle = 0; return;
-            }
-
-            gameCtx.save();
-            gameCtx.globalAlpha = 1.0;
-            gameCtx.translate(x, y);
-            gameCtx.rotate(angle);
-
-            // 護盾防護罩繪製
-            if (hasShield) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
-                gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3; gameCtx.stroke();
-            }
-
-            // 狂熱模式外輝光
-            if (feverTimer > 0) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
-                gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)'; gameCtx.fill();
-            }
-
-            // 磁鐵磁場繪製
-            if (magnetTimer > 0) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 100, 0, Math.PI * 2);
-                gameCtx.strokeStyle = 'rgba(243, 156, 18, 0.25)'; gameCtx.lineWidth = 2; gameCtx.stroke();
-            }
-
-            // 🕸️ 減速黏液干擾外殼
-            if (slowDebuffTimer > 0) {
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 22, 0, Math.PI * 2);
-                gameCtx.fillStyle = 'rgba(230, 126, 34, 0.35)'; gameCtx.fill();
-            }
-
-            gameCtx.fillStyle = '#ecf0f1';
-            gameCtx.beginPath();
-            gameCtx.moveTo(20, 0); gameCtx.lineTo(-12, -10); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-12, 10);
-            gameCtx.closePath(); gameCtx.fill();
-
-            gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
-            gameCtx.beginPath();
-            gameCtx.moveTo(-4, -6); gameCtx.lineTo(-14, -14); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 14); gameCtx.lineTo(-4, 6);
-            gameCtx.closePath(); gameCtx.fill();
-
-            gameCtx.restore();
-
-            if (flowMagnitude > 5) {
-                let pColor = isExhale ? '#f39c12' : '#00d2d3';
-                if (feverTimer > 0) pColor = '#a55eea';
-                particles.push({
-                    x: x - Math.cos(angle) * 15, y: y - Math.sin(angle) * 15,
-                    vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2, vy: (Math.random() - 0.5) * 2,
-                    size: Math.random() * 5 + 2, color: pColor, life: 1.0
-                });
-            }
-        }
+        function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
+        function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
 
-            gameCtx.globalAlpha = 1.0;
-            gameCtx.fillStyle = '#0d1117';
+            let theme = getStageTheme(currentStage);
+            gameCtx.fillStyle = theme.bg;
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            // 🎯 難度參數動態調整
             let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
-            
-            // 速度連動難度：專家模式整體速度 +30%
-            let speedMultByDiff = (diff === 'hard') ? 1.3 : (diff === 'easy' ? 0.85 : 1.0);
-            let baseSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0') * speedMultByDiff;
-            let userSpeedMult = (slowDebuffTimer > 0) ? (baseSpeedMult * 0.5) : baseSpeedMult;
+            let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
 
-            // 背景星空滾動
+            // 背景星空
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.baseSpeed * userSpeedMult;
@@ -1124,247 +1030,95 @@
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-                let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
-                let flowMag = Math.abs(flow);
-
-                // 氣流操控靈敏度
-                let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard') ? 0.8 : 1.2;
-
-                let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
-                if (isNaN(targetY)) targetY = gameCanvas.height / 2;
+                let targetY = gameCanvas.height / 2 - (flow * 2.2);
                 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
                 
                 let dy = targetY - rocket.y;
-                if (isNaN(dy)) dy = 0;
-                
-                // 飛船跟隨反應速度
-                let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
-                rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
+                rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                // 道具與 Debuff 倒數計時處理
-                if (feverTimer > 0) {
-                    feverTimer--;
-                    if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none';
-                }
-                if (magnetTimer > 0) {
-                    magnetTimer--;
-                    if (magnetTimer === 0) document.getElementById('magnetBadge').style.display = 'none';
-                }
-                if (doubleScoreTimer > 0) {
-                    doubleScoreTimer--;
-                    if (doubleScoreTimer === 0) document.getElementById('doubleBadge').style.display = 'none';
-                }
-                if (slowDebuffTimer > 0) {
-                    slowDebuffTimer--;
-                    if (slowDebuffTimer === 0) document.getElementById('slowBadge').style.display = 'none';
+                // Boss 出現邏輯 (時間超過 25 秒且尚未有 Boss 時召喚關卡 Boss)
+                let elapsed = (Date.now() - sessionStartTime) / 1000;
+                if (elapsed > 25 && !activeBoss) {
+                    if (currentStage === 100) triggerBossSpawn('final');
+                    else if (currentStage % 10 === 0) triggerBossSpawn('major');
+                    else triggerBossSpawn('stage');
                 }
 
-                let spawnY = Math.random() * (gameCanvas.height - 100) + 50;
-                if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
-                    audioAnalyser.getByteFrequencyData(audioDataArray);
-                    let freqVal = audioDataArray[5];
-                    spawnY = gameCanvas.height - (freqVal / 255) * (gameCanvas.height - 80);
+                // 🎯 高對比度正面道具生成
+                if (Math.random() < 0.02) {
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 80) + 40, radius: 10, collected: false });
                 }
 
-                // 🎁 正面道具生成
-                let buffMult = (diff === 'easy') ? 1.4 : (diff === 'hard') ? 0.8 : 1.0;
-                if (Math.random() < 0.028 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, baseSpeed: 3, collected: false });
-                }
-                if (Math.random() < 0.010 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, baseSpeed: 2.5, collected: false });
-                }
-                if (!hasShield && Math.random() < 0.007 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.5, collected: false });
-                }
-                if (magnetTimer === 0 && Math.random() < 0.007 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
-                }
-                if (doubleScoreTimer === 0 && Math.random() < 0.007 * userSpeedMult * buffMult) {
-                    collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
-                }
-                if (Math.random() < 0.005 * userSpeedMult * buffMult && feverTimer === 0) {
-                    collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, baseSpeed: 3.5, collected: false });
-                }
-
-                // ⚠️ 偽裝陷阱：💎 詛咒黑寶石
-                if (diff !== 'easy' && Math.random() < (diff === 'hard' ? 0.012 : 0.006) * userSpeedMult) {
-                    collectibles.push({ type: 'curse', x: gameCanvas.width + 20, y: spawnY, radius: 11, baseSpeed: 3.2, collected: false });
-                }
-
-                // ⛈️ 障礙物生成與動態傷害調整
-                let cloudDmg = (diff === 'easy') ? 10 : (diff === 'hard') ? 35 : 25;
-                if (Math.random() < (diff === 'easy' ? 0.006 : diff === 'hard' ? 0.022 : 0.012) * userSpeedMult) {
-                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, baseSpeed: 4, damage: cloudDmg, hit: false });
-                }
-                
-                if (diff !== 'easy') {
-                    let poisonDmg = (diff === 'hard') ? 50 : 40;
-                    if (Math.random() < (diff === 'hard' ? 0.015 : 0.006) * userSpeedMult) {
-                        obstacles.push({ type: 'poison', x: gameCanvas.width + 30, y: spawnY, radius: 22, baseSpeed: 2.8, damage: poisonDmg, hit: false });
-                    }
-                }
-                
-                if (diff !== 'easy' && Math.random() < (diff === 'hard' ? 0.010 : 0.006) * userSpeedMult) {
-                    obstacles.push({ type: 'mud', x: gameCanvas.width + 30, y: spawnY, radius: 15, baseSpeed: 4.5, damage: 0, hit: false });
-                }
-
-                // 🎁 道具與金幣移動與磁鐵吸附邏輯
                 collectibles.forEach((c) => {
-                    c.x -= c.baseSpeed * userSpeedMult;
-
-                    if (magnetTimer > 0) {
-                        let mDist = Math.hypot(rocket.x - c.x, rocket.y - c.y);
-                        if (mDist < 200) {
-                            c.x += (rocket.x - c.x) * 0.12;
-                            c.y += (rocket.y - c.y) * 0.12;
-                        }
-                    }
-
+                    c.x -= 3 * userSpeedMult;
                     gameCtx.beginPath();
-                    if (c.type === 'coin') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#f1c40f'; gameCtx.fill();
-                    } else if (c.type === 'heart') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'shield') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#00d2d3'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'magnet') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#e67e22'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#f39c12'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'double') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'fever') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#a55eea'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    } else if (c.type === 'curse') {
-                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                        gameCtx.fillStyle = '#2c3e50'; gameCtx.fill();
-                        gameCtx.strokeStyle = '#e74c3c'; gameCtx.lineWidth = 2; gameCtx.stroke();
-                    }
+                    gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                    gameCtx.fillStyle = '#f1c40f'; gameCtx.fill();
+                    gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke(); // 高對比度外框
 
-                    let pickupRadius = (feverTimer > 0) ? (rocket.radius + 35) : rocket.radius;
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
-
-                    if (dist < c.radius + pickupRadius) {
-                        let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
-                        
-                        if (c.type === 'coin') {
-                            gameScore += 50 * scoreMult;
-                            gameCombo++; playAudioEffect('coin');
-                        } else if (c.type === 'heart') {
-                            playerHP = Math.min(100, playerHP + 25);
-                            playAudioEffect('buff');
-                        } else if (c.type === 'shield') {
-                            hasShield = true;
-                            document.getElementById('shieldBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'magnet') {
-                            magnetTimer = 350;
-                            document.getElementById('magnetBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'double') {
-                            doubleScoreTimer = 350;
-                            document.getElementById('doubleBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'fever') {
-                            feverTimer = 300;
-                            document.getElementById('feverBadge').style.display = 'inline';
-                            playAudioEffect('buff');
-                        } else if (c.type === 'curse') {
-                            let curseDmg = (diff === 'hard') ? 25 : 15;
-                            playerHP = Math.max(0, playerHP - curseDmg);
-                            gameScore = Math.max(0, gameScore - 100);
-                            if (diff !== 'easy') gameCombo = 0;
-                            playAudioEffect('hit');
-                            if (playerHP <= 0) { triggerGameOver(); return; }
-                        }
+                    if (dist < c.radius + rocket.radius) {
+                        gameScore += 50; gameCombo++; playAudioEffect('coin');
                         c.collected = true;
+
+                        // 對 Boss 造成傷害
+                        if (activeBoss) {
+                            activeBoss.hp -= 15;
+                            document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
+                            if (activeBoss.hp <= 0) {
+                                updateStatus(`🎉 成功擊敗 Boss！準備進入下一關！`);
+                                activeBoss = null;
+                                document.getElementById('bossHudBadge').style.display = 'none';
+                                triggerStageComplete();
+                            }
+                        }
                     }
                 });
 
-                // ⛈️ 障礙物碰撞邏輯
+                // 👹 Boss 繪製與攻擊
+                if (activeBoss) {
+                    gameCtx.beginPath();
+                    gameCtx.arc(activeBoss.x, activeBoss.y, activeBoss.radius, 0, Math.PI * 2);
+                    gameCtx.fillStyle = '#e74c3c'; gameCtx.fill();
+                    gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 4; gameCtx.stroke();
+                    
+                    // Boss 技能攻擊 (發射彈幕)
+                    activeBoss.attackTimer++;
+                    if (activeBoss.attackTimer % 60 === 0) {
+                        obstacles.push({ x: activeBoss.x, y: activeBoss.y, radius: 12, damage: 20, hit: false });
+                    }
+                }
+
+                // ⛈️ 障礙物高對比度繪製與碰撞
                 obstacles.forEach((o) => {
-                    o.x -= o.baseSpeed * userSpeedMult;
+                    o.x -= 4 * userSpeedMult;
                     gameCtx.beginPath();
                     gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
-                    
-                    if (o.type === 'poison') {
-                        gameCtx.fillStyle = '#8e44ad';
-                    } else if (o.type === 'mud') {
-                        gameCtx.fillStyle = '#d35400';
-                    } else {
-                        gameCtx.fillStyle = '#e74c3c';
-                    }
-                    gameCtx.fill();
+                    gameCtx.fillStyle = '#e74c3c'; gameCtx.fill();
+                    gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke();
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        if (hasShield && o.type !== 'mud') {
-                            hasShield = false;
-                            document.getElementById('shieldBadge').style.display = 'none';
-                            playAudioEffect('hit');
-                        } else {
-                            if (o.type === 'mud') {
-                                slowDebuffTimer = (diff === 'hard') ? 360 : 240;
-                                document.getElementById('slowBadge').style.display = 'inline';
-                                playAudioEffect('hit');
-                            } else {
-                                playerHP = Math.max(0, playerHP - o.damage);
-                                if (diff !== 'easy') gameCombo = 0;
-                                playAudioEffect('hit');
-                            }
-                        }
+                        playerHP = Math.max(0, playerHP - o.damage);
+                        playAudioEffect('hit');
                         o.hit = true;
-
-                        if (playerHP <= 0) {
-                            triggerGameOver(); return;
-                        }
+                        if (playerHP <= 0) { triggerGameOver(); return; }
                     }
                 });
 
-                if (isGameOver) return;
-
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
-
-                let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
-                if (flowMag > 10) gameScore += 1 * scoreMult;
-
-                let elapsedSession = (Date.now() - sessionStartTime) / 1000;
-                if (elapsedSession > 90) triggerRestStop();
-            } else {
-                let centerTarget = gameCanvas.height / 2;
-                if (isNaN(rocket.y)) rocket.y = centerTarget;
-                rocket.y += (centerTarget - rocket.y) * 0.05;
-                rocket.angle = 0;
             }
 
-            particles.forEach((p) => {
-                p.x += p.vx * userSpeedMult; p.y += p.vy; p.life -= 0.04;
-                if (p.life > 0) {
-                    gameCtx.beginPath();
-                    gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
-                    gameCtx.fillStyle = p.color; gameCtx.globalAlpha = Math.max(0, p.life);
-                    gameCtx.fill();
-                }
-            });
-            particles = particles.filter(p => p.life > 0);
-            
-            gameCtx.globalAlpha = 1.0;
-
-            let activeFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
-            let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
-            drawRocket(rocket.x, rocket.y, rocket.angle, activeMode === "exhalation", activeFlow);
+            // 繪製飛船
+            gameCtx.save();
+            gameCtx.translate(rocket.x, rocket.y);
+            gameCtx.rotate(rocket.angle);
+            gameCtx.fillStyle = '#ecf0f1';
+            gameCtx.beginPath(); gameCtx.moveTo(20, 0); gameCtx.lineTo(-12, -10); gameCtx.lineTo(-12, 10); gameCtx.fill();
+            gameCtx.strokeStyle = '#3498db'; gameCtx.lineWidth = 2; gameCtx.stroke();
+            gameCtx.restore();
 
             document.getElementById('gameScore').innerText = gameScore;
             document.getElementById('gameCombo').innerText = gameCombo;
@@ -1373,23 +1127,23 @@
             gameAnimationId = requestAnimationFrame(gameLoop);
         }
 
-        function triggerRestStop() {
-            isResting = true; stopBGM();
+        function triggerStageComplete() {
+            saveGameProgress(false); // 擊敗 Boss 後自動存檔
+            currentStage++;
+            document.getElementById('gameStage').innerText = currentStage;
+            
             const restScreen = document.getElementById('restScreen');
             const countdownEl = document.getElementById('restCountdown');
             let countdown = 15;
-
             restScreen.style.display = 'flex';
 
-            restTimer = setInterval(() => {
+            let restInterval = setInterval(() => {
                 countdown--;
                 countdownEl.innerText = countdown;
                 if (countdown <= 0) {
-                    clearInterval(restTimer);
+                    clearInterval(restInterval);
                     restScreen.style.display = 'none';
-                    isResting = false;
                     sessionStartTime = Date.now();
-                    startBGM();
                 }
             }, 1000);
         }
