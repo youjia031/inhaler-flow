@@ -2,18 +2,34 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Inhaler Flow Monitor (Single File)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
+    <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <!-- 引入 ONNX Runtime Web -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: #f4f6f8;
             color: #2c3e50;
             margin: 0;
             padding: 20px;
         }
-        .header { margin-bottom: 20px; }
+        .header {
+            margin-bottom: 20px;
+            border-left: 6px solid #1f4e79;
+            padding-left: 15px;
+        }
+        .header .main-title {
+            margin: 0;
+            color: #1f4e79;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+        .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
+        .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
         .control-panel {
             background: #ffffff;
             padding: 15px;
@@ -23,34 +39,30 @@
             gap: 15px;
             align-items: center;
             flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
+            padding: 8px 16px; border: none; border-radius: 4px;
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
         }
         .btn.accent { background-color: #1f4e79; color: white; }
-        .btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .btn.accent:hover { background-color: #163d5e; }
+        .btn:hover { background-color: #e1e8ee; }
+        .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
+        label { font-size: 14px; font-weight: 500; }
+        input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
+        .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
         .chart-container {
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            height: 450px;
+            background: #ffffff; padding: 15px; border-radius: 8px;
+            height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
         }
-        .statusbar {
-            margin-top: 15px;
-            padding: 8px;
-            background: #1f4e79;
-            color: white;
-            border-radius: 4px;
-        }
+        .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div class="header">
+        <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
         <p>Acoustic inhaler flow visualization</p>
     </div>
@@ -58,11 +70,23 @@
     <div class="control-panel">
         <button id="connectBtn" class="btn accent">Connect</button>
         <button id="startBtn" class="btn" disabled>Start</button>
+        <button id="segmentBtn" class="btn accent">PKL Index 切分</button>
         <button id="clearBtn" class="btn">Clear</button>
         <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
+        
         <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
-        <span id="recordCount">Records: 0</span>
-        <span id="peakFlow">Peak: — L/min</span>
+        
+        <label>Mode: 
+            <select id="modeSelect">
+                <option value="auto">auto (PKL 切分)</option>
+                <option value="inhalation">inhalation</option>
+                <option value="exhalation">exhalation</option>
+            </select>
+        </label>
+
+        <span id="recordCount" class="info-text">Records: 0</span>
+        <span id="peakFlow" class="info-text">Peak: — L/min</span>
+        <span id="detectedMode" class="info-text">Detected: —</span>
     </div>
 
     <div class="chart-container">
@@ -72,39 +96,249 @@
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
-        let port;
-        let reader;
-        let isMeasuring = false;
-        let records = [];
-        let lastFFT = {};
-        let startTime = null;
+        // =====================================================
+        //  完整 36 段教育引導線計畫表 (完全還原)
+        // =====================================================
+        const EDUCATION_PROGRAM = [
+            ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
+            ["inhalation", 0,   2], ["exhalation", 60,  3], ["inhalation", 0,   2],
+            ["inhalation", 60,  2], ["inhalation", 0,   1], ["inhalation", 0,   2],
+            ["exhalation", 60,  3], ["inhalation", 0,   2], ["inhalation", 0,   1],
+            ["inhalation", 0,   1], ["inhalation", 90, 1.5], ["inhalation", 0,   2],
+            ["exhalation", 50,  6], ["inhalation", 0,   1], ["inhalation", 0,   2],
+            ["inhalation", 90, 1.5], ["inhalation", 0,   2], ["exhalation", 50,  6],
+            ["inhalation", 0,   2], ["inhalation", 0,   2], ["inhalation", 120, 1],
+            ["inhalation", 0,   1], ["inhalation", 0,   2], ["exhalation", 100, 2],
+            ["inhalation", 0,   2], ["inhalation", 40,  3], ["inhalation", 0,   2],
+            ["exhalation", 40,  4], ["inhalation", 0,   2], ["inhalation", 30,  3],
+            ["inhalation", 0,   2], ["exhalation", 30,  4], ["inhalation", 0,   3]
+        ];
 
-        // Chart.js 初始化
+        function makeEducationCurves(dt = 0.05, ramp = 0.4) {
+            let times = [], inh = [], exh = [];
+            let t = 0.0;
+            for (let [mode, flow, dur] of EDUCATION_PROGRAM) {
+                if (flow === 0) {
+                    let steps = Math.max(1, Math.round(dur / dt));
+                    for (let i = 0; i < steps; i++) {
+                        times.push(Number(t.toFixed(3)));
+                        inh.push(0.0); exh.push(0.0);
+                        t += dt;
+                    }
+                    continue;
+                }
+                let target = (mode === "inhalation") ? flow : -flow;
+                let ramp_dur = Math.min(ramp, dur * 0.3);
+                let hold_dur = dur - 2 * ramp_dur;
+                if (hold_dur < 0) { ramp_dur = dur / 2; hold_dur = 0; }
+                
+                let steps_up = Math.max(1, Math.round(ramp_dur / dt));
+                let steps_hold = Math.round(hold_dur / dt);
+                let steps_down = Math.max(1, Math.round(ramp_dur / dt));
+
+                for (let i = 0; i < steps_up; i++) {
+                    let v = target * ((i + 1) / steps_up);
+                    times.push(Number(t.toFixed(3)));
+                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
+                    t += dt;
+                }
+                for (let i = 0; i < steps_hold; i++) {
+                    times.push(Number(t.toFixed(3)));
+                    if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); exh.push(target); }
+                    t += dt;
+                }
+                for (let i = 0; i < steps_down; i++) {
+                    let v = target * (1 - (i + 1) / steps_down);
+                    times.push(Number(t.toFixed(3)));
+                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
+                    t += dt;
+                }
+            }
+            return { times, inh, exh };
+        }
+
+        const guideData = makeEducationCurves();
+        const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
+        const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
+
+        // =====================================================
+        //  全域變數與系統狀態
+        // =====================================================
+        let port = null, reader = null, isMeasuring = false;
+        let records = [], flowHistory = [], windowHistory = [false, false, false];
+        let lastFFT = {}, startTime = null, currentMode = "inhalation";
+        let pklSegments = [];
+        let onnxSession = null;
+        let predictionBuffer = [];
+
+        async function loadPKLModel() {
+            try {
+                onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
+                updateStatus('✅ PKL 模型載入成功！');
+            } catch (err) {
+                console.warn("未檢測到 rf_model.onnx，改用預設相對比值邏輯。", err);
+            }
+        }
+        loadPKLModel();
+
+        // Canvas 繪圖外掛 (背景區段色塊)
+        const customOverlayPlugin = {
+            id: 'customOverlayPlugin',
+            beforeDatasetsDraw(chart) {
+                if (pklSegments.length > 0) {
+                    const { ctx, scales: { x, y } } = chart;
+                    ctx.save();
+                    pklSegments.forEach(seg => {
+                        const startX = x.getPixelForValue(seg.start_time);
+                        const endX = x.getPixelForValue(seg.end_time);
+                        ctx.fillStyle = (seg.state === "Inspiration") ? "rgba(135, 206, 235, 0.35)" : "rgba(240, 128, 128, 0.35)";
+                        ctx.fillRect(startX, y.top, endX - startX, y.bottom - y.top);
+                    });
+                    ctx.restore();
+                }
+            }
+        };
+
         const ctx = document.getElementById('flowChart').getContext('2d');
         const flowChart = new Chart(ctx, {
             type: 'line',
             data: {
-                datasets: [{
-                    label: 'Patient Flow',
-                    data: [],
-                    borderColor: '#c0392b',
-                    borderWidth: 2.4,
-                    fill: false,
-                    pointRadius: 0
-                }]
+                datasets: [
+                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+                    { label: 'Patient Flow', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
+                },
                 scales: {
                     x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
                     y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
                 }
+            },
+            plugins: [customOverlayPlugin]
+        });
+
+        // =====================================================
+        //  推論邏輯
+        // =====================================================
+        async function detectBreathModePKL(fft) {
+            if (!fft) return "inhalation";
+
+            let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
+            let totalE = e1 + e2 + e3 + e4 + e5;
+            
+            if (totalE < 100000) return "inhalation";
+
+            let rawMode = "inhalation";
+
+            if (onnxSession) {
+                try {
+                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
+                    const results = await onnxSession.run({ float_input: inputTensor });
+                    rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
+                } catch (e) {
+                    console.error("PKL 推論失敗", e);
+                }
+            } else {
+                let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
+                rawMode = (ratio_3to1 > 0.75) ? "exhalation" : "inhalation";
             }
+
+            predictionBuffer.push(rawMode);
+            if (predictionBuffer.length > 3) predictionBuffer.shift();
+
+            let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
+            return (exhCount >= 2) ? "exhalation" : "inhalation";
+        }
+
+        async function runPKLIndexSegmentation() {
+            if (records.length === 0) {
+                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");
+                return;
+            }
+
+            updateStatus("正在進行 PKL Index 切分中...");
+            let predictions = [];
+
+            for (let i = 0; i < records.length; i++) {
+                let rec = records[i];
+                if (!rec.flowYes || Math.abs(rec.est) < 5.0) {
+                    predictions.push(-1);
+                } else {
+                    let mode = await detectBreathModePKL(rec.fft);
+                    predictions.push(mode === "inhalation" ? 0 : 1);
+                }
+            }
+
+            pklSegments = [];
+            let currentS = predictions[0];
+            let startIdx = 0;
+
+            for (let i = 1; i < predictions.length; i++) {
+                if (predictions[i] !== currentS) {
+                    if (currentS !== -1) {
+                        pklSegments.push({
+                            state: (currentS === 0) ? "Inspiration" : "Expiration",
+                            start_index: startIdx,
+                            end_index: i - 1,
+                            start_time: records[startIdx].elapsed,
+                            end_time: records[i - 1].elapsed
+                        });
+                    }
+                    currentS = predictions[i];
+                    startIdx = i;
+                }
+            }
+
+            if (currentS !== -1) {
+                pklSegments.push({
+                    state: (currentS === 0) ? "Inspiration" : "Expiration",
+                    start_index: startIdx,
+                    end_index: records.length - 1,
+                    start_time: records[startIdx].elapsed,
+                    end_time: records[records.length - 1].elapsed
+                });
+            }
+
+            updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
+            flowChart.update();
+        }
+
+        function detectFlowRate(mode, estFlow) {
+            let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
+            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - curr) ? curr : prev);
+        }
+
+        // =====================================================
+        //  UI 狀態與串口連線管理
+        // =====================================================
+        function resetUIState() {
+            port = null; reader = null; isMeasuring = false;
+            document.getElementById('connectBtn').innerText = 'Connect';
+            document.getElementById('startBtn').innerText = 'Start';
+            document.getElementById('startBtn').disabled = true;
+            updateStatus('Disconnected / Ready to connect');
+        }
+
+        if ('serial' in navigator) {
+            navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
+        }
+
+        window.addEventListener('beforeunload', async () => {
+            try {
+                if (reader) await reader.cancel();
+                if (port) await port.close();
+            } catch (e) {}
         });
 
         document.getElementById('connectBtn').addEventListener('click', toggleConnection);
         document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
+        document.getElementById('segmentBtn').addEventListener('click', runPKLIndexSegmentation);
         document.getElementById('clearBtn').addEventListener('click', clearPlot);
         document.getElementById('saveBtn').addEventListener('click', saveCSV);
 
@@ -117,24 +351,26 @@
                     document.getElementById('startBtn').disabled = false;
                     updateStatus('Connected. Press Start to begin.');
                     readLoop();
-                } catch (err) {
-                    updateStatus('Connection failed: ' + err);
+                } catch (err) { 
+                    updateStatus('Connection failed: ' + err.message);
+                    resetUIState();
                 }
             } else {
-                if (reader) await reader.cancel();
-                await port.close();
-                port = null;
-                document.getElementById('connectBtn').innerText = 'Connect';
-                document.getElementById('startBtn').disabled = true;
-                updateStatus('Disconnected');
+                try {
+                    isMeasuring = false;
+                    if (reader) await reader.cancel();
+                    if (port) await port.close();
+                } catch (err) {} finally { resetUIState(); }
             }
         }
 
         async function readLoop() {
+            if (!port || !port.readable) return;
             const textDecoder = new TextDecoderStream();
-            port.readable.pipeTo(textDecoder.writable);
+            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
             reader = textDecoder.readable.getReader();
             let buffer = '';
+
             try {
                 while (true) {
                     const { value, done } = await reader.read();
@@ -142,91 +378,144 @@
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
+
+                    if (lines.length > 10) lines = lines.slice(-3);
+
                     for (let line of lines) {
                         line = line.trim();
-                        if (isMeasuring) parseLine(line);
+                        if (isMeasuring) await parseLine(line);
                     }
                 }
             } catch (err) {
-                console.error(err);
+                console.warn("串口讀取中斷", err);
             } finally {
-                reader.releaseLock();
+                try { reader.releaseLock(); } catch (e) {}
+                try { await readableStreamClosed.catch(() => {}); } catch (e) {}
+                if (!port) resetUIState();
             }
         }
 
-        function parseLine(line) {
-            // [DETECT] 解析
+        async function parseLine(line) {
+            if (line.includes('[FFT]')) {
+                const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
+                for (const match of matches) { lastFFT[match[1]] = parseFloat(match[2]); }
+                return;
+            }
+            
             if (line.includes('[DETECT]')) {
                 const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
                 const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
                 const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
-                
                 if (!flowMatch) return;
-                
+
                 let flowYes = flowMatch[1].toUpperCase() === 'YES';
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
-                
+
+                let isCandidate = false;
+                if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
+                if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
+
+                windowHistory.shift();
+                windowHistory.push(isCandidate);
+                let trueCount = windowHistory.filter(x => x === true).length;
+                if (trueCount >= 2) {
+                    flowYes = true;
+                    if (est === 0.0 && lowE > 1000000) est = 15.0;
+                } else {
+                    flowYes = false; est = 0.0;
+                }
+
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
-                
-                records.push({ elapsed, flowYes, est, lowE });
+
+                let manualMode = document.getElementById('modeSelect').value;
+                if (manualMode !== "auto") {
+                    currentMode = manualMode;
+                } else {
+                    currentMode = await detectBreathModePKL(lastFFT);
+                }
+
+                if (est > 0) {
+                    let dFlow = detectFlowRate(currentMode, est);
+                    document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${dFlow} L/min`;
+                } else {
+                    document.getElementById('detectedMode').innerText = `Detected: Idle`;
+                }
+
+                if (currentMode === "exhalation") {
+                    if (est === 0.0 && lowE > 800000) est = 30.0;
+                    if (est > 0) est = -Math.abs(est);
+                } else if (currentMode === "inhalation" && est < 0) {
+                    est = Math.abs(est);
+                }
+
+                flowHistory.push(est);
+                if (flowHistory.length > 5) flowHistory.shift();
+                let smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
+
+                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
                 document.getElementById('saveBtn').disabled = false;
-                
-                updateChart(elapsed, est);
-            }
-        }
 
-        function updateChart(t, value) {
-            flowChart.data.datasets[0].data.push({ x: t, y: value });
-            let windowStart = Math.floor(t / 20) * 20;
-            flowChart.options.scales.x.min = windowStart;
-            flowChart.options.scales.x.max = windowStart + 20;
-            flowChart.update('none');
+                flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
+                let windowStart = Math.floor(elapsed / 20) * 20;
+                flowChart.options.scales.x.min = windowStart;
+                flowChart.options.scales.x.max = windowStart + 20;
+
+                let allFlows = records.map(r => Math.abs(r.est));
+                let maxPeak = Math.max(...allFlows, 0);
+                document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
+
+                flowChart.update('none');
+            }
         }
 
         function toggleMeasuring() {
             isMeasuring = !isMeasuring;
             if (isMeasuring) {
-                if (!startTime) startTime = Date.now();
+                if (startTime === null) startTime = Date.now();
                 document.getElementById('startBtn').innerText = 'Stop';
                 updateStatus('Measuring...');
             } else {
                 document.getElementById('startBtn').innerText = 'Start';
-                updateStatus('Measurement stopped.');
+                updateStatus('Measurement stopped (waveform frozen).');
             }
         }
 
         function clearPlot() {
-            startTime = null;
-            records = [];
-            flowChart.data.datasets[0].data = [];
-            flowChart.options.scales.x.min = 0;
-            flowChart.options.scales.x.max = 20;
+            startTime = null; records = []; flowHistory = []; pklSegments = []; predictionBuffer = [];
+            flowChart.data.datasets[2].data = [];
+            flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
             flowChart.update();
             document.getElementById('recordCount').innerText = 'Records: 0';
+            document.getElementById('peakFlow').innerText = 'Peak: — L/min';
+            document.getElementById('detectedMode').innerText = 'Detected: —';
             document.getElementById('saveBtn').disabled = true;
         }
 
         function saveCSV() {
-            let patientId = document.getElementById('patientId').value || 'inhaler_data';
-            let csvContent = "data:text/csv;charset=utf-8,elapsed_s,flow,est_flow_Lpm,low_energy\n";
+            let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
+            let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
+            for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
+            csvContent += "\n";
+            
             records.forEach(r => {
-                csvContent += `${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est},${r.lowE}\n`;
+                let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
+                for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
+                csvContent += row + "\n";
             });
+            
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `${patientId}.csv`);
+            link.setAttribute("download", `inhaler_data_${patientId}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        function updateStatus(msg) {
-            document.getElementById('status').innerText = msg;
-        }
+        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 </body>
 </html>
