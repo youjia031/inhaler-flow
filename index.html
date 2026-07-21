@@ -690,7 +690,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎮 氣流飛行員 - 包含 Game Over 結算與強制凍結機制  -->
+    <!--  🎮 氣流飛行員 - 音樂、音效與 Game Over 完整引擎  -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -712,13 +712,19 @@
                     </select>
                 </label>
                 <label>
-                    <input type="checkbox" id="soundToggle" checked> 🔊 音效
+                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂與音效
                 </label>
             `;
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
+        // 🎵 Web Audio API 即時音樂與音效引擎
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let bgmInterval = null;
+        let bgmStep = 0;
+        // Synthwave 經典旋律音高 (C Major Pentatonic)
+        const bgmNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 392.00, 329.63];
+
         function playAudioEffect(type) {
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
@@ -755,12 +761,60 @@
             } catch(e) {}
         }
 
+        // 🎵 背景音樂迴圈控制器 (Synthwave Bass Loop)
+        function startBGM() {
+            stopBGM();
+            const soundEnabled = document.getElementById('soundToggle')?.checked;
+            if (!soundEnabled) return;
+
+            bgmInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (!isGameRunning || isGamePaused || isGameOver || isResting) return;
+
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+
+                    // 動態音高：氣流強烈時微幅升調
+                    let flowBonus = Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) * 1.5;
+                    let freq = bgmNotes[bgmStep % bgmNotes.length] + flowBonus;
+
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.18);
+
+                    bgmStep++;
+                } catch(e) {}
+            }, 200); // 每 200ms 一拍
+        }
+
+        function stopBGM() {
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+        }
+
+        function toggleSoundSetting(enabled) {
+            if (!enabled) {
+                stopBGM();
+            } else if (isGameRunning && !isGamePaused && !isGameOver) {
+                startBGM();
+            }
+        }
+
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         let gameAnimationId = null;
         let isGameRunning = false;
         let isGamePaused = false;
-        let isGameOver = false; // 💡 遊戲結束狀態鎖
+        let isGameOver = false;
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
         let stars = [];
@@ -822,6 +876,9 @@
             }
             if (measuring) {
                 sessionStartTime = Date.now();
+                startBGM(); // 開始量測時播放音樂
+            } else {
+                stopBGM();
             }
         }
 
@@ -829,7 +886,7 @@
             stopGameEngine();
             isGameRunning = true;
             isGamePaused = false;
-            isGameOver = false; // 解鎖遊戲狀態
+            isGameOver = false;
             playerHP = 100;
             gameScore = 0;
             gameCombo = 0;
@@ -860,22 +917,26 @@
             if (isGamePaused) {
                 btn.innerText = "繼續";
                 btn.style.backgroundColor = "#f39c12";
+                stopBGM();
             } else {
                 btn.innerText = "暫停";
                 btn.style.backgroundColor = "#27ae60";
+                startBGM();
             }
         }
 
         function triggerGameOver() {
             isGameOver = true;
+            stopBGM();
             playAudioEffect('gameover');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
-            stopGameEngine(); // 💡 徹底凍結並結束 RequestAnimationFrame 迴圈
+            stopGameEngine();
         }
 
         function stopGameEngine() {
             isGameRunning = false;
+            stopBGM();
             if (gameAnimationId) {
                 cancelAnimationFrame(gameAnimationId);
                 gameAnimationId = null;
@@ -931,7 +992,6 @@
         }
 
         function gameLoop() {
-            // 💡 強制攔截：一旦遊戲停止或進入 Game Over，立刻斷開迴圈！
             if (!isGameRunning || isGameOver) return;
 
             gameCtx.globalAlpha = 1.0;
@@ -955,7 +1015,7 @@
 
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
-            if (activeMeasuring && !isGamePaused && !isResting) {
+            if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
                 let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
                 let flowMag = Math.abs(flow);
@@ -1010,15 +1070,13 @@
                         playAudioEffect('hit');
                         o.hit = true;
 
-                        // 💡 一旦血量歸零，立刻觸發 Game Over，中斷後續動畫！
                         if (playerHP <= 0) {
                             triggerGameOver();
-                            return; // 立即跳出 parse 邏輯
+                            return;
                         }
                     }
                 });
 
-                // 如果剛剛碰撞觸發了 Game Over，不繼續往下繪製
                 if (isGameOver) return;
 
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
@@ -1062,6 +1120,7 @@
 
         function triggerRestStop() {
             isResting = true;
+            stopBGM();
             const restScreen = document.getElementById('restScreen');
             const countdownEl = document.getElementById('restCountdown');
             let countdown = 15;
@@ -1076,6 +1135,7 @@
                     restScreen.style.display = 'none';
                     isResting = false;
                     sessionStartTime = Date.now();
+                    startBGM();
                 }
             }, 1000);
         }
