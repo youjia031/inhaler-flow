@@ -137,7 +137,6 @@
             font-size: 13px;
         }
 
-        /* 🎮 遊戲 UI 容器樣式 */
         .game-container {
             display: none;
             background: #0d1117;
@@ -150,7 +149,6 @@
             border: 2px solid #30363d;
         }
 
-        /* 🖥️ 全螢幕模式樣式 */
         .game-container.fullscreen {
             position: fixed !important;
             top: 0 !important;
@@ -212,7 +210,6 @@
             background: linear-gradient(90deg, #ff4d4d, #2ecc71);
             transition: width 0.1s linear;
         }
-        
         .boss-hp-bg {
             width: 180px;
             height: 16px;
@@ -394,7 +391,7 @@
                     <div class="manual-item" style="border-color:#a55eea;">⚡ <b>狂熱能量</b>: 進入狂熱模式，全屏得分加倍。</div>
                     <div class="manual-item" style="border-color:#e74c3c;">⛈️ <b>雷暴烏雲/毒霧</b>: 碰撞會扣除 HP。</div>
                     <div class="manual-item" style="border-color:#d35400;">🕸️ <b>泥濘黏液</b>: 暫時降低飛船跟隨速度。</div>
-                    <div class="manual-item" style="border-color:#2c3e50;">🖤 <b>詛咒黑寶石</b>: 扣除 HP 並扣除分數！</div>
+                    <div class="manual-item" style="border-color:#2c3e50;">🖤 <b>詛詛黑寶石</b>: 扣除 HP 並扣除分數！</div>
                     <div class="manual-item" style="border-color:#3498db;">⌨️ <b>快捷鍵 S</b>: 隨時進行進度存檔。</div>
                 </div>
                 <button class="btn game-btn" onclick="closeManualModal()">了解，關閉說明</button>
@@ -423,33 +420,56 @@
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
-        // =====================================================
-        //  完整 36 段教育引導線計畫表 (僅作為背景參考)
-        // =====================================================
         const EDUCATION_PROGRAM = [
-            ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
-            ["inhalation", 0,   2], ["exhalation", 60,  3], ["inhalation", 0,   2],
-            ["inhalation", 60,  2], ["inhalation", 0,   1], ["inhalation", 0,   2],
-            ["exhalation", 60,  3], ["inhalation", 0,   2], ["inhalation", 0,   1],
-            ["inhalation", 0,   1], ["inhalation", 90, 1.5], ["inhalation", 0,   2],
-            ["exhalation", 50,  6], ["inhalation", 0,   1], ["inhalation", 0,   2],
-            ["inhalation", 90, 1.5], ["inhalation", 0,   2], ["exhalation", 50,  6],
-            ["inhalation", 0,   2], ["inhalation", 0,   2], ["inhalation", 120, 1],
-            ["inhalation", 0,   1], ["inhalation", 0,   2], ["exhalation", 100, 2],
-            ["inhalation", 0,   2], ["inhalation", 40,  3], ["inhalation", 0,   2],
-            ["exhalation", 40,  4], ["inhalation", 0,   2], ["inhalation", 30,  3],
-            ["inhalation", 0,   2], ["exhalation", 30,  4], ["inhalation", 0,   3]
+            ["inhalation", 0,   3],
+            ["inhalation", 60,  2],
+            ["inhalation", 0,   1],
+            ["inhalation", 0,   2],
+            ["exhalation", 60,  3],
+            ["inhalation", 0,   2],
+            ["inhalation", 60,  2],
+            ["inhalation", 0,   1],
+            ["inhalation", 0,   2],
+            ["exhalation", 60,  3],
+            ["inhalation", 0,   2],
+            ["inhalation", 0,   1],
+            ["inhalation", 0,   1],
+            ["inhalation", 90, 1.5],
+            ["inhalation", 0,   2],
+            ["exhalation", 50,  6],
+            ["inhalation", 0,   1],
+            ["inhalation", 0,   2],
+            ["inhalation", 90, 1.5],
+            ["inhalation", 0,   2],
+            ["exhalation", 50,  6],
+            ["inhalation", 0,   2],
+            ["inhalation", 0,   2],
+            ["inhalation", 120, 1],
+            ["inhalation", 0,   1],
+            ["inhalation", 0,   2],
+            ["exhalation", 100, 2],
+            ["inhalation", 0,   2],
+            ["inhalation", 40,  3],
+            ["inhalation", 0,   2],
+            ["exhalation", 40,  4],
+            ["inhalation", 0,   2],
+            ["inhalation", 30,  3],
+            ["inhalation", 0,   2],
+            ["exhalation", 30,  4],
+            ["inhalation", 0,   3]
         ];
 
         function makeEducationCurves(dt = 0.05, ramp = 0.4) {
-            let times = [], inh = [], exh = [];
+            let times = [];
+            let inh = [];
+            let exh = [];
             let t = 0.0;
             for (let [mode, flow, dur] of EDUCATION_PROGRAM) {
                 if (flow === 0) {
                     let steps = Math.max(1, Math.round(dur / dt));
                     for (let i = 0; i < steps; i++) {
                         times.push(Number(t.toFixed(3)));
-                        inh.push(0.0); 
+                        inh.push(0.0);
                         exh.push(0.0);
                         t += dt;
                     }
@@ -458,7 +478,10 @@
                 let target = (mode === "inhalation") ? flow : -flow;
                 let ramp_dur = Math.min(ramp, dur * 0.3);
                 let hold_dur = dur - 2 * ramp_dur;
-                if (hold_dur < 0) { ramp_dur = dur / 2; hold_dur = 0; }
+                if (hold_dur < 0) {
+                    ramp_dur = dur / 2;
+                    hold_dur = 0;
+                }
                 
                 let steps_up = Math.max(1, Math.round(ramp_dur / dt));
                 let steps_hold = Math.round(hold_dur / dt);
@@ -467,35 +490,35 @@
                 for (let i = 0; i < steps_up; i++) {
                     let v = target * ((i + 1) / steps_up);
                     times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { 
-                        inh.push(v); 
-                        exh.push(0.0); 
-                    } else { 
-                        inh.push(0.0); 
-                        exh.push(v); 
+                    if (mode === "inhalation") {
+                        inh.push(v);
+                        exh.push(0.0);
+                    } else {
+                        inh.push(0.0);
+                        exh.push(v);
                     }
                     t += dt;
                 }
                 for (let i = 0; i < steps_hold; i++) {
                     times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { 
-                        inh.push(target); 
-                        exh.push(0.0); 
-                    } else { 
-                        inh.push(0.0); 
-                        exh.push(target); 
+                    if (mode === "inhalation") {
+                        inh.push(target);
+                        exh.push(0.0);
+                    } else {
+                        inh.push(0.0);
+                        exh.push(target);
                     }
                     t += dt;
                 }
                 for (let i = 0; i < steps_down; i++) {
                     let v = target * (1 - (i + 1) / steps_down);
                     times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { 
-                        inh.push(v); 
-                        exh.push(0.0); 
-                    } else { 
-                        inh.push(0.0); 
-                        exh.push(v); 
+                    if (mode === "inhalation") {
+                        inh.push(v);
+                        exh.push(0.0);
+                    } else {
+                        inh.push(0.0);
+                        exh.push(v);
                     }
                     t += dt;
                 }
@@ -507,9 +530,15 @@
         const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
         const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
 
-        let port = null, reader = null, isMeasuring = false;
-        let records = [], flowHistory = [], windowHistory = [false, false, false];
-        let lastFFT = {}, startTime = null, currentMode = "inhalation";
+        let port = null;
+        let reader = null;
+        let isMeasuring = false;
+        let records = [];
+        let flowHistory = [];
+        let windowHistory = [false, false, false];
+        let lastFFT = {};
+        let startTime = null;
+        let currentMode = "inhalation";
         let smoothedEst = 0; 
         let pklSegments = [];
         let onnxSession = null;
@@ -548,33 +577,79 @@
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-                    { label: 'Patient Flow', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
+                    {
+                        label: 'Inhale guide',
+                        data: inhaleGuidePoints,
+                        borderColor: '#2e7d32',
+                        borderWidth: 1.8,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Exhale guide',
+                        data: exhaleGuidePoints,
+                        borderColor: '#1565c0',
+                        borderWidth: 1.8,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Patient Flow',
+                        data: [],
+                        borderColor: '#c0392b',
+                        borderWidth: 2.4,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.4
+                    }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
+                    title: {
+                        display: true,
+                        text: 'Inhaler Flow Profile',
+                        font: { size: 16, weight: 'bold' },
+                        color: '#1f4e79'
+                    }
                 },
                 scales: {
-                    x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
-                    y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
+                    x: {
+                        type: 'linear',
+                        min: 0,
+                        max: 20,
+                        title: { display: true, text: 'Time (secs)' }
+                    },
+                    y: {
+                        min: -120,
+                        max: 120,
+                        title: { display: true, text: 'Flow (L/min)' }
+                    }
                 }
             },
             plugins: [customOverlayPlugin]
         });
 
         async function detectBreathModePKL(fft) {
-            if (!fft) return "inhalation";
-            let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
+            if (!fft) {
+                return "inhalation";
+            }
+            let e1 = fft[1] || 0;
+            let e2 = fft[2] || 0;
+            let e3 = fft[3] || 0;
+            let e4 = fft[4] || 0;
+            let e5 = fft[5] || 0;
             let totalE = e1 + e2 + e3 + e4 + e5;
             
             if (totalE < 20000) {
-                predictionBuffer = []; 
-                lastConfirmedMode = "inhalation"; 
+                predictionBuffer = [];
+                lastConfirmedMode = "inhalation";
                 return "inhalation";
             }
 
@@ -598,7 +673,9 @@
             }
 
             predictionBuffer.push(rawMode);
-            if (predictionBuffer.length > 3) predictionBuffer.shift();
+            if (predictionBuffer.length > 3) {
+                predictionBuffer.shift();
+            }
 
             let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
             let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
@@ -615,7 +692,7 @@
 
         async function runPKLIndexSegmentation() {
             if (records.length === 0) {
-                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
+                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");
                 return;
             }
             updateStatus("正在進行 PKL Index 切分中...");
@@ -640,13 +717,13 @@
                     if (currentS !== -1) {
                         pklSegments.push({
                             state: (currentS === 0) ? "Inspiration" : "Expiration",
-                            start_index: startIdx, 
+                            start_index: startIdx,
                             end_index: i - 1,
-                            start_time: records[startIdx].elapsed, 
+                            start_time: records[startIdx].elapsed,
                             end_time: records[i - 1].elapsed
                         });
                     }
-                    currentS = predictions[i]; 
+                    currentS = predictions[i];
                     startIdx = i;
                 }
             }
@@ -654,9 +731,9 @@
             if (currentS !== -1) {
                 pklSegments.push({
                     state: (currentS === 0) ? "Inspiration" : "Expiration",
-                    start_index: startIdx, 
+                    start_index: startIdx,
                     end_index: records.length - 1,
-                    start_time: records[startIdx].elapsed, 
+                    start_time: records[startIdx].elapsed,
                     end_time: records[records.length - 1].elapsed
                 });
             }
@@ -671,16 +748,22 @@
         }
 
         function resetUIState() {
-            port = null; reader = null; isMeasuring = false;
+            port = null;
+            reader = null;
+            isMeasuring = false;
             document.getElementById('connectBtn').innerText = 'Connect';
             document.getElementById('startBtn').innerText = 'Start';
             document.getElementById('startBtn').disabled = true;
             updateStatus('Disconnected / Ready to connect');
-            if (typeof updateGameMeasurementState === 'function') updateGameMeasurementState(false);
+            if (typeof updateGameMeasurementState === 'function') {
+                updateGameMeasurementState(false);
+            }
         }
 
         if ('serial' in navigator) {
-            navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
+            navigator.serial.addEventListener('disconnect', () => {
+                resetUIState();
+            });
         }
 
         window.addEventListener('beforeunload', async () => {
@@ -706,14 +789,17 @@
                     updateStatus('Connected. Press Start to begin.');
                     readLoop();
                 } catch (err) { 
-                    updateStatus('Connection failed: ' + err.message); resetUIState();
+                    updateStatus('Connection failed: ' + err.message);
+                    resetUIState();
                 }
             } else {
                 try {
                     isMeasuring = false;
                     if (reader) await reader.cancel();
                     if (port) await port.close();
-                } catch (err) {} finally { resetUIState(); }
+                } catch (err) {} finally {
+                    resetUIState();
+                }
             }
         }
 
@@ -731,11 +817,15 @@
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
-                    if (lines.length > 10) lines = lines.slice(-3);
+                    if (lines.length > 10) {
+                        lines = lines.slice(-3);
+                    }
 
                     for (let line of lines) {
                         line = line.trim();
-                        if (isMeasuring) await parseLine(line);
+                        if (isMeasuring) {
+                            await parseLine(line);
+                        }
                     }
                 }
             } catch (err) {
@@ -750,7 +840,9 @@
         async function parseLine(line) {
             if (line.includes('[FFT]')) {
                 const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
-                for (const match of matches) { lastFFT[match[1]] = parseFloat(match[2]); }
+                for (const match of matches) {
+                    lastFFT[match[1]] = parseFloat(match[2]);
+                }
                 return;
             }
             
@@ -765,19 +857,29 @@
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
                 let isCandidate = false;
-                if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
-                if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
+                if (flowYes || (lowE > 800000 && est > 0.0)) {
+                    isCandidate = true;
+                }
+                if (lastFFT[1] > 800000 && lastFFT[8] < 5000) {
+                    isCandidate = false;
+                }
 
-                windowHistory.shift(); windowHistory.push(isCandidate);
+                windowHistory.shift();
+                windowHistory.push(isCandidate);
                 let trueCount = windowHistory.filter(x => x === true).length;
                 if (trueCount >= 2) {
                     flowYes = true;
-                    if (est === 0.0 && lowE > 1000000) est = 15.0;
+                    if (est === 0.0 && lowE > 1000000) {
+                        est = 15.0;
+                    }
                 } else {
-                    flowYes = false; est = 0.0;
+                    flowYes = false;
+                    est = 0.0;
                 }
 
-                if (startTime === null) startTime = Date.now();
+                if (startTime === null) {
+                    startTime = Date.now();
+                }
                 let elapsed = (Date.now() - startTime) / 1000;
 
                 let manualMode = document.getElementById('modeSelect').value;
@@ -794,14 +896,18 @@
 
                 let flowMag = Math.abs(est);
                 if (currentMode === "exhalation") {
-                    if (flowMag === 0.0 && lowE > 800000) flowMag = 30.0;
+                    if (flowMag === 0.0 && lowE > 800000) {
+                        flowMag = 30.0;
+                    }
                     smoothedEst = -flowMag;
                 } else {
                     smoothedEst = flowMag;
                 }
 
                 flowHistory.push(smoothedEst);
-                if (flowHistory.length > 5) flowHistory.shift();
+                if (flowHistory.length > 5) {
+                    flowHistory.shift();
+                }
                 let finalSmoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
 
                 records.push({ elapsed, flowYes, est: finalSmoothedEst, lowE, fft: { ...lastFFT } });
@@ -824,7 +930,9 @@
         function toggleMeasuring() {
             isMeasuring = !isMeasuring;
             if (isMeasuring) {
-                if (startTime === null) startTime = Date.now();
+                if (startTime === null) {
+                    startTime = Date.now();
+                }
                 document.getElementById('startBtn').innerText = 'Stop';
                 updateStatus('Measuring...');
             } else {
@@ -838,11 +946,16 @@
         }
 
         function clearPlot() {
-            startTime = null; records = []; flowHistory = []; pklSegments = []; predictionBuffer = [];
+            startTime = null;
+            records = [];
+            flowHistory = [];
+            pklSegments = [];
+            predictionBuffer = [];
             lastConfirmedMode = "inhalation";
             smoothedEst = 0;
             flowChart.data.datasets[2].data = [];
-            flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
+            flowChart.options.scales.x.min = 0;
+            flowChart.options.scales.x.max = 20;
             flowChart.update();
             document.getElementById('recordCount').innerText = 'Records: 0';
             document.getElementById('peakFlow').innerText = 'Peak: — L/min';
@@ -853,12 +966,16 @@
         function saveCSV() {
             let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
             let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
-            for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
+            for (let i = 1; i <= 20; i++) {
+                csvContent += `,${i}kHz`;
+            }
             csvContent += "\n";
             
             records.forEach(r => {
                 let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
-                for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
+                for (let i = 1; i <= 20; i++) {
+                    row += `,${r.fft[i] || ''}`;
+                }
                 csvContent += row + "\n";
             });
             
@@ -871,11 +988,13 @@
             document.body.removeChild(link);
         }
 
-        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
+        function updateStatus(msg) {
+            document.getElementById('status').innerText = msg;
+        }
     </script>
 
     <!-- ===================================================== -->
-    <!--  🚀 超高畫質與動態動作變化遊戲引擎                   -->
+    <!--  🚀 專屬 Boss 圖樣與極細緻動作引擎 (100% 展開版)      -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -920,10 +1039,22 @@
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let bgmInterval = null, bgmStep = 0, customAudioBuffer = null, customAudioSource = null, isUsingCustomMusic = false;
+        let bgmInterval = null;
+        let bgmStep = 0;
+        let customAudioBuffer = null;
+        let customAudioSource = null;
+        let isUsingCustomMusic = false;
 
-        const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-        const C5 = 523.25, D5 = 587.33, E5 = 659.25;
+        const C4 = 261.63;
+        const D4 = 293.66;
+        const E4 = 329.63;
+        const F4 = 349.23;
+        const G4 = 392.00;
+        const A4 = 440.00;
+        const B4 = 493.88;
+        const C5 = 523.25;
+        const D5 = 587.33;
+        const E5 = 659.25;
         const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
 
         function playAudioEffect(type) {
@@ -937,38 +1068,38 @@
             try {
                 let now = audioCtx.currentTime;
                 if (type === 'coin') {
-                    const osc = audioCtx.createOscillator(); 
+                    const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    osc.connect(gain); 
+                    osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    osc.type = 'sine'; 
+                    osc.type = 'sine';
                     osc.frequency.setValueAtTime(987.77, now);
-                    gain.gain.setValueAtTime(0.35, now); 
+                    gain.gain.setValueAtTime(0.35, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                    osc.start(); 
+                    osc.start();
                     osc.stop(now + 0.25);
                 } else if (type === 'buff') {
-                    const osc = audioCtx.createOscillator(); 
+                    const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    osc.connect(gain); 
+                    osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    osc.type = 'triangle'; 
+                    osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, now);
                     osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now); 
+                    gain.gain.setValueAtTime(0.4, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(); 
+                    osc.start();
                     osc.stop(now + 0.3);
                 } else if (type === 'hit') {
-                    const osc = audioCtx.createOscillator(); 
+                    const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    osc.connect(gain); 
+                    osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; 
+                    osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(200, now);
-                    gain.gain.setValueAtTime(0.4, now); 
+                    gain.gain.setValueAtTime(0.4, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.start(); 
+                    osc.start();
                     osc.stop(now + 0.2);
                 }
             } catch(e) {}
@@ -996,13 +1127,13 @@
                         let idx = bgmStep % pilotTheme.length;
                         const leadOsc = audioCtx.createOscillator();
                         const leadGain = audioCtx.createGain();
-                        leadOsc.type = 'sawtooth'; 
+                        leadOsc.type = 'sawtooth';
                         leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-                        leadGain.gain.setValueAtTime(0.15, now); 
+                        leadGain.gain.setValueAtTime(0.15, now);
                         leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                        leadOsc.connect(leadGain); 
+                        leadOsc.connect(leadGain);
                         leadGain.connect(audioCtx.destination);
-                        leadOsc.start(now); 
+                        leadOsc.start(now);
                         leadOsc.stop(now + 0.16);
                         bgmStep++;
                     } catch(e) {}
@@ -1011,31 +1142,45 @@
         }
 
         function stopBGM() {
-            if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
-            if (customAudioSource) { try { customAudioSource.stop(); } catch(e){} customAudioSource = null; }
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+            if (customAudioSource) {
+                try {
+                    customAudioSource.stop();
+                } catch(e){}
+                customAudioSource = null;
+            }
         }
 
-        function toggleSoundSetting(enabled) { if (!enabled) stopBGM(); else startBGM(); }
+        function toggleSoundSetting(enabled) {
+            if (!enabled) {
+                stopBGM();
+            } else {
+                startBGM();
+            }
+        }
 
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
 
             if (mode === 'both') {
-                chartBox.style.display = 'block'; 
-                gameBox.style.display = 'block'; 
+                chartBox.style.display = 'block';
+                gameBox.style.display = 'block';
                 chartBox.style.marginBottom = '15px';
             } else if (mode === 'game') {
-                chartBox.style.display = 'none'; 
+                chartBox.style.display = 'none';
                 gameBox.style.display = 'block';
             } else {
-                chartBox.style.display = 'block'; 
+                chartBox.style.display = 'block';
                 gameBox.style.display = 'none';
             }
 
             stopGameEngine();
             if (mode === 'game' || mode === 'both') {
-                resizeGameCanvas(); 
+                resizeGameCanvas();
                 restartGameEngine();
             } else {
                 stopBGM();
@@ -1046,25 +1191,34 @@
 
         function updateGameMeasurementState(measuring) {
             document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
-            if (measuring) startBGM(); else stopBGM();
+            if (measuring) {
+                startBGM();
+            } else {
+                stopBGM();
+            }
         }
 
         function toggleFullscreen() {
             const gameBox = document.getElementById('gameContainer');
             if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
-                if (gameBox.requestFullscreen) gameBox.requestFullscreen();
-                else gameBox.classList.add('fullscreen');
+                if (gameBox.requestFullscreen) {
+                    gameBox.requestFullscreen();
+                } else {
+                    gameBox.classList.add('fullscreen');
+                }
             } else {
-                if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
                 gameBox.classList.remove('fullscreen');
             }
             setTimeout(resizeGameCanvas, 150);
         }
 
-        // =====================================================
-        //  🏰 關卡與主題資料庫
-        // =====================================================
-        let currentStage = 1, gameScore = 0, gameCombo = 0, playerHP = 100;
+        let currentStage = 1;
+        let gameScore = 0;
+        let gameCombo = 0;
+        let playerHP = 100;
         let activeBoss = null;
 
         const STAGE_THEMES = [
@@ -1092,8 +1246,8 @@
             let saved = localStorage.getItem('inhaler_save_' + pid);
             if (saved) {
                 let data = JSON.parse(saved);
-                currentStage = data.stage || 1; 
-                gameScore = data.score || 0; 
+                currentStage = data.stage || 1;
+                gameScore = data.score || 0;
                 playerHP = data.hp || 100;
                 updateStatus(`📂 成功載入患者 [${pid}] 紀錄 (關卡: ${currentStage}, 分數: ${gameScore})`);
                 document.getElementById('gameStage').innerText = currentStage;
@@ -1104,26 +1258,32 @@
             if (e.key === 's' || e.key === 'S') saveGameProgress(true);
         });
 
-        // =====================================================
-        //  🎨 高畫質動態圖像繪製器 (含角色噴火與 Boss 動作變化)
-        // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
-        let gameAnimationId = null, isGameRunning = false, isGamePaused = false, isGameOver = false;
+        let gameAnimationId = null;
+        let isGameRunning = false;
+        let isGamePaused = false;
+        let isGameOver = false;
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 22 };
-        let stars = [], particles = [], collectibles = [], obstacles = [];
-        let hasShield = false, feverTimer = 0, magnetTimer = 0, doubleScoreTimer = 0, slowDebuffTimer = 0;
-        let isResting = false, sessionStartTime = 0;
+        let stars = [];
+        let particles = [];
+        let collectibles = [];
+        let obstacles = [];
+        let hasShield = false;
+        let feverTimer = 0;
+        let magnetTimer = 0;
+        let doubleScoreTimer = 0;
+        let slowDebuffTimer = 0;
+        let isResting = false;
+        let sessionStartTime = 0;
         let globalAnimFrame = 0;
 
-        // 🚀 高畫質飛船角色繪製 (含尾焰震動動畫)
         function drawPlayerRocketHD(x, y, angle, mode, flowMag) {
             gameCtx.save();
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
-            // 1. 動態引擎噴火（尾焰動畫）
             if (flowMag > 3.0) {
                 let flameLen = Math.min(35, flowMag * 0.4) + Math.sin(globalAnimFrame * 0.5) * 4;
                 gameCtx.save();
@@ -1144,11 +1304,9 @@
                 gameCtx.restore();
             }
 
-            // 2. 飛船主體科技造型
             gameCtx.shadowBlur = 12;
             gameCtx.shadowColor = '#3498db';
 
-            // 機身鋼鐵底座
             gameCtx.fillStyle = '#2c3e50';
             gameCtx.beginPath();
             gameCtx.moveTo(24, 0);
@@ -1158,7 +1316,6 @@
             gameCtx.closePath();
             gameCtx.fill();
 
-            // 裝甲主翼
             gameCtx.fillStyle = '#ecf0f1';
             gameCtx.beginPath();
             gameCtx.moveTo(18, 0);
@@ -1167,18 +1324,15 @@
             gameCtx.closePath();
             gameCtx.fill();
 
-            // 兩側發光雷射砲管
             gameCtx.fillStyle = '#e74c3c';
             gameCtx.fillRect(-2, -13, 10, 2.5);
             gameCtx.fillRect(-2, 10.5, 10, 2.5);
 
-            // 座艙罩藍光 GOW
             gameCtx.fillStyle = '#3498db';
             gameCtx.beginPath();
             gameCtx.arc(4, 0, 5, 0, Math.PI*2);
             gameCtx.fill();
 
-            // 高對比白色勾邊
             gameCtx.strokeStyle = '#ffffff';
             gameCtx.lineWidth = 2;
             gameCtx.beginPath();
@@ -1189,7 +1343,6 @@
             gameCtx.closePath();
             gameCtx.stroke();
 
-            // 3. 旋轉防護罩動態
             if (hasShield) {
                 gameCtx.save();
                 gameCtx.rotate(globalAnimFrame * 0.05);
@@ -1207,53 +1360,157 @@
             gameCtx.restore();
         }
 
-        // 👹 帶有動作變化的 Boss 高畫質繪製
+        // 👹 專屬 Boss 形象與完整繪製邏輯（圖文完全相符）
         function drawBossHD(boss) {
             gameCtx.save();
 
-            // Boss 動作：漂浮位移 + 攻擊震動
             let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            let attackShakeX = (boss.attackTimer % 50 > 40) ? (Math.random() - 0.5) * 6 : 0;
-            let currentX = boss.x + attackShakeX;
-            let currentY = boss.y + floatY;
+            let attackShakeX = (boss.attackTimer % 50 > 38) ? (Math.random() - 0.5) * 8 : 0;
+            let cx = boss.x + attackShakeX;
+            let cy = boss.y + floatY;
+            let isAtk = (boss.attackTimer % 50 > 35);
 
-            gameCtx.translate(currentX, currentY);
+            gameCtx.translate(cx, cy);
 
-            // 1. Boss 發光的發射警報亮光
-            let isPreparingAttack = (boss.attackTimer % 50 > 35);
-            gameCtx.shadowBlur = isPreparingAttack ? 25 : 15;
-            gameCtx.shadowColor = isPreparingAttack ? '#ff0000' : '#f1c40f';
+            if (boss.name.includes("風暴精靈") || boss.name.includes("🌪️")) {
+                // 🌪️ 風暴精靈：多重旋風外圍 + 發光電光顆粒 + 旋轉風刃
+                gameCtx.save();
+                gameCtx.rotate(globalAnimFrame * 0.15);
+                gameCtx.shadowBlur = 20;
+                gameCtx.shadowColor = isAtk ? '#00d2d3' : '#3498db';
+                for (let i = 0; i < 4; i++) {
+                    gameCtx.rotate(Math.PI / 2);
+                    gameCtx.fillStyle = isAtk ? '#ffffff' : '#3498db';
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(0, 0);
+                    gameCtx.quadraticCurveTo(20, -15, 38, -5);
+                    gameCtx.quadraticCurveTo(20, 5, 0, 0);
+                    gameCtx.fill();
+                }
+                gameCtx.restore();
+                gameCtx.fillStyle = '#ffffff';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 12, 0, Math.PI*2);
+                gameCtx.fill();
 
-            // 外圍發光護甲外殼
-            gameCtx.fillStyle = isPreparingAttack ? '#c0392b' : '#2c3e50';
-            gameCtx.beginPath();
-            gameCtx.arc(0, 0, boss.radius + 4, 0, Math.PI * 2);
-            gameCtx.fill();
+            } else if (boss.name.includes("雷霆巨鷹") || boss.name.includes("🦅")) {
+                // 🦅 雷霆巨鷹：巨型鋼鐵羽翼 + 揮翅動畫 + 電光鷹嘴 + 紅光巨眼
+                let wingAngle = Math.sin(globalAnimFrame * 0.2) * 0.35;
+                gameCtx.shadowBlur = 20;
+                gameCtx.shadowColor = isAtk ? '#e74c3c' : '#f1c40f';
+                
+                [-1, 1].forEach(dir => {
+                    gameCtx.save();
+                    gameCtx.scale(1, dir);
+                    gameCtx.rotate(wingAngle);
+                    gameCtx.fillStyle = '#2c3e50';
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(0, 0);
+                    gameCtx.lineTo(-20, -45);
+                    gameCtx.lineTo(15, -20);
+                    gameCtx.closePath();
+                    gameCtx.fill();
+                    gameCtx.strokeStyle = '#f1c40f';
+                    gameCtx.lineWidth = 2;
+                    gameCtx.stroke();
+                    gameCtx.restore();
+                });
 
-            // 核心發光體
-            gameCtx.fillStyle = isPreparingAttack ? '#e74c3c' : '#f39c12';
-            gameCtx.beginPath();
-            gameCtx.arc(0, 0, boss.radius - 8, 0, Math.PI * 2);
-            gameCtx.fill();
+                gameCtx.fillStyle = '#ecf0f1';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 18, 0, Math.PI*2);
+                gameCtx.fill();
 
-            // 攻擊狀態張開的邊翼/觸手肢體變化
-            gameCtx.strokeStyle = '#f1c40f';
-            gameCtx.lineWidth = 3.5;
-            let wingSpread = isPreparingAttack ? 18 : 8;
-            
-            gameCtx.beginPath();
-            gameCtx.moveTo(-boss.radius, -wingSpread);
-            gameCtx.lineTo(-boss.radius - 15, -wingSpread - 10);
-            gameCtx.moveTo(-boss.radius, wingSpread);
-            gameCtx.lineTo(-boss.radius - 15, wingSpread + 10);
-            gameCtx.stroke();
+                gameCtx.fillStyle = '#f39c12';
+                gameCtx.beginPath();
+                gameCtx.moveTo(-10, 0);
+                gameCtx.lineTo(-32, 5);
+                gameCtx.lineTo(-12, 12);
+                gameCtx.closePath();
+                gameCtx.fill();
 
-            // 超高對比黃金邊框
-            gameCtx.strokeStyle = '#ffffff';
-            gameCtx.lineWidth = 2.5;
-            gameCtx.beginPath();
-            gameCtx.arc(0, 0, boss.radius + 4, 0, Math.PI * 2);
-            gameCtx.stroke();
+                gameCtx.fillStyle = isAtk ? '#ff0000' : '#e74c3c';
+                gameCtx.beginPath();
+                gameCtx.arc(-5, -5, 4, 0, Math.PI*2);
+                gameCtx.fill();
+
+            } else if (boss.name.includes("異星母艦") || boss.name.includes("🛸")) {
+                // 🛸 異星母艦：巨大飛碟盤體 + 旋轉發光燈位 + 底部離子主砲
+                gameCtx.shadowBlur = 25;
+                gameCtx.shadowColor = isAtk ? '#a55eea' : '#00d2d3';
+                gameCtx.fillStyle = '#34495e';
+                gameCtx.beginPath();
+                gameCtx.ellipse(0, 0, 45, 18, 0, 0, Math.PI*2);
+                gameCtx.fill();
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 3;
+                gameCtx.stroke();
+                
+                gameCtx.save();
+                gameCtx.rotate(globalAnimFrame * 0.08);
+                for(let i = 0; i < 6; i++) {
+                    gameCtx.rotate(Math.PI / 3);
+                    gameCtx.fillStyle = isAtk ? '#e74c3c' : '#f1c40f';
+                    gameCtx.beginPath();
+                    gameCtx.arc(32, 0, 4, 0, Math.PI*2);
+                    gameCtx.fill();
+                }
+                gameCtx.restore();
+                
+                gameCtx.fillStyle = isAtk ? '#ff0000' : '#8e44ad';
+                gameCtx.beginPath();
+                gameCtx.arc(-20, 0, isAtk ? 10 : 6, 0, Math.PI*2);
+                gameCtx.fill();
+
+            } else if (boss.name.includes("地獄赤龍") || boss.name.includes("🐉")) {
+                // 🐉 地獄赤龍：張嘴閉嘴咬合動畫 + 赤色龍角 + 龍眼發光
+                let jawOpen = isAtk ? 12 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 6);
+                gameCtx.shadowBlur = 22;
+                gameCtx.shadowColor = '#e74c3c';
+                
+                gameCtx.fillStyle = '#c0392b';
+                gameCtx.beginPath();
+                gameCtx.moveTo(15, -jawOpen);
+                gameCtx.lineTo(-25, -20 - jawOpen);
+                gameCtx.lineTo(-10, -5);
+                gameCtx.closePath();
+                gameCtx.fill();
+
+                gameCtx.fillStyle = '#f1c40f';
+                gameCtx.beginPath();
+                gameCtx.moveTo(0, -15 - jawOpen);
+                gameCtx.lineTo(15, -35 - jawOpen);
+                gameCtx.lineTo(-10, -20 - jawOpen);
+                gameCtx.fill();
+
+                gameCtx.fillStyle = '#962d22';
+                gameCtx.beginPath();
+                gameCtx.moveTo(15, jawOpen);
+                gameCtx.lineTo(-25, 20 + jawOpen);
+                gameCtx.lineTo(-10, 5);
+                gameCtx.closePath();
+                gameCtx.fill();
+
+                gameCtx.fillStyle = '#f1c40f';
+                gameCtx.beginPath();
+                gameCtx.arc(-2, -10 - jawOpen, 4, 0, Math.PI*2);
+                gameCtx.fill();
+
+            } else {
+                gameCtx.shadowBlur = 18;
+                gameCtx.shadowColor = isAtk ? '#e74c3c' : '#f1c40f';
+                gameCtx.fillStyle = '#2c3e50';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, boss.radius, 0, Math.PI*2);
+                gameCtx.fill();
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 3;
+                gameCtx.stroke();
+                gameCtx.fillStyle = isAtk ? '#e74c3c' : '#3498db';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 14, 0, Math.PI*2);
+                gameCtx.fill();
+            }
 
             gameCtx.restore();
         }
@@ -1265,102 +1522,101 @@
 
             if (c.type === 'coin') {
                 gameCtx.shadowColor = '#f1c40f';
-                gameCtx.fillStyle = '#f39c12'; 
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, 12, 0, Math.PI*2); 
+                gameCtx.fillStyle = '#f39c12';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 12, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.fillStyle = '#f1c40f'; 
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, 9, 0, Math.PI*2); 
+                gameCtx.fillStyle = '#f1c40f';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 9, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 2.5; 
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 2.5;
                 gameCtx.stroke();
-                gameCtx.fillStyle = '#ffffff'; 
-                gameCtx.font = 'bold 11px sans-serif'; 
-                gameCtx.textAlign = 'center'; 
+                gameCtx.fillStyle = '#ffffff';
+                gameCtx.font = 'bold 11px sans-serif';
+                gameCtx.textAlign = 'center';
                 gameCtx.textBaseline = 'middle';
                 gameCtx.fillText('$', 0, 1);
             } else if (c.type === 'heart') {
-                // 脈動效果
                 let pulse = Math.sin(globalAnimFrame * 0.1) * 1.5;
                 gameCtx.shadowColor = '#2ecc71';
                 gameCtx.fillStyle = '#2ecc71';
                 gameCtx.beginPath();
-                gameCtx.moveTo(0, 4 + pulse); 
-                gameCtx.bezierCurveTo(-8, -6 - pulse, -14, 2, 0, 12 + pulse); 
+                gameCtx.moveTo(0, 4 + pulse);
+                gameCtx.bezierCurveTo(-8, -6 - pulse, -14, 2, 0, 12 + pulse);
                 gameCtx.bezierCurveTo(14, 2, 8, -6 - pulse, 0, 4 + pulse);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 2; 
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 2;
                 gameCtx.stroke();
             } else if (c.type === 'shield') {
-                gameCtx.shadowColor = '#00d2d3'; 
+                gameCtx.shadowColor = '#00d2d3';
                 gameCtx.fillStyle = '#00d2d3';
-                gameCtx.beginPath(); 
-                gameCtx.moveTo(0, -10); 
-                gameCtx.lineTo(9, -5); 
-                gameCtx.lineTo(7, 6); 
-                gameCtx.lineTo(0, 11); 
-                gameCtx.lineTo(-7, 6); 
-                gameCtx.lineTo(-9, -5); 
+                gameCtx.beginPath();
+                gameCtx.moveTo(0, -10);
+                gameCtx.lineTo(9, -5);
+                gameCtx.lineTo(7, 6);
+                gameCtx.lineTo(0, 11);
+                gameCtx.lineTo(-7, 6);
+                gameCtx.lineTo(-9, -5);
                 gameCtx.closePath();
-                gameCtx.fill(); 
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 2; 
+                gameCtx.fill();
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 2;
                 gameCtx.stroke();
             } else if (c.type === 'magnet') {
-                gameCtx.shadowColor = '#e67e22'; 
-                gameCtx.strokeStyle = '#e67e22'; 
+                gameCtx.shadowColor = '#e67e22';
+                gameCtx.strokeStyle = '#e67e22';
                 gameCtx.lineWidth = 6;
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, -2, 7, Math.PI, 0, false); 
-                gameCtx.lineTo(7, 6); 
-                gameCtx.moveTo(-7, -2); 
-                gameCtx.lineTo(-7, 6); 
+                gameCtx.beginPath();
+                gameCtx.arc(0, -2, 7, Math.PI, 0, false);
+                gameCtx.lineTo(7, 6);
+                gameCtx.moveTo(-7, -2);
+                gameCtx.lineTo(-7, 6);
                 gameCtx.stroke();
-                gameCtx.fillStyle = '#ffffff'; 
-                gameCtx.fillRect(-9, 4, 4, 4); 
+                gameCtx.fillStyle = '#ffffff';
+                gameCtx.fillRect(-9, 4, 4, 4);
                 gameCtx.fillRect(5, 4, 4, 4);
             } else if (c.type === 'double') {
-                gameCtx.shadowColor = '#2ecc71'; 
+                gameCtx.shadowColor = '#2ecc71';
                 gameCtx.fillStyle = '#2ecc71';
-                gameCtx.beginPath(); 
-                gameCtx.moveTo(0, -11); 
-                gameCtx.lineTo(9, -3); 
-                gameCtx.lineTo(0, 11); 
-                gameCtx.lineTo(-9, -3); 
-                gameCtx.closePath(); 
+                gameCtx.beginPath();
+                gameCtx.moveTo(0, -11);
+                gameCtx.lineTo(9, -3);
+                gameCtx.lineTo(0, 11);
+                gameCtx.lineTo(-9, -3);
+                gameCtx.closePath();
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 2; 
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 2;
                 gameCtx.stroke();
             } else if (c.type === 'fever') {
-                gameCtx.shadowColor = '#a55eea'; 
-                gameCtx.fillStyle = '#8e44ad'; 
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, 12, 0, Math.PI*2); 
+                gameCtx.shadowColor = '#a55eea';
+                gameCtx.fillStyle = '#8e44ad';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 12, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#f1c40f'; 
-                gameCtx.lineWidth = 2.5; 
+                gameCtx.strokeStyle = '#f1c40f';
+                gameCtx.lineWidth = 2.5;
                 gameCtx.stroke();
-                gameCtx.fillStyle = '#f1c40f'; 
-                gameCtx.font = 'bold 12px sans-serif'; 
-                gameCtx.textAlign = 'center'; 
+                gameCtx.fillStyle = '#f1c40f';
+                gameCtx.font = 'bold 12px sans-serif';
+                gameCtx.textAlign = 'center';
                 gameCtx.textBaseline = 'middle';
                 gameCtx.fillText('⚡', 0, 0);
             } else if (c.type === 'curse') {
-                gameCtx.shadowColor = '#e74c3c'; 
-                gameCtx.fillStyle = '#111111'; 
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, 11, 0, Math.PI*2); 
+                gameCtx.shadowColor = '#e74c3c';
+                gameCtx.fillStyle = '#111111';
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 11, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#e74c3c'; 
-                gameCtx.lineWidth = 3; 
+                gameCtx.strokeStyle = '#e74c3c';
+                gameCtx.lineWidth = 3;
                 gameCtx.stroke();
-                gameCtx.fillStyle = '#e74c3c'; 
-                gameCtx.font = 'bold 10px sans-serif'; 
-                gameCtx.textAlign = 'center'; 
+                gameCtx.fillStyle = '#e74c3c';
+                gameCtx.font = 'bold 10px sans-serif';
+                gameCtx.textAlign = 'center';
                 gameCtx.textBaseline = 'middle';
                 gameCtx.fillText('✖', 0, 0);
             }
@@ -1374,31 +1630,31 @@
             gameCtx.shadowBlur = 12;
 
             if (o.type === 'poison') {
-                gameCtx.shadowColor = '#9b59b6'; 
+                gameCtx.shadowColor = '#9b59b6';
                 gameCtx.fillStyle = '#8e44ad';
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); 
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, o.radius, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 2.5; 
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 2.5;
                 gameCtx.stroke();
             } else if (o.type === 'mud') {
-                gameCtx.shadowColor = '#d35400'; 
+                gameCtx.shadowColor = '#d35400';
                 gameCtx.fillStyle = '#e67e22';
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); 
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, o.radius, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 2.5; 
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 2.5;
                 gameCtx.stroke();
             } else {
-                gameCtx.shadowColor = '#e74c3c'; 
+                gameCtx.shadowColor = '#e74c3c';
                 gameCtx.fillStyle = '#c0392b';
-                gameCtx.beginPath(); 
-                gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); 
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, o.radius, 0, Math.PI*2);
                 gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; 
-                gameCtx.lineWidth = 3; 
+                gameCtx.strokeStyle = '#ffffff';
+                gameCtx.lineWidth = 3;
                 gameCtx.stroke();
             }
 
@@ -1407,13 +1663,14 @@
 
         function initStars() {
             stars = [];
-            let w = gameCanvas.width || 800, h = gameCanvas.height || 480;
-            for(let i=0; i<50; i++) {
-                stars.push({ 
-                    x: Math.random() * w, 
-                    y: Math.random() * h, 
-                    size: Math.random() * 2 + 1, 
-                    baseSpeed: Math.random() * 2 + 0.5 
+            let w = gameCanvas.width || 800;
+            let h = gameCanvas.height || 480;
+            for(let i = 0; i < 50; i++) {
+                stars.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: Math.random() * 2 + 1,
+                    baseSpeed: Math.random() * 2 + 0.5
                 });
             }
         }
@@ -1422,7 +1679,9 @@
             if (gameCanvas && gameCanvas.parentElement) {
                 gameCanvas.width = gameCanvas.parentElement.clientWidth || 800;
                 gameCanvas.height = gameCanvas.parentElement.clientHeight || 480;
-                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = gameCanvas.height / 2;
+                if (isNaN(rocket.y) || rocket.y <= 0) {
+                    rocket.y = gameCanvas.height / 2;
+                }
                 initStars();
             }
         }
@@ -1430,24 +1689,24 @@
 
         function restartGameEngine() {
             stopGameEngine();
-            isGameRunning = true; 
-            isGamePaused = false; 
+            isGameRunning = true;
+            isGamePaused = false;
             isGameOver = false;
-            playerHP = 100; 
-            gameScore = 0; 
-            gameCombo = 0; 
+            playerHP = 100;
+            gameScore = 0;
+            gameCombo = 0;
             activeBoss = null;
-            hasShield = false; 
-            feverTimer = 0; 
-            magnetTimer = 0; 
-            doubleScoreTimer = 0; 
+            hasShield = false;
+            feverTimer = 0;
+            magnetTimer = 0;
+            doubleScoreTimer = 0;
             slowDebuffTimer = 0;
-            particles = []; 
-            collectibles = []; 
-            obstacles = []; 
+            particles = [];
+            collectibles = [];
+            obstacles = [];
             globalAnimFrame = 0;
             
-            rocket.x = 120; 
+            rocket.x = 120;
             rocket.y = (gameCanvas.height || 480) / 2;
             sessionStartTime = Date.now();
 
@@ -1465,13 +1724,13 @@
             let maxHp = 100 + currentStage * 25;
 
             activeBoss = {
-                type: type, 
-                name: bName, 
-                x: gameCanvas.width - 120, 
+                type: type,
+                name: bName,
+                x: gameCanvas.width - 120,
                 y: gameCanvas.height / 2,
-                hp: maxHp, 
-                maxHp: maxHp, 
-                radius: 42, 
+                hp: maxHp,
+                maxHp: maxHp,
+                radius: 42,
                 attackTimer: 0
             };
 
@@ -1485,18 +1744,18 @@
             if (!isGameRunning || isGameOver) return;
             isGamePaused = !isGamePaused;
             const btn = document.getElementById('gamePauseBtn');
-            if (isGamePaused) { 
-                btn.innerText = "繼續"; 
-                stopBGM(); 
-            } else { 
-                btn.innerText = "暫停"; 
-                startBGM(); 
+            if (isGamePaused) {
+                btn.innerText = "繼續";
+                stopBGM();
+            } else {
+                btn.innerText = "暫停";
+                startBGM();
             }
         }
 
         function triggerGameOver() {
-            isGameOver = true; 
-            stopBGM(); 
+            isGameOver = true;
+            stopBGM();
             playAudioEffect('hit');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
@@ -1505,21 +1764,25 @@
 
         function stopGameEngine() {
             isGameRunning = false;
-            if (gameAnimationId) { 
-                cancelAnimationFrame(gameAnimationId); 
-                gameAnimationId = null; 
+            if (gameAnimationId) {
+                cancelAnimationFrame(gameAnimationId);
+                gameAnimationId = null;
             }
         }
 
-        function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
-        function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
+        function openManualModal() {
+            document.getElementById('manualModal').style.display = 'flex';
+        }
+        function closeManualModal() {
+            document.getElementById('manualModal').style.display = 'none';
+        }
 
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
             globalAnimFrame++;
 
             let theme = getStageTheme(currentStage);
-            gameCtx.fillStyle = theme.bg; 
+            gameCtx.fillStyle = theme.bg;
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
             let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
@@ -1528,7 +1791,9 @@
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.baseSpeed * userSpeedMult;
-                if (s.x < 0) s.x = gameCanvas.width;
+                if (s.x < 0) {
+                    s.x = gameCanvas.width;
+                }
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
 
@@ -1546,34 +1811,55 @@
 
                 let elapsed = (Date.now() - sessionStartTime) / 1000;
                 if (elapsed > 20 && !activeBoss) {
-                    if (currentStage === 100) triggerBossSpawn('final');
-                    else if (currentStage % 10 === 0) triggerBossSpawn('major');
-                    else triggerBossSpawn('stage');
+                    if (currentStage === 100) {
+                        triggerBossSpawn('final');
+                    } else if (currentStage % 10 === 0) {
+                        triggerBossSpawn('major');
+                    } else {
+                        triggerBossSpawn('stage');
+                    }
                 }
 
-                // 🎁 道具生成
                 let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
-                if (Math.random() < 0.025) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                if (Math.random() < 0.008) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                if (!hasShield && Math.random() < 0.006) collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                if (magnetTimer === 0 && Math.random() < 0.006) collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                if (doubleScoreTimer === 0 && Math.random() < 0.006) collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                if (feverTimer === 0 && Math.random() < 0.004) collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
-                if (diff !== 'easy' && Math.random() < 0.006) collectibles.push({ type: 'curse', x: gameCanvas.width + 20, y: spawnY, radius: 11, collected: false });
+                if (Math.random() < 0.025) {
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
+                }
+                if (Math.random() < 0.008) {
+                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
+                }
+                if (!hasShield && Math.random() < 0.006) {
+                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
+                }
+                if (magnetTimer === 0 && Math.random() < 0.006) {
+                    collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
+                }
+                if (doubleScoreTimer === 0 && Math.random() < 0.006) {
+                    collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
+                }
+                if (feverTimer === 0 && Math.random() < 0.004) {
+                    collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
+                }
+                if (diff !== 'easy' && Math.random() < 0.006) {
+                    collectibles.push({ type: 'curse', x: gameCanvas.width + 20, y: spawnY, radius: 11, collected: false });
+                }
 
-                // ⛈️ 障礙物生成
-                if (Math.random() < (diff === 'easy' ? 0.008 : 0.015)) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
-                if (diff !== 'easy' && Math.random() < 0.008) obstacles.push({ type: 'poison', x: gameCanvas.width + 30, y: spawnY, radius: 18, damage: 35, hit: false });
-                if (diff !== 'easy' && Math.random() < 0.006) obstacles.push({ type: 'mud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 0, hit: false });
+                if (Math.random() < (diff === 'easy' ? 0.008 : 0.015)) {
+                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
+                }
+                if (diff !== 'easy' && Math.random() < 0.008) {
+                    obstacles.push({ type: 'poison', x: gameCanvas.width + 30, y: spawnY, radius: 18, damage: 35, hit: false });
+                }
+                if (diff !== 'easy' && Math.random() < 0.006) {
+                    obstacles.push({ type: 'mud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 0, hit: false });
+                }
 
-                // 道具繪製與碰撞
                 collectibles.forEach((c) => {
                     c.x -= 3 * userSpeedMult;
                     if (magnetTimer > 0) {
                         let mDist = Math.hypot(rocket.x - c.x, rocket.y - c.y);
-                        if (mDist < 200) { 
-                            c.x += (rocket.x - c.x) * 0.12; 
-                            c.y += (rocket.y - c.y) * 0.12; 
+                        if (mDist < 200) {
+                            c.x += (rocket.x - c.x) * 0.12;
+                            c.y += (rocket.y - c.y) * 0.12;
                         }
                     }
 
@@ -1583,52 +1869,51 @@
                     if (dist < c.radius + rocket.radius) {
                         let mult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
                         if (c.type === 'coin') {
-                            gameScore += 50 * mult; 
-                            gameCombo++; 
+                            gameScore += 50 * mult;
+                            gameCombo++;
                             playAudioEffect('coin');
                             if (activeBoss) {
                                 activeBoss.hp -= 12 * mult;
                                 document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
                                 if (activeBoss.hp <= 0) {
                                     updateStatus(`🎉 成功擊敗 ${activeBoss.name}！準備進入下一關！`);
-                                    activeBoss = null; 
+                                    activeBoss = null;
                                     document.getElementById('bossHudBadge').style.display = 'none';
                                     triggerStageComplete();
                                 }
                             }
                         } else if (c.type === 'heart') {
-                            playerHP = Math.min(100, playerHP + 25); 
+                            playerHP = Math.min(100, playerHP + 25);
                             playAudioEffect('buff');
                         } else if (c.type === 'shield') {
-                            hasShield = true; 
-                            document.getElementById('shieldBadge').style.display = 'inline'; 
+                            hasShield = true;
+                            document.getElementById('shieldBadge').style.display = 'inline';
                             playAudioEffect('buff');
                         } else if (c.type === 'magnet') {
-                            magnetTimer = 350; 
-                            document.getElementById('magnetBadge').style.display = 'inline'; 
+                            magnetTimer = 350;
+                            document.getElementById('magnetBadge').style.display = 'inline';
                             playAudioEffect('buff');
                         } else if (c.type === 'double') {
-                            doubleScoreTimer = 350; 
-                            document.getElementById('doubleBadge').style.display = 'inline'; 
+                            doubleScoreTimer = 350;
+                            document.getElementById('doubleBadge').style.display = 'inline';
                             playAudioEffect('buff');
                         } else if (c.type === 'fever') {
-                            feverTimer = 300; 
-                            document.getElementById('feverBadge').style.display = 'inline'; 
+                            feverTimer = 300;
+                            document.getElementById('feverBadge').style.display = 'inline';
                             playAudioEffect('buff');
                         } else if (c.type === 'curse') {
-                            playerHP = Math.max(0, playerHP - 15); 
-                            gameScore = Math.max(0, gameScore - 100); 
+                            playerHP = Math.max(0, playerHP - 15);
+                            gameScore = Math.max(0, gameScore - 100);
                             playAudioEffect('hit');
-                            if (playerHP <= 0) { 
-                                triggerGameOver(); 
-                                return; 
+                            if (playerHP <= 0) {
+                                triggerGameOver();
+                                return;
                             }
                         }
                         c.collected = true;
                     }
                 });
 
-                // 👹 帶有動作特徵的 Boss 繪製與攻擊
                 if (activeBoss) {
                     drawBossHD(activeBoss);
 
@@ -1638,7 +1923,6 @@
                     }
                 }
 
-                // 障礙物碰撞
                 obstacles.forEach((o) => {
                     o.x -= 4 * userSpeedMult;
                     drawObstacleHD(o);
@@ -1646,23 +1930,23 @@
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
                         if (hasShield && o.type !== 'mud') {
-                            hasShield = false; 
-                            document.getElementById('shieldBadge').style.display = 'none'; 
+                            hasShield = false;
+                            document.getElementById('shieldBadge').style.display = 'none';
                             playAudioEffect('hit');
                         } else {
                             if (o.type === 'mud') {
-                                slowDebuffTimer = 240; 
-                                document.getElementById('slowBadge').style.display = 'inline'; 
+                                slowDebuffTimer = 240;
+                                document.getElementById('slowBadge').style.display = 'inline';
                                 playAudioEffect('hit');
                             } else {
-                                playerHP = Math.max(0, playerHP - o.damage); 
+                                playerHP = Math.max(0, playerHP - o.damage);
                                 playAudioEffect('hit');
                             }
                         }
                         o.hit = true;
-                        if (playerHP <= 0) { 
-                            triggerGameOver(); 
-                            return; 
+                        if (playerHP <= 0) {
+                            triggerGameOver();
+                            return;
                         }
                     }
                 });
@@ -1671,7 +1955,6 @@
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
             }
 
-            // 🚀 繪製具有噴火尾焰的高畫質玩家飛船
             let curFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
             let curMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
             drawPlayerRocketHD(rocket.x, rocket.y, rocket.angle, curMode, curFlow);
