@@ -197,7 +197,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 完全保留原版最精準的醫療採集與 PKL 切分邏輯 -->
+    <!-- 🩺 1. 精準醫療採集與過濾過度敏感底噪（Noise Gate）機制 -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -307,7 +307,7 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🌟 最精準的原版判定函式
+        // 🌟 原始精準判定函式
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
@@ -340,6 +340,12 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
+                // 🛡️ 防敏感雜訊門檻（Noise Gate）：能量太低或估算流量過小，視為無聲音 Idle
+                if (lowE < 180000 || Math.abs(est) < 5.0) {
+                    flowYes = false;
+                    est = 0.0;
+                }
+
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
@@ -347,11 +353,12 @@
                 let pklDetected = await detectBreathModePKL(lastFFT);
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
-                smoothedEst = (currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est);
 
-                if (Math.abs(est) > 0) {
+                if (flowYes && Math.abs(est) > 0) {
+                    smoothedEst = (currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est);
                     document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(est).toFixed(1)} L/min`;
                 } else {
+                    smoothedEst = 0;
                     document.getElementById('detectedMode').innerText = `Detected: Idle`;
                 }
 
@@ -498,7 +505,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 完全展開寫出的手繪實體 Boss 與音效遊戲引擎 -->
+    <!-- 🎨 2. 手繪實體 Boss 遊戲與音樂控制器 -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
