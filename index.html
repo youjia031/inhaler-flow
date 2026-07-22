@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
+    <title>呼吸訓練器 - Inhaler Flow Monitor & Ultimate Pilot Game</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -234,6 +234,9 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
+    <!-- ===================================================== -->
+    <!--  1. 串口通訊、FFT 訊號處理與 PKL 切分演算法系統        -->
+    <!-- ===================================================== -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -615,7 +618,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  🎨 超精細全物件向量實物繪繪引擎                       -->
+    <!--  2. 🎮 真·全物件手繪實體 Boss & 音樂遊戲繪圖引擎       -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
@@ -644,7 +647,6 @@
                         <option value="1.0" selected>1.0x (標準速度)</option>
                         <option value="1.5">1.5x (快速反應)</option>
                         <option value="2.0">2.0x (疾速挑戰)</option>
-                        <option value="2.5">2.5x (極速高超)</option>
                     </select>
                 </label>
                 <label class="music-upload-btn">
@@ -697,6 +699,21 @@
                     osc.start(); osc.stop(now + 0.2);
                 }
             } catch(e) {}
+        }
+
+        function handleCustomMusicUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                audioCtx.decodeAudioData(e.target.result, function(buffer) {
+                    customAudioBuffer = buffer;
+                    isUsingCustomMusic = true;
+                    document.getElementById('musicStatus').innerText = "已載入: " + file.name.substring(0, 10) + "...";
+                    if (isGameRunning) startBGM();
+                });
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         function startBGM() {
@@ -778,18 +795,10 @@
         let currentStage = 1, gameScore = 0, gameCombo = 0, playerHP = 100;
         let activeBoss = null;
 
-        // 🏰 10大關卡主題設計資料庫
         const STAGE_THEMES = [
-            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 大氣龍捲精靈", stageBoss: "🦅 雷霆機械神鷹" },
-            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 熔岩隕石巨岩", stageBoss: "🛸 圓盤星際母艦" },
-            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🔥 火山爆裂元素", stageBoss: "🐉 地獄黑金赤龍" },
-            { id: 4, name: "深海幽冥", bg: "#031420", miniBoss: "🐙 發光巨型章魚", stageBoss: "🔱 深海機械海怪" },
-            { id: 5, name: "賽博霓虹", bg: "#12051e", miniBoss: "🤖 雙螺旋巡邏無人機", stageBoss: "👾 霓虹核心 AI 控制器" },
-            { id: 6, name: "荒漠風沙", bg: "#1f1808", miniBoss: "🦂 機械重裝巨蠍", stageBoss: "🏜️ 沙漠流沙巨蟲" },
-            { id: 7, name: "極地冰霜", bg: "#031c28", miniBoss: "❄️ 冰晶雪球怪物", stageBoss: "🐻 極光鋼鐵巨熊" },
-            { id: 8, name: "廢土遺跡", bg: "#19120c", miniBoss: "🚜 廢棄履帶坦克", stageBoss: "🦾 廢土鋼鐵巨臂" },
-            { id: 9, name: "時空裂縫", bg: "#160526", miniBoss: "🌀 虛空蟲洞核心", stageBoss: "👁️ 時空全知之眼" },
-            { id: 10, name: "終極星核", bg: "#000511", miniBoss: "🌟 星核能量結晶", stageBoss: "🌌 終極虛空主宰" }
+            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 大氣風暴精靈", stageBoss: "🦅 雷霆金屬神鷹" },
+            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 熔岩巨型隕石", stageBoss: "🛸 圓盤星際母艦" },
+            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🔥 火山爆裂元素", stageBoss: "🐉 地獄黑金赤龍" }
         ];
 
         function getStageTheme(stage) {
@@ -824,218 +833,135 @@
         let gameAnimationId = null, isGameRunning = false, isGamePaused = false, isGameOver = false;
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 22 };
-        let stars = [], particles = [], collectibles = [], obstacles = [];
+        let stars = [], collectibles = [], obstacles = [];
         let hasShield = false, feverTimer = 0, magnetTimer = 0, doubleScoreTimer = 0, slowDebuffTimer = 0;
         let isResting = false, sessionStartTime = 0;
         let globalAnimFrame = 0;
 
-        // =====================================================
-        //  🖼️ 精細實體向量 SVG 圖像庫 (飛船、Boss與道具)
-        // =====================================================
-        const gameSprites = {};
+        // 🦅 1. 雷霆金屬神鷹 (真實解剖學手繪)
+        function drawRealisticEagle(x, y, attackTimer) {
+            gameCtx.save(); gameCtx.translate(x, y);
+            let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
+            let isAtk = (attackTimer % 50 > 35);
 
-        function createSvgSprite(svgString) {
-            const img = new Image();
-            img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgString);
-            return img;
+            [-1, 1].forEach(side => {
+                gameCtx.save(); gameCtx.scale(1, side); gameCtx.rotate(flapAngle);
+                let wingGrad = gameCtx.createLinearGradient(0, -60, 40, 0);
+                wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(0.5, '#d35400'); wingGrad.addColorStop(1, '#2c3e50');
+                gameCtx.fillStyle = wingGrad;
+                for (let i = 0; i < 6; i++) {
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(-15 + i * 6, -5 - i * 6);
+                    gameCtx.quadraticCurveTo(20 + i * 6, -65 - i * 10, 45 + i * 4, -50 - i * 8);
+                    gameCtx.quadraticCurveTo(10, -15, -15 + i * 6, -5 - i * 6);
+                    gameCtx.fill(); gameCtx.strokeStyle = "#ffe100"; gameCtx.lineWidth = 1; gameCtx.stroke();
+                }
+                gameCtx.restore();
+            });
+
+            let bodyGrad = gameCtx.createRadialGradient(-5, 0, 5, 0, 0, 40);
+            bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(0.4, '#7f8c8d'); bodyGrad.addColorStop(1, '#2c3e50');
+            gameCtx.fillStyle = bodyGrad; gameCtx.beginPath();
+            gameCtx.moveTo(35, 0); gameCtx.quadraticCurveTo(0, -22, -35, -12); gameCtx.quadraticCurveTo(-45, 0, -35, 12); gameCtx.quadraticCurveTo(0, 22, 35, 0);
+            gameCtx.fill(); gameCtx.strokeStyle = "#f1c40f"; gameCtx.lineWidth = 1.5; gameCtx.stroke();
+
+            let beakGrad = gameCtx.createLinearGradient(-15, -10, -45, 20);
+            beakGrad.addColorStop(0, '#ffe100'); beakGrad.addColorStop(1, '#d35400');
+            gameCtx.fillStyle = beakGrad; gameCtx.beginPath();
+            gameCtx.moveTo(-15, -8); gameCtx.quadraticCurveTo(-38, -10, -48, 12); gameCtx.quadraticCurveTo(-30, 8, -20, 5); gameCtx.lineTo(-15, 8);
+            gameCtx.closePath(); gameCtx.fill(); gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 1.2; gameCtx.stroke();
+
+            gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath(); gameCtx.ellipse(-10, -7, 6, 4, -Math.PI / 8, 0, Math.PI * 2); gameCtx.fill();
+            gameCtx.fillStyle = isAtk ? "#ff0000" : "#d35400"; gameCtx.beginPath(); gameCtx.arc(-11, -7, 2.8, 0, Math.PI * 2); gameCtx.fill();
+            gameCtx.strokeStyle = "#1e272e"; gameCtx.lineWidth = 2.5; gameCtx.beginPath(); gameCtx.moveTo(-4, -12); gameCtx.lineTo(-17, -8); gameCtx.stroke();
+            gameCtx.restore();
         }
 
-        // 🚀 真實質感金屬機甲戰機
-        gameSprites.ship = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">
-                <defs>
-                    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ffffff"/>
-                        <stop offset="40%" stop-color="#95a5a6"/>
-                        <stop offset="100%" stop-color="#2c3e50"/>
-                    </linearGradient>
-                    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#3498db"/>
-                        <stop offset="100%" stop-color="#00d2d3"/>
-                    </linearGradient>
-                </defs>
-                <path d="M 95,30 L 30,5 C 20,15 10,20 0,18 L 15,30 L 0,42 C 10,40 20,45 30,55 Z" fill="url(#metal)" stroke="#ffffff" stroke-width="1.5"/>
-                <path d="M 70,30 Q 50,20 35,30 Q 50,40 70,30 Z" fill="url(#glass)"/>
-                <polygon points="25,12 10,2 15,22" fill="#e74c3c"/>
-                <polygon points="25,48 10,58 15,38" fill="#e74c3c"/>
-                <circle cx="20" cy="30" r="4" fill="#f1c40f"/>
-            </svg>
-        `);
+        // 🛸 2. 圓盤星際母艦
+        function drawRealisticUFO(x, y, attackTimer) {
+            gameCtx.save(); gameCtx.translate(x, y);
+            let isAtk = (attackTimer % 50 > 35);
 
-        // 🦅 雷霆機械神鷹
-        gameSprites.eagle = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-                <defs>
-                    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ffe100"/><stop offset="100%" stop-color="#d35400"/>
-                    </linearGradient>
-                    <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#7f8c8d"/><stop offset="100%" stop-color="#2c3e50"/>
-                    </linearGradient>
-                </defs>
-                <path d="M 60,20 L 100,5 C 80,40 100,60 115,80 C 85,70 60,65 60,65 C 60,65 35,70 5,80 C 20,60 40,40 20,5 Z" fill="url(#steel)" stroke="#ffe100" stroke-width="2"/>
-                <path d="M 60,30 L 85,55 L 60,75 L 35,55 Z" fill="url(#gold)"/>
-                <circle cx="60" cy="50" r="16" fill="#1e272e" stroke="#ffffff" stroke-width="2"/>
-                <polygon points="50,55 15,65 52,68" fill="#f39c12"/>
-                <circle cx="50" cy="45" r="4" fill="#ff0000"/>
-            </svg>
-        `);
+            gameCtx.fillStyle = isAtk ? 'rgba(231, 76, 60, 0.25)' : 'rgba(0, 210, 211, 0.2)';
+            gameCtx.beginPath(); gameCtx.ellipse(0, 0, 70, 35, 0, 0, Math.PI * 2); gameCtx.fill();
 
-        // 🛸 圓盤星際母艦
-        gameSprites.ufo = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-                <defs>
-                    <radialGradient id="glass" cx="50%" cy="30%" r="50%">
-                        <stop offset="0%" stop-color="#00d2d3"/><stop offset="100%" stop-color="#12051e"/>
-                    </radialGradient>
-                    <linearGradient id="hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#a55eea"/><stop offset="100%" stop-color="#2d98da"/>
-                    </linearGradient>
-                </defs>
-                <ellipse cx="60" cy="50" rx="50" ry="20" fill="url(#hull)" stroke="#ffffff" stroke-width="2"/>
-                <ellipse cx="60" cy="40" rx="30" ry="16" fill="url(#glass)"/>
-                <circle cx="20" cy="55" r="4" fill="#ffe100"/><circle cx="40" cy="62" r="5" fill="#ff4d4d"/>
-                <circle cx="60" cy="65" r="6" fill="#00d2d3"/><circle cx="80" cy="62" r="5" fill="#ff4d4d"/>
-                <circle cx="100" cy="55" r="4" fill="#ffe100"/>
-            </svg>
-        `);
+            let hullGrad = gameCtx.createLinearGradient(-60, 0, 60, 20);
+            hullGrad.addColorStop(0, '#2c3e50'); hullGrad.addColorStop(0.5, '#bdc3c7'); hullGrad.addColorStop(1, '#1e272e');
+            gameCtx.fillStyle = hullGrad; gameCtx.beginPath(); gameCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); gameCtx.fill();
+            gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 2; gameCtx.stroke();
 
-        // 🐉 地獄黑金赤龍
-        gameSprites.dragon = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-                <defs>
-                    <linearGradient id="fire" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ff4d4d"/><stop offset="50%" stop-color="#ff9f43"/><stop offset="100%" stop-color="#ee5253"/>
-                    </linearGradient>
-                </defs>
-                <path d="M 80,20 L 110,5 L 85,35 L 115,25 L 80,50 L 110,90 L 60,75 L 10,95 L 30,55 L 10,20 Z" fill="url(#fire)" stroke="#ffe100" stroke-width="2"/>
-                <polygon points="50,40 18,48 50,55" fill="#ffffff"/>
-                <polygon points="50,60 18,52 50,68" fill="#ffffff"/>
-                <circle cx="65" cy="40" r="6" fill="#ffe100"/><circle cx="63" cy="40" r="2" fill="#000000"/>
-            </svg>
-        `);
+            let domeGrad = gameCtx.createRadialGradient(-10, -15, 2, 0, -10, 25);
+            domeGrad.addColorStop(0, '#ffffff'); domeGrad.addColorStop(0.5, '#3498db'); domeGrad.addColorStop(1, '#12051e');
+            gameCtx.fillStyle = domeGrad; gameCtx.beginPath(); gameCtx.ellipse(0, -8, 28, 18, 0, 0, Math.PI * 2); gameCtx.fill();
 
-        // 🌪️ 大氣龍捲精靈
-        gameSprites.storm = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-                <path d="M 60,10 C 90,10 110,30 110,60 C 110,90 90,110 60,110 C 30,110 10,90 10,60 C 10,30 30,10 60,10 Z" fill="none" stroke="#00d2d3" stroke-width="4" stroke-dasharray="12,8"/>
-                <circle cx="60" cy="60" r="22" fill="#3498db" stroke="#ffffff" stroke-width="3"/>
-                <circle cx="60" cy="60" r="8" fill="#ffffff"/>
-            </svg>
-        `);
+            for (let i = -3; i <= 3; i++) {
+                gameCtx.fillStyle = (i % 2 === 0) ? '#f1c40f' : '#e74c3c';
+                gameCtx.beginPath(); gameCtx.arc(i * 15, 18 - Math.abs(i) * 2, 4, 0, Math.PI * 2); gameCtx.fill();
+            }
+            gameCtx.restore();
+        }
 
-        // 🟡 3D 立體黃金金幣
-        gameSprites.coin = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-                <circle cx="20" cy="20" r="18" fill="#f1c40f" stroke="#d35400" stroke-width="2"/>
-                <circle cx="20" cy="20" r="14" fill="#f39c12"/>
-                <text x="20" y="26" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">$</text>
-            </svg>
-        `);
+        // 🐉 3. 地獄黑金赤龍
+        function drawRealisticDragon(x, y, attackTimer) {
+            gameCtx.save(); gameCtx.translate(x, y);
+            let jawOpen = (attackTimer % 50 > 35) ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
 
-        // 🟢 立體水晶急救心臟
-        gameSprites.heart = createSvgSprite(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-                <path d="M 20,35 C 5,22 0,10 10,5 C 16,2 20,8 20,8 C 20,8 24,2 30,5 C 40,10 35,22 20,35 Z" fill="#2ecc71" stroke="#ffffff" stroke-width="2"/>
-            </svg>
-        `);
+            gameCtx.fillStyle = '#f1c40f';
+            gameCtx.beginPath(); gameCtx.moveTo(5, -12 - jawOpen); gameCtx.quadraticCurveTo(25, -45 - jawOpen, -5, -22 - jawOpen); gameCtx.fill();
 
+            let upperGrad = gameCtx.createLinearGradient(20, 0, -40, 0);
+            upperGrad.addColorStop(0, '#78281f'); upperGrad.addColorStop(1, '#e74c3c');
+            gameCtx.fillStyle = upperGrad;
+            gameCtx.beginPath(); gameCtx.moveTo(18, -jawOpen); gameCtx.lineTo(-38, -18 - jawOpen); gameCtx.lineTo(-42, -5 - jawOpen); gameCtx.lineTo(-12, -2);
+            gameCtx.closePath(); gameCtx.fill();
+
+            gameCtx.fillStyle = '#512e5f';
+            gameCtx.beginPath(); gameCtx.moveTo(18, jawOpen); gameCtx.lineTo(-35, 18 + jawOpen); gameCtx.lineTo(-12, 2);
+            gameCtx.closePath(); gameCtx.fill();
+
+            gameCtx.fillStyle = '#ffffff';
+            for (let t = 0; t < 5; t++) {
+                gameCtx.beginPath(); gameCtx.moveTo(-10 - t * 6, -jawOpen); gameCtx.lineTo(-13 - t * 6, -jawOpen + 6); gameCtx.lineTo(-16 - t * 6, -jawOpen); gameCtx.fill();
+                gameCtx.beginPath(); gameCtx.moveTo(-10 - t * 6, jawOpen); gameCtx.lineTo(-13 - t * 6, jawOpen - 6); gameCtx.lineTo(-16 - t * 6, jawOpen); gameCtx.fill();
+            }
+
+            gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(-5, -12 - jawOpen, 5, 0, Math.PI * 2); gameCtx.fill();
+            gameCtx.fillStyle = '#000000'; gameCtx.fillRect(-6, -15 - jawOpen, 2, 6);
+            gameCtx.restore();
+        }
+
+        // 🚀 真實戰機
         function drawPlayerRocketHD(x, y, angle, mode, flowMag) {
-            gameCtx.save();
-            gameCtx.translate(x, y);
-            gameCtx.rotate(angle);
+            gameCtx.save(); gameCtx.translate(x, y); gameCtx.rotate(angle);
 
             if (flowMag > 3.0) {
                 let flameLen = Math.min(35, flowMag * 0.4) + Math.sin(globalAnimFrame * 0.5) * 4;
-                gameCtx.save();
-                gameCtx.shadowBlur = 15;
-                gameCtx.shadowColor = (mode === "exhalation") ? "#e74c3c" : "#3498db";
-                
+                gameCtx.save(); gameCtx.shadowBlur = 15; gameCtx.shadowColor = (mode === "exhalation") ? "#e74c3c" : "#3498db";
                 let grad = gameCtx.createLinearGradient(-12, 0, -12 - flameLen, 0);
-                grad.addColorStop(0, (mode === "exhalation") ? '#f1c40f' : '#00d2d3');
-                grad.addColorStop(1, 'transparent');
-
-                gameCtx.fillStyle = grad;
-                gameCtx.beginPath();
-                gameCtx.moveTo(-12, -7); gameCtx.lineTo(-12 - flameLen, 0); gameCtx.lineTo(-12, 7);
+                grad.addColorStop(0, (mode === "exhalation") ? '#f1c40f' : '#00d2d3'); grad.addColorStop(1, 'transparent');
+                gameCtx.fillStyle = grad; gameCtx.beginPath(); gameCtx.moveTo(-12, -7); gameCtx.lineTo(-12 - flameLen, 0); gameCtx.lineTo(-12, 7);
                 gameCtx.closePath(); gameCtx.fill(); gameCtx.restore();
             }
 
             gameCtx.shadowBlur = 12; gameCtx.shadowColor = '#3498db';
-            gameCtx.drawImage(gameSprites.ship, -25, -15, 50, 30);
+            gameCtx.fillStyle = '#2c3e50'; gameCtx.beginPath(); gameCtx.moveTo(24, 0); gameCtx.lineTo(-12, -14); gameCtx.lineTo(-6, 0); gameCtx.lineTo(-12, 14); gameCtx.closePath(); gameCtx.fill();
+            gameCtx.fillStyle = '#ecf0f1'; gameCtx.beginPath(); gameCtx.moveTo(18, 0); gameCtx.lineTo(-8, -10); gameCtx.lineTo(-10, 10); gameCtx.closePath(); gameCtx.fill();
+            gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
 
             if (hasShield) {
-                gameCtx.save();
-                gameCtx.rotate(globalAnimFrame * 0.05);
-                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 18;
-                gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3;
+                gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.05);
+                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 18; gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3;
                 gameCtx.setLineDash([8, 6]); gameCtx.beginPath(); gameCtx.arc(0, 0, 32, 0, Math.PI*2); gameCtx.stroke();
                 gameCtx.restore();
             }
-
             gameCtx.restore();
         }
 
         function drawBossHD(boss) {
-            gameCtx.save();
-
             let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            let attackShakeX = (boss.attackTimer % 50 > 38) ? (Math.random() - 0.5) * 8 : 0;
-            let cx = boss.x + attackShakeX;
-            let cy = boss.y + floatY;
-            let isAtk = (boss.attackTimer % 50 > 35);
-
-            gameCtx.translate(cx, cy);
-
-            let spriteImg = gameSprites.storm;
-            if (boss.name.includes("神鷹") || boss.name.includes("🦅")) spriteImg = gameSprites.eagle;
-            else if (boss.name.includes("母艦") || boss.name.includes("🛸")) spriteImg = gameSprites.ufo;
-            else if (boss.name.includes("赤龍") || boss.name.includes("🐉")) spriteImg = gameSprites.dragon;
-
-            gameCtx.shadowBlur = isAtk ? 30 : 18;
-            gameCtx.shadowColor = isAtk ? '#e74c3c' : '#f1c40f';
-
-            let size = boss.radius * 2.2;
-            gameCtx.drawImage(spriteImg, -size / 2, -size / 2, size, size);
-
-            gameCtx.restore();
-        }
-
-        function drawCollectibleHD(c) {
-            gameCtx.save();
-            gameCtx.translate(c.x, c.y);
-            gameCtx.shadowBlur = 12;
-
-            if (c.type === 'coin') {
-                gameCtx.shadowColor = '#f1c40f';
-                gameCtx.drawImage(gameSprites.coin, -12, -12, 24, 24);
-            } else if (c.type === 'heart') {
-                gameCtx.shadowColor = '#2ecc71';
-                gameCtx.drawImage(gameSprites.heart, -12, -12, 24, 24);
-            } else {
-                gameCtx.shadowColor = '#00d2d3'; gameCtx.fillStyle = '#00d2d3';
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 10, 0, Math.PI*2); gameCtx.fill();
-            }
-
-            gameCtx.restore();
-        }
-
-        function drawObstacleHD(o) {
-            gameCtx.save();
-            gameCtx.translate(o.x, o.y);
-            gameCtx.shadowBlur = 12;
-
-            if (o.type === 'poison') {
-                gameCtx.shadowColor = '#9b59b6'; gameCtx.fillStyle = '#8e44ad';
-                gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2.5; gameCtx.stroke();
-            } else {
-                gameCtx.shadowColor = '#e74c3c'; gameCtx.fillStyle = '#c0392b';
-                gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI*2); gameCtx.fill();
-                gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 3; gameCtx.stroke();
-            }
-
-            gameCtx.restore();
+            if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer);
+            else if (boss.name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer);
+            else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer);
         }
 
         function initStars() {
@@ -1059,7 +985,7 @@
             isGameRunning = true; isGamePaused = false; isGameOver = false; isResting = false;
             playerHP = 100; gameScore = 0; gameCombo = 0; activeBoss = null;
             hasShield = false; feverTimer = 0; magnetTimer = 0; doubleScoreTimer = 0; slowDebuffTimer = 0;
-            particles = []; collectibles = []; obstacles = []; globalAnimFrame = 0;
+            collectibles = []; obstacles = []; globalAnimFrame = 0;
             
             rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2;
             sessionStartTime = Date.now();
@@ -1074,14 +1000,10 @@
 
         function triggerBossSpawn(type) {
             let theme = getStageTheme(currentStage);
-            let bName = (type === 'mini') ? theme.miniBoss : (type === 'stage' ? theme.stageBoss : "🌌 終極虛空主宰 (第100關)");
+            let bName = theme.stageBoss;
             let maxHp = 100 + currentStage * 25;
 
-            activeBoss = {
-                type: type, name: bName, x: gameCanvas.width - 120, y: gameCanvas.height / 2,
-                hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0
-            };
-
+            activeBoss = { type: type, name: bName, x: gameCanvas.width - 120, y: gameCanvas.height / 2, hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0 };
             document.getElementById('bossName').innerText = bName;
             document.getElementById('bossHudBadge').style.display = 'flex';
             document.getElementById('bossHpFill').style.width = '100%';
@@ -1141,28 +1063,24 @@
                 rocket.angle = Math.atan2(dy, 25);
 
                 let elapsed = (Date.now() - sessionStartTime) / 1000;
-                if (elapsed > 20 && !activeBoss) {
-                    if (currentStage === 100) triggerBossSpawn('final');
-                    else if (currentStage % 10 === 0) triggerBossSpawn('major');
-                    else triggerBossSpawn('stage');
-                }
+                if (elapsed > 15 && !activeBoss) { triggerBossSpawn('stage'); }
 
                 let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
                 if (Math.random() < 0.025) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
                 if (Math.random() < 0.008) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-
                 if (Math.random() < (diff === 'easy' ? 0.008 : 0.015)) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
 
                 collectibles.forEach((c) => {
                     c.x -= 3 * userSpeedMult;
-                    drawCollectibleHD(c);
+                    gameCtx.fillStyle = (c.type === 'coin') ? '#f1c40f' : '#2ecc71';
+                    gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill();
 
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
                     if (dist < c.radius + rocket.radius) {
                         if (c.type === 'coin') {
                             gameScore += 50; gameCombo++; playAudioEffect('coin');
                             if (activeBoss) {
-                                activeBoss.hp -= 12;
+                                activeBoss.hp -= 15;
                                 document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
                                 if (activeBoss.hp <= 0) {
                                     updateStatus(`🎉 成功擊敗 ${activeBoss.name}！準備進入下一關！`);
@@ -1187,7 +1105,7 @@
 
                 obstacles.forEach((o) => {
                     o.x -= 4 * userSpeedMult;
-                    drawObstacleHD(o);
+                    gameCtx.fillStyle = '#e74c3c'; gameCtx.beginPath(); gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2); gameCtx.fill();
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
@@ -1216,7 +1134,6 @@
             saveGameProgress(false);
             currentStage++;
             document.getElementById('gameStage').innerText = currentStage;
-            
             isResting = true; collectibles = []; obstacles = [];
 
             const restScreen = document.getElementById('restScreen');
@@ -1225,8 +1142,7 @@
             restScreen.style.display = 'flex';
 
             let restInterval = setInterval(() => {
-                countdown--;
-                countdownEl.innerText = countdown;
+                countdown--; countdownEl.innerText = countdown;
                 if (countdown <= 0) {
                     clearInterval(restInterval);
                     restScreen.style.display = 'none';
