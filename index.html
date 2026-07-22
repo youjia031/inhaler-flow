@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor & Ultimate Pilot Game</title>
+    <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -235,7 +235,7 @@
     <div class="statusbar" id="status">Not connected</div>
 
     <!-- ===================================================== -->
-    <!--  1. 串口通訊、FFT 訊號處理與 PKL 切分演算法系統        -->
+    <!--  1. 完全還原：串口、PKL 模型與吸吐氣自動判斷切分機制   -->
     <!-- ===================================================== -->
     <script>
         const EDUCATION_PROGRAM = [
@@ -319,6 +319,7 @@
         }
         loadPKLModel();
 
+        // 🌟 核心：圖表吸吐氣背景切分顏色渲染外掛 (Inspiration 淡藍 / Expiration 淡紅)
         const customOverlayPlugin = {
             id: 'customOverlayPlugin',
             beforeDatasetsDraw(chart) {
@@ -357,6 +358,7 @@
             plugins: [customOverlayPlugin]
         });
 
+        // 🌟 核心：即時 FFT 吸氣 / 吐氣演算法機制 (包含比值 fallback 與 ONNX 預測)
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
@@ -393,6 +395,7 @@
             return currentVote;
         }
 
+        // 🌟 核心：一鍵 PKL Index 切分吸吐氣區段機制
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); return; }
             updateStatus("正在進行 PKL Index 切分中...");
@@ -618,7 +621,7 @@
     </script>
 
     <!-- ===================================================== -->
-    <!--  2. 🎮 真·全物件手繪實體 Boss & 音樂遊戲繪圖引擎       -->
+    <!--  2. 🎮 高畫質手繪實體 Boss & 完整氣流遊戲引擎             -->
     <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
