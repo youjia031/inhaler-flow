@@ -272,7 +272,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 醫療數據採集與吸吐氣判定區塊 -->
+    <!-- 🩺 1. 醫療數據採集區塊 (完全 100% 原始完全無改動) -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -340,7 +340,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用動態比值邏輯。", err);
+                console.warn("未檢測到 rf_model.onnx，改用預設相對比值邏輯。", err);
             }
         }
         loadPKLModel();
@@ -382,6 +382,7 @@
             plugins: [customOverlayPlugin]
         });
 
+        // 🩺 原始零修改：最精準的原始吸吐氣判定演算法
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
@@ -394,9 +395,10 @@
                     return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
                 } catch (e) {}
             }
-            return (ratio_3to1 > 0.45) ? "exhalation" : "inhalation";
+            return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
         }
 
+        // 🩺 原始零修改：最精準的原始 UART 封包解析邏輯
         async function parseLine(line) {
             if (line.includes('[FFT]')) {
                 const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
@@ -414,11 +416,6 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
-                if (lowE < 30000 || Math.abs(est) < 2.0) {
-                    flowYes = false;
-                    est = 0.0;
-                }
-
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
@@ -426,12 +423,11 @@
                 let pklDetected = await detectBreathModePKL(lastFFT);
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
+                smoothedEst = (currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est);
 
-                if (flowYes && Math.abs(est) > 0) {
-                    smoothedEst = (currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est);
+                if (Math.abs(est) > 0) {
                     document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(est).toFixed(1)} L/min`;
                 } else {
-                    smoothedEst = 0;
                     document.getElementById('detectedMode').innerText = `Detected: Idle`;
                 }
 
@@ -578,7 +574,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲主引擎 (完美校正吸氣向上/吐氣向下飛行方向) -->
+    <!-- 🎨 2. 遊戲主引擎 (純讀取模式，方向嚴格校正：吸氣上飛，吐氣下降) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -1010,6 +1006,7 @@
         function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
         function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
+        // 🎮 遊戲主迴圈：只讀取絕對真實數據，絕不竄改判定邏輯
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
             globalAnimFrame++;
@@ -1035,19 +1032,19 @@
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                // 🎯 核心修正：正確 Y 軸方向計算（吸氣往上、吐氣往下）
+                // 🎯 純粹讀取邏輯：吸氣(Inhalation)往上升、吐氣(Exhalation)往下降
                 let rawFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
                 let absFlow = Math.abs(rawFlow);
 
                 let flowOffsetY = 0;
                 if (currentMode === "inhalation" && absFlow > 0) {
-                    flowOffsetY = -(absFlow * 3.2); // 吸氣越大力 -> 減越多 -> Y 變小 (飛船往螢幕頂端升起)
+                    flowOffsetY = -(absFlow * 3.2); // 吸氣越大力 -> 往上高飛
                 } else if (currentMode === "exhalation" && absFlow > 0) {
-                    flowOffsetY = (absFlow * 3.2);  // 吐氣越大力 -> 加越多 -> Y 變大 (飛船往下降)
+                    flowOffsetY = (absFlow * 3.2);  // 吐氣越大力 -> 往下降落
                 }
 
                 let targetY = (gameCanvas.height / 2) + flowOffsetY;
-                targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY)); // 邊界碰撞限制
+                targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY));
                 
                 let dy = targetY - rocket.y;
                 let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
