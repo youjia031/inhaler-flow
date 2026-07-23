@@ -272,7 +272,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 修正自適應判斷與靈敏門檻（完全解決怪異誤判） -->
+    <!-- 🩺 1. 醫療數據採集與吸吐氣判定區塊 -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -382,7 +382,6 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🌟 修正後的自適應判讀（修復原本怪異問題）
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
@@ -395,7 +394,6 @@
                     return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
                 } catch (e) {}
             }
-            // 使用合理的動態分界，防止過度敏感
             return (ratio_3to1 > 0.45) ? "exhalation" : "inhalation";
         }
 
@@ -416,7 +414,6 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
-                // 🛠️ 校正適中的靜音門檻（既不過濾掉真實呼吸，又能擋掉背景雜訊）
                 if (lowE < 30000 || Math.abs(est) < 2.0) {
                     flowYes = false;
                     est = 0.0;
@@ -581,7 +578,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 完整 10+5 生態系與遊戲控制 -->
+    <!-- 🎨 2. 遊戲主引擎 (完美校正吸氣向上/吐氣向下飛行方向) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -1038,12 +1035,22 @@
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-                let targetY = gameCanvas.height / 2 - (flow * 2.2);
-                targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
+                // 🎯 核心修正：正確 Y 軸方向計算（吸氣往上、吐氣往下）
+                let rawFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+                let absFlow = Math.abs(rawFlow);
+
+                let flowOffsetY = 0;
+                if (currentMode === "inhalation" && absFlow > 0) {
+                    flowOffsetY = -(absFlow * 3.2); // 吸氣越大力 -> 減越多 -> Y 變小 (飛船往螢幕頂端升起)
+                } else if (currentMode === "exhalation" && absFlow > 0) {
+                    flowOffsetY = (absFlow * 3.2);  // 吐氣越大力 -> 加越多 -> Y 變大 (飛船往下降)
+                }
+
+                let targetY = (gameCanvas.height / 2) + flowOffsetY;
+                targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY)); // 邊界碰撞限制
                 
                 let dy = targetY - rocket.y;
-                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.1;
+                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
                 rocket.y += dy * speedFactor;
                 rocket.angle = Math.atan2(dy, 25);
 
