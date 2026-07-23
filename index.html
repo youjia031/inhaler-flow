@@ -272,7 +272,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 醫療數據採集區塊 (完全 100% 原始完全無改動) -->
+    <!-- 🩺 1. 醫療數據採集區塊 (實裝防抖與滑動多數決，徹底消滅誤判亂跳) -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -335,6 +335,10 @@
         let pklSegments = [];
         let onnxSession = null;
 
+        // 🛡️ 狀態防抖全域變數 (防止單一封包雜訊導致模式閃爍)
+        let modeHistory = [];
+        let lastValidMode = "inhalation";
+
         async function loadPKLModel() {
             try {
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
@@ -382,23 +386,39 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🩺 原始零修改：最精準的原始吸吐氣判定演算法
+        // 🩺 吸吐氣判定 (實裝滑動視窗防抖多數決)
         async function detectBreathModePKL(fft) {
-            if (!fft) return "inhalation";
+            if (!fft) return lastValidMode;
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
             let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
+            let rawMode = "inhalation";
             if (onnxSession) {
                 try {
                     const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
                     const results = await onnxSession.run({ float_input: inputTensor });
-                    return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
-                } catch (e) {}
+                    rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
+                } catch (e) {
+                    rawMode = (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
+                }
+            } else {
+                rawMode = (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
             }
-            return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
+
+            // 🛡️ 滑動視窗多數決 (五點防抖)：連續確認才進行狀態切換
+            modeHistory.push(rawMode);
+            if (modeHistory.length > 5) modeHistory.shift();
+
+            let inhCount = modeHistory.filter(m => m === "inhalation").length;
+            let exhCount = modeHistory.filter(m => m === "exhalation").length;
+
+            if (inhCount >= 3) lastValidMode = "inhalation";
+            else if (exhCount >= 3) lastValidMode = "exhalation";
+
+            return lastValidMode;
         }
 
-        // 🩺 原始零修改：最精準的原始 UART 封包解析邏輯
+        // 🩺 封包解析與數值指數平滑處理 (EMA)
         async function parseLine(line) {
             if (line.includes('[FFT]')) {
                 const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
@@ -416,6 +436,12 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
+                // 🛑 硬體雜訊過濾閘門
+                if (lowE < 150000 || Math.abs(est) < 5.0) {
+                    flowYes = false;
+                    est = 0.0;
+                }
+
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
@@ -423,15 +449,21 @@
                 let pklDetected = await detectBreathModePKL(lastFFT);
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
-                smoothedEst = (currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est);
+                
+                let targetEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
 
-                if (Math.abs(est) > 0) {
-                    document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(est).toFixed(1)} L/min`;
+                // 🌊 指數平滑（EMA）：消除數值突增暴衝，呈現平滑穩定的物理呼吸線條
+                smoothedEst = smoothedEst * 0.7 + targetEst * 0.3;
+                if (Math.abs(smoothedEst) < 0.5) smoothedEst = 0.0;
+
+                if (Math.abs(smoothedEst) > 0) {
+                    document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(smoothedEst).toFixed(1)} L/min`;
                 } else {
                     document.getElementById('detectedMode').innerText = `Detected: Idle`;
                 }
 
-                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
+                // CSV 保存純粹的真實數據紀錄
+                records.push({ elapsed, flowYes, est: targetEst, lowE, fft: { ...lastFFT } });
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
                 document.getElementById('saveBtn').disabled = false;
 
@@ -503,7 +535,7 @@
         }
 
         function clearPlot() {
-            startTime = null; records = []; smoothedEst = 0; pklSegments = [];
+            startTime = null; records = []; smoothedEst = 0; pklSegments = []; modeHistory = [];
             flowChart.data.datasets[2].data = [];
             flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
             flowChart.update();
@@ -574,7 +606,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲主引擎 (純讀取模式，方向嚴格校正：吸氣上飛，吐氣下降) -->
+    <!-- 🎨 2. 遊戲主引擎 (實裝漸進跟隨內插，確保飛船升降順暢) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -845,7 +877,8 @@
 
             let hullGrad = gameCtx.createLinearGradient(-60, 0, 60, 20);
             hullGrad.addColorStop(0, '#2c3e50'); hullGrad.addColorStop(0.5, '#bdc3c7'); hullGrad.addColorStop(1, '#1e272e');
-            gameCtx.fillStyle = hullGrad; gameCtx.beginPath(); gameCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); gameCtx.fill();
+            gameCtx.fillStyle = hullGrad; gameCtx.beginPath();
+            gameCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); gameCtx.fill();
             gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 2; gameCtx.stroke();
 
             let domeGrad = gameCtx.createRadialGradient(-10, -15, 2, 0, -10, 25);
@@ -1006,7 +1039,7 @@
         function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
         function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
-        // 🎮 遊戲主迴圈：只讀取絕對真實數據，絕不竄改判定邏輯
+        // 🎮 遊戲純讀取迴圈：漸進跟隨內插平滑跟隨
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
             globalAnimFrame++;
@@ -1014,7 +1047,6 @@
             let theme = getStageTheme(currentStage);
             gameCtx.fillStyle = theme.bg; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
             let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
 
             if (magnetTimer > 0) magnetTimer--;
@@ -1032,24 +1064,25 @@
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                // 🎯 純粹讀取邏輯：吸氣(Inhalation)往上升、吐氣(Exhalation)往下降
-                let rawFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-                let absFlow = Math.abs(rawFlow);
+                // 🎯 核心跟隨：吸氣 (curEst > 0) 上升，吐氣 (curEst < 0) 下降
+                let curEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
+                let absFlow = Math.abs(curEst);
 
                 let flowOffsetY = 0;
-                if (currentMode === "inhalation" && absFlow > 0) {
-                    flowOffsetY = -(absFlow * 3.2); // 吸氣越大力 -> 往上高飛
-                } else if (currentMode === "exhalation" && absFlow > 0) {
-                    flowOffsetY = (absFlow * 3.2);  // 吐氣越大力 -> 往下降落
+                if (curEst > 0) { 
+                    flowOffsetY = -(absFlow * 3.2); // 吸氣越大力 -> 飛船穩定上升
+                } else if (curEst < 0) {
+                    flowOffsetY = (absFlow * 3.2);  // 吐氣越大力 -> 飛船穩定下降
                 }
 
                 let targetY = (gameCanvas.height / 2) + flowOffsetY;
                 targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY));
                 
+                // 🚀 漸進式內插：讓飛船滑順移向目標點，消滅瞬跳與彈跳感
                 let dy = targetY - rocket.y;
-                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
+                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.08;
                 rocket.y += dy * speedFactor;
-                rocket.angle = Math.atan2(dy, 25);
+                rocket.angle = Math.atan2(dy, 35);
 
                 let elapsed = (Date.now() - sessionStartTime) / 1000;
                 if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
@@ -1142,9 +1175,10 @@
                 playerProjectiles = playerProjectiles.filter(p => p.x < gameCanvas.width + 50 && !p.hit);
             }
 
-            let curFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
-            let curMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
-            drawPlayerRocketHD(rocket.x, rocket.y, rocket.angle, curMode, curFlow);
+            let curFlowForRocket = activeMeasuring ? smoothedEst : 0.0; 
+            let curModeForRocket = (curFlowForRocket < 0) ? "exhalation" : "inhalation";
+            
+            drawPlayerRocketHD(rocket.x, rocket.y, rocket.angle, curModeForRocket, Math.abs(curFlowForRocket));
 
             document.getElementById('gameScore').innerText = gameScore;
             document.getElementById('gameCombo').innerText = gameCombo;
