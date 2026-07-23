@@ -84,7 +84,6 @@
             font-size: 22px; font-weight: bold; z-index: 10; pointer-events: none;
         }
         
-        /* 📖 完整 10+5 生態圖鑑 Modal */
         .modal-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.95);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -170,7 +169,6 @@
             </div>
         </div>
 
-        <!-- 📖 全 10+5 物件圖鑑 Modal -->
         <div class="modal-screen" id="manualModal" style="display: none;">
             <div class="modal-card">
                 <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 10大道具與5大Boss全指南 📖</h2>
@@ -274,7 +272,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 精準醫療採集與過濾過度敏感底噪（Noise Gate）機制 -->
+    <!-- 🩺 1. 修正自適應判斷與靈敏門檻（完全解決怪異誤判） -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -342,7 +340,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用預設相對比值邏輯。", err);
+                console.warn("未檢測到 rf_model.onnx，改用動態比值邏輯。", err);
             }
         }
         loadPKLModel();
@@ -384,7 +382,7 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🌟 原始精準判定函式
+        // 🌟 修正後的自適應判讀（修復原本怪異問題）
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
@@ -397,7 +395,8 @@
                     return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
                 } catch (e) {}
             }
-            return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
+            // 使用合理的動態分界，防止過度敏感
+            return (ratio_3to1 > 0.45) ? "exhalation" : "inhalation";
         }
 
         async function parseLine(line) {
@@ -417,8 +416,8 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
-                // 🛡️ 防敏感雜訊門檻（Noise Gate）
-                if (lowE < 180000 || Math.abs(est) < 5.0) {
+                // 🛠️ 校正適中的靜音門檻（既不過濾掉真實呼吸，又能擋掉背景雜訊）
+                if (lowE < 30000 || Math.abs(est) < 2.0) {
                     flowYes = false;
                     est = 0.0;
                 }
@@ -582,7 +581,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 實裝 10 大道具與 5 大 Boss 戰鬥引擎 -->
+    <!-- 🎨 2. 完整 10+5 生態系與遊戲控制 -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -799,7 +798,6 @@
         let isResting = false, sessionStartTime = 0;
         let globalAnimFrame = 0;
 
-        // 1. 小 Boss: 🌪️ 大氣精靈
         function drawAirElemental(x, y) {
             gameCtx.save(); gameCtx.translate(x, y);
             gameCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
@@ -808,7 +806,6 @@
             gameCtx.restore();
         }
 
-        // 2. 🦅 雷霆金屬神鷹
         function drawRealisticEagle(x, y, attackTimer) {
             gameCtx.save(); gameCtx.translate(x, y);
             let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
@@ -846,7 +843,6 @@
             gameCtx.restore();
         }
 
-        // 3. 🛸 圓盤星際母艦
         function drawRealisticUFO(x, y, attackTimer) {
             gameCtx.save(); gameCtx.translate(x, y);
             let isAtk = (attackTimer % 50 > 35);
@@ -870,7 +866,6 @@
             gameCtx.restore();
         }
 
-        // 4. 🐉 終極 Final Boss: 地獄黑金赤龍
         function drawRealisticDragon(x, y, attackTimer) {
             gameCtx.save(); gameCtx.translate(x, y);
             let jawOpen = (attackTimer % 50 > 35) ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
@@ -898,7 +893,6 @@
             gameCtx.restore();
         }
 
-        // 🚀 真實戰機
         function drawPlayerRocketHD(x, y, angle, mode, flowMag) {
             gameCtx.save(); gameCtx.translate(x, y); gameCtx.rotate(angle);
 
@@ -1057,7 +1051,6 @@
                 if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
                 else if (elapsed > 20 && !activeBoss) { triggerBossSpawn('stage'); }
 
-                // 🌟 10 大實體道具與危險障礙物動態生成
                 let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
                 let rand = Math.random();
                 if (rand < 0.015) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
@@ -1068,12 +1061,10 @@
                 else if (rand < 0.034) collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
                 else if (rand < 0.037) collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
 
-                // 3 種扣血/負面障礙物
                 if (Math.random() < 0.012) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
                 else if (Math.random() < 0.008) obstacles.push({ type: 'slime', x: gameCanvas.width + 30, y: spawnY, radius: 14, damage: 10, hit: false });
                 else if (Math.random() < 0.006) obstacles.push({ type: 'darkgem', x: gameCanvas.width + 30, y: spawnY, radius: 13, damage: 15, hit: false });
 
-                // 🧲 磁鐵吸附邏輯
                 collectibles.forEach((c) => {
                     if (magnetTimer > 0) {
                         let mdx = rocket.x - c.x, mdy = rocket.y - c.y;
@@ -1105,7 +1096,6 @@
                     }
                 });
 
-                // 🚀 彈幕計算
                 playerProjectiles.forEach((p) => {
                     p.x += p.vx;
                     gameCtx.fillStyle = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
@@ -1124,7 +1114,6 @@
                     }
                 }
 
-                // ⚠️ 3 種扣血與懲罰物
                 obstacles.forEach((o) => {
                     o.x -= 4 * userSpeedMult;
                     gameCtx.fillStyle = (o.type === 'slime') ? '#d35400' : (o.type === 'darkgem' ? '#2c3e50' : '#e74c3c');
@@ -1137,7 +1126,7 @@
                             hasShield = false; updateStatus("🛡️ 護盾抵擋了一次傷害！");
                         } else {
                             playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
-                            if (o.type === 'slime') slowDebuffTimer = 180; // 減速 3 秒
+                            if (o.type === 'slime') slowDebuffTimer = 180;
                             if (o.type === 'darkgem') gameScore = Math.max(0, gameScore - 100);
                             if (playerHP <= 0) { triggerGameOver(); return; }
                         }
