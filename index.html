@@ -83,19 +83,24 @@
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
             font-size: 22px; font-weight: bold; z-index: 10; pointer-events: none;
         }
+        
+        /* 📖 完整 10+5 生態圖鑑 Modal */
         .modal-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.95);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
             border-radius: 8px; z-index: 20; backdrop-filter: blur(8px); overflow-y: auto; padding: 20px; box-sizing: border-box;
         }
         .modal-card {
-            background: rgba(255,255,255,0.08); padding: 25px 40px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2);
-            text-align: center; max-width: 650px; width: 90%;
+            background: rgba(255,255,255,0.08); padding: 25px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2);
+            text-align: left; max-width: 800px; width: 92%; max-height: 85vh; overflow-y: auto;
         }
-        .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0; font-size: 13px; }
-        .manual-item { background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f1c40f; }
-        .music-upload-btn { background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-block; }
-        .music-upload-btn:hover { background: #9b59b6; }
+        .lore-section { margin-bottom: 20px; }
+        .lore-title { font-size: 18px; color: #f1c40f; border-bottom: 2px solid #f1c40f; padding-bottom: 5px; margin-bottom: 12px; font-weight: bold; }
+        .lore-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .lore-item { background: rgba(0,0,0,0.6); padding: 10px 14px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .lore-item h4 { margin: 0 0 4px 0; color: #00d2d3; font-size: 14px; }
+        .lore-item p { margin: 0; font-size: 11px; color: #ccc; line-height: 1.3; }
+        .lore-item .desc { font-size: 11px; color: #f39c12; margin-top: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -147,6 +152,8 @@
                 🏰 關卡: <span id="gameStage" style="color:#2ecc71; font-weight:bold;">1</span>
                 | 🚀 得分: <span id="gameScore" style="color:#f1c40f">0</span> 
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
+                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
+                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
             </div>
 
             <div class="hud-badge" id="bossHudBadge" style="display:none;">
@@ -155,7 +162,7 @@
             </div>
 
             <div class="hud-badge">
-                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 說明</button>
+                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件故事圖鑑</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
                 <span style="margin-left:5px;">❤️ HP</span> 
@@ -163,21 +170,91 @@
             </div>
         </div>
 
+        <!-- 📖 全 10+5 物件圖鑑 Modal -->
         <div class="modal-screen" id="manualModal" style="display: none;">
             <div class="modal-card">
-                <h2 style="color: #f1c40f; margin-top:0;">📖 氣流飛行員 - 道具與障礙說明書</h2>
-                <div class="manual-grid">
-                    <div class="manual-item" style="border-color:#f1c40f;">🟡 <b>黃金金幣</b>: 增加 50 分，並對 Boss 造成攻擊傷害！</div>
-                    <div class="manual-item" style="border-color:#2ecc71;">🟢 <b>急救愛心</b>: 恢復 25 HP 血量。</div>
-                    <div class="manual-item" style="border-color:#e74c3c;">⛈️ <b>雷暴烏雲</b>: 碰撞會扣除 20 HP。</div>
-                    <div class="manual-item" style="border-color:#3498db;">⌨️ <b>快捷鍵 S</b>: 隨時進行進度存檔。</div>
+                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 10大道具與5大Boss全指南 📖</h2>
+                
+                <div class="lore-section">
+                    <div class="lore-title">👾 5 大 Boss 體系（小 Boss / 關卡 Boss / 最終 Boss）</div>
+                    <div class="lore-grid">
+                        <div class="lore-item" style="border-color:#3498db;">
+                            <h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4>
+                            <p>大氣層氣流凝聚而成的漩渦體，會對飛船進行範圍衝擊。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#f1c40f;">
+                            <h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4>
+                            <p>雙翼帶有高壓電極的金屬神鷹，大氣層關卡終點的守護者。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#e67e22;">
+                            <h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4>
+                            <p>熾熱的外星隕石核心，會在宇宙航道中突襲飛行員。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#9b59b6;">
+                            <h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4>
+                            <p>外星艦隊的旗艦，配備離子護盾與光束圓盤。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;">
+                            <h4>🐉 地獄黑金赤龍 (Stage 3 終極 Final Boss)</h4>
+                            <p>棲息於火山星雲深處的終極霸主！擁有一張能咬碎合金的開合巨顎，會噴射滅世級別的等離子火焰流！</p>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn game-btn" onclick="closeManualModal()">了解，關閉說明</button>
+
+                <div class="lore-section">
+                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障礙物</div>
+                    <div class="lore-grid">
+                        <div class="lore-item" style="border-color:#f1c40f;">
+                            <h4>🟡 能量金幣 (Coin)</h4>
+                            <div class="desc">效果：增加 50 分，發射基礎子彈對 Boss 造成 10 點傷害。</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#00d2d3;">
+                            <h4>⚡ 脈衝雷射槍 (Laser)</h4>
+                            <div class="desc">效果：發射貫穿光束消滅障礙，對 Boss 造成 25 點傷害！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#e74c3c;">
+                            <h4>🚀 追蹤量子飛彈 (Missile)</h4>
+                            <div class="desc">效果：發射量子飛彈鎖定 Boss，造成 30 點大量傷害！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#a55eea;">
+                            <h4>💣 等離子新星爆彈 (Nova Bomb)</h4>
+                            <div class="desc">效果：觸發全螢幕衝擊波清空障礙，對 Boss 造成 40 點重傷！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#2ecc71;">
+                            <h4>🟢 醫療修復膠囊 (Heart)</h4>
+                            <div class="desc">效果：立即修復裝甲，恢復 25 點 HP 血量。</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#00d2d3;">
+                            <h4>🛡️ 能量防護罩 (Shield)</h4>
+                            <div class="desc">效果：生成能量罩，抵擋一次障礙物或 Boss 彈幕傷害。</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#f39c12;">
+                            <h4>🧲 強力磁鐵 (Magnet)</h4>
+                            <div class="desc">效果：開啟 6 秒磁場，自動吸引畫面上所有金幣與武器！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#e74c3c;">
+                            <h4>⛈️ 雷暴烏雲 (Cloud)</h4>
+                            <div class="desc">危險：撞擊會造成飛船系統短路，扣除 20 點 HP。</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#d35400;">
+                            <h4>🕸️ 泥濘黏液 (Slime)</h4>
+                            <div class="desc">危險：撞擊扣除 10 點 HP，並使飛船升降跟隨速度降低 3 秒！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#2c3e50;">
+                            <h4>🖤 詛咒黑寶石 (Dark Gem)</h4>
+                            <div class="desc">危險：撞擊扣除 15 點 HP，並且強制倒扣 100 點分數！</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉圖鑑指南</button>
+                </div>
             </div>
         </div>
 
         <div class="modal-screen" id="gameOverScreen" style="display: none;">
-            <div class="modal-card">
+            <div class="modal-card" style="text-align: center;">
                 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
                 <p style="color: #ccc; font-size: 16px;">血條已用盡，飛行員請重新準備！</p>
                 <div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">最終得分: <span id="finalScore">0</span></div>
@@ -186,7 +263,7 @@
         </div>
 
         <div class="modal-screen" id="restScreen" style="display: none;">
-            <div class="modal-card">
+            <div class="modal-card" style="text-align: center;">
                 <h2 style="color: #2ecc71; margin-top:0;">🍵 關卡完成！換氣休息時間</h2>
                 <p style="color: #ccc;">做得好！自動存檔成功。請放鬆肌肉、深呼吸休息一下...</p>
                 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
@@ -340,7 +417,7 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
-                // 🛡️ 防敏感雜訊門檻（Noise Gate）：能量太低或估算流量過小，視為無聲音 Idle
+                // 🛡️ 防敏感雜訊門檻（Noise Gate）
                 if (lowE < 180000 || Math.abs(est) < 5.0) {
                     flowYes = false;
                     est = 0.0;
@@ -505,7 +582,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 手繪實體 Boss 遊戲與音樂控制器 -->
+    <!-- 🎨 2. 實裝 10 大道具與 5 大 Boss 戰鬥引擎 -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -569,12 +646,12 @@
                     osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
                     gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                     osc.start(); osc.stop(now + 0.25);
-                } else if (type === 'buff') {
+                } else if (type === 'laser' || type === 'missile') {
                     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                     osc.start(); osc.stop(now + 0.3);
                 } else if (type === 'hit') {
                     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
@@ -678,11 +755,12 @@
 
         let currentStage = 1, gameScore = 0, gameCombo = 0, playerHP = 100;
         let activeBoss = null;
+        let hasShield = false, magnetTimer = 0, slowDebuffTimer = 0;
 
         const STAGE_THEMES = [
-            { id: 1, name: "藍天風暴", bg: "#0d1117", stageBoss: "🦅 雷霆金屬神鷹" },
-            { id: 2, name: "宇宙星空", bg: "#050515", stageBoss: "🛸 圓盤星際母艦" },
-            { id: 3, name: "烈焰火山", bg: "#1a0808", stageBoss: "🐉 地獄黑金赤龍" }
+            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 大氣風暴精靈", stageBoss: "🦅 雷霆金屬神鷹" },
+            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 熔岩巨型隕石", stageBoss: "🛸 圓盤星際母艦" },
+            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🐉 地獄赤龍前哨", stageBoss: "🐉 地獄黑金赤龍 (Final Boss)" }
         ];
 
         function getStageTheme(stage) {
@@ -717,11 +795,20 @@
         let gameAnimationId = null, isGameRunning = false, isGamePaused = false, isGameOver = false;
 
         let rocket = { x: 120, y: 240, angle: 0, radius: 22 };
-        let stars = [], collectibles = [], obstacles = [];
+        let stars = [], collectibles = [], obstacles = [], playerProjectiles = [];
         let isResting = false, sessionStartTime = 0;
         let globalAnimFrame = 0;
 
-        // 🦅 1. 雷霆金屬神鷹 (真實繪圖)
+        // 1. 小 Boss: 🌪️ 大氣精靈
+        function drawAirElemental(x, y) {
+            gameCtx.save(); gameCtx.translate(x, y);
+            gameCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
+            gameCtx.beginPath(); gameCtx.arc(0, 0, 32 + Math.sin(globalAnimFrame * 0.2) * 5, 0, Math.PI * 2); gameCtx.fill();
+            gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 3; gameCtx.stroke();
+            gameCtx.restore();
+        }
+
+        // 2. 🦅 雷霆金屬神鷹
         function drawRealisticEagle(x, y, attackTimer) {
             gameCtx.save(); gameCtx.translate(x, y);
             let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
@@ -756,11 +843,10 @@
 
             gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath(); gameCtx.ellipse(-10, -7, 6, 4, -Math.PI / 8, 0, Math.PI * 2); gameCtx.fill();
             gameCtx.fillStyle = isAtk ? "#ff0000" : "#d35400"; gameCtx.beginPath(); gameCtx.arc(-11, -7, 2.8, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.strokeStyle = "#1e272e"; gameCtx.lineWidth = 2.5; gameCtx.beginPath(); gameCtx.moveTo(-4, -12); gameCtx.lineTo(-17, -8); gameCtx.stroke();
             gameCtx.restore();
         }
 
-        // 🛸 2. 圓盤星際母艦 (真實繪圖)
+        // 3. 🛸 圓盤星際母艦
         function drawRealisticUFO(x, y, attackTimer) {
             gameCtx.save(); gameCtx.translate(x, y);
             let isAtk = (attackTimer % 50 > 35);
@@ -784,7 +870,7 @@
             gameCtx.restore();
         }
 
-        // 🐉 3. 地獄黑金赤龍 (真實繪圖)
+        // 4. 🐉 終極 Final Boss: 地獄黑金赤龍
         function drawRealisticDragon(x, y, attackTimer) {
             gameCtx.save(); gameCtx.translate(x, y);
             let jawOpen = (attackTimer % 50 > 35) ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
@@ -809,11 +895,10 @@
             }
 
             gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(-5, -12 - jawOpen, 5, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.fillStyle = '#000000'; gameCtx.fillRect(-6, -15 - jawOpen, 2, 6);
             gameCtx.restore();
         }
 
-        // 🚀 真實戰機 (帶有動態尾焰)
+        // 🚀 真實戰機
         function drawPlayerRocketHD(x, y, angle, mode, flowMag) {
             gameCtx.save(); gameCtx.translate(x, y); gameCtx.rotate(angle);
 
@@ -830,12 +915,20 @@
             gameCtx.fillStyle = '#2c3e50'; gameCtx.beginPath(); gameCtx.moveTo(24, 0); gameCtx.lineTo(-12, -14); gameCtx.lineTo(-6, 0); gameCtx.lineTo(-12, 14); gameCtx.closePath(); gameCtx.fill();
             gameCtx.fillStyle = '#ecf0f1'; gameCtx.beginPath(); gameCtx.moveTo(18, 0); gameCtx.lineTo(-8, -10); gameCtx.lineTo(-10, 10); gameCtx.closePath(); gameCtx.fill();
             gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
+
+            if (hasShield) {
+                gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.05);
+                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 18; gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3;
+                gameCtx.setLineDash([8, 6]); gameCtx.beginPath(); gameCtx.arc(0, 0, 32, 0, Math.PI*2); gameCtx.stroke();
+                gameCtx.restore();
+            }
             gameCtx.restore();
         }
 
         function drawBossHD(boss) {
             let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer);
+            if (boss.name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY);
+            else if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer);
             else if (boss.name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer);
             else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer);
         }
@@ -860,7 +953,8 @@
             stopGameEngine();
             isGameRunning = true; isGamePaused = false; isGameOver = false; isResting = false;
             playerHP = 100; gameScore = 0; gameCombo = 0; activeBoss = null;
-            collectibles = []; obstacles = []; globalAnimFrame = 0;
+            hasShield = false; magnetTimer = 0; slowDebuffTimer = 0;
+            collectibles = []; obstacles = []; playerProjectiles = []; globalAnimFrame = 0;
             
             rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2;
             sessionStartTime = Date.now();
@@ -875,14 +969,31 @@
 
         function triggerBossSpawn(type) {
             let theme = getStageTheme(currentStage);
-            let bName = theme.stageBoss;
-            let maxHp = 100 + currentStage * 25;
+            let bName = (type === 'mini') ? theme.miniBoss : theme.stageBoss;
+            let maxHp = (type === 'mini') ? (50 + currentStage * 20) : (120 + currentStage * 35);
 
             activeBoss = { type: type, name: bName, x: gameCanvas.width - 120, y: gameCanvas.height / 2, hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0 };
             document.getElementById('bossName').innerText = bName;
             document.getElementById('bossHudBadge').style.display = 'flex';
             document.getElementById('bossHpFill').style.width = '100%';
             updateStatus(`⚠️ 警告！${bName} 出現了！(血量: ${maxHp} HP)`);
+        }
+
+        function damageBoss(dmg) {
+            if (!activeBoss) return;
+            activeBoss.hp -= dmg;
+            document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
+            if (activeBoss.hp <= 0) {
+                updateStatus(`🎉 成功擊敗 ${activeBoss.name}！`);
+                let isFinal = activeBoss.name.includes("Final Boss");
+                activeBoss = null; document.getElementById('bossHudBadge').style.display = 'none';
+                if (isFinal) {
+                    alert("🏆 恭喜破關！你已順利通關所有宇宙階級 Boss！");
+                    restartGameEngine();
+                } else {
+                    triggerStageComplete();
+                }
+            }
         }
 
         function toggleGamePause() {
@@ -918,6 +1029,11 @@
             let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
             let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
 
+            if (magnetTimer > 0) magnetTimer--;
+            if (slowDebuffTimer > 0) slowDebuffTimer--;
+            document.getElementById('shieldBadge').style.display = hasShield ? 'inline' : 'none';
+            document.getElementById('magnetBadge').style.display = (magnetTimer > 0) ? 'inline' : 'none';
+
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.baseSpeed * userSpeedMult;
@@ -933,64 +1049,104 @@
                 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
                 
                 let dy = targetY - rocket.y;
-                rocket.y += dy * 0.1;
+                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.1;
+                rocket.y += dy * speedFactor;
                 rocket.angle = Math.atan2(dy, 25);
 
                 let elapsed = (Date.now() - sessionStartTime) / 1000;
-                if (elapsed > 15 && !activeBoss) { triggerBossSpawn('stage'); }
+                if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
+                else if (elapsed > 20 && !activeBoss) { triggerBossSpawn('stage'); }
 
+                // 🌟 10 大實體道具與危險障礙物動態生成
                 let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
-                if (Math.random() < 0.025) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                if (Math.random() < 0.008) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                if (Math.random() < (diff === 'easy' ? 0.008 : 0.015)) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
+                let rand = Math.random();
+                if (rand < 0.015) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
+                else if (rand < 0.020) collectibles.push({ type: 'laser', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
+                else if (rand < 0.024) collectibles.push({ type: 'missile', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
+                else if (rand < 0.027) collectibles.push({ type: 'bomb', x: gameCanvas.width + 20, y: spawnY, radius: 15, collected: false });
+                else if (rand < 0.031) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
+                else if (rand < 0.034) collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
+                else if (rand < 0.037) collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
 
+                // 3 種扣血/負面障礙物
+                if (Math.random() < 0.012) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
+                else if (Math.random() < 0.008) obstacles.push({ type: 'slime', x: gameCanvas.width + 30, y: spawnY, radius: 14, damage: 10, hit: false });
+                else if (Math.random() < 0.006) obstacles.push({ type: 'darkgem', x: gameCanvas.width + 30, y: spawnY, radius: 13, damage: 15, hit: false });
+
+                // 🧲 磁鐵吸附邏輯
                 collectibles.forEach((c) => {
-                    c.x -= 3 * userSpeedMult;
-                    gameCtx.fillStyle = (c.type === 'coin') ? '#f1c40f' : '#2ecc71';
-                    gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                    if (magnetTimer > 0) {
+                        let mdx = rocket.x - c.x, mdy = rocket.y - c.y;
+                        c.x += mdx * 0.08; c.y += mdy * 0.08;
+                    } else {
+                        c.x -= 3 * userSpeedMult;
+                    }
+                    
+                    gameCtx.save();
+                    if (c.type === 'coin') { gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    else if (c.type === 'laser') { gameCtx.fillStyle = '#00d2d3'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    else if (c.type === 'missile') { gameCtx.fillStyle = '#e74c3c'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    else if (c.type === 'bomb') { gameCtx.fillStyle = '#a55eea'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    else if (c.type === 'heart') { gameCtx.fillStyle = '#2ecc71'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    else if (c.type === 'shield') { gameCtx.fillStyle = '#3498db'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    else if (c.type === 'magnet') { gameCtx.fillStyle = '#f39c12'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
+                    gameCtx.restore();
 
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
                     if (dist < c.radius + rocket.radius) {
-                        if (c.type === 'coin') {
-                            gameScore += 50; gameCombo++; playAudioEffect('coin');
-                            if (activeBoss) {
-                                activeBoss.hp -= 15;
-                                document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
-                                if (activeBoss.hp <= 0) {
-                                    updateStatus(`🎉 成功擊敗 ${activeBoss.name}！準備進入下一關！`);
-                                    activeBoss = null; document.getElementById('bossHudBadge').style.display = 'none';
-                                    triggerStageComplete();
-                                }
-                            }
-                        } else if (c.type === 'heart') {
-                            playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff');
-                        }
                         c.collected = true;
+                        if (c.type === 'coin') { gameScore += 50; gameCombo++; playAudioEffect('coin'); damageBoss(10); }
+                        else if (c.type === 'laser') { gameScore += 100; playAudioEffect('laser'); playerProjectiles.push({ type: 'laser', x: rocket.x + 20, y: rocket.y, vx: 18, damage: 25 }); }
+                        else if (c.type === 'missile') { gameScore += 120; playAudioEffect('missile'); playerProjectiles.push({ type: 'missile', x: rocket.x + 20, y: rocket.y, vx: 12, damage: 30 }); }
+                        else if (c.type === 'bomb') { gameScore += 200; playAudioEffect('hit'); obstacles = []; damageBoss(40); }
+                        else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff'); }
+                        else if (c.type === 'shield') { hasShield = true; playAudioEffect('buff'); }
+                        else if (c.type === 'magnet') { magnetTimer = 300; playAudioEffect('buff'); }
+                    }
+                });
+
+                // 🚀 彈幕計算
+                playerProjectiles.forEach((p) => {
+                    p.x += p.vx;
+                    gameCtx.fillStyle = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
+                    gameCtx.fillRect(p.x, p.y - 4, 25, 8);
+                    if (activeBoss) {
+                        let bDist = Math.hypot(p.x - activeBoss.x, p.y - activeBoss.y);
+                        if (bDist < activeBoss.radius + 15) { damageBoss(p.damage); p.hit = true; }
                     }
                 });
 
                 if (activeBoss) {
                     drawBossHD(activeBoss);
                     activeBoss.attackTimer++;
-                    if (activeBoss.attackTimer % 50 === 0) {
+                    if (activeBoss.attackTimer % 45 === 0) {
                         obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20, hit: false });
                     }
                 }
 
+                // ⚠️ 3 種扣血與懲罰物
                 obstacles.forEach((o) => {
                     o.x -= 4 * userSpeedMult;
-                    gameCtx.fillStyle = '#e74c3c'; gameCtx.beginPath(); gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2); gameCtx.fill();
+                    gameCtx.fillStyle = (o.type === 'slime') ? '#d35400' : (o.type === 'darkgem' ? '#2c3e50' : '#e74c3c');
+                    gameCtx.beginPath(); gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2); gameCtx.fill();
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
                         o.hit = true;
-                        if (playerHP <= 0) { triggerGameOver(); return; }
+                        if (hasShield) {
+                            hasShield = false; updateStatus("🛡️ 護盾抵擋了一次傷害！");
+                        } else {
+                            playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
+                            if (o.type === 'slime') slowDebuffTimer = 180; // 減速 3 秒
+                            if (o.type === 'darkgem') gameScore = Math.max(0, gameScore - 100);
+                            if (playerHP <= 0) { triggerGameOver(); return; }
+                        }
                     }
                 });
 
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
+                playerProjectiles = playerProjectiles.filter(p => p.x < gameCanvas.width + 50 && !p.hit);
             }
 
             let curFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
@@ -1008,7 +1164,7 @@
             saveGameProgress(false);
             currentStage++;
             document.getElementById('gameStage').innerText = currentStage;
-            isResting = true; collectibles = []; obstacles = [];
+            isResting = true; collectibles = []; obstacles = []; playerProjectiles = [];
 
             const restScreen = document.getElementById('restScreen');
             const countdownEl = document.getElementById('restCountdown');
