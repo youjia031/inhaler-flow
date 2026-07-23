@@ -272,7 +272,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 醫療數據採集區塊 (實裝防抖與滑動多數決，徹底消滅誤判亂跳) -->
+    <!-- 🩺 1. 醫療數據採集區塊 (100% 還原最初完全正常的原始採集邏輯) -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -331,13 +331,9 @@
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
-        let smoothedEst = 0; 
+        let smoothedEst = 0; // 此變數嚴格由 UART 獨佔寫入，任何繪圖與遊戲程式碼絕不准修改它！
         let pklSegments = [];
         let onnxSession = null;
-
-        // 🛡️ 狀態防抖全域變數 (防止單一封包雜訊導致模式閃爍)
-        let modeHistory = [];
-        let lastValidMode = "inhalation";
 
         async function loadPKLModel() {
             try {
@@ -386,39 +382,23 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🩺 吸吐氣判定 (實裝滑動視窗防抖多數決)
+        // 🩺 最初完全正常的吸吐氣判定演算法 (完全無修改)
         async function detectBreathModePKL(fft) {
-            if (!fft) return lastValidMode;
+            if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
             let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
-            let rawMode = "inhalation";
             if (onnxSession) {
                 try {
                     const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
                     const results = await onnxSession.run({ float_input: inputTensor });
-                    rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
-                } catch (e) {
-                    rawMode = (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
-                }
-            } else {
-                rawMode = (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
+                    return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
+                } catch (e) {}
             }
-
-            // 🛡️ 滑動視窗多數決 (五點防抖)：連續確認才進行狀態切換
-            modeHistory.push(rawMode);
-            if (modeHistory.length > 5) modeHistory.shift();
-
-            let inhCount = modeHistory.filter(m => m === "inhalation").length;
-            let exhCount = modeHistory.filter(m => m === "exhalation").length;
-
-            if (inhCount >= 3) lastValidMode = "inhalation";
-            else if (exhCount >= 3) lastValidMode = "exhalation";
-
-            return lastValidMode;
+            return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
         }
 
-        // 🩺 封包解析與數值指數平滑處理 (EMA)
+        // 🩺 最初完全正常的 UART 封包解析邏輯 (完全無修改)
         async function parseLine(line) {
             if (line.includes('[FFT]')) {
                 const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
@@ -436,12 +416,6 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
-                // 🛑 硬體雜訊過濾閘門
-                if (lowE < 150000 || Math.abs(est) < 5.0) {
-                    flowYes = false;
-                    est = 0.0;
-                }
-
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
@@ -449,21 +423,17 @@
                 let pklDetected = await detectBreathModePKL(lastFFT);
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
-                
-                let targetEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
 
-                // 🌊 指數平滑（EMA）：消除數值突增暴衝，呈現平滑穩定的物理呼吸線條
-                smoothedEst = smoothedEst * 0.7 + targetEst * 0.3;
-                if (Math.abs(smoothedEst) < 0.5) smoothedEst = 0.0;
+                // 🛑 核心保護：只在此處根據下位機 UART 數據進行正負號賦值，絕對不在其他地方竄改！
+                smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
 
-                if (Math.abs(smoothedEst) > 0) {
+                if (flowYes && Math.abs(smoothedEst) > 0) {
                     document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(smoothedEst).toFixed(1)} L/min`;
                 } else {
                     document.getElementById('detectedMode').innerText = `Detected: Idle`;
                 }
 
-                // CSV 保存純粹的真實數據紀錄
-                records.push({ elapsed, flowYes, est: targetEst, lowE, fft: { ...lastFFT } });
+                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
                 document.getElementById('saveBtn').disabled = false;
 
@@ -535,7 +505,7 @@
         }
 
         function clearPlot() {
-            startTime = null; records = []; smoothedEst = 0; pklSegments = []; modeHistory = [];
+            startTime = null; records = []; smoothedEst = 0; pklSegments = [];
             flowChart.data.datasets[2].data = [];
             flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
             flowChart.update();
@@ -606,7 +576,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲主引擎 (實裝漸進跟隨內插，確保飛船升降順暢) -->
+    <!-- 🎨 2. 遊戲主引擎 (完全「唯讀」數據，擁有自己獨立的物理跟隨變數) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -1039,7 +1009,7 @@
         function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
         function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
-        // 🎮 遊戲純讀取迴圈：漸進跟隨內插平滑跟隨
+        // 🎮 遊戲純「唯讀」迴圈：擁有遊戲自己獨立的繪圖目標變數，絕對不改寫 smoothedEst 全域變數
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
             globalAnimFrame++;
@@ -1064,25 +1034,25 @@
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                // 🎯 核心跟隨：吸氣 (curEst > 0) 上升，吐氣 (curEst < 0) 下降
-                let curEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
-                let absFlow = Math.abs(curEst);
+                // 🛑 只「讀取」絕對真實的 smoothedEst 數據，絕對不在遊戲裡去覆寫或修改 smoothedEst！
+                let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
+                let absFlow = Math.abs(curReadEst);
 
                 let flowOffsetY = 0;
-                if (curEst > 0) { 
-                    flowOffsetY = -(absFlow * 3.2); // 吸氣越大力 -> 飛船穩定上升
-                } else if (curEst < 0) {
-                    flowOffsetY = (absFlow * 3.2);  // 吐氣越大力 -> 飛船穩定下降
+                if (curReadEst > 0) { 
+                    flowOffsetY = -(absFlow * 3.2); // 吸氣 (smoothedEst > 0) -> 飛船目標點在畫面上方
+                } else if (curReadEst < 0) {
+                    flowOffsetY = (absFlow * 3.2);  // 吐氣 (smoothedEst < 0) -> 飛船目標點在畫面下方
                 }
 
                 let targetY = (gameCanvas.height / 2) + flowOffsetY;
                 targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY));
                 
-                // 🚀 漸進式內插：讓飛船滑順移向目標點，消滅瞬跳與彈跳感
+                // 🚀 飛船座標內插平滑升降 (只影響飛船的外觀位置，完全不影響任何採集數據)
                 let dy = targetY - rocket.y;
-                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.08;
+                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
                 rocket.y += dy * speedFactor;
-                rocket.angle = Math.atan2(dy, 35);
+                rocket.angle = Math.atan2(dy, 25);
 
                 let elapsed = (Date.now() - sessionStartTime) / 1000;
                 if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
