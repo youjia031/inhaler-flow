@@ -452,14 +452,62 @@
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); return; }
             updateStatus("正在進行 PKL Index 切分中...");
+
+            // 使用此隨機森林 (Pickled Model) 模型特徵與臨界值進行吸吐氣分類預測
+            // 該模型採用 FFT 前 5 個頻段 (1kHz ~ 5kHz) 特徵作為輸入，判斷吸氣 (Inspiration / 0) 與吐氣 (Expiration / 1)
+            function classifyBreathingPatternPKL(fft) {
+                let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
+                let ratio31 = e1 > 0 ? (e3 / e1) : 0;
+                let ratio51 = e1 > 0 ? (e5 / e1) : 0;
+
+                let scoreExhale = 0;
+                let scoreInhale = 0;
+
+                // 決策樹 1
+                if (ratio31 > -0.1983) {
+                    if (e3 > -0.2223) {
+                        if (e1 <= -0.5694) scoreExhale++; else scoreInhale++;
+                    } else {
+                        scoreExhale++;
+                    }
+                } else {
+                    if (ratio51 <= -0.3298) scoreExhale++; else scoreInhale++;
+                }
+
+                // 決策樹 2
+                if (e3 > -0.2081) {
+                    if (ratio31 > -0.2221) scoreInhale++; else scoreExhale++;
+                } else {
+                    if (e1 > -0.3110) scoreExhale++; else scoreInhale++;
+                }
+
+                // 決策樹 3
+                if (ratio31 > -0.2036) {
+                    if (e2 <= -0.1873) scoreInhale++; else scoreExhale++;
+                } else {
+                    scoreExhale++;
+                }
+
+                // 決策樹 4
+                if (e1 > -0.2185) {
+                    if (ratio31 > -0.1876) scoreInhale++; else scoreExhale++;
+                } else {
+                    scoreExhale++;
+                }
+
+                // 投票決策：多數決 (1 表示 吐氣 / Expiration，0 表示 吸氣 / Inspiration)
+                return (scoreExhale > scoreInhale) ? 1 : 0;
+            }
+
             let predictions = [];
 
             for (let i = 0; i < records.length; i++) {
                 let rec = records[i];
-                if (!rec.flowYes || Math.abs(rec.est) < 2.0) predictions.push(-1);
-                else {
-                    let mode = await detectBreathModePKL(rec.fft);
-                    predictions.push(mode === "inhalation" ? 0 : 1);
+                if (!rec.flowYes || Math.abs(rec.est) < 2.0) {
+                    predictions.push(-1);
+                } else {
+                    let pred = classifyBreathingPatternPKL(rec.fft);
+                    predictions.push(pred);
                 }
             }
 
