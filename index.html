@@ -21,95 +21,150 @@
             border-left: 6px solid #1f4e79;
             padding-left: 15px;
         }
-        .header .main-title { margin: 0; color: #1f4e79; font-size: 36px; font-weight: 800; letter-spacing: 2px; }
+        .header .main-title {
+            margin: 0;
+            color: #1f4e79;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
         .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
         .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
         .control-panel {
-            background: #ffffff; padding: 15px; border-radius: 8px; margin-bottom: 15px;
-            display: flex; gap: 12px; align-items: center; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .btn {
-            padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s;
+            padding: 8px 16px; border: none; border-radius: 4px;
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
         }
-        .btn:active { transform: scale(0.98); }
         .btn.accent { background-color: #1f4e79; color: white; }
         .btn.accent:hover { background-color: #163d5e; }
         .btn.game-btn { background-color: #27ae60; color: white; }
         .btn.game-btn:hover { background-color: #219653; }
-        .btn.purple-btn { background-color: #8e44ad; color: white; }
-        .btn.purple-btn:hover { background-color: #71368a; }
-        .btn.info-btn { background-color: #f39c12; color: white; }
+        .btn.danger-btn { background-color: #e74c3c; color: white; }
+        .btn.danger-btn:hover { background-color: #c0392b; }
         .btn:hover { background-color: #e1e8ee; }
         .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
         label { font-size: 14px; font-weight: 500; }
         input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
         .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
         .chart-container {
-            background: #ffffff; padding: 15px; border-radius: 8px; height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
+            background: #ffffff; padding: 15px; border-radius: 8px;
+            height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
         }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
+        /* 🎮 遊戲 UI 樣式 */
         .game-container {
-            display: none; background: #0d1117; padding: 0; border-radius: 8px; height: 480px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3); position: relative; overflow: hidden; border: 2px solid #30363d;
+            display: none;
+            background: #0d1117;
+            padding: 0;
+            border-radius: 8px;
+            height: 480px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #30363d;
         }
-        .game-container.fullscreen {
-            position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important;
-            height: 100vh !important; z-index: 99999 !important; border-radius: 0 !important; border: none !important;
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
-        #gameCanvas { width: 100%; height: 100%; display: block; }
         .game-ui-overlay {
-            position: absolute; top: 15px; left: 20px; right: 20px; display: flex; justify-content: space-between;
-            align-items: center; color: #ffffff; font-family: 'Segoe UI', monospace; font-size: 15px; font-weight: 600;
-            pointer-events: none; z-index: 5;
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffffff;
+            font-family: 'Segoe UI', monospace;
+            font-size: 15px;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.95); padding: 8px 16px; border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.6); backdrop-filter: blur(6px); pointer-events: auto;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; box-shadow: 0 0 12px rgba(0,0,0,0.6);
+            background: rgba(22, 27, 34, 0.85);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            pointer-events: auto;
         }
         .hp-bar-bg {
-            width: 120px; height: 16px; background: rgba(0,0,0,0.7); border-radius: 8px; overflow: hidden;
-            border: 2px solid #ffffff; display: inline-block; vertical-align: middle; margin-left: 4px;
+            width: 120px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 1.5px solid rgba(255,255,255,0.4);
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
         }
-        .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
-        .boss-hp-bg {
-            width: 180px; height: 16px; background: rgba(0,0,0,0.8); border-radius: 8px; overflow: hidden;
-            border: 2px solid #f1c40f; display: inline-block; vertical-align: middle; margin-left: 4px; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+        .hp-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4d4d, #2ecc71);
+            transition: width 0.1s linear;
         }
-        .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); transition: width 0.1s linear; }
         .start-prompt-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.75);
-            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-size: 22px; font-weight: bold; z-index: 10; pointer-events: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.75);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
         }
-        
         .modal-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.95);
-            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border-radius: 8px; z-index: 20; backdrop-filter: blur(8px); overflow-y: auto; padding: 20px; box-sizing: border-box;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.92);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            z-index: 20;
+            backdrop-filter: blur(8px);
         }
         .modal-card {
-            background: rgba(255,255,255,0.08); padding: 25px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2);
-            text-align: left; max-width: 800px; width: 92%; max-height: 85vh; overflow-y: auto;
+            background: rgba(255,255,255,0.05);
+            padding: 30px 50px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
         }
-        .lore-section { margin-bottom: 20px; }
-        .lore-title { font-size: 18px; color: #f1c40f; border-bottom: 2px solid #f1c40f; padding-bottom: 5px; margin-bottom: 12px; font-weight: bold; }
-        .lore-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .lore-item { background: rgba(0,0,0,0.6); padding: 10px 14px; border-radius: 8px; border-left: 4px solid #3498db; }
-        .lore-item h4 { margin: 0 0 4px 0; color: #00d2d3; font-size: 14px; }
-        .lore-item p { margin: 0; font-size: 11px; color: #ccc; line-height: 1.3; }
-        .lore-item .desc { font-size: 11px; color: #f39c12; margin-top: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
 
+    <!-- 頂部標題區域 -->
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
-        <p>Acoustic inhaler flow visualization & Flight Game</p>
+        <p>Acoustic inhaler flow visualization</p>
     </div>
 
+    <!-- 控制面版 -->
     <div class="control-panel">
         <button id="connectBtn" class="btn accent">Connect</button>
         <button id="startBtn" class="btn" disabled>Start</button>
@@ -117,14 +172,13 @@
         <button id="clearBtn" class="btn">Clear</button>
         <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
         
-        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..." onchange="loadGameProgress()"></label>
-        <button id="manualSaveBtn" class="btn purple-btn" onclick="saveGameProgress(true)">💾 存檔(S)</button>
-
+        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
+        
         <label>Mode: 
             <select id="modeSelect">
                 <option value="auto">auto (PKL 切分)</option>
-                <option value="inhalation">inhalation (強制吸氣)</option>
-                <option value="exhalation">exhalation (強制吐氣)</option>
+                <option value="inhalation">inhalation</option>
+                <option value="exhalation">exhalation</option>
             </select>
         </label>
 
@@ -133,152 +187,78 @@
         <span id="detectedMode" class="info-text">Detected: —</span>
     </div>
 
+    <!-- 📊 專業圖表顯示區域 -->
     <div class="chart-container">
         <canvas id="flowChart"></canvas>
     </div>
 
+    <!-- 🎮 炫彩遊戲畫面容器 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-
+        
         <div class="start-prompt-overlay" id="gameStartPrompt">
-            <div style="background: rgba(31, 78, 121, 0.9); padding: 15px 30px; border-radius: 30px; border: 2px solid #3498db; text-align: center;">
+            <div style="background: rgba(31, 78, 121, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid #3498db; text-align: center;">
                 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
             </div>
         </div>
-        
+
         <div class="game-ui-overlay">
             <div class="hud-badge">
-                🏰 關卡: <span id="gameStage" style="color:#2ecc71; font-weight:bold;">1</span>
-                | 🚀 得分: <span id="gameScore" style="color:#f1c40f">0</span> 
+                🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span> 
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
-                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
-                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
+                <span id="feverBadge" style="display:none; color:#a55eea; margin-left:10px;">⚡ FEVER 2X!</span>
+                <span id="shieldBadge" style="display:none; color:#00d2d3; margin-left:10px;">🛡️ SHIELD</span>
             </div>
-
-            <div class="hud-badge" id="bossHudBadge" style="display:none;">
-                <span id="bossName" style="color:#f1c40f; font-weight:bold;">Boss</span>: 
-                <div class="boss-hp-bg"><div class="boss-hp-fill" id="bossHpFill"></div></div>
-            </div>
-
             <div class="hud-badge">
-                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件故事圖鑑</button>
-                <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-                <span style="margin-left:5px;">❤️ HP</span> 
-                <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
-            </div>
-        </div>
-
-        <div class="modal-screen" id="manualModal" style="display: none;">
-            <div class="modal-card">
-                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 10大道具與5大Boss全指南 📖</h2>
-                
-                <div class="lore-section">
-                    <div class="lore-title">👾 5 大 Boss 體系（小 Boss / 關卡 Boss / 最終 Boss）</div>
-                    <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#3498db;">
-                            <h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4>
-                            <p>大氣層氣流凝聚而成的漩渦體，會對飛船進行範圍衝擊。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#f1c40f;">
-                            <h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4>
-                            <p>雙翼帶有高壓電極的金屬神鷹，大氣層關卡終點的守護者。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#e67e22;">
-                            <h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4>
-                            <p>熾熱的外星隕石核心，會在宇宙航道中突襲飛行員。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#9b59b6;">
-                            <h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4>
-                            <p>外星艦隊的旗艦，配備離子護盾與光束圓盤。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;">
-                            <h4>🐉 地獄黑金赤龍 (Stage 3 終極 Final Boss)</h4>
-                            <p>棲息於火山星雲深處的終極霸主！擁有一張能咬碎合金的開合巨顎，會噴射滅世級別的等離子火焰流！</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="lore-section">
-                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障礙物</div>
-                    <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#f1c40f;">
-                            <h4>🟡 能量金幣 (Coin)</h4>
-                            <div class="desc">效果：增加 50 分，發射基礎子彈對 Boss 造成 10 點傷害。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#00d2d3;">
-                            <h4>⚡ 脈衝雷射槍 (Laser)</h4>
-                            <div class="desc">效果：發射貫穿光束消滅障礙，對 Boss 造成 25 點傷害！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c;">
-                            <h4>🚀 追蹤量子飛彈 (Missile)</h4>
-                            <div class="desc">效果：發射量子飛彈鎖定 Boss，造成 30 點大量傷害！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#a55eea;">
-                            <h4>💣 等離子新星爆彈 (Nova Bomb)</h4>
-                            <div class="desc">效果：觸發全螢幕衝擊波清空障礙，對 Boss 造成 40 點重傷！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#2ecc71;">
-                            <h4>🟢 醫療修復膠囊 (Heart)</h4>
-                            <div class="desc">效果：立即修復裝甲，恢復 25 點 HP 血量。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#00d2d3;">
-                            <h4>🛡️ 能量防護罩 (Shield)</h4>
-                            <div class="desc">效果：生成能量罩，抵擋一次障礙物或 Boss 彈幕傷害。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#f39c12;">
-                            <h4>🧲 強力磁鐵 (Magnet)</h4>
-                            <div class="desc">效果：開啟 6 秒磁場，自動吸引畫面上所有金幣與武器！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c;">
-                            <h4>⛈️ 雷暴烏雲 (Cloud)</h4>
-                            <div class="desc">危險：撞擊會造成飛船系統短路，扣除 20 點 HP。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#d35400;">
-                            <h4>🕸️ 泥濘黏液 (Slime)</h4>
-                            <div class="desc">危險：撞擊扣除 10 點 HP，並使飛船升降跟隨速度降低 3 秒！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#2c3e50;">
-                            <h4>🖤 詛咒黑寶石 (Dark Gem)</h4>
-                            <div class="desc">危險：撞擊扣除 15 點 HP，並且強制倒扣 100 點分數！</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 15px;">
-                    <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉圖鑑指南</button>
+                <button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px; margin-left:5px;" onclick="restartGameEngine()">重置分數</button>
+                <span style="margin-left:10px;">❤️ HP</span> 
+                <div class="hp-bar-bg">
+                    <div class="hp-bar-fill" id="hpFill"></div>
                 </div>
             </div>
         </div>
 
         <div class="modal-screen" id="gameOverScreen" style="display: none;">
-            <div class="modal-card" style="text-align: center;">
+            <div class="modal-card">
                 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
                 <p style="color: #ccc; font-size: 16px;">血條已用盡，飛行員請重新準備！</p>
-                <div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">最終得分: <span id="finalScore">0</span></div>
+                <div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">
+                    最終得分: <span id="finalScore">0</span>
+                </div>
                 <button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
             </div>
         </div>
 
         <div class="modal-screen" id="restScreen" style="display: none;">
-            <div class="modal-card" style="text-align: center;">
-                <h2 style="color: #2ecc71; margin-top:0;">🍵 關卡完成！換氣休息時間</h2>
-                <p style="color: #ccc;">做得好！自動存檔成功。請放鬆肌肉、深呼吸休息一下...</p>
+            <div class="modal-card">
+                <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
+                <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
                 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
-                <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動進入下一關</p>
+                <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
             </div>
         </div>
     </div>
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 醫療數據採集區塊 -->
     <script>
+        // =====================================================
+        //  完整 36 段教育引導線計畫表
+        // =====================================================
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
             ["inhalation", 0,   2], ["exhalation", 60,  3], ["inhalation", 0,   2],
             ["inhalation", 60,  2], ["inhalation", 0,   1], ["inhalation", 0,   2],
-            ["exhalation", 60,  3], ["inhalation", 0,   2], ["inhalation", 0,   1]
+            ["exhalation", 60,  3], ["inhalation", 0,   2], ["inhalation", 0,   1],
+            ["inhalation", 0,   1], ["inhalation", 90, 1.5], ["inhalation", 0,   2],
+            ["exhalation", 50,  6], ["inhalation", 0,   1], ["inhalation", 0,   2],
+            ["inhalation", 90, 1.5], ["inhalation", 0,   2], ["exhalation", 50,  6],
+            ["inhalation", 0,   2], ["inhalation", 0,   2], ["inhalation", 120, 1],
+            ["inhalation", 0,   1], ["inhalation", 0,   2], ["exhalation", 100, 2],
+            ["inhalation", 0,   2], ["inhalation", 40,  3], ["inhalation", 0,   2],
+            ["exhalation", 40,  4], ["inhalation", 0,   2], ["inhalation", 30,  3],
+            ["inhalation", 0,   2], ["exhalation", 30,  4], ["inhalation", 0,   3]
         ];
 
         function makeEducationCurves(dt = 0.05, ramp = 0.4) {
@@ -328,19 +308,24 @@
         const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
         const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
 
+        // =====================================================
+        //  全域變數與系統狀態
+        // =====================================================
         let port = null, reader = null, isMeasuring = false;
-        let records = [], flowHistory = [];
+        let records = [], flowHistory = [], windowHistory = [false, false, false];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
-        let smoothedEst = 0;
+        let smoothedEst = 0; 
         let pklSegments = [];
         let onnxSession = null;
+        let predictionBuffer = [];
+        let lastConfirmedMode = "inhalation";
 
         async function loadPKLModel() {
             try {
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用自適應頻譜特徵演算法。", err);
+                console.warn("未檢測到 rf_model.onnx，改用預設相對比值邏輯。", err);
             }
         }
         loadPKLModel();
@@ -373,7 +358,11 @@
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
+                },
                 scales: {
                     x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
                     y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
@@ -384,17 +373,190 @@
 
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
+
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
+            let totalE = e1 + e2 + e3 + e4 + e5;
+            
+            if (totalE < 20000) {
+                predictionBuffer = [];
+                lastConfirmedMode = "inhalation";
+                return "inhalation";
+            }
+
+            let rawMode = "inhalation";
             let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
 
-            if (onnxSession) {
-                try {
-                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
-                    const results = await onnxSession.run({ float_input: inputTensor });
-                    return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
-                } catch (e) {}
+            if (totalE < 250000) {
+                if (ratio_3to1 > 0.45) {
+                    rawMode = "exhalation";
+                } else {
+                    rawMode = "inhalation";
+                }
+            } else {
+                if (onnxSession) {
+                    try {
+                        const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
+                        const results = await onnxSession.run({ float_input: inputTensor });
+                        rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
+                    } catch (e) {
+                        rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
+                    }
+                } else {
+                    rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
+                }
             }
-            return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
+
+            predictionBuffer.push(rawMode);
+            if (predictionBuffer.length > 3) predictionBuffer.shift();
+
+            let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
+            let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
+
+            if (totalE < 300000 && lastConfirmedMode === "exhalation") {
+                if (predictionBuffer.filter(m => m === "inhalation").length < 3) {
+                    currentVote = "exhalation";
+                }
+            }
+
+            lastConfirmedMode = currentVote;
+            return currentVote;
+        }
+
+        async function runPKLIndexSegmentation() {
+            if (records.length === 0) {
+                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");
+                return;
+            }
+
+            updateStatus("正在進行 PKL Index 切分中...");
+            let predictions = [];
+
+            for (let i = 0; i < records.length; i++) {
+                let rec = records[i];
+                if (!rec.flowYes || Math.abs(rec.est) < 5.0) {
+                    predictions.push(-1);
+                } else {
+                    let mode = await detectBreathModePKL(rec.fft);
+                    predictions.push(mode === "inhalation" ? 0 : 1);
+                }
+            }
+
+            pklSegments = [];
+            let currentS = predictions[0];
+            let startIdx = 0;
+
+            for (let i = 1; i < predictions.length; i++) {
+                if (predictions[i] !== currentS) {
+                    if (currentS !== -1) {
+                        pklSegments.push({
+                            state: (currentS === 0) ? "Inspiration" : "Expiration",
+                            start_index: startIdx,
+                            end_index: i - 1,
+                            start_time: records[startIdx].elapsed,
+                            end_time: records[i - 1].elapsed
+                        });
+                    }
+                    currentS = predictions[i];
+                    startIdx = i;
+                }
+            }
+
+            if (currentS !== -1) {
+                pklSegments.push({
+                    state: (currentS === 0) ? "Inspiration" : "Expiration",
+                    start_index: startIdx,
+                    end_index: records.length - 1,
+                    start_time: records[startIdx].elapsed,
+                    end_time: records[records.length - 1].elapsed
+                });
+            }
+
+            updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
+            flowChart.update();
+        }
+
+        function detectFlowRate(mode, estFlow) {
+            let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
+            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - curr) ? curr : prev);
+        }
+
+        function resetUIState() {
+            port = null; reader = null; isMeasuring = false;
+            document.getElementById('connectBtn').innerText = 'Connect';
+            document.getElementById('startBtn').innerText = 'Start';
+            document.getElementById('startBtn').disabled = true;
+            updateStatus('Disconnected / Ready to connect');
+            if (typeof updateGameMeasurementState === 'function') updateGameMeasurementState(false);
+        }
+
+        if ('serial' in navigator) {
+            navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
+        }
+
+        window.addEventListener('beforeunload', async () => {
+            try {
+                if (reader) await reader.cancel();
+                if (port) await port.close();
+            } catch (e) {}
+        });
+
+        document.getElementById('connectBtn').addEventListener('click', toggleConnection);
+        document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
+        document.getElementById('segmentBtn').addEventListener('click', runPKLIndexSegmentation);
+        document.getElementById('clearBtn').addEventListener('click', clearPlot);
+        document.getElementById('saveBtn').addEventListener('click', saveCSV);
+
+        async function toggleConnection() {
+            if (!port) {
+                try {
+                    port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 115200 });
+                    document.getElementById('connectBtn').innerText = 'Disconnect';
+                    document.getElementById('startBtn').disabled = false;
+                    updateStatus('Connected. Press Start to begin.');
+                    readLoop();
+                } catch (err) { 
+                    updateStatus('Connection failed: ' + err.message);
+                    resetUIState();
+                }
+            } else {
+                try {
+                    isMeasuring = false;
+                    if (reader) await reader.cancel();
+                    if (port) await port.close();
+                } catch (err) {} finally { resetUIState(); }
+            }
+        }
+
+        async function readLoop() {
+            if (!port || !port.readable) return;
+            const textDecoder = new TextDecoderStream();
+            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+            reader = textDecoder.readable.getReader();
+            let buffer = '';
+
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += value;
+                    let lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    if (lines.length > 10) lines = lines.slice(-3);
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (isMeasuring) await parseLine(line);
+                    }
+                }
+            } catch (err) {
+                console.warn("串口讀取中斷", err);
+            } finally {
+                try { reader.releaseLock(); } catch (e) {}
+                try { await readableStreamClosed.catch(() => {}); } catch (e) {}
+                if (!port) resetUIState();
+            }
         }
 
         async function parseLine(line) {
@@ -414,21 +576,47 @@
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
                 let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
 
+                let isCandidate = false;
+                if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
+                if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
+
+                windowHistory.shift();
+                windowHistory.push(isCandidate);
+                let trueCount = windowHistory.filter(x => x === true).length;
+                if (trueCount >= 2) {
+                    flowYes = true;
+                    if (est === 0.0 && lowE > 1000000) est = 15.0;
+                } else {
+                    flowYes = false; est = 0.0;
+                }
+
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
                 let manualMode = document.getElementById('modeSelect').value;
-                let pklDetected = await detectBreathModePKL(lastFFT);
+                if (manualMode !== "auto") {
+                    currentMode = manualMode;
+                } else {
+                    currentMode = await detectBreathModePKL(lastFFT);
+                }
 
-                currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
-
-                smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
-
-                if (flowYes && Math.abs(smoothedEst) > 0) {
-                    document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(smoothedEst).toFixed(1)} L/min`;
+                if (est > 0) {
+                    let dFlow = detectFlowRate(currentMode, est);
+                    document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${dFlow} L/min`;
                 } else {
                     document.getElementById('detectedMode').innerText = `Detected: Idle`;
                 }
+
+                if (currentMode === "exhalation") {
+                    if (est === 0.0 && lowE > 800000) est = 30.0;
+                    if (est > 0) est = -Math.abs(est);
+                } else if (currentMode === "inhalation" && est < 0) {
+                    est = Math.abs(est);
+                }
+
+                flowHistory.push(est);
+                if (flowHistory.length > 5) flowHistory.shift();
+                smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
 
                 records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
                 document.getElementById('recordCount').innerText = `Records: ${records.length}`;
@@ -439,136 +627,34 @@
                 flowChart.options.scales.x.min = windowStart;
                 flowChart.options.scales.x.max = windowStart + 20;
 
-                let maxPeak = Math.max(...records.map(r => Math.abs(r.est)), 0);
+                let allFlows = records.map(r => Math.abs(r.est));
+                let maxPeak = Math.max(...allFlows, 0);
                 document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
 
                 flowChart.update('none');
             }
         }
 
-        // 🔥 【動態自適應自鎖版】PKL Index 切分演算法
-        async function runPKLIndexSegmentation() {
-            if (records.length === 0) { 
-                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
-                return; 
-            }
-            updateStatus("正在使用【自適應頻譜特徵 + 遲滯切換法】進行 PKL Index 切分...");
-
-            // 1. 篩選出有效氣流點 (排除靜止與極低氣流)
-            let validRecords = records.filter(r => r.flowYes && Math.abs(r.est) >= 2.5);
-            if (validRecords.length === 0) {
-                updateStatus("未檢測到足夠強度的氣流數據。");
-                return;
-            }
-
-            // 2. 特徵提取：計算全域的「高頻比重」與「衰減斜率」
-            let featureScores = records.map(r => {
-                if (!r.flowYes || Math.abs(r.est) < 2.5) return null;
-                let fft = r.fft;
-                let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
-
-                let lowE = Math.abs(e1) + Math.abs(e2) + 0.0001;
-                let highE = Math.abs(e4) + Math.abs(e5);
-                let highLowRatio = highE / lowE;
-                let decaySlope = e5 - e1;
-
-                return (highLowRatio * 1.5) + (decaySlope * 0.8);
-            });
-
-            // 3. 自動動態尋找這段數據的「自適應動態門檻 (Adaptive Threshold)」
-            let validScores = featureScores.filter(s => s !== null).sort((a, b) => a - b);
-            let medianThreshold = validScores[Math.floor(validScores.length * 0.5)];
-
-            // 4. 時域遲滯判定 (Hysteresis Filter) - 避免過渡邊界頻繁跳動
-            let rawStates = [];
-            let currentState = 0; // 0: Inhale, 1: Exhale
-            let hysteresisMargin = 0.15; // 遲滯容補區間
-
-            for (let i = 0; i < featureScores.length; i++) {
-                let score = featureScores[i];
-                if (score === null) {
-                    rawStates.push(-1);
-                    continue;
-                }
-
-                if (currentState === 0) { // 當前為吸氣狀態
-                    if (score > (medianThreshold + hysteresisMargin)) {
-                        currentState = 1; // 必須明顯高於門檻才切換為吐氣
-                    }
-                } else { // 當前為吐氣狀態
-                    if (score < (medianThreshold - hysteresisMargin)) {
-                        currentState = 0; // 必須明顯低於門檻才切換為吸氣
-                    }
-                }
-                rawStates.push(currentState);
-            }
-
-            // 5. 連續性平滑處理 (滑動中位數濾波)
-            let smoothedStates = [...rawStates];
-            for (let i = 2; i < rawStates.length - 2; i++) {
-                if (rawStates[i] === -1) continue;
-                let window = [rawStates[i-2], rawStates[i-1], rawStates[i], rawStates[i+1], rawStates[i+2]].filter(s => s !== -1);
-                let ones = window.filter(s => s === 1).length;
-                smoothedStates[i] = (ones > window.length / 2) ? 1 : 0;
-            }
-
-            // 6. 區段併合 (合併並過濾掉短於 0.25 秒的雜訊誤判)
-            pklSegments = [];
-            let segStart = -1, segState = -1;
-
-            for (let i = 0; i < smoothedStates.length; i++) {
-                let st = smoothedStates[i];
-                if (st !== segState) {
-                    if (segState !== -1 && segStart !== -1) {
-                        let duration = records[i - 1].elapsed - records[segStart].elapsed;
-                        if (duration >= 0.25) { // 至少持續 0.25 秒才算有效呼吸區段
-                            pklSegments.push({
-                                state: (segState === 0) ? "Inspiration" : "Expiration",
-                                start_index: segStart,
-                                end_index: i - 1,
-                                start_time: records[segStart].elapsed,
-                                end_time: records[i - 1].elapsed
-                            });
-                        }
-                    }
-                    segState = st;
-                    segStart = i;
-                }
-            }
-
-            if (segState !== -1 && segStart !== -1) {
-                let lastIdx = records.length - 1;
-                let duration = records[lastIdx].elapsed - records[segStart].elapsed;
-                if (duration >= 0.25) {
-                    pklSegments.push({
-                        state: (segState === 0) ? "Inspiration" : "Expiration",
-                        start_index: segStart,
-                        end_index: lastIdx,
-                        start_time: records[segStart].elapsed,
-                        end_time: records[lastIdx].elapsed
-                    });
-                }
-            }
-
-            updateStatus(`自適應 PKL 切分完成！成功排除雜訊，劃分出 ${pklSegments.length} 個穩定區段。`);
-            flowChart.update();
-        }
-
         function toggleMeasuring() {
             isMeasuring = !isMeasuring;
             if (isMeasuring) {
                 if (startTime === null) startTime = Date.now();
-                document.getElementById('startBtn').innerText = 'Stop';
+                document.getElementById('startBtn').innerText = 'Start';
                 updateStatus('Measuring...');
             } else {
                 document.getElementById('startBtn').innerText = 'Start';
                 updateStatus('Measurement stopped (waveform frozen).');
             }
-            if (typeof updateGameMeasurementState === 'function') updateGameMeasurementState(isMeasuring);
+
+            if (typeof updateGameMeasurementState === 'function') {
+                updateGameMeasurementState(isMeasuring);
+            }
         }
 
         function clearPlot() {
-            startTime = null; records = []; smoothedEst = 0; pklSegments = [];
+            startTime = null; records = []; flowHistory = []; pklSegments = []; predictionBuffer = [];
+            lastConfirmedMode = "inhalation";
+            smoothedEst = 0;
             flowChart.data.datasets[2].data = [];
             flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
             flowChart.update();
@@ -583,63 +669,28 @@
             let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
             for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
             csvContent += "\n";
+            
             records.forEach(r => {
                 let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
-                for (let i = 1; i <= 20; i++) row += `,${r.fft[i] || ''}`;
+                for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
                 csvContent += row + "\n";
             });
+            
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             link.setAttribute("download", `inhaler_data_${patientId}.csv`);
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
-        async function toggleConnection() {
-            if (!port) {
-                try {
-                    port = await navigator.serial.requestPort();
-                    await port.open({ baudRate: 115200 });
-                    document.getElementById('connectBtn').innerText = 'Disconnect';
-                    document.getElementById('startBtn').disabled = false;
-                    updateStatus('Connected. Press Start to begin.');
-                    readLoop();
-                } catch (err) { updateStatus('Connection failed: ' + err.message); }
-            } else {
-                try { isMeasuring = false; if (reader) await reader.cancel(); if (port) await port.close(); } catch (err) {}
-                port = null; reader = null;
-                document.getElementById('connectBtn').innerText = 'Connect';
-                document.getElementById('startBtn').disabled = true;
-            }
-        }
-
-        async function readLoop() {
-            if (!port || !port.readable) return;
-            const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-            reader = textDecoder.readable.getReader();
-            let buffer = '';
-            try {
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    buffer += value;
-                    let lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (let line of lines) { if (isMeasuring) await parseLine(line.trim()); }
-                }
-            } catch (err) {}
-        }
-
-        document.getElementById('connectBtn').addEventListener('click', toggleConnection);
-        document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
-        document.getElementById('segmentBtn').addEventListener('click', runPKLIndexSegmentation);
-        document.getElementById('clearBtn').addEventListener('click', clearPlot);
-        document.getElementById('saveBtn').addEventListener('click', saveCSV);
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲主引擎 -->
+    <!-- ===================================================== -->
+    <!--  🎮 氣流飛行員 - 高機率道具掉落與炫彩繪圖引擎  -->
+    <!-- ===================================================== -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -649,347 +700,210 @@
                     <select id="viewModeSelect" onchange="switchViewMode(this.value)">
                         <option value="chart">📊 專業圖表</option>
                         <option value="game">🎮 氣流飛行員 (Game)</option>
-                        <option value="both" selected>全模式 (併排顯示 📊+🎮)</option>
                     </select>
                 </label>
                 <label>
                     難度: 
                     <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (溫和無痛)</option>
-                        <option value="normal" selected>標準 (均衡演算法)</option>
-                        <option value="hard">專家 (極速高懲罰)</option>
+                        <option value="easy">輕鬆 (補血藥包)</option>
+                        <option value="normal" selected>標準 (護盾+藥包)</option>
+                        <option value="hard">專家 (狂暴+閃電球)</option>
                     </select>
                 </label>
                 <label>
-                    ⚡ 倍速: 
-                    <select id="gameSpeedSelect">
-                        <option value="0.8">0.8x (慢速輕鬆)</option>
-                        <option value="1.0" selected>1.0x (標準速度)</option>
-                        <option value="1.5">1.5x (快速反應)</option>
-                        <option value="2.0">2.0x (疾速挑戰)</option>
-                    </select>
-                </label>
-                <label class="music-upload-btn">
-                    🎵 自選 MP3
-                    <input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)">
-                </label>
-                <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">預設主題曲</span>
-                <label>
-                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂
+                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂與音效
                 </label>
             `;
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let bgmInterval = null, bgmStep = 0, customAudioBuffer = null, customAudioSource = null, isUsingCustomMusic = false;
+        let bgmInterval = null;
+        let bgmStep = 0;
 
         const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-        const C5 = 523.25, D5 = 587.33, E5 = 659.25;
-        const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
+        const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
+
+        const themeLead = [
+            C4, E4, G4, C5,  G4, E4, G4, C5,  
+            D5, C5, B4, A4,  G4, E4, C4, G4,
+            A4, C5, E5, D5,  C5, B4, C5, D5,  
+            E5, G5, E5, C5,  G4, B4, C5, C5
+        ];
+
+        const themeBass = [
+            C3, C3, G3, C3,  C3, C3, G3, C3,
+            F3, F3, C3, F3,  G3, G3, D4, G3,
+            A3, A3, E4, A3,  F3, F3, C3, F3,
+            C3, C3, G3, C3,  G3, G3, C3, C3
+        ];
 
         function playAudioEffect(type) {
-            const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return;
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             try {
-                let now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
                 if (type === 'coin') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
-                    gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                    osc.start(); osc.stop(now + 0.25);
-                } else if (type === 'laser' || type === 'missile') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
-                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(); osc.stop(now + 0.3);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'heal') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(880.00, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'shield') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440.00, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'fever') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
                 } else if (type === 'hit') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.start(); osc.stop(now + 0.2);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'gameover') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.8);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.8);
                 }
             } catch(e) {}
         }
 
-        function handleCustomMusicUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                audioCtx.decodeAudioData(e.target.result, function(buffer) {
-                    customAudioBuffer = buffer;
-                    isUsingCustomMusic = true;
-                    document.getElementById('musicStatus').innerText = "已載入: " + file.name.substring(0, 10) + "...";
-                    if (isGameRunning) startBGM();
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
         function startBGM() {
             stopBGM();
-            const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return;
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
-            if (isUsingCustomMusic && customAudioBuffer) {
-                customAudioSource = audioCtx.createBufferSource();
-                customAudioSource.buffer = customAudioBuffer;
-                customAudioSource.loop = true;
-                customAudioSource.connect(audioCtx.destination);
-                customAudioSource.start(0);
-            } else {
-                bgmInterval = setInterval(() => {
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                    try {
-                        let now = audioCtx.currentTime;
-                        let idx = bgmStep % pilotTheme.length;
-                        const leadOsc = audioCtx.createOscillator();
-                        const leadGain = audioCtx.createGain();
-                        leadOsc.type = 'sawtooth'; leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-                        leadGain.gain.setValueAtTime(0.15, now); leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                        leadOsc.connect(leadGain); leadGain.connect(audioCtx.destination);
-                        leadOsc.start(now); leadOsc.stop(now + 0.16);
-                        bgmStep++;
-                    } catch(e) {}
-                }, 180);
-            }
+            bgmInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (!isGameRunning || isGamePaused || isGameOver || isResting) return;
+
+                try {
+                    let now = audioCtx.currentTime;
+                    let idx = bgmStep % themeLead.length;
+
+                    const leadOsc = audioCtx.createOscillator();
+                    const leadGain = audioCtx.createGain();
+                    leadOsc.type = 'sawtooth';
+                    leadOsc.frequency.setValueAtTime(themeLead[idx], now);
+
+                    leadGain.gain.setValueAtTime(0.18, now);
+                    leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+                    leadOsc.connect(leadGain);
+                    leadGain.connect(audioCtx.destination);
+                    leadOsc.start(now);
+                    leadOsc.stop(now + 0.16);
+
+                    const bassOsc = audioCtx.createOscillator();
+                    const bassGain = audioCtx.createGain();
+                    bassOsc.type = 'square';
+                    bassOsc.frequency.setValueAtTime(themeBass[idx], now);
+
+                    bassGain.gain.setValueAtTime(0.15, now);
+                    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+                    bassOsc.connect(bassGain);
+                    bassGain.connect(audioCtx.destination);
+                    bassOsc.start(now);
+                    bassOsc.stop(now + 0.18);
+
+                    if (idx % 2 === 1) {
+                        const snareOsc = audioCtx.createOscillator();
+                        const snareGain = audioCtx.createGain();
+                        snareOsc.type = 'triangle';
+                        snareOsc.frequency.setValueAtTime(120, now);
+                        snareGain.gain.setValueAtTime(0.1, now);
+                        snareGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+                        snareOsc.connect(snareGain);
+                        snareGain.connect(audioCtx.destination);
+                        snareOsc.start(now);
+                        snareOsc.stop(now + 0.08);
+                    }
+
+                    bgmStep++;
+                } catch(e) {}
+            }, 180);
         }
 
         function stopBGM() {
-            if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
-            if (customAudioSource) { try { customAudioSource.stop(); } catch(e){} customAudioSource = null; }
-        }
-
-        function toggleSoundSetting(enabled) { if (!enabled) stopBGM(); else startBGM(); }
-
-        function switchViewMode(mode) {
-            const chartBox = document.querySelector('.chart-container');
-            const gameBox = document.getElementById('gameContainer');
-
-            if (mode === 'both') {
-                chartBox.style.display = 'block'; gameBox.style.display = 'block'; chartBox.style.marginBottom = '15px';
-            } else if (mode === 'game') {
-                chartBox.style.display = 'none'; gameBox.style.display = 'block';
-            } else {
-                chartBox.style.display = 'block'; gameBox.style.display = 'none';
-            }
-
-            stopGameEngine();
-            if (mode === 'game' || mode === 'both') {
-                resizeGameCanvas(); restartGameEngine();
-            } else { stopBGM(); }
-        }
-
-        setTimeout(() => { switchViewMode('both'); }, 100);
-
-        function updateGameMeasurementState(measuring) {
-            document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
-            if (measuring) startBGM(); else stopBGM();
-        }
-
-        function toggleFullscreen() {
-            const gameBox = document.getElementById('gameContainer');
-            if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
-                if (gameBox.requestFullscreen) gameBox.requestFullscreen();
-                else gameBox.classList.add('fullscreen');
-            } else {
-                if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
-                gameBox.classList.remove('fullscreen');
-            }
-            setTimeout(resizeGameCanvas, 150);
-        }
-
-        let currentStage = 1, gameScore = 0, gameCombo = 0, playerHP = 100;
-        let activeBoss = null;
-        let hasShield = false, magnetTimer = 0, slowDebuffTimer = 0;
-
-        const STAGE_THEMES = [
-            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 大氣風暴精靈", stageBoss: "🦅 雷霆金屬神鷹" },
-            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 熔岩巨型隕石", stageBoss: "🛸 圓盤星際母艦" },
-            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🐉 地獄赤龍前哨", stageBoss: "🐉 地獄黑金赤龍 (Final Boss)" }
-        ];
-
-        function getStageTheme(stage) {
-            let idx = (stage - 1) % STAGE_THEMES.length;
-            return STAGE_THEMES[idx];
-        }
-
-        function saveGameProgress(showNotice = false) {
-            let pid = document.getElementById('patientId').value.trim() || 'default_patient';
-            let saveData = { stage: currentStage, score: gameScore, hp: playerHP, time: new Date().toLocaleString() };
-            localStorage.setItem('inhaler_save_' + pid, JSON.stringify(saveData));
-            if (showNotice) updateStatus(`💾 [${pid}] 遊戲進度已存檔！(關卡: ${currentStage}, 分數: ${gameScore})`);
-        }
-
-        function loadGameProgress() {
-            let pid = document.getElementById('patientId').value.trim() || 'default_patient';
-            let saved = localStorage.getItem('inhaler_save_' + pid);
-            if (saved) {
-                let data = JSON.parse(saved);
-                currentStage = data.stage || 1; gameScore = data.score || 0; playerHP = data.hp || 100;
-                updateStatus(`📂 成功載入患者 [${pid}] 紀錄 (關卡: ${currentStage}, 分數: ${gameScore})`);
-                document.getElementById('gameStage').innerText = currentStage;
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
             }
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 's' || e.key === 'S') saveGameProgress(true);
-        });
+        function toggleSoundSetting(enabled) {
+            if (!enabled) {
+                stopBGM();
+            } else if (isGameRunning && !isGamePaused && !isGameOver) {
+                startBGM();
+            }
+        }
 
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
-        let gameAnimationId = null, isGameRunning = false, isGamePaused = false, isGameOver = false;
+        let gameAnimationId = null;
+        let isGameRunning = false;
+        let isGamePaused = false;
+        let isGameOver = false;
 
-        let rocket = { x: 120, y: 240, angle: 0, radius: 22 };
-        let stars = [], collectibles = [], obstacles = [], playerProjectiles = [];
-        let isResting = false, sessionStartTime = 0;
-        let globalAnimFrame = 0;
+        let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
+        let stars = [];
+        let particles = [];
+        let collectibles = [];
+        let obstacles = [];
 
-        function drawAirElemental(x, y) {
-            gameCtx.save(); gameCtx.translate(x, y);
-            gameCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
-            gameCtx.beginPath(); gameCtx.arc(0, 0, 32 + Math.sin(globalAnimFrame * 0.2) * 5, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 3; gameCtx.stroke();
-            gameCtx.restore();
-        }
+        let gameScore = 0;
+        let gameCombo = 0;
+        let playerHP = 100;
+        let hasShield = false;
+        let feverTimer = 0;
 
-        function drawRealisticEagle(x, y, attackTimer) {
-            gameCtx.save(); gameCtx.translate(x, y);
-            let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
-            let isAtk = (attackTimer % 50 > 35);
-
-            [-1, 1].forEach(side => {
-                gameCtx.save(); gameCtx.scale(1, side); gameCtx.rotate(flapAngle);
-                let wingGrad = gameCtx.createLinearGradient(0, -60, 40, 0);
-                wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(0.5, '#d35400'); wingGrad.addColorStop(1, '#2c3e50');
-                gameCtx.fillStyle = wingGrad;
-                for (let i = 0; i < 6; i++) {
-                    gameCtx.beginPath();
-                    gameCtx.moveTo(-15 + i * 6, -5 - i * 6);
-                    gameCtx.quadraticCurveTo(20 + i * 6, -65 - i * 10, 45 + i * 4, -50 - i * 8);
-                    gameCtx.quadraticCurveTo(10, -15, -15 + i * 6, -5 - i * 6);
-                    gameCtx.fill(); gameCtx.strokeStyle = "#ffe100"; gameCtx.lineWidth = 1; gameCtx.stroke();
-                }
-                gameCtx.restore();
-            });
-
-            let bodyGrad = gameCtx.createRadialGradient(-5, 0, 5, 0, 0, 40);
-            bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(0.4, '#7f8c8d'); bodyGrad.addColorStop(1, '#2c3e50');
-            gameCtx.fillStyle = bodyGrad; gameCtx.beginPath();
-            gameCtx.moveTo(35, 0); gameCtx.quadraticCurveTo(0, -22, -35, -12); gameCtx.quadraticCurveTo(-45, 0, -35, 12); gameCtx.quadraticCurveTo(0, 22, 35, 0);
-            gameCtx.fill(); gameCtx.strokeStyle = "#f1c40f"; gameCtx.lineWidth = 1.5; gameCtx.stroke();
-
-            let beakGrad = gameCtx.createLinearGradient(-15, -10, -45, 20);
-            beakGrad.addColorStop(0, '#ffe100'); beakGrad.addColorStop(1, '#d35400');
-            gameCtx.fillStyle = beakGrad; gameCtx.beginPath();
-            gameCtx.moveTo(-15, -8); gameCtx.quadraticCurveTo(-38, -10, -48, 12); gameCtx.quadraticCurveTo(-30, 8, -20, 5); gameCtx.lineTo(-15, 8);
-            gameCtx.closePath(); gameCtx.fill(); gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 1.2; gameCtx.stroke();
-
-            gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath(); gameCtx.ellipse(-10, -7, 6, 4, -Math.PI / 8, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.fillStyle = isAtk ? "#ff0000" : "#d35400"; gameCtx.beginPath(); gameCtx.arc(-11, -7, 2.8, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.restore();
-        }
-
-        function drawRealisticUFO(x, y, attackTimer) {
-            gameCtx.save(); gameCtx.translate(x, y);
-            let isAtk = (attackTimer % 50 > 35);
-
-            gameCtx.fillStyle = isAtk ? 'rgba(231, 76, 60, 0.25)' : 'rgba(0, 210, 211, 0.2)';
-            gameCtx.beginPath(); gameCtx.ellipse(0, 0, 70, 35, 0, 0, Math.PI * 2); gameCtx.fill();
-
-            let hullGrad = gameCtx.createLinearGradient(-60, 0, 60, 20);
-            hullGrad.addColorStop(0, '#2c3e50'); hullGrad.addColorStop(0.5, '#bdc3c7'); hullGrad.addColorStop(1, '#1e272e');
-            gameCtx.fillStyle = hullGrad; gameCtx.beginPath();
-            gameCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 2; gameCtx.stroke();
-
-            let domeGrad = gameCtx.createRadialGradient(-10, -15, 2, 0, -10, 25);
-            domeGrad.addColorStop(0, '#ffffff'); domeGrad.addColorStop(0.5, '#3498db'); domeGrad.addColorStop(1, '#12051e');
-            gameCtx.fillStyle = domeGrad; gameCtx.beginPath(); gameCtx.ellipse(0, -8, 28, 18, 0, 0, Math.PI * 2); gameCtx.fill();
-
-            for (let i = -3; i <= 3; i++) {
-                gameCtx.fillStyle = (i % 2 === 0) ? '#f1c40f' : '#e74c3c';
-                gameCtx.beginPath(); gameCtx.arc(i * 15, 18 - Math.abs(i) * 2, 4, 0, Math.PI * 2); gameCtx.fill();
-            }
-            gameCtx.restore();
-        }
-
-        function drawRealisticDragon(x, y, attackTimer) {
-            gameCtx.save(); gameCtx.translate(x, y);
-            let jawOpen = (attackTimer % 50 > 35) ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
-
-            gameCtx.fillStyle = '#f1c40f';
-            gameCtx.beginPath(); gameCtx.moveTo(5, -12 - jawOpen); gameCtx.quadraticCurveTo(25, -45 - jawOpen, -5, -22 - jawOpen); gameCtx.fill();
-
-            let upperGrad = gameCtx.createLinearGradient(20, 0, -40, 0);
-            upperGrad.addColorStop(0, '#78281f'); upperGrad.addColorStop(1, '#e74c3c');
-            gameCtx.fillStyle = upperGrad;
-            gameCtx.beginPath(); gameCtx.moveTo(18, -jawOpen); gameCtx.lineTo(-38, -18 - jawOpen); gameCtx.lineTo(-42, -5 - jawOpen); gameCtx.lineTo(-12, -2);
-            gameCtx.closePath(); gameCtx.fill();
-
-            gameCtx.fillStyle = '#512e5f';
-            gameCtx.beginPath(); gameCtx.moveTo(18, jawOpen); gameCtx.lineTo(-35, 18 + jawOpen); gameCtx.lineTo(-12, 2);
-            gameCtx.closePath(); gameCtx.fill();
-
-            gameCtx.fillStyle = '#ffffff';
-            for (let t = 0; t < 5; t++) {
-                gameCtx.beginPath(); gameCtx.moveTo(-10 - t * 6, -jawOpen); gameCtx.lineTo(-13 - t * 6, -jawOpen + 6); gameCtx.lineTo(-16 - t * 6, -jawOpen); gameCtx.fill();
-                gameCtx.beginPath(); gameCtx.moveTo(-10 - t * 6, jawOpen); gameCtx.lineTo(-13 - t * 6, jawOpen - 6); gameCtx.lineTo(-16 - t * 6, jawOpen); gameCtx.fill();
-            }
-
-            gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(-5, -12 - jawOpen, 5, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.restore();
-        }
-
-        function drawPlayerRocketHD(x, y, angle, mode, flowMag) {
-            gameCtx.save(); gameCtx.translate(x, y); gameCtx.rotate(angle);
-
-            if (flowMag > 3.0) {
-                let flameLen = Math.min(35, flowMag * 0.4) + Math.sin(globalAnimFrame * 0.5) * 4;
-                gameCtx.save(); gameCtx.shadowBlur = 15; gameCtx.shadowColor = (mode === "exhalation") ? "#e74c3c" : "#3498db";
-                let grad = gameCtx.createLinearGradient(-12, 0, -12 - flameLen, 0);
-                grad.addColorStop(0, (mode === "exhalation") ? '#f1c40f' : '#00d2d3'); grad.addColorStop(1, 'transparent');
-                gameCtx.fillStyle = grad; gameCtx.beginPath(); gameCtx.moveTo(-12, -7); gameCtx.lineTo(-12 - flameLen, 0); gameCtx.lineTo(-12, 7);
-                gameCtx.closePath(); gameCtx.fill(); gameCtx.restore();
-            }
-
-            gameCtx.shadowBlur = 12; gameCtx.shadowColor = '#3498db';
-            gameCtx.fillStyle = '#2c3e50'; gameCtx.beginPath(); gameCtx.moveTo(24, 0); gameCtx.lineTo(-12, -14); gameCtx.lineTo(-6, 0); gameCtx.lineTo(-12, 14); gameCtx.closePath(); gameCtx.fill();
-            gameCtx.fillStyle = '#ecf0f1'; gameCtx.beginPath(); gameCtx.moveTo(18, 0); gameCtx.lineTo(-8, -10); gameCtx.lineTo(-10, 10); gameCtx.closePath(); gameCtx.fill();
-            gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-
-            if (hasShield) {
-                gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.05);
-                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 18; gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3;
-                gameCtx.setLineDash([8, 6]); gameCtx.beginPath(); gameCtx.arc(0, 0, 32, 0, Math.PI*2); gameCtx.stroke();
-                gameCtx.restore();
-            }
-            gameCtx.restore();
-        }
-
-        function drawBossHD(boss) {
-            let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            if (boss.name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY);
-            else if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer);
-            else if (boss.name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer);
-            else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer);
-        }
+        let restTimer = null;
+        let isResting = false;
+        let sessionStartTime = 0;
 
         function initStars() {
             stars = [];
-            let w = gameCanvas.width || 800, h = gameCanvas.height || 480;
-            for(let i=0; i<50; i++) stars.push({ x: Math.random() * w, y: Math.random() * h, size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5 });
+            let w = gameCanvas.width || 800;
+            let h = gameCanvas.height || 480;
+            for(let i=0; i<50; i++) {
+                stars.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: Math.random() * 2 + 1,
+                    speed: Math.random() * 2 + 0.5
+                });
+            }
         }
 
         function resizeGameCanvas() {
@@ -1002,63 +916,87 @@
         }
         window.addEventListener('resize', resizeGameCanvas);
 
+        function switchViewMode(mode) {
+            const chartBox = document.querySelector('.chart-container');
+            const gameBox = document.getElementById('gameContainer');
+
+            if (mode === 'game') {
+                chartBox.style.display = 'none';
+                gameBox.style.display = 'block';
+                resizeGameCanvas();
+                restartGameEngine();
+            } else {
+                chartBox.style.display = 'block';
+                gameBox.style.display = 'none';
+                stopGameEngine();
+            }
+        }
+
+        function updateGameMeasurementState(measuring) {
+            const promptEl = document.getElementById('gameStartPrompt');
+            if (promptEl) {
+                promptEl.style.display = measuring ? 'none' : 'flex';
+            }
+            if (measuring) {
+                sessionStartTime = Date.now();
+                startBGM();
+            } else {
+                stopBGM();
+            }
+        }
+
         function restartGameEngine() {
             stopGameEngine();
-            isGameRunning = true; isGamePaused = false; isGameOver = false; isResting = false;
-            playerHP = 100; gameScore = 0; gameCombo = 0; activeBoss = null;
-            hasShield = false; magnetTimer = 0; slowDebuffTimer = 0;
-            collectibles = []; obstacles = []; playerProjectiles = []; globalAnimFrame = 0;
+            isGameRunning = true;
+            isGamePaused = false;
+            isGameOver = false;
+            playerHP = 100;
+            gameScore = 0;
+            gameCombo = 0;
+            hasShield = false;
+            feverTimer = 0;
+            particles = [];
+            collectibles = [];
+            obstacles = [];
+            bgmStep = 0;
             
-            rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2;
-            sessionStartTime = Date.now();
+            let h = gameCanvas.height || 480;
+            rocket.x = 120;
+            rocket.y = h / 2;
+            rocket.angle = 0;
 
-            document.getElementById('bossHudBadge').style.display = 'none';
+            sessionStartTime = Date.now();
+            document.getElementById('gamePauseBtn').innerText = "暫停";
+            document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
             document.getElementById('restScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
-            document.getElementById('gameStage').innerText = currentStage;
+            document.getElementById('hpFill').style.width = '100%';
+            document.getElementById('feverBadge').style.display = 'none';
+            document.getElementById('shieldBadge').style.display = 'none';
             
+            updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
             gameLoop();
-        }
-
-        function triggerBossSpawn(type) {
-            let theme = getStageTheme(currentStage);
-            let bName = (type === 'mini') ? theme.miniBoss : theme.stageBoss;
-            let maxHp = (type === 'mini') ? (50 + currentStage * 20) : (120 + currentStage * 35);
-
-            activeBoss = { type: type, name: bName, x: gameCanvas.width - 120, y: gameCanvas.height / 2, hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0 };
-            document.getElementById('bossName').innerText = bName;
-            document.getElementById('bossHudBadge').style.display = 'flex';
-            document.getElementById('bossHpFill').style.width = '100%';
-            updateStatus(`⚠️ 警告！${bName} 出現了！(血量: ${maxHp} HP)`);
-        }
-
-        function damageBoss(dmg) {
-            if (!activeBoss) return;
-            activeBoss.hp -= dmg;
-            document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
-            if (activeBoss.hp <= 0) {
-                updateStatus(`🎉 成功擊敗 ${activeBoss.name}！`);
-                let isFinal = activeBoss.name.includes("Final Boss");
-                activeBoss = null; document.getElementById('bossHudBadge').style.display = 'none';
-                if (isFinal) {
-                    alert("🏆 恭喜破關！你已順利通關所有宇宙階級 Boss！");
-                    restartGameEngine();
-                } else {
-                    triggerStageComplete();
-                }
-            }
         }
 
         function toggleGamePause() {
             if (!isGameRunning || isGameOver) return;
             isGamePaused = !isGamePaused;
             const btn = document.getElementById('gamePauseBtn');
-            if (isGamePaused) { btn.innerText = "繼續"; stopBGM(); }
-            else { btn.innerText = "暫停"; startBGM(); }
+            if (isGamePaused) {
+                btn.innerText = "繼續";
+                btn.style.backgroundColor = "#f39c12";
+                stopBGM();
+            } else {
+                btn.innerText = "暫停";
+                btn.style.backgroundColor = "#27ae60";
+                startBGM();
+            }
         }
 
         function triggerGameOver() {
-            isGameOver = true; stopBGM(); playAudioEffect('hit');
+            isGameOver = true;
+            stopBGM();
+            playAudioEffect('gameover');
             document.getElementById('finalScore').innerText = gameScore;
             document.getElementById('gameOverScreen').style.display = 'flex';
             stopGameEngine();
@@ -1066,149 +1004,274 @@
 
         function stopGameEngine() {
             isGameRunning = false;
-            if (gameAnimationId) { cancelAnimationFrame(gameAnimationId); gameAnimationId = null; }
+            stopBGM();
+            if (gameAnimationId) {
+                cancelAnimationFrame(gameAnimationId);
+                gameAnimationId = null;
+            }
         }
 
-        function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
-        function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
+        function drawRocket(x, y, angle, isExhale, flowMagnitude) {
+            if (isNaN(x) || isNaN(y) || isNaN(angle)) {
+                rocket.x = 120;
+                rocket.y = (gameCanvas.height || 480) / 2;
+                rocket.angle = 0;
+                return;
+            }
+
+            gameCtx.save();
+            gameCtx.globalAlpha = 1.0;
+            gameCtx.translate(x, y);
+            gameCtx.rotate(angle);
+
+            if (hasShield) {
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
+                gameCtx.strokeStyle = '#00d2d3';
+                gameCtx.lineWidth = 3;
+                gameCtx.stroke();
+            }
+
+            if (feverTimer > 0) {
+                gameCtx.beginPath();
+                gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
+                gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)';
+                gameCtx.fill();
+            }
+
+            gameCtx.fillStyle = '#ecf0f1';
+            gameCtx.beginPath();
+            gameCtx.moveTo(20, 0);
+            gameCtx.lineTo(-12, -10);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-12, 10);
+            gameCtx.closePath();
+            gameCtx.fill();
+
+            gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
+            gameCtx.beginPath();
+            gameCtx.moveTo(-4, -6);
+            gameCtx.lineTo(-14, -14);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-14, 14);
+            gameCtx.lineTo(-4, 6);
+            gameCtx.closePath();
+            gameCtx.fill();
+
+            gameCtx.restore();
+
+            if (flowMagnitude > 5) {
+                let pColor = isExhale ? '#f39c12' : '#00d2d3';
+                if (feverTimer > 0) pColor = '#a55eea';
+                particles.push({
+                    x: x - Math.cos(angle) * 15,
+                    y: y - Math.sin(angle) * 15,
+                    vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: Math.random() * 5 + 2,
+                    color: pColor,
+                    life: 1.0
+                });
+            }
+        }
 
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
-            globalAnimFrame++;
 
-            let theme = getStageTheme(currentStage);
-            gameCtx.fillStyle = theme.bg; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-            let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
-
-            if (magnetTimer > 0) magnetTimer--;
-            if (slowDebuffTimer > 0) slowDebuffTimer--;
-            document.getElementById('shieldBadge').style.display = hasShield ? 'inline' : 'none';
-            document.getElementById('magnetBadge').style.display = (magnetTimer > 0) ? 'inline' : 'none';
+            gameCtx.globalAlpha = 1.0;
+            gameCtx.fillStyle = '#0d1117';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
-                s.x -= s.baseSpeed * userSpeedMult;
+                s.x -= s.speed;
                 if (s.x < 0) s.x = gameCanvas.width;
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
 
+            gameCtx.beginPath();
+            gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            gameCtx.setLineDash([8, 8]);
+            gameCtx.moveTo(0, gameCanvas.height / 2);
+            gameCtx.lineTo(gameCanvas.width, gameCanvas.height / 2);
+            gameCtx.stroke();
+            gameCtx.setLineDash([]);
+
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
-                let absFlow = Math.abs(curReadEst);
+                let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+                let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
+                let flowMag = Math.abs(flow);
 
-                let flowOffsetY = 0;
-                if (curReadEst > 0) { 
-                    flowOffsetY = -(absFlow * 3.2);
-                } else if (curReadEst < 0) {
-                    flowOffsetY = (absFlow * 3.2);
-                }
+                let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+                let sensitivity = (diff === 'easy') ? 1.6 : (diff === 'hard') ? 0.9 : 1.2;
 
-                let targetY = (gameCanvas.height / 2) + flowOffsetY;
-                targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY));
+                let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
+                if (isNaN(targetY)) targetY = gameCanvas.height / 2;
+                targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
                 
                 let dy = targetY - rocket.y;
-                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
-                rocket.y += dy * speedFactor;
+                if (isNaN(dy)) dy = 0;
+                
+                rocket.y += dy * 0.1;
                 rocket.angle = Math.atan2(dy, 25);
 
-                let elapsed = (Date.now() - sessionStartTime) / 1000;
-                if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
-                else if (elapsed > 20 && !activeBoss) { triggerBossSpawn('stage'); }
+                if (feverTimer > 0) {
+                    feverTimer--;
+                    if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none';
+                }
 
-                let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
-                let rand = Math.random();
-                if (rand < 0.015) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                else if (rand < 0.020) collectibles.push({ type: 'laser', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
-                else if (rand < 0.024) collectibles.push({ type: 'missile', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
-                else if (rand < 0.027) collectibles.push({ type: 'bomb', x: gameCanvas.width + 20, y: spawnY, radius: 15, collected: false });
-                else if (rand < 0.031) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                else if (rand < 0.034) collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                else if (rand < 0.037) collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
+                // 🎁 大幅提升專屬道具掉落機率 (1.5% ~ 2% 掉落率)
+                if (Math.random() < 0.03) {
+                    collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 8, speed: 3, collected: false });
+                }
+                
+                // 🟢 補血心心 (Heart)
+                if (Math.random() < 0.015) {
+                    collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 12, speed: 2.5, collected: false });
+                }
 
-                if (Math.random() < 0.012) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
-                else if (Math.random() < 0.008) obstacles.push({ type: 'slime', x: gameCanvas.width + 30, y: spawnY, radius: 14, damage: 10, hit: false });
-                else if (Math.random() < 0.006) obstacles.push({ type: 'darkgem', x: gameCanvas.width + 30, y: spawnY, radius: 13, damage: 15, hit: false });
+                // 🟡 藍色護盾 (Shield)
+                if ((diff === 'normal' || diff === 'hard') && !hasShield && Math.random() < 0.012) {
+                    collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 13, speed: 2.5, collected: false });
+                }
 
-                collectibles.forEach((c) => {
-                    if (magnetTimer > 0) {
-                        let mdx = rocket.x - c.x, mdy = rocket.y - c.y;
-                        c.x += mdx * 0.08; c.y += mdy * 0.08;
-                    } else {
-                        c.x -= 3 * userSpeedMult;
+                // 🔴 專家模式專屬：狂暴星 (Fever) & 閃電球 (Hazard)
+                if (diff === 'hard') {
+                    if (Math.random() < 0.01 && feverTimer === 0) {
+                        collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 3.5, collected: false });
                     }
-                    
-                    gameCtx.save();
-                    if (c.type === 'coin') { gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'laser') { gameCtx.fillStyle = '#00d2d3'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'missile') { gameCtx.fillStyle = '#e74c3c'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'bomb') { gameCtx.fillStyle = '#a55eea'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'heart') { gameCtx.fillStyle = '#2ecc71'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'shield') { gameCtx.fillStyle = '#3498db'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'magnet') { gameCtx.fillStyle = '#f39c12'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    gameCtx.restore();
-
-                    let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
-                    if (dist < c.radius + rocket.radius) {
-                        c.collected = true;
-                        if (c.type === 'coin') { gameScore += 50; gameCombo++; playAudioEffect('coin'); damageBoss(10); }
-                        else if (c.type === 'laser') { gameScore += 100; playAudioEffect('laser'); playerProjectiles.push({ type: 'laser', x: rocket.x + 20, y: rocket.y, vx: 18, damage: 25 }); }
-                        else if (c.type === 'missile') { gameScore += 120; playAudioEffect('missile'); playerProjectiles.push({ type: 'missile', x: rocket.x + 20, y: rocket.y, vx: 12, damage: 30 }); }
-                        else if (c.type === 'bomb') { gameScore += 200; playAudioEffect('hit'); obstacles = []; damageBoss(40); }
-                        else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff'); }
-                        else if (c.type === 'shield') { hasShield = true; playAudioEffect('buff'); }
-                        else if (c.type === 'magnet') { magnetTimer = 300; playAudioEffect('buff'); }
-                    }
-                });
-
-                playerProjectiles.forEach((p) => {
-                    p.x += p.vx;
-                    gameCtx.fillStyle = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
-                    gameCtx.fillRect(p.x, p.y - 4, 25, 8);
-                    if (activeBoss) {
-                        let bDist = Math.hypot(p.x - activeBoss.x, p.y - activeBoss.y);
-                        if (bDist < activeBoss.radius + 15) { damageBoss(p.damage); p.hit = true; }
-                    }
-                });
-
-                if (activeBoss) {
-                    drawBossHD(activeBoss);
-                    activeBoss.attackTimer++;
-                    if (activeBoss.attackTimer % 45 === 0) {
-                        obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20, hit: false });
+                    if (Math.random() < 0.015) {
+                        obstacles.push({ type: 'hazard', x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 12, speed: 6, hit: false });
                     }
                 }
 
+                // 一般障礙物 (雷雲)
+                if (Math.random() < (diff === 'hard' ? 0.02 : 0.01)) {
+                    obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: Math.random() * (gameCanvas.height - 100) + 50, radius: 14, speed: 4, hit: false });
+                }
+
+                // 繪製與碰撞
+                collectibles.forEach((c) => {
+                    c.x -= c.speed;
+                    gameCtx.beginPath();
+                    
+                    if (c.type === 'coin') {
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#f1c40f';
+                        gameCtx.fill();
+                    } else if (c.type === 'heart') {
+                        // 🟢 綠色愛心 + 發光圈
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#2ecc71';
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#ffffff';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
+                    } else if (c.type === 'shield') {
+                        // 🟡 藍色護盾 + 發光圈
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#00d2d3';
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#ffffff';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
+                    } else if (c.type === 'fever') {
+                        // 🔴 紫色狂暴星 + 發光圈
+                        gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                        gameCtx.fillStyle = '#a55eea';
+                        gameCtx.fill();
+                        gameCtx.strokeStyle = '#f1c40f';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
+                    }
+
+                    let pickupRadius = (feverTimer > 0) ? (rocket.radius + 35) : rocket.radius;
+                    let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
+
+                    if (dist < c.radius + pickupRadius) {
+                        if (c.type === 'coin') {
+                            gameScore += (feverTimer > 0) ? 100 : 50;
+                            gameCombo++;
+                            playAudioEffect('coin');
+                        } else if (c.type === 'heart') {
+                            playerHP = Math.min(100, playerHP + 20);
+                            playAudioEffect('heal');
+                        } else if (c.type === 'shield') {
+                            hasShield = true;
+                            document.getElementById('shieldBadge').style.display = 'inline';
+                            playAudioEffect('shield');
+                        } else if (c.type === 'fever') {
+                            feverTimer = 300;
+                            document.getElementById('feverBadge').style.display = 'inline';
+                            playAudioEffect('fever');
+                        }
+                        c.collected = true;
+                    }
+                });
+
                 obstacles.forEach((o) => {
-                    o.x -= 4 * userSpeedMult;
-                    gameCtx.fillStyle = (o.type === 'slime') ? '#d35400' : (o.type === 'darkgem' ? '#2c3e50' : '#e74c3c');
-                    gameCtx.beginPath(); gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2); gameCtx.fill();
+                    o.x -= o.speed;
+                    gameCtx.beginPath();
+                    gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
+                    gameCtx.fillStyle = (o.type === 'hazard') ? '#8e44ad' : '#e74c3c';
+                    gameCtx.fill();
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
-                        o.hit = true;
-                        if (hasShield) {
-                            hasShield = false; updateStatus("🛡️ 護盾抵擋了一次傷害！");
+                        if (hasShield && o.type !== 'hazard') {
+                            hasShield = false;
+                            document.getElementById('shieldBadge').style.display = 'none';
+                            playAudioEffect('hit');
                         } else {
-                            playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
-                            if (o.type === 'slime') slowDebuffTimer = 180;
-                            if (o.type === 'darkgem') gameScore = Math.max(0, gameScore - 100);
-                            if (playerHP <= 0) { triggerGameOver(); return; }
+                            let dmg = (o.type === 'hazard') ? 40 : 25;
+                            playerHP = Math.max(0, playerHP - dmg);
+                            gameCombo = 0;
+                            playAudioEffect('hit');
+                        }
+                        o.hit = true;
+
+                        if (playerHP <= 0) {
+                            triggerGameOver();
+                            return;
                         }
                     }
                 });
 
+                if (isGameOver) return;
+
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
-                playerProjectiles = playerProjectiles.filter(p => p.x < gameCanvas.width + 50 && !p.hit);
+
+                if (flowMag > 10) gameScore += (feverTimer > 0) ? 2 : 1;
+
+                let elapsedSession = (Date.now() - sessionStartTime) / 1000;
+                if (elapsedSession > 90) triggerRestStop();
+            } else {
+                let centerTarget = gameCanvas.height / 2;
+                if (isNaN(rocket.y)) rocket.y = centerTarget;
+                rocket.y += (centerTarget - rocket.y) * 0.05;
+                rocket.angle = 0;
             }
 
-            let curFlowForRocket = activeMeasuring ? smoothedEst : 0.0; 
-            let curModeForRocket = (curFlowForRocket < 0) ? "exhalation" : "inhalation";
+            particles.forEach((p) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+                if (p.life > 0) {
+                    gameCtx.beginPath();
+                    gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
+                    gameCtx.fillStyle = p.color;
+                    gameCtx.globalAlpha = Math.max(0, p.life);
+                    gameCtx.fill();
+                }
+            });
+            particles = particles.filter(p => p.life > 0);
             
-            drawPlayerRocketHD(rocket.x, rocket.y, rocket.angle, curModeForRocket, Math.abs(curFlowForRocket));
+            gameCtx.globalAlpha = 1.0;
+
+            let activeFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
+            let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
+            drawRocket(rocket.x, rocket.y, rocket.angle, activeMode === "exhalation", activeFlow);
 
             document.getElementById('gameScore').innerText = gameScore;
             document.getElementById('gameCombo').innerText = gameCombo;
@@ -1217,24 +1280,24 @@
             gameAnimationId = requestAnimationFrame(gameLoop);
         }
 
-        function triggerStageComplete() {
-            saveGameProgress(false);
-            currentStage++;
-            document.getElementById('gameStage').innerText = currentStage;
-            isResting = true; collectibles = []; obstacles = []; playerProjectiles = [];
-
+        function triggerRestStop() {
+            isResting = true;
+            stopBGM();
             const restScreen = document.getElementById('restScreen');
             const countdownEl = document.getElementById('restCountdown');
             let countdown = 15;
+
             restScreen.style.display = 'flex';
 
-            let restInterval = setInterval(() => {
-                countdown--; countdownEl.innerText = countdown;
+            restTimer = setInterval(() => {
+                countdown--;
+                countdownEl.innerText = countdown;
                 if (countdown <= 0) {
-                    clearInterval(restInterval);
+                    clearInterval(restTimer);
                     restScreen.style.display = 'none';
                     isResting = false;
                     sessionStartTime = Date.now();
+                    startBGM();
                 }
             }, 1000);
         }
