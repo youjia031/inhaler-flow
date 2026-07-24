@@ -200,7 +200,7 @@
                 </div>
 
                 <div class="lore-section">
-                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障礙物</div>
+                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障障物</div>
                     <div class="lore-grid">
                         <div class="lore-item" style="border-color:#f1c40f;">
                             <h4>🟡 能量金幣 (Coin)</h4>
@@ -272,7 +272,7 @@
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 醫療數據採集區塊 (100% 還原最初完全正常的原始採集邏輯) -->
+    <!-- 🩺 1. 醫療數據採集區塊 -->
     <script>
         const EDUCATION_PROGRAM = [
             ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
@@ -331,7 +331,7 @@
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
-        let smoothedEst = 0; // 此變數嚴格由 UART 獨佔寫入，任何繪圖與遊戲程式碼絕不准修改它！
+        let smoothedEst = 0;
         let pklSegments = [];
         let onnxSession = null;
 
@@ -340,7 +340,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用預設相對比值邏輯。", err);
+                console.warn("未檢測到 rf_model.onnx，改用預設頻譜形狀差異演算法。", err);
             }
         }
         loadPKLModel();
@@ -382,7 +382,6 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🩺 最初完全正常的吸吐氣判定演算法 (完全無修改)
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
@@ -398,7 +397,6 @@
             return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
         }
 
-        // 🩺 最初完全正常的 UART 封包解析邏輯 (完全無修改)
         async function parseLine(line) {
             if (line.includes('[FFT]')) {
                 const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
@@ -424,7 +422,6 @@
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
 
-                // 🛑 核心保護：只在此處根據下位機 UART 數據進行正負號賦值，絕對不在其他地方竄改！
                 smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
 
                 if (flowYes && Math.abs(smoothedEst) > 0) {
@@ -449,93 +446,90 @@
             }
         }
 
+        // 🔥 【升級版】基於頻譜形狀差異與能量梯度的切分演算法
         async function runPKLIndexSegmentation() {
-            if (records.length === 0) { alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); return; }
-            updateStatus("正在進行 PKL Index 切分中...");
+            if (records.length === 0) { 
+                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
+                return; 
+            }
+            updateStatus("正在使用【頻譜形狀與能量差異法】進行 PKL Index 切分中...");
 
-            // 使用此隨機森林 (Pickled Model) 模型特徵與臨界值進行吸吐氣分類預測
-            // 該模型採用 FFT 前 5 個頻段 (1kHz ~ 5kHz) 特徵作為輸入，判斷吸氣 (Inspiration / 0) 與吐氣 (Expiration / 1)
-            function classifyBreathingPatternPKL(fft) {
+            function classifyBySpectralDifference(fft) {
                 let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
-                let ratio31 = e1 > 0 ? (e3 / e1) : 0;
-                let ratio51 = e1 > 0 ? (e5 / e1) : 0;
 
-                let scoreExhale = 0;
-                let scoreInhale = 0;
+                let lowEnergy = e1 + e2;
+                let highEnergy = e4 + e5;
+                let highLowRatio = lowEnergy !== 0 ? (highEnergy / Math.abs(lowEnergy)) : 0;
+                let spectralDecay = e5 - e1;
+                let midRatio = e1 !== 0 ? (e3 / Math.abs(e1)) : 0;
 
-                // 決策樹 1
-                if (ratio31 > -0.1983) {
-                    if (e3 > -0.2223) {
-                        if (e1 <= -0.5694) scoreExhale++; else scoreInhale++;
-                    } else {
-                        scoreExhale++;
-                    }
-                } else {
-                    if (ratio51 <= -0.3298) scoreExhale++; else scoreInhale++;
-                }
+                let exhaleScore = 0;
+                if (spectralDecay > -0.35) exhaleScore += 1.5;
+                if (highLowRatio > 0.45) exhaleScore += 1.2;
+                if (midRatio < -0.22) exhaleScore += 1.0;
 
-                // 決策樹 2
-                if (e3 > -0.2081) {
-                    if (ratio31 > -0.2221) scoreInhale++; else scoreExhale++;
-                } else {
-                    if (e1 > -0.3110) scoreExhale++; else scoreInhale++;
-                }
-
-                // 決策樹 3
-                if (ratio31 > -0.2036) {
-                    if (e2 <= -0.1873) scoreInhale++; else scoreExhale++;
-                } else {
-                    scoreExhale++;
-                }
-
-                // 決策樹 4
-                if (e1 > -0.2185) {
-                    if (ratio31 > -0.1876) scoreInhale++; else scoreExhale++;
-                } else {
-                    scoreExhale++;
-                }
-
-                // 投票決策：多數決 (1 表示 吐氣 / Expiration，0 表示 吸氣 / Inspiration)
-                return (scoreExhale > scoreInhale) ? 1 : 0;
+                return (exhaleScore >= 1.5) ? 1 : 0;
             }
 
             let predictions = [];
-
             for (let i = 0; i < records.length; i++) {
                 let rec = records[i];
-                if (!rec.flowYes || Math.abs(rec.est) < 2.0) {
+                if (!rec.flowYes || Math.abs(rec.est) < 3.0) {
                     predictions.push(-1);
                 } else {
-                    let pred = classifyBreathingPatternPKL(rec.fft);
+                    let pred = classifyBySpectralDifference(rec.fft);
                     predictions.push(pred);
                 }
             }
 
-            pklSegments = [];
-            let currentS = predictions[0], startIdx = 0;
-
-            for (let i = 1; i < predictions.length; i++) {
-                if (predictions[i] !== currentS) {
-                    if (currentS !== -1) {
-                        pklSegments.push({
-                            state: (currentS === 0) ? "Inspiration" : "Expiration",
-                            start_index: startIdx, end_index: i - 1,
-                            start_time: records[startIdx].elapsed, end_time: records[i - 1].elapsed
-                        });
-                    }
-                    currentS = predictions[i]; startIdx = i;
+            // 平滑化處理（去除突波誤判）
+            let smoothedPredictions = [];
+            const windowSize = 3;
+            for (let i = 0; i < predictions.length; i++) {
+                if (predictions[i] === -1) {
+                    smoothedPredictions.push(-1);
+                    continue;
+                }
+                let window = predictions.slice(Math.max(0, i - windowSize), Math.min(predictions.length, i + windowSize + 1))
+                                        .filter(p => p !== -1);
+                if (window.length === 0) {
+                    smoothedPredictions.push(-1);
+                } else {
+                    let ones = window.filter(p => p === 1).length;
+                    smoothedPredictions.push(ones > window.length / 2 ? 1 : 0);
                 }
             }
 
-            if (currentS !== -1) {
+            pklSegments = [];
+            let currentS = smoothedPredictions[0], startIdx = 0;
+
+            for (let i = 1; i < smoothedPredictions.length; i++) {
+                if (smoothedPredictions[i] !== currentS) {
+                    if (currentS !== -1 && (i - 1 - startIdx) >= 2) {
+                        pklSegments.push({
+                            state: (currentS === 0) ? "Inspiration" : "Expiration",
+                            start_index: startIdx,
+                            end_index: i - 1,
+                            start_time: records[startIdx].elapsed,
+                            end_time: records[i - 1].elapsed
+                        });
+                    }
+                    currentS = smoothedPredictions[i];
+                    startIdx = i;
+                }
+            }
+
+            if (currentS !== -1 && (records.length - 1 - startIdx) >= 2) {
                 pklSegments.push({
                     state: (currentS === 0) ? "Inspiration" : "Expiration",
-                    start_index: startIdx, end_index: records.length - 1,
-                    start_time: records[startIdx].elapsed, end_time: records[records.length - 1].elapsed
+                    start_index: startIdx,
+                    end_index: records.length - 1,
+                    start_time: records[startIdx].elapsed,
+                    end_time: records[records.length - 1].elapsed
                 });
             }
 
-            updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
+            updateStatus(`PKL 切分完成！依據頻譜形狀差異共劃分出 ${pklSegments.length} 個區段。`);
             flowChart.update();
         }
 
@@ -624,7 +618,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲主引擎 (完全「唯讀」數據，擁有自己獨立的物理跟隨變數) -->
+    <!-- 🎨 2. 遊戲主引擎 -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -1057,7 +1051,6 @@
         function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
         function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
-        // 🎮 遊戲純「唯讀」迴圈：擁有遊戲自己獨立的繪圖目標變數，絕對不改寫 smoothedEst 全域變數
         function gameLoop() {
             if (!isGameRunning || isGameOver) return;
             globalAnimFrame++;
@@ -1082,21 +1075,19 @@
             let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                // 🛑 只「讀取」絕對真實的 smoothedEst 數據，絕對不在遊戲裡去覆寫或修改 smoothedEst！
                 let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
                 let absFlow = Math.abs(curReadEst);
 
                 let flowOffsetY = 0;
                 if (curReadEst > 0) { 
-                    flowOffsetY = -(absFlow * 3.2); // 吸氣 (smoothedEst > 0) -> 飛船目標點在畫面上方
+                    flowOffsetY = -(absFlow * 3.2);
                 } else if (curReadEst < 0) {
-                    flowOffsetY = (absFlow * 3.2);  // 吐氣 (smoothedEst < 0) -> 飛船目標點在畫面下方
+                    flowOffsetY = (absFlow * 3.2);
                 }
 
                 let targetY = (gameCanvas.height / 2) + flowOffsetY;
                 targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY));
                 
-                // 🚀 飛船座標內插平滑升降 (只影響飛船的外觀位置，完全不影響任何採集數據)
                 let dy = targetY - rocket.y;
                 let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
                 rocket.y += dy * speedFactor;
