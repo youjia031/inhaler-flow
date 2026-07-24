@@ -200,7 +200,7 @@
                 </div>
 
                 <div class="lore-section">
-                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障障物</div>
+                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障礙物</div>
                     <div class="lore-grid">
                         <div class="lore-item" style="border-color:#f1c40f;">
                             <h4>🟡 能量金幣 (Coin)</h4>
@@ -340,7 +340,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用預設頻譜形狀差異演算法。", err);
+                console.warn("未檢測到 rf_model.onnx，改用自適應頻譜特徵演算法。", err);
             }
         }
         loadPKLModel();
@@ -446,90 +446,111 @@
             }
         }
 
-        // 🔥 【升級版】基於頻譜形狀差異與能量梯度的切分演算法
+        // 🔥 【動態自適應自鎖版】PKL Index 切分演算法
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
                 return; 
             }
-            updateStatus("正在使用【頻譜形狀與能量差異法】進行 PKL Index 切分中...");
+            updateStatus("正在使用【自適應頻譜特徵 + 遲滯切換法】進行 PKL Index 切分...");
 
-            function classifyBySpectralDifference(fft) {
+            // 1. 篩選出有效氣流點 (排除靜止與極低氣流)
+            let validRecords = records.filter(r => r.flowYes && Math.abs(r.est) >= 2.5);
+            if (validRecords.length === 0) {
+                updateStatus("未檢測到足夠強度的氣流數據。");
+                return;
+            }
+
+            // 2. 特徵提取：計算全域的「高頻比重」與「衰減斜率」
+            let featureScores = records.map(r => {
+                if (!r.flowYes || Math.abs(r.est) < 2.5) return null;
+                let fft = r.fft;
                 let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
 
-                let lowEnergy = e1 + e2;
-                let highEnergy = e4 + e5;
-                let highLowRatio = lowEnergy !== 0 ? (highEnergy / Math.abs(lowEnergy)) : 0;
-                let spectralDecay = e5 - e1;
-                let midRatio = e1 !== 0 ? (e3 / Math.abs(e1)) : 0;
+                let lowE = Math.abs(e1) + Math.abs(e2) + 0.0001;
+                let highE = Math.abs(e4) + Math.abs(e5);
+                let highLowRatio = highE / lowE;
+                let decaySlope = e5 - e1;
 
-                let exhaleScore = 0;
-                if (spectralDecay > -0.35) exhaleScore += 1.5;
-                if (highLowRatio > 0.45) exhaleScore += 1.2;
-                if (midRatio < -0.22) exhaleScore += 1.0;
+                return (highLowRatio * 1.5) + (decaySlope * 0.8);
+            });
 
-                return (exhaleScore >= 1.5) ? 1 : 0;
-            }
+            // 3. 自動動態尋找這段數據的「自適應動態門檻 (Adaptive Threshold)」
+            let validScores = featureScores.filter(s => s !== null).sort((a, b) => a - b);
+            let medianThreshold = validScores[Math.floor(validScores.length * 0.5)];
 
-            let predictions = [];
-            for (let i = 0; i < records.length; i++) {
-                let rec = records[i];
-                if (!rec.flowYes || Math.abs(rec.est) < 3.0) {
-                    predictions.push(-1);
-                } else {
-                    let pred = classifyBySpectralDifference(rec.fft);
-                    predictions.push(pred);
-                }
-            }
+            // 4. 時域遲滯判定 (Hysteresis Filter) - 避免過渡邊界頻繁跳動
+            let rawStates = [];
+            let currentState = 0; // 0: Inhale, 1: Exhale
+            let hysteresisMargin = 0.15; // 遲滯容補區間
 
-            // 平滑化處理（去除突波誤判）
-            let smoothedPredictions = [];
-            const windowSize = 3;
-            for (let i = 0; i < predictions.length; i++) {
-                if (predictions[i] === -1) {
-                    smoothedPredictions.push(-1);
+            for (let i = 0; i < featureScores.length; i++) {
+                let score = featureScores[i];
+                if (score === null) {
+                    rawStates.push(-1);
                     continue;
                 }
-                let window = predictions.slice(Math.max(0, i - windowSize), Math.min(predictions.length, i + windowSize + 1))
-                                        .filter(p => p !== -1);
-                if (window.length === 0) {
-                    smoothedPredictions.push(-1);
-                } else {
-                    let ones = window.filter(p => p === 1).length;
-                    smoothedPredictions.push(ones > window.length / 2 ? 1 : 0);
-                }
-            }
 
-            pklSegments = [];
-            let currentS = smoothedPredictions[0], startIdx = 0;
-
-            for (let i = 1; i < smoothedPredictions.length; i++) {
-                if (smoothedPredictions[i] !== currentS) {
-                    if (currentS !== -1 && (i - 1 - startIdx) >= 2) {
-                        pklSegments.push({
-                            state: (currentS === 0) ? "Inspiration" : "Expiration",
-                            start_index: startIdx,
-                            end_index: i - 1,
-                            start_time: records[startIdx].elapsed,
-                            end_time: records[i - 1].elapsed
-                        });
+                if (currentState === 0) { // 當前為吸氣狀態
+                    if (score > (medianThreshold + hysteresisMargin)) {
+                        currentState = 1; // 必須明顯高於門檻才切換為吐氣
                     }
-                    currentS = smoothedPredictions[i];
-                    startIdx = i;
+                } else { // 當前為吐氣狀態
+                    if (score < (medianThreshold - hysteresisMargin)) {
+                        currentState = 0; // 必須明顯低於門檻才切換為吸氣
+                    }
+                }
+                rawStates.push(currentState);
+            }
+
+            // 5. 連續性平滑處理 (滑動中位數濾波)
+            let smoothedStates = [...rawStates];
+            for (let i = 2; i < rawStates.length - 2; i++) {
+                if (rawStates[i] === -1) continue;
+                let window = [rawStates[i-2], rawStates[i-1], rawStates[i], rawStates[i+1], rawStates[i+2]].filter(s => s !== -1);
+                let ones = window.filter(s => s === 1).length;
+                smoothedStates[i] = (ones > window.length / 2) ? 1 : 0;
+            }
+
+            // 6. 區段併合 (合併並過濾掉短於 0.25 秒的雜訊誤判)
+            pklSegments = [];
+            let segStart = -1, segState = -1;
+
+            for (let i = 0; i < smoothedStates.length; i++) {
+                let st = smoothedStates[i];
+                if (st !== segState) {
+                    if (segState !== -1 && segStart !== -1) {
+                        let duration = records[i - 1].elapsed - records[segStart].elapsed;
+                        if (duration >= 0.25) { // 至少持續 0.25 秒才算有效呼吸區段
+                            pklSegments.push({
+                                state: (segState === 0) ? "Inspiration" : "Expiration",
+                                start_index: segStart,
+                                end_index: i - 1,
+                                start_time: records[segStart].elapsed,
+                                end_time: records[i - 1].elapsed
+                            });
+                        }
+                    }
+                    segState = st;
+                    segStart = i;
                 }
             }
 
-            if (currentS !== -1 && (records.length - 1 - startIdx) >= 2) {
-                pklSegments.push({
-                    state: (currentS === 0) ? "Inspiration" : "Expiration",
-                    start_index: startIdx,
-                    end_index: records.length - 1,
-                    start_time: records[startIdx].elapsed,
-                    end_time: records[records.length - 1].elapsed
-                });
+            if (segState !== -1 && segStart !== -1) {
+                let lastIdx = records.length - 1;
+                let duration = records[lastIdx].elapsed - records[segStart].elapsed;
+                if (duration >= 0.25) {
+                    pklSegments.push({
+                        state: (segState === 0) ? "Inspiration" : "Expiration",
+                        start_index: segStart,
+                        end_index: lastIdx,
+                        start_time: records[segStart].elapsed,
+                        end_time: records[lastIdx].elapsed
+                    });
+                }
             }
 
-            updateStatus(`PKL 切分完成！依據頻譜形狀差異共劃分出 ${pklSegments.length} 個區段。`);
+            updateStatus(`自適應 PKL 切分完成！成功排除雜訊，劃分出 ${pklSegments.length} 個穩定區段。`);
             flowChart.update();
         }
 
