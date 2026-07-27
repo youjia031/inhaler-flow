@@ -179,11 +179,9 @@
             </div>
         </div>
 
-        <!-- 👾 5 大 Boss 專區按鈕 -->
         <div class="demo-section-title">👾 5 大 Boss 影片展台 (點擊播放實戰動作)</div>
         <div class="demo-grid-menu" id="bossDemoMenuList"></div>
 
-        <!-- 🎁 10 大道具與障礙物專區按鈕 -->
         <div class="demo-section-title">🎁 7 大益處道具 & 💥 3 大危險障礙 (點擊播放實戰動作)</div>
         <div class="demo-grid-menu" id="itemDemoMenuList"></div>
     </div>
@@ -361,7 +359,6 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 防抖動與低流速死區變數
         let lastCentroidEMA = 0;
         let stableBreathState = "inhalation";
         let stateHoldTimer = 0;
@@ -639,7 +636,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲與點選式動態影音展台 Engine -->
+    <!-- 🎨 2. 遊戲與點選式動態影音展台 Engine (全物件獨立音效與震撼視覺演出) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -697,34 +694,100 @@
         const C5 = 523.25, D5 = 587.33, E5 = 659.25;
         const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
 
+        // 🔊 新增：全 Boss 招式與全道具專屬音效生成器
         function playAudioEffect(type) {
             const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart' || currentView === 'demo') return;
+            if (currentView === 'chart') return;
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             try {
                 let now = audioCtx.currentTime;
+                
+                // 金幣音效 (高音雙響)
                 if (type === 'coin') {
                     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
                     osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
-                    gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                     osc.start(); osc.stop(now + 0.25);
-                } else if (type === 'laser' || type === 'missile') {
+                } 
+                // 雷射發射音效 (高頻向下掃頻)
+                else if (type === 'laser') {
                     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
-                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(); osc.stop(now + 0.3);
-                } else if (type === 'hit') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(1200, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+                    gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
                     osc.start(); osc.stop(now + 0.2);
+                } 
+                // 導彈發射音效 (低音推進轟鳴)
+                else if (type === 'missile') {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(400, now + 0.25);
+                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(); osc.stop(now + 0.3);
+                } 
+                // 畫面清屏炸彈 (重低音巨響)
+                else if (type === 'bomb') {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+                    gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(); osc.stop(now + 0.6);
+                } 
+                // Buff 拾取和弦 (護盾/醫療/磁鐵)
+                else if (type === 'buff' || type === 'shield' || type === 'heart' || type === 'magnet') {
+                    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                        gain.gain.setValueAtTime(0.25, now + idx * 0.05); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
+                        osc.start(now + idx * 0.05); osc.stop(now + idx * 0.05 + 0.2);
+                    });
+                } 
+                // 🦅 專屬音效：神鷹高壓雷擊
+                else if (type === 'eagle_thunder') {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(900, now);
+                    osc.frequency.setValueAtTime(200, now + 0.1);
+                    osc.frequency.setValueAtTime(800, now + 0.2);
+                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(); osc.stop(now + 0.35);
+                } 
+                // 🛸 專屬音效：母艦暗黑晶石炮
+                else if (type === 'ufo_laser') {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.4);
+                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(); osc.stop(now + 0.4);
+                } 
+                // 🐉 專屬音效：赤龍咆哮巨焰
+                else if (type === 'dragon_fire') {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.linearRampToValueAtTime(350, now + 0.2);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    osc.start(); osc.stop(now + 0.5);
+                }
+                // 撞擊爆炸受傷
+                else if (type === 'hit') {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'square'; osc.frequency.setValueAtTime(120, now);
+                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(); osc.stop(now + 0.3);
                 }
             } catch(e) {}
         }
@@ -747,7 +810,7 @@
         function startBGM() {
             stopBGM();
             const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart' || currentView === 'demo') return;
+            if (currentView === 'chart') return;
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
@@ -979,6 +1042,30 @@
             customCtx.restore();
         }
 
+        function drawMeteorHD(x, y, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
+            customCtx.rotate(globalAnimFrame * 0.02);
+
+            customCtx.shadowColor = '#e67e22'; customCtx.shadowBlur = 25;
+            let grad = customCtx.createRadialGradient(0, 0, 10, 0, 0, 38);
+            grad.addColorStop(0, '#f39c12'); grad.addColorStop(0.6, '#d35400'); grad.addColorStop(1, '#2c3e50');
+            customCtx.fillStyle = grad;
+
+            customCtx.beginPath();
+            customCtx.moveTo(0, -35); customCtx.lineTo(25, -20); customCtx.lineTo(35, 10);
+            customCtx.lineTo(15, 35); customCtx.lineTo(-20, 30); customCtx.lineTo(-35, -5);
+            customCtx.closePath(); customCtx.fill();
+
+            customCtx.fillStyle = 'rgba(0,0,0,0.5)';
+            customCtx.beginPath(); customCtx.arc(-10, -10, 8, 0, Math.PI * 2); customCtx.fill();
+            customCtx.beginPath(); customCtx.arc(12, 12, 6, 0, Math.PI * 2); customCtx.fill();
+
+            customCtx.strokeStyle = '#f1c40f'; customCtx.lineWidth = 2;
+            customCtx.beginPath(); customCtx.moveTo(-10, -10); customCtx.lineTo(5, 5); customCtx.lineTo(12, 12); customCtx.stroke();
+
+            customCtx.restore();
+        }
+
         function drawRealisticEagle(x, y, attackTimer, customCtx = gameCtx) {
             customCtx.save(); customCtx.translate(x, y);
             let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
@@ -1069,9 +1156,12 @@
 
         function drawBossHD(boss, customCtx = gameCtx) {
             let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            if (boss.name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY, customCtx);
-            else if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
-            else if (boss.name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
+            let name = boss.name || "";
+            
+            if (name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY, customCtx);
+            else if (name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
+            else if (name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
+            else if (name.includes("隕石")) drawMeteorHD(boss.x, boss.y + floatY, customCtx);
             else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
         }
 
@@ -1245,10 +1335,10 @@
                         if (c.type === 'coin') { gameScore += 50; gameCombo++; playAudioEffect('coin'); damageBoss(10); }
                         else if (c.type === 'laser') { gameScore += 100; playAudioEffect('laser'); playerProjectiles.push({ type: 'laser', x: rocket.x + 20, y: rocket.y, vx: 18, damage: 25 }); }
                         else if (c.type === 'missile') { gameScore += 120; playAudioEffect('missile'); playerProjectiles.push({ type: 'missile', x: rocket.x + 20, y: rocket.y, vx: 12, damage: 30 }); }
-                        else if (c.type === 'bomb') { gameScore += 200; playAudioEffect('hit'); obstacles = []; damageBoss(40); }
-                        else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff'); }
-                        else if (c.type === 'shield') { hasShield = true; playAudioEffect('buff'); }
-                        else if (c.type === 'magnet') { magnetTimer = 300; playAudioEffect('buff'); }
+                        else if (c.type === 'bomb') { gameScore += 200; playAudioEffect('bomb'); obstacles = []; damageBoss(40); }
+                        else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('heart'); }
+                        else if (c.type === 'shield') { hasShield = true; playAudioEffect('shield'); }
+                        else if (c.type === 'magnet') { magnetTimer = 300; playAudioEffect('magnet'); }
                     }
                 });
 
@@ -1270,6 +1360,9 @@
                     drawBossHD(activeBoss);
                     activeBoss.attackTimer++;
                     if (activeBoss.attackTimer % 45 === 0) {
+                        if (activeBoss.name.includes("神鷹")) playAudioEffect('eagle_thunder');
+                        else if (activeBoss.name.includes("母艦")) playAudioEffect('ufo_laser');
+                        else if (activeBoss.name.includes("赤龍")) playAudioEffect('dragon_fire');
                         obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20 * dmgMult, hit: false });
                     }
                 }
@@ -1331,16 +1424,14 @@
             }, 1000);
         }
 
-        // 🎬 3. 點選式影音展台 + 實戰動作模擬 Engine (精準重寫 Boss 招式彈幕邏輯)
+        // 🎬 3. 點選式影音展台 (含專屬招式音效與強烈視覺動畫演出)
         const DEMO_ITEMS_ALL = [
-            // Boss 專區
             { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 小 Boss，大氣層氣流凝聚而成的漩渦體。", skill: "⚔️ 招式【風暴亂流】：隨機在畫面上下方生成風暴雲團。" },
             { category: "boss", id: "eagle", title: "🦅 雷霆金屬神鷹", desc: "Stage 1 關卡 Boss，帶有高壓電極的金屬神鷹。", skill: "⚔️ 招式【高壓雷擊】：向前方直線發射雷擊雲團，造成 20 點重傷。" },
             { category: "boss", id: "meteor", title: "☄️ 熔岩巨型隕石", desc: "Stage 2 小 Boss，熾熱的外星隕石核心，擁有超厚外殼。", skill: "⚔️ 招式【熔岩噴濺】：噴出熾熱黏液，造成傷害並減速飛船。" },
             { category: "boss", id: "ufo", title: "🛸 圓盤星際母艦", desc: "Stage 2 關卡 Boss，外星艦隊旗艦，配備高頻離子炮。", skill: "⚔️ 招式【高頻離子炮】：釋放暗黑晶石陣，碰撞扣 100 分與 15 HP。" },
             { category: "boss", id: "dragon", title: "🐉 地獄黑金赤龍", desc: "Final Boss 終極霸主，張開巨顎噴射離子火焰！", skill: "⚔️ 招式【龍息離子焰】：頻繁噴射雙重衝擊波，考驗控氣切換！" },
             
-            // 道具與障礙物專區
             { category: "item", id: "coin", title: "🟡 金幣 (Coin)", desc: "基礎得分道具。", skill: "🎁 功能：拾取獲得 +50 分，並累積 COMBO 傷害。" },
             { category: "item", id: "laser", title: "🔫 雷射光束 (Laser)", desc: "前向戰術武器。", skill: "🎁 功能：發射穿透雷射，直接攻擊前方 Boss (25 傷害)。" },
             { category: "item", id: "missile", title: "🚀 重型導彈 (Missile)", desc: "高爆導彈。", skill: "🎁 功能：發射高傷害追蹤導彈 (30 傷害)。" },
@@ -1354,7 +1445,7 @@
         ];
 
         let selectedDemoId = "eagle";
-        let demoViewType = "action"; // 預設直接開【⚔️ 遊戲實戰動作模擬】
+        let demoViewType = "action";
 
         function setDemoViewType(type) {
             demoViewType = type;
@@ -1378,6 +1469,12 @@
                     document.getElementById('demoItemTitle').innerText = item.title;
                     document.getElementById('demoItemDesc').innerText = item.desc;
                     document.getElementById('demoItemSkill').innerText = item.skill;
+
+                    // 點擊即觸發對應專屬音效展示！
+                    if (item.id === 'eagle') playAudioEffect('eagle_thunder');
+                    else if (item.id === 'ufo') playAudioEffect('ufo_laser');
+                    else if (item.id === 'dragon') playAudioEffect('dragon_fire');
+                    else playAudioEffect(item.id);
                 };
 
                 if (item.category === 'boss') bossMenu.appendChild(btn);
@@ -1398,10 +1495,10 @@
                 let cx = 190, cy = 130;
 
                 if (demoViewType === 'close') {
-                    // 🔍 模式一：360° 外觀特寫
+                    // 🔍 模式一：360° 特寫
                     if (selectedDemoId === 'air') drawAirElemental(cx, cy, dCtx);
                     else if (selectedDemoId === 'eagle') drawRealisticEagle(cx, cy, globalAnimFrame, dCtx);
-                    else if (selectedDemoId === 'meteor') { dCtx.fillStyle='#e67e22'; dCtx.beginPath(); dCtx.arc(cx, cy, 35, 0, Math.PI*2); dCtx.fill(); }
+                    else if (selectedDemoId === 'meteor') drawMeteorHD(cx, cy, dCtx);
                     else if (selectedDemoId === 'ufo') drawRealisticUFO(cx, cy, globalAnimFrame, dCtx);
                     else if (selectedDemoId === 'dragon') drawRealisticDragon(cx, cy, globalAnimFrame, dCtx);
                     else if (selectedDemoId === 'coin') drawCollectibleHD({ type: 'coin', x: cx, y: cy, radius: 25 }, dCtx);
@@ -1415,69 +1512,62 @@
                     else if (selectedDemoId === 'slime') drawObstacleHD({ type: 'slime', x: cx, y: cy, radius: 30 }, dCtx);
                     else if (selectedDemoId === 'darkgem') drawObstacleHD({ type: 'darkgem', x: cx, y: cy, radius: 30 }, dCtx);
                 } else {
-                    // ⚔️ 模式二：真實 Boss 招式彈幕與實戰動作演練
+                    // ⚔️ 模式二：誇張實戰招式動態展示
                     let shipX = 70, shipY = 130 + Math.sin(globalAnimFrame * 0.05) * 20;
 
                     if (selectedDemoId === 'eagle' || selectedDemoId === 'air' || selectedDemoId === 'ufo' || selectedDemoId === 'dragon' || selectedDemoId === 'meteor') {
-                        // 1. 繪製 Boss 對決狀態下的玩家飛船
                         drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
 
-                        // 2. 繪製 Boss 本體
                         let bX = 300, bY = 130;
                         let mockBoss = { name: (selectedDemoId==='air'?"風暴精靈":selectedDemoId==='ufo'?"母艦":selectedDemoId==='dragon'?"赤龍":selectedDemoId==='meteor'?"隕石":"神鷹"), x: bX, y: bY, attackTimer: globalAnimFrame };
                         drawBossHD(mockBoss, dCtx);
 
-                        // 3. 繪製 Boss 獨家招式真實彈幕！
-                        let bulletX = bX - ((globalAnimFrame * 4) % 250);
+                        let bulletX = bX - ((globalAnimFrame * 5) % 250);
 
+                        // 誇張 Boss 招式動畫
                         if (selectedDemoId === 'eagle') {
-                            // 🦅 神鷹招式：雷擊雲團 (帶閃電與電光)
-                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY, radius: 20 }, dCtx);
-                            dCtx.save(); dCtx.strokeStyle = '#ffe100'; dCtx.lineWidth = 3;
-                            dCtx.beginPath(); dCtx.moveTo(bulletX - 10, bY - 15); dCtx.lineTo(bulletX + 5, bY); dCtx.lineTo(bulletX - 5, bY + 5); dCtx.lineTo(bulletX + 10, bY + 15);
+                            // 雷擊閃電波
+                            dCtx.save(); dCtx.shadowColor = '#00d2d3'; dCtx.shadowBlur = 20;
+                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY, radius: 24 }, dCtx);
+                            dCtx.strokeStyle = '#ffe100'; dCtx.lineWidth = 4;
+                            dCtx.beginPath(); dCtx.moveTo(bulletX - 15, bY - 20); dCtx.lineTo(bulletX + 8, bY); dCtx.lineTo(bulletX - 8, bY + 8); dCtx.lineTo(bulletX + 15, bY + 20);
                             dCtx.stroke(); dCtx.restore();
                         } else if (selectedDemoId === 'dragon') {
-                            // 🐉 赤龍招式：龍息離子火焰雙重波
-                            dCtx.save(); dCtx.shadowColor = '#e74c3c'; dCtx.shadowBlur = 15;
+                            // 烈焰龍息離子波
+                            dCtx.save(); dCtx.shadowColor = '#e74c3c'; dCtx.shadowBlur = 25;
                             dCtx.fillStyle = '#ff6b6b';
-                            dCtx.beginPath(); dCtx.arc(bulletX, bY - 15, 12, 0, Math.PI*2); dCtx.fill();
-                            dCtx.beginPath(); dCtx.arc(bulletX + 20, bY + 15, 12, 0, Math.PI*2); dCtx.fill();
+                            dCtx.beginPath(); dCtx.arc(bulletX, bY - 18, 16, 0, Math.PI*2); dCtx.fill();
+                            dCtx.fillStyle = '#f1c40f';
+                            dCtx.beginPath(); dCtx.arc(bulletX + 25, bY + 18, 16, 0, Math.PI*2); dCtx.fill();
                             dCtx.restore();
                         } else if (selectedDemoId === 'ufo') {
-                            // 🛸 母艦招式：高頻離子暗黑晶石陣
-                            drawObstacleHD({ type: 'darkgem', x: bulletX, y: bY, radius: 18 }, dCtx);
-                            drawObstacleHD({ type: 'darkgem', x: bulletX + 30, y: bY - 25, radius: 14 }, dCtx);
+                            // 暗黑晶石陣
+                            drawObstacleHD({ type: 'darkgem', x: bulletX, y: bY, radius: 22 }, dCtx);
+                            drawObstacleHD({ type: 'darkgem', x: bulletX + 35, y: bY - 30, radius: 16 }, dCtx);
                         } else if (selectedDemoId === 'meteor') {
-                            // ☄️ 隕石招式：熾熱有機黏液噴發
-                            drawObstacleHD({ type: 'slime', x: bulletX, y: bY + Math.sin(bulletX * 0.1) * 15, radius: 18 }, dCtx);
+                            drawObstacleHD({ type: 'slime', x: bulletX, y: bY + Math.sin(bulletX * 0.1) * 20, radius: 20 }, dCtx);
                         } else if (selectedDemoId === 'air') {
-                            // 🌪️ 風暴精靈招式：風暴亂流
-                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY + Math.cos(bulletX * 0.08) * 30, radius: 16 }, dCtx);
+                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY + Math.cos(bulletX * 0.08) * 35, radius: 18 }, dCtx);
                         }
 
                     } else {
-                        // 道具與障礙物實戰：模擬飛船吃道具與觸發效果
-                        let itemX = 320 - ((globalAnimFrame * 3) % 270);
-                        let isCollided = (itemX < shipX + 30);
+                        // 誇張道具與障礙物互動
+                        let itemX = 320 - ((globalAnimFrame * 4) % 270);
+                        let isCollided = (itemX < shipX + 35);
 
                         if (isCollided) {
-                            // 觸發效果動態演出
                             if (selectedDemoId === 'shield') {
-                                // 吃到護盾：飛船身上跳出亮藍色護盾罩
                                 hasShield = true;
                                 drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
                             } else if (selectedDemoId === 'laser') {
-                                // 吃到雷射：飛船向前發射極光雷射
                                 drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-                                dCtx.save(); dCtx.fillStyle = '#00d2d3'; dCtx.shadowColor = '#00d2d3'; dCtx.shadowBlur = 15;
-                                dCtx.fillRect(shipX + 25, shipY - 4, 200, 8); dCtx.restore();
+                                dCtx.save(); dCtx.fillStyle = '#00d2d3'; dCtx.shadowColor = '#00d2d3'; dCtx.shadowBlur = 20;
+                                dCtx.fillRect(shipX + 25, shipY - 6, 220, 12); dCtx.restore();
                             } else if (selectedDemoId === 'bomb') {
-                                // 吃到炸彈：全螢幕炸裂波
                                 drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-                                dCtx.save(); dCtx.fillStyle = 'rgba(165, 94, 234, 0.3)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
+                                dCtx.save(); dCtx.fillStyle = 'rgba(165, 94, 234, 0.5)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
                             } else if (selectedDemoId.match(/(cloud|slime|darkgem)/)) {
-                                // 撞到障礙物：飛船閃紅光提示受到重傷
-                                dCtx.save(); dCtx.fillStyle = 'rgba(231, 76, 60, 0.4)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
+                                dCtx.save(); dCtx.fillStyle = 'rgba(231, 76, 60, 0.5)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
                                 drawPlayerSpaceshipHD(shipX, shipY, 0, "exhalation", 8.0, dCtx);
                             } else {
                                 drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
@@ -1485,8 +1575,8 @@
                         } else {
                             hasShield = false;
                             drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 3.0, dCtx);
-                            if (selectedDemoId.match(/(cloud|slime|darkgem)/)) drawObstacleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 18 }, dCtx);
-                            else drawCollectibleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 18 }, dCtx);
+                            if (selectedDemoId.match(/(cloud|slime|darkgem)/)) drawObstacleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 22 }, dCtx);
+                            else drawCollectibleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 22 }, dCtx);
                         }
                     }
                 }
