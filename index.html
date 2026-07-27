@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Complete Engine)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Dynamic Demo Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
@@ -410,7 +410,7 @@
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor (Full Uncompressed Engine)</h1>
+        <h1>Inhaler Flow Monitor (Dynamic Exhibition Edition)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -441,7 +441,7 @@
     </div>
 
     <div class="demo-container" id="demoContainer">
-        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與實戰影音展台 (完全版)</h3>
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與實戰影音展台</h3>
 
         <div class="demo-layout">
             <div class="demo-viewport">
@@ -729,7 +729,7 @@
                     osc.stop(now + 0.4);
                 }
             } catch (e) {
-                console.error("Sound playing error:", e);
+                console.error("Sound error:", e);
             }
         }
 
@@ -759,7 +759,6 @@
         let bossBullets = [];
         let collectibles = [];
         let obstacles = [];
-        let particleEffects = [];
 
         function resizeGameCanvas() {
             if (gameCanvas && gameCanvas.parentElement) {
@@ -1018,18 +1017,20 @@
                 customCtx = gameCtx;
             }
             let floatY = Math.sin(globalAnimFrame * 0.08) * 6;
-            if (b.isFinal) {
+            let bossKey = b.id || b.name;
+
+            if (bossKey.includes("final") || b.isFinal) {
                 drawFinalBossHD(b.x, b.y + floatY, customCtx);
-            } else if (b.name.includes("風暴精靈")) {
+            } else if (bossKey.includes("air") || b.name.includes("風暴精靈")) {
                 drawAirElemental(b.x, b.y + floatY, customCtx);
-            } else if (b.name.includes("母艦")) {
-                drawRealisticUFO(b.x, b.y + floatY, b.attackTimer, customCtx);
-            } else if (b.name.includes("赤龍")) {
-                drawRealisticDragon(b.x, b.y + floatY, b.attackTimer, customCtx);
-            } else if (b.name.includes("隕石")) {
+            } else if (bossKey.includes("ufo") || b.name.includes("母艦")) {
+                drawRealisticUFO(b.x, b.y + floatY, b.attackTimer || globalAnimFrame, customCtx);
+            } else if (bossKey.includes("dragon") || b.name.includes("赤龍")) {
+                drawRealisticDragon(b.x, b.y + floatY, b.attackTimer || globalAnimFrame, customCtx);
+            } else if (bossKey.includes("meteor") || b.name.includes("隕石")) {
                 drawMeteorHD(b.x, b.y + floatY, customCtx);
             } else {
-                drawRealisticEagle(b.x, b.y + floatY, b.attackTimer, customCtx);
+                drawRealisticEagle(b.x, b.y + floatY, b.attackTimer || globalAnimFrame, customCtx);
             }
         }
 
@@ -1039,27 +1040,36 @@
             }
             customCtx.save();
             customCtx.translate(item.x, item.y);
-            if (item.type === 'coin') {
-                customCtx.fillStyle = '#f1c40f';
-                customCtx.beginPath();
-                customCtx.arc(0, 0, 8, 0, Math.PI * 2);
-                customCtx.fill();
-            } else if (item.type === 'heart') {
-                customCtx.fillStyle = '#e74c3c';
-                customCtx.beginPath();
-                customCtx.arc(0, 0, 9, 0, Math.PI * 2);
-                customCtx.fill();
-            } else if (item.type === 'shield') {
-                customCtx.fillStyle = '#3498db';
-                customCtx.beginPath();
-                customCtx.arc(0, 0, 9, 0, Math.PI * 2);
-                customCtx.fill();
-            } else {
-                customCtx.fillStyle = '#9b59b6';
-                customCtx.beginPath();
-                customCtx.arc(0, 0, 9, 0, Math.PI * 2);
-                customCtx.fill();
-            }
+
+            let typeColors = {
+                coin: '#f1c40f',
+                heart: '#e74c3c',
+                shield: '#3498db',
+                laser: '#2ecc71',
+                missile: '#e67e22',
+                bomb: '#9b59b6',
+                magnet: '#16a085',
+                clock: '#f39c12',
+                emp: '#f1c40f',
+                blackhole: '#8e44ad',
+                mirror: '#bdc3c7',
+                ice: '#3498db'
+            };
+
+            let color = typeColors[item.type] || '#ffffff';
+            customCtx.fillStyle = color;
+            customCtx.shadowColor = color;
+            customCtx.shadowBlur = 10;
+            customCtx.beginPath();
+            customCtx.arc(0, 0, 12, 0, Math.PI * 2);
+            customCtx.fill();
+
+            customCtx.fillStyle = '#ffffff';
+            customCtx.font = '10px sans-serif';
+            customCtx.textAlign = 'center';
+            customCtx.textBaseline = 'middle';
+            customCtx.fillText(item.type.slice(0, 3).toUpperCase(), 0, 0);
+
             customCtx.restore();
         }
 
@@ -1069,33 +1079,53 @@
             }
             customCtx.save();
             customCtx.translate(obs.x, obs.y);
-            customCtx.fillStyle = '#7f8c8d';
+
+            let hazardColors = {
+                cloud: '#7f8c8d',
+                slime: '#27ae60',
+                darkgem: '#8e44ad',
+                electric: '#f1c40f',
+                homing: '#d35400',
+                wind: '#16a085',
+                toxic: '#2ecc71',
+                magnetic_storm: '#c0392b'
+            };
+
+            let color = hazardColors[obs.type] || '#e74c3c';
+            customCtx.fillStyle = color;
+            customCtx.shadowColor = color;
+            customCtx.shadowBlur = 12;
             customCtx.beginPath();
-            customCtx.arc(0, 0, 12, 0, Math.PI * 2);
+            customCtx.arc(0, 0, 14, 0, Math.PI * 2);
             customCtx.fill();
+
+            customCtx.strokeStyle = '#ffffff';
+            customCtx.lineWidth = 1.5;
+            customCtx.stroke();
+
             customCtx.restore();
         }
 
         function spawnCollectiblesAndObstacles() {
             if (globalAnimFrame % 120 === 0) {
-                let types = ['coin', 'heart', 'shield', 'laser', 'missile', 'bomb'];
+                let types = ['coin', 'heart', 'shield', 'laser', 'missile', 'bomb', 'clock', 'emp', 'blackhole'];
                 let selectedType = types[Math.floor(Math.random() * types.length)];
                 collectibles.push({
                     x: logicalWidth + 20,
                     y: Math.random() * (logicalHeight - 60) + 30,
                     type: selectedType,
-                    radius: 10
+                    radius: 12
                 });
             }
 
             if (globalAnimFrame % 180 === 0) {
-                let obsTypes = ['cloud', 'slime', 'darkgem', 'electric'];
+                let obsTypes = ['cloud', 'slime', 'darkgem', 'electric', 'toxic', 'wind'];
                 let selectedObs = obsTypes[Math.floor(Math.random() * obsTypes.length)];
                 obstacles.push({
                     x: logicalWidth + 20,
                     y: Math.random() * (logicalHeight - 60) + 30,
                     type: selectedObs,
-                    radius: 12
+                    radius: 14
                 });
             }
         }
@@ -1224,6 +1254,7 @@
         }
         buildDemoMenus();
 
+        /* 🎬 展台動態渲染邏輯（根據 selectedDemoId 動態繪製） */
         function startDemoLoop() {
             const dCanvas = document.getElementById('demoCanvas');
             const dCtx = dCanvas.getContext('2d');
@@ -1236,17 +1267,42 @@
                 dCtx.fillStyle = '#020208';
                 dCtx.fillRect(0, 0, 380, 240);
 
-                let cx = 280;
+                let cx = 250;
                 let cy = 120;
-                let mockBoss = {
-                    name: selectedDemoId,
-                    x: cx,
-                    y: cy,
-                    attackTimer: globalAnimFrame,
-                    isFinal: (selectedDemoId === 'final')
-                };
-                drawBossHD(mockBoss, dCtx);
-                drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+
+                // 找選中的項目
+                let currentItem = DEMO_ITEMS_ALL.find(function(it) {
+                    return it.id === selectedDemoId;
+                });
+
+                if (currentItem) {
+                    if (currentItem.category === 'boss') {
+                        let mockBoss = {
+                            id: selectedDemoId,
+                            name: currentItem.title,
+                            x: cx,
+                            y: cy,
+                            attackTimer: globalAnimFrame,
+                            isFinal: (selectedDemoId === 'final')
+                        };
+                        drawBossHD(mockBoss, dCtx);
+                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+                    } else if (currentItem.category === 'item') {
+                        drawCollectiblesHD({
+                            x: cx,
+                            y: cy,
+                            type: selectedDemoId
+                        }, dCtx);
+                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+                    } else if (currentItem.category === 'hazard') {
+                        drawObstaclesHD({
+                            x: cx,
+                            y: cy,
+                            type: selectedDemoId
+                        }, dCtx);
+                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+                    }
+                }
 
                 requestAnimationFrame(renderDemo);
             }
