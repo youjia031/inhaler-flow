@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Fully Expanded Version)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Complete Engine)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
@@ -410,7 +410,7 @@
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor (Expanded Version)</h1>
+        <h1>Inhaler Flow Monitor (Full Uncompressed Engine)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -441,7 +441,7 @@
     </div>
 
     <div class="demo-container" id="demoContainer">
-        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與實戰影音展台</h3>
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與實戰影音展台 (完全版)</h3>
 
         <div class="demo-layout">
             <div class="demo-viewport">
@@ -588,7 +588,7 @@
                     document.getElementById('startBtn').disabled = false;
                     readLoop();
                 } catch (err) {
-                    console.error("Serial connection error:", err);
+                    console.error("Serial error:", err);
                 }
             }
         }
@@ -610,8 +610,8 @@
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
-                    for (let line of lines) {
-                        parseLine(line.trim());
+                    for (let i = 0; i < lines.length; i++) {
+                        parseLine(lines[i].trim());
                     }
                 }
             } catch (err) {
@@ -729,7 +729,7 @@
                     osc.stop(now + 0.4);
                 }
             } catch (e) {
-                console.error("Audio error:", e);
+                console.error("Sound playing error:", e);
             }
         }
 
@@ -1033,6 +1033,123 @@
             }
         }
 
+        function drawCollectiblesHD(item, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(item.x, item.y);
+            if (item.type === 'coin') {
+                customCtx.fillStyle = '#f1c40f';
+                customCtx.beginPath();
+                customCtx.arc(0, 0, 8, 0, Math.PI * 2);
+                customCtx.fill();
+            } else if (item.type === 'heart') {
+                customCtx.fillStyle = '#e74c3c';
+                customCtx.beginPath();
+                customCtx.arc(0, 0, 9, 0, Math.PI * 2);
+                customCtx.fill();
+            } else if (item.type === 'shield') {
+                customCtx.fillStyle = '#3498db';
+                customCtx.beginPath();
+                customCtx.arc(0, 0, 9, 0, Math.PI * 2);
+                customCtx.fill();
+            } else {
+                customCtx.fillStyle = '#9b59b6';
+                customCtx.beginPath();
+                customCtx.arc(0, 0, 9, 0, Math.PI * 2);
+                customCtx.fill();
+            }
+            customCtx.restore();
+        }
+
+        function drawObstaclesHD(obs, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(obs.x, obs.y);
+            customCtx.fillStyle = '#7f8c8d';
+            customCtx.beginPath();
+            customCtx.arc(0, 0, 12, 0, Math.PI * 2);
+            customCtx.fill();
+            customCtx.restore();
+        }
+
+        function spawnCollectiblesAndObstacles() {
+            if (globalAnimFrame % 120 === 0) {
+                let types = ['coin', 'heart', 'shield', 'laser', 'missile', 'bomb'];
+                let selectedType = types[Math.floor(Math.random() * types.length)];
+                collectibles.push({
+                    x: logicalWidth + 20,
+                    y: Math.random() * (logicalHeight - 60) + 30,
+                    type: selectedType,
+                    radius: 10
+                });
+            }
+
+            if (globalAnimFrame % 180 === 0) {
+                let obsTypes = ['cloud', 'slime', 'darkgem', 'electric'];
+                let selectedObs = obsTypes[Math.floor(Math.random() * obsTypes.length)];
+                obstacles.push({
+                    x: logicalWidth + 20,
+                    y: Math.random() * (logicalHeight - 60) + 30,
+                    type: selectedObs,
+                    radius: 12
+                });
+            }
+        }
+
+        function updateGameObjects() {
+            for (let i = 0; i < collectibles.length; i++) {
+                let item = collectibles[i];
+                item.x -= 2;
+                
+                let dist = Math.hypot(item.x - rocket.x, item.y - rocket.y);
+                if (dist < rocket.radius + item.radius) {
+                    item.collected = true;
+                    playSoundHD('item_pickup');
+                    if (item.type === 'coin') {
+                        gameScore += 50;
+                    } else if (item.type === 'heart') {
+                        playerHP = Math.min(100, playerHP + 25);
+                        document.getElementById('hpFill').style.width = playerHP + '%';
+                    } else if (item.type === 'shield') {
+                        rocket.shieldActive = true;
+                    } else if (item.type === 'bomb') {
+                        bossBullets = [];
+                        playSoundHD('explosion');
+                    }
+                    document.getElementById('gameScore').innerText = gameScore;
+                }
+            }
+
+            collectibles = collectibles.filter(function(item) {
+                return item.x > -20 && !item.collected;
+            });
+
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                obs.x -= 2.5;
+
+                let dist = Math.hypot(obs.x - rocket.x, obs.y - rocket.y);
+                if (dist < rocket.radius + obs.radius) {
+                    obs.hit = true;
+                    if (rocket.shieldActive) {
+                        rocket.shieldActive = false;
+                    } else {
+                        playerHP = Math.max(0, playerHP - 15);
+                        playSoundHD('hit');
+                        document.getElementById('hpFill').style.width = playerHP + '%';
+                    }
+                }
+            }
+
+            obstacles = obstacles.filter(function(obs) {
+                return obs.x > -20 && !obs.hit;
+            });
+        }
+
         const DEMO_ITEMS_ALL = [
             { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 關卡 Boss。", skill: "⚔️ 招式【風暴亂流】：隨輪數（Loop）疊加【氣流加壓】。" },
             { category: "boss", id: "eagle", title: "🦅 雷霆金屬神鷹", desc: "Stage 2 關卡 Boss。", skill: "⚔️ 招式【高壓雷擊】：隨輪數解鎖【連環電光波】。" },
@@ -1200,7 +1317,18 @@
             gameCtx.fillStyle = '#020208';
             gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
 
+            spawnCollectiblesAndObstacles();
+            updateGameObjects();
+
             drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, "inhalation", Math.abs(smoothedEst));
+
+            for (let i = 0; i < collectibles.length; i++) {
+                drawCollectiblesHD(collectibles[i]);
+            }
+
+            for (let i = 0; i < obstacles.length; i++) {
+                drawObstaclesHD(obstacles[i]);
+            }
 
             for (let i = 0; i < activeBosses.length; i++) {
                 let b = activeBosses[i];
