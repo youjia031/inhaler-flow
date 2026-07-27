@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Slow Flow Anti-Jitter Engine</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Modular Game Engine</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -91,7 +91,7 @@
         }
         .modal-card {
             background: rgba(255,255,255,0.06); padding: 25px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.15);
-            text-align: left; max-width: 800px; width: 92%; max-height: 85vh; overflow-y: auto;
+            text-align: left; max-width: 850px; width: 92%; max-height: 85vh; overflow-y: auto;
         }
         .lore-section { margin-bottom: 20px; }
         .lore-title { font-size: 18px; color: #f1c40f; border-bottom: 2px solid #f1c40f; padding-bottom: 5px; margin-bottom: 12px; font-weight: bold; }
@@ -99,7 +99,7 @@
         .lore-item { background: rgba(0,0,0,0.6); padding: 10px 14px; border-radius: 8px; border-left: 4px solid #3498db; }
         .lore-item h4 { margin: 0 0 4px 0; color: #00d2d3; font-size: 14px; }
         .lore-item p { margin: 0; font-size: 11px; color: #ccc; line-height: 1.3; }
-        .lore-item .desc { font-size: 11px; color: #f39c12; margin-top: 4px; font-weight: bold; }
+        .lore-item .skill { font-size: 11px; color: #f39c12; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -161,7 +161,7 @@
             </div>
 
             <div class="hud-badge">
-                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件圖鑑</button>
+                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件與招式指南</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
                 <span style="margin-left:5px;">❤️ HP</span> 
@@ -169,21 +169,92 @@
             </div>
         </div>
 
+        <!-- 📖 完整版 10+5 全物件與招式機制說明書 -->
         <div class="modal-screen" id="manualModal" style="display: none;">
             <div class="modal-card">
-                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 10大道具與5大Boss指南 📖</h2>
+                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 5大Boss招式機制與10大道具指南 📖</h2>
+                
+                <!-- Boss 體系與招式機制 -->
                 <div class="lore-section">
-                    <div class="lore-title">👾 5 大 Boss 體系</div>
+                    <div class="lore-title">👾 5 大 Boss 專屬招式與技能機制</div>
                     <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#3498db;"><h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4><p>大氣層氣流凝聚而成的漩渦體。</p></div>
-                        <div class="lore-item" style="border-color:#f1c40f;"><h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4><p>帶有高壓電極的金屬神鷹。</p></div>
-                        <div class="lore-item" style="border-color:#e67e22;"><h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4><p>熾熱的外星隕石核心。</p></div>
-                        <div class="lore-item" style="border-color:#9b59b6;"><h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4><p>外星艦隊旗艦。</p></div>
-                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;"><h4>🐉 地獄黑金赤龍 (Final Boss)</h4><p>終極霸主！張開巨顎噴射離子火焰！</p></div>
+                        <div class="lore-item" style="border-color:#3498db;">
+                            <h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4>
+                            <p>大氣層氣流凝聚而成的漩渦體。</p>
+                            <div class="skill">⚔️ 招式：【風暴亂流】隨機在飛船上下方生成高密度烏雲團，逼迫玩家頻繁調整吸吐氣高度。</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#f1c40f;">
+                            <h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4>
+                            <p>帶有高壓電極的金屬神鷹。</p>
+                            <div class="skill">⚔️ 招式：【高壓雷擊】每 45 幀向前方發射直線雷擊雲團，撞擊將造成 20 點重傷！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#e67e22;">
+                            <h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4>
+                            <p>熾熱的外星隕石核心，擁有超厚外裝甲。</p>
+                            <div class="skill">⚔️ 招式：【熔岩噴濺】週期性噴出熾熱黏液，命中後會造成 10 點傷害並施加減速 Debuff。</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#9b59b6;">
+                            <h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4>
+                            <p>外星艦隊旗艦，配備高頻離子炮。</p>
+                            <div class="skill">⚔️ 招式：【高頻離子炮】釋放暗黑晶石陣，碰撞會直接扣除玩家 100 分與 15 點 HP！</div>
+                        </div>
+                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;">
+                            <h4>🐉 地獄黑金赤龍 (Final Boss)</h4>
+                            <p>終極霸主！極度考驗玩家的呼吸控氣穩定度。</p>
+                            <div class="skill">⚔️ 招式：【龍息離子焰】張開巨顎時頻繁噴射雙重衝擊波，考驗玩家在極短時間內的吸吐氣轉換！</div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 10 大道具與障礙物介紹 -->
+                <div class="lore-section">
+                    <div class="lore-title">🎁 7 大益處道具 & 💥 3 大危險障礙</div>
+                    <div class="lore-grid">
+                        <div class="lore-item" style="border-color:#f1c40f;">
+                            <h4>🟡 金幣 (Coin)</h4>
+                            <p>拾取獲得 +50 分，並能累積 COMBO 數，對 Boss 造成小額傷害。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#00d2d3;">
+                            <h4>🔫 雷射光束 (Laser)</h4>
+                            <p>獲得前方發射的速射雷射，能直接穿透並攻擊 Boss (25 傷害)。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#e74c3c;">
+                            <h4>🚀 重型導彈 (Missile)</h4>
+                            <p>發射高傷害追蹤導彈，對前方障礙與 Boss 造成 30 傷害。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#a55eea;">
+                            <h4>💣 畫面清屏炸彈 (Bomb)</h4>
+                            <p>釋放能量波引爆全螢幕障礙物，並直接給予 Boss 40 點重創！</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#2ecc71;">
+                            <h4>❤️ 醫療包 (Heart)</h4>
+                            <p>修復飛船裝甲，立即補充 25 點 HP 血量。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#38bdf8;">
+                            <h4>🛡️ 能量護盾 (Shield)</h4>
+                            <p>提供一層防護罩，可完全抵擋一次撞擊傷害。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#f39c12;">
+                            <h4>🧲 磁鐵 (Magnet)</h4>
+                            <p>產生磁場，自動吸引周圍的所有金幣與道具。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#94a3b8;">
+                            <h4>☁️ 烏雲 (Cloud) - 障礙物</h4>
+                            <p>造成 20 點傷害，會阻礙視線與飛船移動。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#d35400;">
+                            <h4>🧪 黏液 (Slime) - 障礙物</h4>
+                            <p>造成 10 點傷害，並施加減速 Debuff，使飛船轉向變慢。</p>
+                        </div>
+                        <div class="lore-item" style="border-color:#a855f7;">
+                            <h4>💎 暗黑晶石 (Dark Gem) - 障礙物</h4>
+                            <p>造成 15 點傷害，並扣除玩家 100 點積分。</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="text-align: center; margin-top: 15px;">
-                    <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉圖鑑指南</button>
+                    <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉指南</button>
                 </div>
             </div>
         </div>
@@ -319,7 +390,7 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🎯 防抖動與低流速死區變數
+        // 防抖動與低流速死區變數
         let lastCentroidEMA = 0;
         let stableBreathState = "inhalation";
         let stateHoldTimer = 0;
@@ -348,7 +419,7 @@
             if (stableBreathState === "inhalation") {
                 if (lastCentroidEMA > 2.7) {
                     stateHoldTimer++;
-                    if (stateHoldTimer >= 3) { // 連續 3 幀確定才切換，防止邊界亂閃
+                    if (stateHoldTimer >= 3) {
                         stableBreathState = "exhalation";
                         stateHoldTimer = 0;
                     }
@@ -423,7 +494,6 @@
             }
         }
 
-        // 🔥 後端切分：加入低流速自動剔除與滑動中位數濾波
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
@@ -431,7 +501,7 @@
             }
             updateStatus("正在分析【慢流速抗抖動 + 頻譜重心】區段切分...");
 
-            let FLOW_THRESHOLD = 4.0; // 專門濾除慢速底噪死區
+            let FLOW_THRESHOLD = 4.0;
 
             let rawCentroids = records.map(r => {
                 if (!r.flowYes || Math.abs(r.est) < FLOW_THRESHOLD) return null;
@@ -602,7 +672,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲引擎 -->
+    <!-- 🎨 2. 遊戲引擎：支援多關卡同步機制與預留介面 -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -615,14 +685,16 @@
                         <option value="both" selected>全模式 (併排顯示 📊+🎮)</option>
                     </select>
                 </label>
+                <!-- 🎨 預留介面：自訂外觀風格 (暫不安裝圖片渲染，等後續指令) -->
                 <label>
-                    難度: 
-                    <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (溫和無痛)</option>
-                        <option value="normal" selected>標準 (均衡演算法)</option>
-                        <option value="hard">專家 (極速高懲罰)</option>
+                    🎨 畫風外觀: 
+                    <select id="skinStyleSelect" disabled>
+                        <option value="default" selected>預設向量 (預設)</option>
+                        <option value="custom">自訂圖片PNG (未啟用)</option>
                     </select>
                 </label>
+                <!-- 🛠️ 預留介面：自訂關卡編輯器 (暫不安裝，等後續指令) -->
+                <button class="btn info-btn" style="padding:4px 8px; font-size:12px;" disabled title="等穩定後再開啟">🛠️ 自訂關卡(暫關)</button>
                 <label>
                     ⚡ 倍速: 
                     <select id="gameSpeedSelect">
@@ -1060,6 +1132,7 @@
             gameLoop();
         }
 
+        // 🎯 修正：根據當前 Stage 完美鎖定出對應名稱的 Boss，解決對不上的問題
         function triggerBossSpawn(type) {
             let theme = getStageTheme(currentStage);
             let bName = (type === 'mini') ? theme.miniBoss : theme.stageBoss;
