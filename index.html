@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor (HD Visual & Adaptive Engine)</title>
+    <title>呼吸訓練器 - Inhaler Flow Monitor (HD Visual & Anti-Jitter Engine)</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -277,7 +277,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用動態降噪自適應分析。", err);
+                console.warn("未檢測到 rf_model.onnx，改用強防抖鎖定切分演算法。", err);
             }
         }
         loadPKLModel();
@@ -383,78 +383,82 @@
             }
         }
 
-        // 🔥 【極致精準重構】降噪門檻 + 動態基線校準 + 時域遲滯鎖 PKL Index 切分演算法
+        // 🔥【極致防抖鎖定版】PKL Index 切分演算法（徹底解決跳點與閃爍）
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
                 return; 
             }
-            updateStatus("正在使用【降噪 + 動態基線校準 + 遲滯鎖】精準切分...");
+            updateStatus("正在使用【雙重防抖＋自適應強自鎖】進行 PKL Index 切分...");
 
-            // 1. 自動背景降噪門檻濾除 (Noise Gate)
-            let activeRecords = records.filter(r => r.flowYes && Math.abs(r.est) >= 2.0);
-            if (activeRecords.length === 0) {
-                updateStatus("未檢測到足夠強度的氣流數據。");
-                return;
-            }
+            // 1. 嚴格過濾微弱氣流（提高雜訊門檻至 5.0 L/min，過濾靜音與環境雜音）
+            const FLOW_THRESHOLD = 5.0; 
 
-            // 2. 提取特徵分流數值
-            let scores = records.map(r => {
-                if (!r.flowYes || Math.abs(r.est) < 2.0) return null;
+            // 2. 提取相對穩定的聲學能量特徵
+            let rawScores = records.map(r => {
+                if (!r.flowYes || Math.abs(r.est) < FLOW_THRESHOLD) return null;
                 let fft = r.fft;
                 let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
-                let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
+                let e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
 
-                let lowEnergy = e1 + e2 + 0.0001;
-                let highEnergy = e4 + e5;
-                let hlRatio = highEnergy / lowEnergy;
-                let slope = (fft[5] || 0) - (fft[1] || 0);
+                let lowE = e1 + e2 + 0.0001;
+                let highE = e4 + e5;
+                let hlRatio = highE / lowE;
 
-                return (hlRatio * 2.0) + (slope * 1.0) + ((e3 / lowEnergy) * 0.5);
+                return hlRatio;
             });
 
-            // 3. 自動校準這段特徵的中位數點 (Dynamic Median Baseline)
-            let validScores = scores.filter(s => s !== null).sort((a, b) => a - b);
-            let baseline = validScores[Math.floor(validScores.length * 0.5)];
+            // 3. 計算有效數據的動態基線 (中位數)
+            let validScores = rawScores.filter(s => s !== null).sort((a, b) => a - b);
+            if (validScores.length < 5) {
+                updateStatus("有效氣流點太少，請確保吹氣/吸氣力道足夠。");
+                return;
+            }
+            
+            let lowBound = validScores[Math.floor(validScores.length * 0.35)];
+            let highBound = validScores[Math.floor(validScores.length * 0.65)];
 
-            // 4. 時域遲滯鎖 (Hysteresis Lock)
-            let states = [];
-            let currState = 0; // 0: Inhale, 1: Exhale
-            let lockMargin = 0.12;
+            // 4. 強制狀態自鎖（State Locking）— 避免過渡期跳動
+            let lockedStates = [];
+            let currentState = 0; // 0: Inhale, 1: Exhale
 
-            for (let i = 0; i < scores.length; i++) {
-                let sc = scores[i];
-                if (sc === null) {
-                    states.push(-1);
+            for (let i = 0; i < rawScores.length; i++) {
+                let score = rawScores[i];
+                if (score === null) {
+                    lockedStates.push(-1);
                     continue;
                 }
-                if (currState === 0) {
-                    if (sc > (baseline + lockMargin)) currState = 1;
+
+                if (currentState === 0) {
+                    if (score > highBound) currentState = 1;
                 } else {
-                    if (sc < (baseline - lockMargin)) currState = 0;
+                    if (score < lowBound) currentState = 0;
                 }
-                states.push(currState);
+                lockedStates.push(currentState);
             }
 
-            // 5. 五點中位數平滑消除微小雜波 (5-Point Median Smooth)
-            let smoothStates = [...states];
-            for (let i = 2; i < states.length - 2; i++) {
-                if (states[i] === -1) continue;
-                let win = [states[i-2], states[i-1], states[i], states[i+1], states[i+2]].filter(s => s !== -1);
-                let ones = win.filter(s => s === 1).length;
-                smoothStates[i] = (ones > win.length / 2) ? 1 : 0;
+            // 5. 擴大滑動平滑視窗 (7 點中位數濾波)
+            let smoothedStates = [...lockedStates];
+            const W = 3;
+            for (let i = W; i < lockedStates.length - W; i++) {
+                if (lockedStates[i] === -1) continue;
+                let window = lockedStates.slice(i - W, i + W + 1).filter(s => s !== -1);
+                if (window.length > 0) {
+                    let ones = window.filter(s => s === 1).length;
+                    smoothedStates[i] = (ones > window.length / 2) ? 1 : 0;
+                }
             }
 
-            // 6. 區段併合與極短突波剔除
+            // 6. 併合區段並剔除短於 0.4 秒的瞬時雜訊
             pklSegments = [];
             let segStart = -1, segState = -1;
 
-            for (let i = 0; i < smoothStates.length; i++) {
-                let st = smoothStates[i];
+            for (let i = 0; i < smoothedStates.length; i++) {
+                let st = smoothedStates[i];
                 if (st !== segState) {
                     if (segState !== -1 && segStart !== -1) {
                         let dur = records[i - 1].elapsed - records[segStart].elapsed;
-                        if (dur >= 0.2) {
+                        if (dur >= 0.4) {
                             pklSegments.push({
                                 state: (segState === 0) ? "Inspiration" : "Expiration",
                                 start_index: segStart, end_index: i - 1,
@@ -462,13 +466,15 @@
                             });
                         }
                     }
-                    segState = st; segStart = i;
+                    segState = st;
+                    segStart = i;
                 }
             }
 
             if (segState !== -1 && segStart !== -1) {
                 let lastIdx = records.length - 1;
-                if ((records[lastIdx].elapsed - records[segStart].elapsed) >= 0.2) {
+                let dur = records[lastIdx].elapsed - records[segStart].elapsed;
+                if (dur >= 0.4) {
                     pklSegments.push({
                         state: (segState === 0) ? "Inspiration" : "Expiration",
                         start_index: segStart, end_index: lastIdx,
@@ -477,7 +483,7 @@
                 }
             }
 
-            updateStatus(`高精準 PKL 切分完成！共劃分出 ${pklSegments.length} 個穩定呼吸區段。`);
+            updateStatus(`防抖切分完成！共劃分出 ${pklSegments.length} 個穩定呼吸區段。`);
             flowChart.update();
         }
 
@@ -566,7 +572,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 高畫質 Retina Canvas 遊戲引擎（極致美術細節繪製） -->
+    <!-- 🎨 2. 高畫質 Retina Canvas 遊戲引擎 -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -784,13 +790,11 @@
         let globalAnimFrame = 0;
         let logicalWidth = 800, logicalHeight = 480;
 
-        // 🎨 高畫質圖像繪製引擎 (HD Visual Renderer)
         function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag) {
             gameCtx.save();
             gameCtx.translate(x, y);
             gameCtx.rotate(angle);
 
-            // 動態噴射焰火 (Flame Glow)
             if (flowMag > 2.0) {
                 let fLen = Math.min(45, flowMag * 0.5) + Math.sin(globalAnimFrame * 0.4) * 6;
                 gameCtx.save();
@@ -807,7 +811,6 @@
                 gameCtx.restore();
             }
 
-            // 機身金屬陰影與本體
             gameCtx.shadowBlur = 15; gameCtx.shadowColor = '#00d2d3';
             let hullGrad = gameCtx.createLinearGradient(-15, -15, 30, 15);
             hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#475569'); hullGrad.addColorStop(1, '#0f172a');
@@ -816,16 +819,13 @@
             gameCtx.moveTo(28, 0); gameCtx.lineTo(-14, -16); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 16);
             gameCtx.closePath(); gameCtx.fill();
 
-            // 駕駛艙高光玻璃
             let glassGrad = gameCtx.createLinearGradient(0, -6, 18, 6);
             glassGrad.addColorStop(0, '#38bdf8'); glassGrad.addColorStop(1, '#0284c7');
             gameCtx.fillStyle = glassGrad;
             gameCtx.beginPath(); gameCtx.ellipse(6, 0, 10, 4, 0, 0, Math.PI * 2); gameCtx.fill();
 
-            // 機翼邊界螢光線條
             gameCtx.strokeStyle = '#38bdf8'; gameCtx.lineWidth = 1.5; gameCtx.stroke();
 
-            // 防護罩 (Shield)
             if (hasShield) {
                 gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.04);
                 gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 20;
@@ -837,7 +837,6 @@
             gameCtx.restore();
         }
 
-        // 🎨 HD 道具與障礙物繪製 (HD Objects)
         function drawCollectibleHD(c) {
             gameCtx.save();
             gameCtx.translate(c.x, c.y);
@@ -997,7 +996,6 @@
             for(let i=0; i<60; i++) stars.push({ x: Math.random() * logicalWidth, y: Math.random() * logicalHeight, size: Math.random() * 2 + 0.8, baseSpeed: Math.random() * 2 + 0.5 });
         }
 
-        // 螢幕 Retina 雙倍超高解析度自動適應 Scaling 引擎
         function resizeGameCanvas() {
             if (gameCanvas && gameCanvas.parentElement) {
                 let dpr = window.devicePixelRatio || 1;
