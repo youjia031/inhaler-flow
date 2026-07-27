@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Modular Game Engine</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -93,13 +93,30 @@
             background: rgba(255,255,255,0.06); padding: 25px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.15);
             text-align: left; max-width: 850px; width: 92%; max-height: 85vh; overflow-y: auto;
         }
-        .lore-section { margin-bottom: 20px; }
-        .lore-title { font-size: 18px; color: #f1c40f; border-bottom: 2px solid #f1c40f; padding-bottom: 5px; margin-bottom: 12px; font-weight: bold; }
-        .lore-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .lore-item { background: rgba(0,0,0,0.6); padding: 10px 14px; border-radius: 8px; border-left: 4px solid #3498db; }
-        .lore-item h4 { margin: 0 0 4px 0; color: #00d2d3; font-size: 14px; }
-        .lore-item p { margin: 0; font-size: 11px; color: #ccc; line-height: 1.3; }
-        .lore-item .skill { font-size: 11px; color: #f39c12; margin-top: 5px; font-weight: bold; }
+
+        /* 🎥 獨立點選式教學影片展覽模式 CSS */
+        .demo-container {
+            display: none; background: #0b0f19; padding: 20px; border-radius: 8px; height: 500px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 2px solid #8e44ad; box-sizing: border-box; color: white;
+            overflow-y: auto;
+        }
+        .demo-layout { display: flex; gap: 20px; height: 280px; margin-bottom: 15px; }
+        .demo-viewport {
+            flex: 1; background: #000; border-radius: 12px; border: 2px solid #8e44ad;
+            display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden;
+            box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
+        }
+        .demo-info-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .demo-card { background: rgba(255,255,255,0.06); padding: 20px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.15); height: 100%; box-sizing: border-box; }
+        
+        .demo-section-title { font-size: 14px; color: #f1c40f; margin: 10px 0 6px 0; font-weight: bold; }
+        .demo-grid-menu { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .demo-btn {
+            padding: 6px 12px; font-size: 13px; background: #1f2937; color: white;
+            border: 1px solid #374151; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+        }
+        .demo-btn:hover { background: #374151; border-color: #9ca3af; }
+        .demo-btn.active { background: #8e44ad; border-color: #a855f7; font-weight: bold; box-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
     </style>
 </head>
 <body>
@@ -107,7 +124,7 @@
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
-        <p>Acoustic inhaler flow visualization & Flight Game</p>
+        <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
     <div class="control-panel">
@@ -137,6 +154,33 @@
         <canvas id="flowChart"></canvas>
     </div>
 
+    <!-- 🎥 獨立點選式教學影片展覽模式 -->
+    <div class="demo-container" id="demoContainer">
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 點選式物件教學與動態特寫影音展台</h3>
+        
+        <div class="demo-layout">
+            <div class="demo-viewport">
+                <canvas id="demoCanvas" width="320" height="260"></canvas>
+            </div>
+            <div class="demo-info-panel">
+                <div class="demo-card">
+                    <h4 id="demoItemTitle" style="margin:0 0 8px 0; color:#00d2d3; font-size:20px;">請點擊下方按鈕觀看特寫</h4>
+                    <p id="demoItemDesc" style="font-size:14px; color:#ccc; line-height:1.6; margin-bottom:10px;">點擊下方的 Boss 或道具按鈕，影片視窗會即時播放該物件的特寫示範動態！</p>
+                    <div id="demoItemSkill" style="font-size:14px; color:#f39c12; font-weight:bold; border-top:1px dashed #444; padding-top:8px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 👾 5 大 Boss 專區按鈕 -->
+        <div class="demo-section-title">👾 5 大 Boss 影片展台 (點擊播放特寫)</div>
+        <div class="demo-grid-menu" id="bossDemoMenuList"></div>
+
+        <!-- 🎁 10 大道具與障礙物專區按鈕 -->
+        <div class="demo-section-title">🎁 7 大益處道具 & 💥 3 大危險障礙 (點擊播放特寫)</div>
+        <div class="demo-grid-menu" id="itemDemoMenuList"></div>
+    </div>
+
+    <!-- 🎮 遊戲本體 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
@@ -161,7 +205,7 @@
             </div>
 
             <div class="hud-badge">
-                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件與招式指南</button>
+                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 全物件與招式指南</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
                 <span style="margin-left:5px;">❤️ HP</span> 
@@ -169,90 +213,9 @@
             </div>
         </div>
 
-        <!-- 📖 完整版 10+5 全物件與招式機制說明書 -->
         <div class="modal-screen" id="manualModal" style="display: none;">
             <div class="modal-card">
                 <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 5大Boss招式機制與10大道具指南 📖</h2>
-                
-                <!-- Boss 體系與招式機制 -->
-                <div class="lore-section">
-                    <div class="lore-title">👾 5 大 Boss 專屬招式與技能機制</div>
-                    <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#3498db;">
-                            <h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4>
-                            <p>大氣層氣流凝聚而成的漩渦體。</p>
-                            <div class="skill">⚔️ 招式：【風暴亂流】隨機在飛船上下方生成高密度烏雲團，逼迫玩家頻繁調整吸吐氣高度。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#f1c40f;">
-                            <h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4>
-                            <p>帶有高壓電極的金屬神鷹。</p>
-                            <div class="skill">⚔️ 招式：【高壓雷擊】每 45 幀向前方發射直線雷擊雲團，撞擊將造成 20 點重傷！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#e67e22;">
-                            <h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4>
-                            <p>熾熱的外星隕石核心，擁有超厚外裝甲。</p>
-                            <div class="skill">⚔️ 招式：【熔岩噴濺】週期性噴出熾熱黏液，命中後會造成 10 點傷害並施加減速 Debuff。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#9b59b6;">
-                            <h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4>
-                            <p>外星艦隊旗艦，配備高頻離子炮。</p>
-                            <div class="skill">⚔️ 招式：【高頻離子炮】釋放暗黑晶石陣，碰撞會直接扣除玩家 100 分與 15 點 HP！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;">
-                            <h4>🐉 地獄黑金赤龍 (Final Boss)</h4>
-                            <p>終極霸主！極度考驗玩家的呼吸控氣穩定度。</p>
-                            <div class="skill">⚔️ 招式：【龍息離子焰】張開巨顎時頻繁噴射雙重衝擊波，考驗玩家在極短時間內的吸吐氣轉換！</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 10 大道具與障礙物介紹 -->
-                <div class="lore-section">
-                    <div class="lore-title">🎁 7 大益處道具 & 💥 3 大危險障礙</div>
-                    <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#f1c40f;">
-                            <h4>🟡 金幣 (Coin)</h4>
-                            <p>拾取獲得 +50 分，並能累積 COMBO 數，對 Boss 造成小額傷害。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#00d2d3;">
-                            <h4>🔫 雷射光束 (Laser)</h4>
-                            <p>獲得前方發射的速射雷射，能直接穿透並攻擊 Boss (25 傷害)。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c;">
-                            <h4>🚀 重型導彈 (Missile)</h4>
-                            <p>發射高傷害追蹤導彈，對前方障礙與 Boss 造成 30 傷害。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#a55eea;">
-                            <h4>💣 畫面清屏炸彈 (Bomb)</h4>
-                            <p>釋放能量波引爆全螢幕障礙物，並直接給予 Boss 40 點重創！</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#2ecc71;">
-                            <h4>❤️ 醫療包 (Heart)</h4>
-                            <p>修復飛船裝甲，立即補充 25 點 HP 血量。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#38bdf8;">
-                            <h4>🛡️ 能量護盾 (Shield)</h4>
-                            <p>提供一層防護罩，可完全抵擋一次撞擊傷害。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#f39c12;">
-                            <h4>🧲 磁鐵 (Magnet)</h4>
-                            <p>產生磁場，自動吸引周圍的所有金幣與道具。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#94a3b8;">
-                            <h4>☁️ 烏雲 (Cloud) - 障礙物</h4>
-                            <p>造成 20 點傷害，會阻礙視線與飛船移動。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#d35400;">
-                            <h4>🧪 黏液 (Slime) - 障礙物</h4>
-                            <p>造成 10 點傷害，並施加減速 Debuff，使飛船轉向變慢。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#a855f7;">
-                            <h4>💎 暗黑晶石 (Dark Gem) - 障礙物</h4>
-                            <p>造成 15 點傷害，並扣除玩家 100 點積分。</p>
-                        </div>
-                    </div>
-                </div>
-
                 <div style="text-align: center; margin-top: 15px;">
                     <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉指南</button>
                 </div>
@@ -403,19 +366,15 @@
 
             let totalEnergy = e1 + e2 + e3 + e4 + e5;
 
-            // 1. 低流速死區 (Deadzone)：能量太低視為 Idle，強行停止漂移亂跳
             if (totalEnergy < 5.0) { 
                 return "idle"; 
             }
 
-            // 2. 單幀頻譜重心
             let instantaneousCentroid = (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / (totalEnergy + 0.0001);
 
-            // 3. EMA 平滑：濾除瞬間毛刺噪聲
             if (lastCentroidEMA === 0) lastCentroidEMA = instantaneousCentroid;
             lastCentroidEMA = (0.25 * instantaneousCentroid) + (0.75 * lastCentroidEMA);
 
-            // 4. 遲滯雙門檻 (Hysteresis Buffer)：2.3 ~ 2.7 為防抖灰色帶
             if (stableBreathState === "inhalation") {
                 if (lastCentroidEMA > 2.7) {
                     stateHoldTimer++;
@@ -672,7 +631,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲引擎：支援多關卡同步機制與預留介面 -->
+    <!-- 🎨 2. 遊戲與點選式動態影音展台 Engine -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -680,12 +639,20 @@
                 <label style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px;">
                     視窗: 
                     <select id="viewModeSelect" onchange="switchViewMode(this.value)">
+                        <option value="both" selected>全模式 (📊+🎮)</option>
                         <option value="chart">📊 專業圖表</option>
                         <option value="game">🎮 氣流飛行員 (Game)</option>
-                        <option value="both" selected>全模式 (併排顯示 📊+🎮)</option>
+                        <option value="demo">🎬 點選式影音展示模式</option>
                     </select>
                 </label>
-                <!-- 🎨 預留介面：自訂外觀風格 (暫不安裝圖片渲染，等後續指令) -->
+                <label>
+                    難度: 
+                    <select id="gameDifficultySelect">
+                        <option value="easy">輕鬆 (溫和無痛)</option>
+                        <option value="normal" selected>標準 (均衡演算法)</option>
+                        <option value="hard">專家 (極速高懲罰)</option>
+                    </select>
+                </label>
                 <label>
                     🎨 畫風外觀: 
                     <select id="skinStyleSelect" disabled>
@@ -693,7 +660,6 @@
                         <option value="custom">自訂圖片PNG (未啟用)</option>
                     </select>
                 </label>
-                <!-- 🛠️ 預留介面：自訂關卡編輯器 (暫不安裝，等後續指令) -->
                 <button class="btn info-btn" style="padding:4px 8px; font-size:12px;" disabled title="等穩定後再開啟">🛠️ 自訂關卡(暫關)</button>
                 <label>
                     ⚡ 倍速: 
@@ -725,7 +691,7 @@
 
         function playAudioEffect(type) {
             const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return;
+            if (currentView === 'chart' || currentView === 'demo') return;
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -773,7 +739,7 @@
         function startBGM() {
             stopBGM();
             const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return;
+            if (currentView === 'chart' || currentView === 'demo') return;
             const soundEnabled = document.getElementById('soundToggle')?.checked;
             if (!soundEnabled) return;
 
@@ -811,13 +777,21 @@
         function switchViewMode(mode) {
             const chartBox = document.querySelector('.chart-container');
             const gameBox = document.getElementById('gameContainer');
+            const demoBox = document.getElementById('demoContainer');
+
+            chartBox.style.display = 'none';
+            gameBox.style.display = 'none';
+            demoBox.style.display = 'none';
 
             if (mode === 'both') {
                 chartBox.style.display = 'block'; gameBox.style.display = 'block'; chartBox.style.marginBottom = '15px';
             } else if (mode === 'game') {
-                chartBox.style.display = 'none'; gameBox.style.display = 'block';
+                gameBox.style.display = 'block';
+            } else if (mode === 'demo') {
+                demoBox.style.display = 'block';
+                startDemoLoop();
             } else {
-                chartBox.style.display = 'block'; gameBox.style.display = 'none';
+                chartBox.style.display = 'block';
             }
 
             stopGameEngine();
@@ -939,158 +913,158 @@
             gameCtx.restore();
         }
 
-        function drawCollectibleHD(c) {
-            gameCtx.save();
-            gameCtx.translate(c.x, c.y);
-            gameCtx.shadowBlur = 12;
+        function drawCollectibleHD(c, customCtx = gameCtx) {
+            customCtx.save();
+            customCtx.translate(c.x, c.y);
+            customCtx.shadowBlur = 12;
 
             if (c.type === 'coin') {
-                gameCtx.shadowColor = '#f1c40f';
-                let g = gameCtx.createRadialGradient(-2, -2, 1, 0, 0, c.radius);
+                customCtx.shadowColor = '#f1c40f';
+                let g = customCtx.createRadialGradient(-2, -2, 1, 0, 0, c.radius);
                 g.addColorStop(0, '#fff'); g.addColorStop(0.6, '#f1c40f'); g.addColorStop(1, '#b7950b');
-                gameCtx.fillStyle = g; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.fillStyle = g; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (c.type === 'laser') {
-                gameCtx.shadowColor = '#00d2d3';
-                gameCtx.fillStyle = '#00d2d3'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#00d2d3';
+                customCtx.fillStyle = '#00d2d3'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (c.type === 'missile') {
-                gameCtx.shadowColor = '#e74c3c';
-                gameCtx.fillStyle = '#ff6b6b'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#e74c3c';
+                customCtx.fillStyle = '#ff6b6b'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (c.type === 'bomb') {
-                gameCtx.shadowColor = '#a55eea';
-                gameCtx.fillStyle = '#a55eea'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#a55eea';
+                customCtx.fillStyle = '#a55eea'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (c.type === 'heart') {
-                gameCtx.shadowColor = '#2ecc71';
-                gameCtx.fillStyle = '#2ecc71'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#2ecc71';
+                customCtx.fillStyle = '#2ecc71'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (c.type === 'shield') {
-                gameCtx.shadowColor = '#38bdf8';
-                gameCtx.fillStyle = '#38bdf8'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#38bdf8';
+                customCtx.fillStyle = '#38bdf8'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (c.type === 'magnet') {
-                gameCtx.shadowColor = '#f39c12';
-                gameCtx.fillStyle = '#f39c12'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#f39c12';
+                customCtx.fillStyle = '#f39c12'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
             }
-            gameCtx.restore();
+            customCtx.restore();
         }
 
-        function drawObstacleHD(o) {
-            gameCtx.save();
-            gameCtx.translate(o.x, o.y);
-            gameCtx.shadowBlur = 15;
+        function drawObstacleHD(o, customCtx = gameCtx) {
+            customCtx.save();
+            customCtx.translate(o.x, o.y);
+            customCtx.shadowBlur = 15;
 
             if (o.type === 'cloud') {
-                gameCtx.shadowColor = '#94a3b8';
-                gameCtx.fillStyle = '#475569'; gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#94a3b8';
+                customCtx.fillStyle = '#475569'; customCtx.beginPath(); customCtx.arc(0, 0, o.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (o.type === 'slime') {
-                gameCtx.shadowColor = '#d35400';
-                gameCtx.fillStyle = '#e67e22'; gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#d35400';
+                customCtx.fillStyle = '#e67e22'; customCtx.beginPath(); customCtx.arc(0, 0, o.radius, 0, Math.PI * 2); customCtx.fill();
             } else if (o.type === 'darkgem') {
-                gameCtx.shadowColor = '#a855f7';
-                gameCtx.fillStyle = '#3b0764'; gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.shadowColor = '#a855f7';
+                customCtx.fillStyle = '#3b0764'; customCtx.beginPath(); customCtx.arc(0, 0, o.radius, 0, Math.PI * 2); customCtx.fill();
             }
-            gameCtx.restore();
+            customCtx.restore();
         }
 
-        function drawAirElemental(x, y) {
-            gameCtx.save(); gameCtx.translate(x, y);
-            gameCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
-            gameCtx.beginPath(); gameCtx.arc(0, 0, 32 + Math.sin(globalAnimFrame * 0.2) * 5, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 3; gameCtx.stroke();
-            gameCtx.restore();
+        function drawAirElemental(x, y, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
+            customCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
+            customCtx.beginPath(); customCtx.arc(0, 0, 32 + Math.sin(globalAnimFrame * 0.2) * 5, 0, Math.PI * 2); customCtx.fill();
+            customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 3; customCtx.stroke();
+            customCtx.restore();
         }
 
-        function drawRealisticEagle(x, y, attackTimer) {
-            gameCtx.save(); gameCtx.translate(x, y);
+        function drawRealisticEagle(x, y, attackTimer, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
             let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
             let isAtk = (attackTimer % 50 > 35);
 
             [-1, 1].forEach(side => {
-                gameCtx.save(); gameCtx.scale(1, side); gameCtx.rotate(flapAngle);
-                let wingGrad = gameCtx.createLinearGradient(0, -60, 40, 0);
+                customCtx.save(); customCtx.scale(1, side); customCtx.rotate(flapAngle);
+                let wingGrad = customCtx.createLinearGradient(0, -60, 40, 0);
                 wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(0.5, '#d35400'); wingGrad.addColorStop(1, '#2c3e50');
-                gameCtx.fillStyle = wingGrad;
+                customCtx.fillStyle = wingGrad;
                 for (let i = 0; i < 6; i++) {
-                    gameCtx.beginPath();
-                    gameCtx.moveTo(-15 + i * 6, -5 - i * 6);
-                    gameCtx.quadraticCurveTo(20 + i * 6, -65 - i * 10, 45 + i * 4, -50 - i * 8);
-                    gameCtx.quadraticCurveTo(10, -15, -15 + i * 6, -5 - i * 6);
-                    gameCtx.fill(); gameCtx.strokeStyle = "#ffe100"; gameCtx.lineWidth = 1; gameCtx.stroke();
+                    customCtx.beginPath();
+                    customCtx.moveTo(-15 + i * 6, -5 - i * 6);
+                    customCtx.quadraticCurveTo(20 + i * 6, -65 - i * 10, 45 + i * 4, -50 - i * 8);
+                    customCtx.quadraticCurveTo(10, -15, -15 + i * 6, -5 - i * 6);
+                    customCtx.fill(); customCtx.strokeStyle = "#ffe100"; customCtx.lineWidth = 1; customCtx.stroke();
                 }
-                gameCtx.restore();
+                customCtx.restore();
             });
 
-            let bodyGrad = gameCtx.createRadialGradient(-5, 0, 5, 0, 0, 40);
+            let bodyGrad = customCtx.createRadialGradient(-5, 0, 5, 0, 0, 40);
             bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(0.4, '#7f8c8d'); bodyGrad.addColorStop(1, '#2c3e50');
-            gameCtx.fillStyle = bodyGrad; gameCtx.beginPath();
-            gameCtx.moveTo(35, 0); gameCtx.quadraticCurveTo(0, -22, -35, -12); gameCtx.quadraticCurveTo(-45, 0, -35, 12); gameCtx.quadraticCurveTo(0, 22, 35, 0);
-            gameCtx.fill(); gameCtx.strokeStyle = "#f1c40f"; gameCtx.lineWidth = 1.5; gameCtx.stroke();
+            customCtx.fillStyle = bodyGrad; customCtx.beginPath();
+            customCtx.moveTo(35, 0); customCtx.quadraticCurveTo(0, -22, -35, -12); customCtx.quadraticCurveTo(-45, 0, -35, 12); customCtx.quadraticCurveTo(0, 22, 35, 0);
+            customCtx.fill(); customCtx.strokeStyle = "#f1c40f"; customCtx.lineWidth = 1.5; customCtx.stroke();
 
-            let beakGrad = gameCtx.createLinearGradient(-15, -10, -45, 20);
+            let beakGrad = customCtx.createLinearGradient(-15, -10, -45, 20);
             beakGrad.addColorStop(0, '#ffe100'); beakGrad.addColorStop(1, '#d35400');
-            gameCtx.fillStyle = beakGrad; gameCtx.beginPath();
-            gameCtx.moveTo(-15, -8); gameCtx.quadraticCurveTo(-38, -10, -48, 12); gameCtx.quadraticCurveTo(-30, 8, -20, 5); gameCtx.lineTo(-15, 8);
-            gameCtx.closePath(); gameCtx.fill(); gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 1.2; gameCtx.stroke();
+            customCtx.fillStyle = beakGrad; customCtx.beginPath();
+            customCtx.moveTo(-15, -8); customCtx.quadraticCurveTo(-38, -10, -48, 12); customCtx.quadraticCurveTo(-30, 8, -20, 5); customCtx.lineTo(-15, 8);
+            customCtx.closePath(); customCtx.fill(); customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 1.2; customCtx.stroke();
 
-            gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath(); gameCtx.ellipse(-10, -7, 6, 4, -Math.PI / 8, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.fillStyle = isAtk ? "#ff0000" : "#d35400"; gameCtx.beginPath(); gameCtx.arc(-11, -7, 2.8, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.restore();
+            customCtx.fillStyle = "#ffffff"; customCtx.beginPath(); customCtx.ellipse(-10, -7, 6, 4, -Math.PI / 8, 0, Math.PI * 2); customCtx.fill();
+            customCtx.fillStyle = isAtk ? "#ff0000" : "#d35400"; customCtx.beginPath(); customCtx.arc(-11, -7, 2.8, 0, Math.PI * 2); customCtx.fill();
+            customCtx.restore();
         }
 
-        function drawRealisticUFO(x, y, attackTimer) {
-            gameCtx.save(); gameCtx.translate(x, y);
+        function drawRealisticUFO(x, y, attackTimer, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
             let isAtk = (attackTimer % 50 > 35);
 
-            gameCtx.fillStyle = isAtk ? 'rgba(231, 76, 60, 0.25)' : 'rgba(0, 210, 211, 0.2)';
-            gameCtx.beginPath(); gameCtx.ellipse(0, 0, 70, 35, 0, 0, Math.PI * 2); gameCtx.fill();
+            customCtx.fillStyle = isAtk ? 'rgba(231, 76, 60, 0.25)' : 'rgba(0, 210, 211, 0.2)';
+            customCtx.beginPath(); customCtx.ellipse(0, 0, 70, 35, 0, 0, Math.PI * 2); customCtx.fill();
 
-            let hullGrad = gameCtx.createLinearGradient(-60, 0, 60, 20);
+            let hullGrad = customCtx.createLinearGradient(-60, 0, 60, 20);
             hullGrad.addColorStop(0, '#2c3e50'); hullGrad.addColorStop(0.5, '#bdc3c7'); hullGrad.addColorStop(1, '#1e272e');
-            gameCtx.fillStyle = hullGrad; gameCtx.beginPath();
-            gameCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 2; gameCtx.stroke();
+            customCtx.fillStyle = hullGrad; customCtx.beginPath();
+            customCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); customCtx.fill();
+            customCtx.strokeStyle = '#00d2d3'; customCtx.lineWidth = 2; customCtx.stroke();
 
-            let domeGrad = gameCtx.createRadialGradient(-10, -15, 2, 0, -10, 25);
+            let domeGrad = customCtx.createRadialGradient(-10, -15, 2, 0, -10, 25);
             domeGrad.addColorStop(0, '#ffffff'); domeGrad.addColorStop(0.5, '#3498db'); domeGrad.addColorStop(1, '#12051e');
-            gameCtx.fillStyle = domeGrad; gameCtx.beginPath(); gameCtx.ellipse(0, -8, 28, 18, 0, 0, Math.PI * 2); gameCtx.fill();
+            customCtx.fillStyle = domeGrad; customCtx.beginPath(); customCtx.ellipse(0, -8, 28, 18, 0, 0, Math.PI * 2); customCtx.fill();
 
             for (let i = -3; i <= 3; i++) {
-                gameCtx.fillStyle = (i % 2 === 0) ? '#f1c40f' : '#e74c3c';
-                gameCtx.beginPath(); gameCtx.arc(i * 15, 18 - Math.abs(i) * 2, 4, 0, Math.PI * 2); gameCtx.fill();
+                customCtx.fillStyle = (i % 2 === 0) ? '#f1c40f' : '#e74c3c';
+                customCtx.beginPath(); customCtx.arc(i * 15, 18 - Math.abs(i) * 2, 4, 0, Math.PI * 2); customCtx.fill();
             }
-            gameCtx.restore();
+            customCtx.restore();
         }
 
-        function drawRealisticDragon(x, y, attackTimer) {
-            gameCtx.save(); gameCtx.translate(x, y);
+        function drawRealisticDragon(x, y, attackTimer, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
             let jawOpen = (attackTimer % 50 > 35) ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
 
-            gameCtx.fillStyle = '#f1c40f';
-            gameCtx.beginPath(); gameCtx.moveTo(5, -12 - jawOpen); gameCtx.quadraticCurveTo(25, -45 - jawOpen, -5, -22 - jawOpen); gameCtx.fill();
+            customCtx.fillStyle = '#f1c40f';
+            customCtx.beginPath(); customCtx.moveTo(5, -12 - jawOpen); customCtx.quadraticCurveTo(25, -45 - jawOpen, -5, -22 - jawOpen); customCtx.fill();
 
-            let upperGrad = gameCtx.createLinearGradient(20, 0, -40, 0);
+            let upperGrad = customCtx.createLinearGradient(20, 0, -40, 0);
             upperGrad.addColorStop(0, '#78281f'); upperGrad.addColorStop(1, '#e74c3c');
-            gameCtx.fillStyle = upperGrad;
-            gameCtx.beginPath(); gameCtx.moveTo(18, -jawOpen); gameCtx.lineTo(-38, -18 - jawOpen); gameCtx.lineTo(-42, -5 - jawOpen); gameCtx.lineTo(-12, -2);
-            gameCtx.closePath(); gameCtx.fill();
+            customCtx.fillStyle = upperGrad;
+            customCtx.beginPath(); customCtx.moveTo(18, -jawOpen); customCtx.lineTo(-38, -18 - jawOpen); customCtx.lineTo(-42, -5 - jawOpen); customCtx.lineTo(-12, -2);
+            customCtx.closePath(); customCtx.fill();
 
-            gameCtx.fillStyle = '#512e5f';
-            gameCtx.beginPath(); gameCtx.moveTo(18, jawOpen); gameCtx.lineTo(-35, 18 + jawOpen); gameCtx.lineTo(-12, 2);
-            gameCtx.closePath(); gameCtx.fill();
+            customCtx.fillStyle = '#512e5f';
+            customCtx.beginPath(); customCtx.moveTo(18, jawOpen); customCtx.lineTo(-35, 18 + jawOpen); customCtx.lineTo(-12, 2);
+            customCtx.closePath(); customCtx.fill();
 
-            gameCtx.fillStyle = '#ffffff';
+            customCtx.fillStyle = '#ffffff';
             for (let t = 0; t < 5; t++) {
-                gameCtx.beginPath(); gameCtx.moveTo(-10 - t * 6, -jawOpen); gameCtx.lineTo(-13 - t * 6, -jawOpen + 6); gameCtx.lineTo(-16 - t * 6, -jawOpen); gameCtx.fill();
-                gameCtx.beginPath(); gameCtx.moveTo(-10 - t * 6, jawOpen); gameCtx.lineTo(-13 - t * 6, jawOpen - 6); gameCtx.lineTo(-16 - t * 6, jawOpen); gameCtx.fill();
+                customCtx.beginPath(); customCtx.moveTo(-10 - t * 6, -jawOpen); customCtx.lineTo(-13 - t * 6, -jawOpen + 6); customCtx.lineTo(-16 - t * 6, -jawOpen); customCtx.fill();
+                customCtx.beginPath(); customCtx.moveTo(-10 - t * 6, jawOpen); customCtx.lineTo(-13 - t * 6, jawOpen - 6); customCtx.lineTo(-16 - t * 6, jawOpen); customCtx.fill();
             }
 
-            gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(-5, -12 - jawOpen, 5, 0, Math.PI * 2); gameCtx.fill();
-            gameCtx.restore();
+            customCtx.fillStyle = '#f1c40f'; customCtx.beginPath(); customCtx.arc(-5, -12 - jawOpen, 5, 0, Math.PI * 2); customCtx.fill();
+            customCtx.restore();
         }
 
-        function drawBossHD(boss) {
+        function drawBossHD(boss, customCtx = gameCtx) {
             let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            if (boss.name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY);
-            else if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer);
-            else if (boss.name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer);
-            else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer);
+            if (boss.name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY, customCtx);
+            else if (boss.name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
+            else if (boss.name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
+            else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
         }
 
         function initStars() {
@@ -1132,7 +1106,6 @@
             gameLoop();
         }
 
-        // 🎯 修正：根據當前 Stage 完美鎖定出對應名稱的 Boss，解決對不上的問題
         function triggerBossSpawn(type) {
             let theme = getStageTheme(currentStage);
             let bName = (type === 'mini') ? theme.miniBoss : theme.stageBoss;
@@ -1211,7 +1184,6 @@
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
                 
-                // 吸氣 (curReadEst > 0) 往上 (-Y)，吐氣 (curReadEst < 0) 往下 (+Y)
                 let flowOffsetY = 0;
                 if (curReadEst > 0) { 
                     flowOffsetY = -(Math.abs(curReadEst) * 3.5); 
@@ -1219,7 +1191,7 @@
                     flowOffsetY = (Math.abs(curReadEst) * 3.5);  
                 }
 
-                let targetY = (logicalHeight * 0.5) + flowOffsetY; // 靜止/低流速自動留於正中間 50%
+                let targetY = (logicalHeight * 0.5) + flowOffsetY;
                 targetY = Math.max(40, Math.min(logicalHeight - 40, targetY));
                 
                 let dy = targetY - rocket.y;
@@ -1241,9 +1213,13 @@
                 else if (rand < 0.034) collectibles.push({ type: 'shield', x: logicalWidth + 20, y: spawnY, radius: 13, collected: false });
                 else if (rand < 0.037) collectibles.push({ type: 'magnet', x: logicalWidth + 20, y: spawnY, radius: 13, collected: false });
 
-                if (Math.random() < 0.012) obstacles.push({ type: 'cloud', x: logicalWidth + 30, y: spawnY, radius: 15, damage: 20, hit: false });
-                else if (Math.random() < 0.008) obstacles.push({ type: 'slime', x: logicalWidth + 30, y: spawnY, radius: 14, damage: 10, hit: false });
-                else if (Math.random() < 0.006) obstacles.push({ type: 'darkgem', x: logicalWidth + 30, y: spawnY, radius: 13, damage: 15, hit: false });
+                let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+                let obsRate = (diff === 'easy') ? 0.005 : (diff === 'hard') ? 0.025 : 0.012;
+                let dmgMult = (diff === 'easy') ? 0.5 : (diff === 'hard') ? 1.5 : 1.0;
+
+                if (Math.random() < obsRate) obstacles.push({ type: 'cloud', x: logicalWidth + 30, y: spawnY, radius: 15, damage: 20 * dmgMult, hit: false });
+                else if (Math.random() < obsRate * 0.7) obstacles.push({ type: 'slime', x: logicalWidth + 30, y: spawnY, radius: 14, damage: 10 * dmgMult, hit: false });
+                else if (Math.random() < obsRate * 0.5) obstacles.push({ type: 'darkgem', x: logicalWidth + 30, y: spawnY, radius: 13, damage: 15 * dmgMult, hit: false });
 
                 collectibles.forEach((c) => {
                     if (magnetTimer > 0) {
@@ -1286,7 +1262,7 @@
                     drawBossHD(activeBoss);
                     activeBoss.attackTimer++;
                     if (activeBoss.attackTimer % 45 === 0) {
-                        obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20, hit: false });
+                        obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20 * dmgMult, hit: false });
                     }
                 }
 
@@ -1345,6 +1321,86 @@
                     sessionStartTime = Date.now();
                 }
             }, 1000);
+        }
+
+        // 🎬 3. 點選式影音展台 (Demo Showcase Engine)
+        const DEMO_ITEMS_ALL = [
+            // Boss 專區
+            { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 小 Boss，大氣層氣流凝聚而成的漩渦體。", skill: "⚔️ 招式【風暴亂流】：隨機在畫面上下方生成風暴雲團。" },
+            { category: "boss", id: "eagle", title: "🦅 雷霆金屬神鷹", desc: "Stage 1 關卡 Boss，帶有高壓電極的金屬神鷹。", skill: "⚔️ 招式【高壓雷擊】：向前方直線發射雷擊雲團，造成 20 點重傷。" },
+            { category: "boss", id: "meteor", title: "☄️ 熔岩巨型隕石", desc: "Stage 2 小 Boss，熾熱的外星隕石核心，擁有超厚外殼。", skill: "⚔️ 招式【熔岩噴濺】：噴出熾熱黏液，造成傷害並減速飛船。" },
+            { category: "boss", id: "ufo", title: "🛸 圓盤星際母艦", desc: "Stage 2 關卡 Boss，外星艦隊旗艦，配備高頻離子炮。", skill: "⚔️ 招式【高頻離子炮】：釋放暗黑晶石陣，碰撞扣 100 分與 15 HP。" },
+            { category: "boss", id: "dragon", title: "🐉 地獄黑金赤龍", desc: "Final Boss 終極霸主，張開巨顎噴射離子火焰！", skill: "⚔️ 招式【龍息離子焰】：頻繁噴射雙重衝擊波，考驗控氣切換！" },
+            
+            // 道具與障礙物專區
+            { category: "item", id: "coin", title: "🟡 金幣 (Coin)", desc: "基礎得分道具。", skill: "🎁 功能：拾取獲得 +50 分，並累積 COMBO 傷害。" },
+            { category: "item", id: "laser", title: "🔫 雷射光束 (Laser)", desc: "前向戰術武器。", skill: "🎁 功能：發射穿透雷射，直接攻擊前方 Boss (25 傷害)。" },
+            { category: "item", id: "missile", title: "🚀 重型導彈 (Missile)", desc: "高爆導彈。", skill: "🎁 功能：發射高傷害追蹤導彈 (30 傷害)。" },
+            { category: "item", id: "bomb", title: "💣 畫面清屏炸彈 (Bomb)", desc: "能量清屏波。", skill: "🎁 功能：引爆全螢幕障礙物，並重創 Boss 40 點！" },
+            { category: "item", id: "heart", title: "❤️ 醫療包 (Heart)", desc: "補給裝置。", skill: "🎁 功能：即時修復裝甲，回復 25 點 HP。" },
+            { category: "item", id: "shield", title: "🛡️ 能量護盾 (Shield)", desc: "防禦護罩。", skill: "🎁 功能：抵擋一次來自障礙物或 Boss 的撞擊傷害。" },
+            { category: "item", id: "magnet", title: "🧲 磁鐵 (Magnet)", desc: "磁場引力。", skill: "🎁 功能：自動將周圍的所有金幣與道具吸引過來。" },
+            { category: "item", id: "cloud", title: "☁️ 烏雲 (Cloud)", desc: "自然障礙物。", skill: "💥 傷害：造成 20 點傷害，干擾視線與飛行。" },
+            { category: "item", id: "slime", title: "🧪 黏液 (Slime)", desc: "外星有機黏液。", skill: "💥 傷害：造成 10 點傷害，並施加減速 Debuff。" },
+            { category: "item", id: "darkgem", title: "💎 暗黑晶石 (Dark Gem)", desc: "高危結晶。", skill: "💥 傷害：造成 15 點傷害，並扣除 100 點積分。" }
+        ];
+
+        let selectedDemoId = "eagle";
+
+        function buildDemoMenus() {
+            const bossMenu = document.getElementById('bossDemoMenuList');
+            const itemMenu = document.getElementById('itemDemoMenuList');
+            bossMenu.innerHTML = ""; itemMenu.innerHTML = "";
+
+            DEMO_ITEMS_ALL.forEach(item => {
+                let btn = document.createElement('button');
+                btn.className = `demo-btn ${item.id === selectedDemoId ? 'active' : ''}`;
+                btn.innerText = item.title;
+                btn.onclick = () => {
+                    selectedDemoId = item.id;
+                    document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('demoItemTitle').innerText = item.title;
+                    document.getElementById('demoItemDesc').innerText = item.desc;
+                    document.getElementById('demoItemSkill').innerText = item.skill;
+                };
+
+                if (item.category === 'boss') bossMenu.appendChild(btn);
+                else itemMenu.appendChild(btn);
+            });
+        }
+        buildDemoMenus();
+
+        function startDemoLoop() {
+            const dCanvas = document.getElementById('demoCanvas');
+            const dCtx = dCanvas.getContext('2d');
+
+            function renderDemo() {
+                if (document.getElementById('demoContainer').style.display === 'none') return;
+                globalAnimFrame++;
+                dCtx.fillStyle = '#080b10'; dCtx.fillRect(0, 0, 320, 260);
+
+                let cx = 160, cy = 130;
+                
+                if (selectedDemoId === 'air') drawAirElemental(cx, cy, dCtx);
+                else if (selectedDemoId === 'eagle') drawRealisticEagle(cx, cy, globalAnimFrame, dCtx);
+                else if (selectedDemoId === 'meteor') { dCtx.fillStyle='#e67e22'; dCtx.beginPath(); dCtx.arc(cx, cy, 35, 0, Math.PI*2); dCtx.fill(); }
+                else if (selectedDemoId === 'ufo') drawRealisticUFO(cx, cy, globalAnimFrame, dCtx);
+                else if (selectedDemoId === 'dragon') drawRealisticDragon(cx, cy, globalAnimFrame, dCtx);
+                else if (selectedDemoId === 'coin') drawCollectibleHD({ type: 'coin', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'laser') drawCollectibleHD({ type: 'laser', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'missile') drawCollectibleHD({ type: 'missile', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'bomb') drawCollectibleHD({ type: 'bomb', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'heart') drawCollectibleHD({ type: 'heart', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'shield') drawCollectibleHD({ type: 'shield', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'magnet') drawCollectibleHD({ type: 'magnet', x: cx, y: cy, radius: 25 }, dCtx);
+                else if (selectedDemoId === 'cloud') drawObstacleHD({ type: 'cloud', x: cx, y: cy, radius: 30 }, dCtx);
+                else if (selectedDemoId === 'slime') drawObstacleHD({ type: 'slime', x: cx, y: cy, radius: 30 }, dCtx);
+                else if (selectedDemoId === 'darkgem') drawObstacleHD({ type: 'darkgem', x: cx, y: cy, radius: 30 }, dCtx);
+
+                requestAnimationFrame(renderDemo);
+            }
+            renderDemo();
         }
     </script>
 </body>
