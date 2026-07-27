@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor (Fixed Direction Engine)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -277,7 +277,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用頻譜能量特徵分析。", err);
+                console.warn("未檢測到 rf_model.onnx，改用三維特徵複合分區演算法。", err);
             }
         }
         loadPKLModel();
@@ -319,25 +319,30 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🎯 修正即時吸吐氣偵測邏輯，避免通通誤判為 Exhalation (吐氣)
+        // 🎯 核心修復：使用三維特徵（高低頻比 + 斜率 + 中高頻比）複合計算即時狀態
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
             let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
-            let e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
+            let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
 
             if (onnxSession) {
                 try {
-                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, (fft[3]||0), e4, e5]), [1, 5]);
+                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
                     const results = await onnxSession.run({ float_input: inputTensor });
                     return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
                 } catch (e) {}
             }
             
-            // 修正無模型時的備用規則：吐氣通常在 4~5kHz 有較強顯著高頻能量
+            // 複合聲學指標：(高低頻比 * 2.0) + (斜率 * 1.2) + (中頻比 * 0.8)
             let lowE = e1 + e2 + 0.0001;
-            let highE = e4 + e5;
-            let ratio = highE / lowE;
-            return (ratio > 1.8) ? "exhalation" : "inhalation";
+            let hlRatio = (e4 + e5) / lowE;
+            let slope = (e5 - e1);
+            let midRatio = e3 / lowE;
+            
+            let compositeScore = (hlRatio * 2.0) + (slope * 1.2) + (midRatio * 0.8);
+            
+            // 複合分數門檻：大於 0.8 為吐氣，小於 0.8 為吸氣
+            return (compositeScore > 0.8) ? "exhalation" : "inhalation";
         }
 
         async function parseLine(line) {
@@ -365,7 +370,7 @@
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
 
-                // 🎯 正值代表吸氣（Inspiration），負值代表吐氣（Expiration）
+                // 正數代表吸氣 (Inspiration)，負數代表吐氣 (Expiration)
                 smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
 
                 if (flowYes && Math.abs(smoothedEst) > 0) {
@@ -390,62 +395,72 @@
             }
         }
 
-        // 🔥【強自鎖防抖】PKL Index 切分演算法
+        // 🔥【三維動態特徵分區】PKL Index 切分演算法
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
                 return; 
             }
-            updateStatus("正在使用【雙重防抖＋強自鎖】進行 PKL Index 切分...");
+            updateStatus("正在分析【三維聲學特徵 (頻比/斜率/集中度)】進行區段切分...");
 
-            const FLOW_THRESHOLD = 5.0; 
+            const FLOW_THRESHOLD = 3.5; // 濾除極小雜音
 
-            let rawScores = records.map(r => {
+            // 1. 為每個資料點計算「綜合吐氣特徵分 (Composite Exhale Score)」
+            let scores = records.map(r => {
                 if (!r.flowYes || Math.abs(r.est) < FLOW_THRESHOLD) return null;
                 let fft = r.fft;
                 let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
-                let e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
-                return (e4 + e5) / (e1 + e2 + 0.0001);
+                let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
+
+                let lowE = e1 + e2 + 0.0001;
+                let hlRatio = (e4 + e5) / lowE; // 高低頻比
+                let slope = e5 - e1;            // 頻譜斜率
+                let midRatio = e3 / lowE;       // 中頻佔比
+
+                return (hlRatio * 2.5) + (slope * 1.5) + (midRatio * 1.0);
             });
 
-            let validScores = rawScores.filter(s => s !== null).sort((a, b) => a - b);
+            // 2. 自動抓出這段波形的分數中位數 (動態拉開吸氣與吐氣的相對差異)
+            let validScores = scores.filter(s => s !== null).sort((a, b) => a - b);
             if (validScores.length < 5) {
-                updateStatus("有效氣流點太少，請確保吹氣/吸氣力道足夠。");
+                updateStatus("有效氣流點太少，請再錄製更長的波形。");
                 return;
             }
-            
-            let lowBound = validScores[Math.floor(validScores.length * 0.35)];
-            let highBound = validScores[Math.floor(validScores.length * 0.65)];
 
+            let medianThreshold = validScores[Math.floor(validScores.length * 0.5)]; // 以 50% 百分位數作為動態交界點
+
+            // 3. 遲滯鎖定 (避免過渡邊界閃爍)
             let lockedStates = [];
-            let currentState = 0; 
+            let currentState = 0; // 0: Inspiration, 1: Expiration
+            let margin = 0.15;
 
-            for (let i = 0; i < rawScores.length; i++) {
-                let score = rawScores[i];
-                if (score === null) {
+            for (let i = 0; i < scores.length; i++) {
+                let sc = scores[i];
+                if (sc === null) {
                     lockedStates.push(-1);
                     continue;
                 }
 
                 if (currentState === 0) {
-                    if (score > highBound) currentState = 1;
+                    if (sc > (medianThreshold + margin)) currentState = 1;
                 } else {
-                    if (score < lowBound) currentState = 0;
+                    if (sc < (medianThreshold - margin)) currentState = 0;
                 }
                 lockedStates.push(currentState);
             }
 
+            // 4. 平滑處理 (5點中位數濾波)
             let smoothedStates = [...lockedStates];
-            const W = 3;
-            for (let i = W; i < lockedStates.length - W; i++) {
+            for (let i = 2; i < lockedStates.length - 2; i++) {
                 if (lockedStates[i] === -1) continue;
-                let window = lockedStates.slice(i - W, i + W + 1).filter(s => s !== -1);
-                if (window.length > 0) {
-                    let ones = window.filter(s => s === 1).length;
-                    smoothedStates[i] = (ones > window.length / 2) ? 1 : 0;
+                let win = lockedStates.slice(i - 2, i + 3).filter(s => s !== -1);
+                if (win.length > 0) {
+                    let ones = win.filter(s => s === 1).length;
+                    smoothedStates[i] = (ones > win.length / 2) ? 1 : 0;
                 }
             }
 
+            // 5. 區段併合 (合併並剔除 < 0.3 秒的雜訊)
             pklSegments = [];
             let segStart = -1, segState = -1;
 
@@ -454,7 +469,7 @@
                 if (st !== segState) {
                     if (segState !== -1 && segStart !== -1) {
                         let dur = records[i - 1].elapsed - records[segStart].elapsed;
-                        if (dur >= 0.4) {
+                        if (dur >= 0.3) {
                             pklSegments.push({
                                 state: (segState === 0) ? "Inspiration" : "Expiration",
                                 start_index: segStart, end_index: i - 1,
@@ -462,15 +477,14 @@
                             });
                         }
                     }
-                    segState = st;
-                    segStart = i;
+                    segState = st; segStart = i;
                 }
             }
 
             if (segState !== -1 && segStart !== -1) {
                 let lastIdx = records.length - 1;
                 let dur = records[lastIdx].elapsed - records[segStart].elapsed;
-                if (dur >= 0.4) {
+                if (dur >= 0.3) {
                     pklSegments.push({
                         state: (segState === 0) ? "Inspiration" : "Expiration",
                         start_index: segStart, end_index: lastIdx,
@@ -479,7 +493,7 @@
                 }
             }
 
-            updateStatus(`切分完成！共劃分出 ${pklSegments.length} 個穩定呼吸區段。`);
+            updateStatus(`特徵切分完成！成功運用聲學差異劃分出 ${pklSegments.length} 個區段。`);
             flowChart.update();
         }
 
@@ -568,7 +582,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲引擎：修正 Y 軸升降邏輯（吸氣往上，吐氣往下） -->
+    <!-- 🎨 2. 遊戲引擎：吸氣向上 (-Y)，吐氣向下 (+Y) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -1104,18 +1118,15 @@
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
                 
-                // 🎯 核心修正：正確映射吸氣/吐氣與畫面 Y 軸升降
-                // 吸氣 (curReadEst > 0) -> -Y 向上飛
-                // 吐氣 (curReadEst < 0) -> +Y 向下降
-                // 靜止 (curReadEst = 0) -> 保持在畫面正中央 (50% 高度)
+                // 🎯 核心升降公式：吸氣 (curReadEst > 0) 往上 (-Y)，吐氣 (curReadEst < 0) 往下 (+Y)
                 let flowOffsetY = 0;
                 if (curReadEst > 0) { 
-                    flowOffsetY = -(Math.abs(curReadEst) * 3.5); // 吸氣往上
+                    flowOffsetY = -(Math.abs(curReadEst) * 3.5); // 吸氣向上推進
                 } else if (curReadEst < 0) {
-                    flowOffsetY = (Math.abs(curReadEst) * 3.5);  // 吐氣往下
+                    flowOffsetY = (Math.abs(curReadEst) * 3.5);  // 吐氣向下壓低
                 }
 
-                let targetY = (logicalHeight * 0.5) + flowOffsetY; // 預設基準點放在正中央 (50%)
+                let targetY = (logicalHeight * 0.5) + flowOffsetY; // 基準放置在畫面中央 50% 高度
                 targetY = Math.max(40, Math.min(logicalHeight - 40, targetY));
                 
                 let dy = targetY - rocket.y;
