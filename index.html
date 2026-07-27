@@ -3,100 +3,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Edition)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Fully Expanded Version)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: #f4f6f8; color: #2c3e50; margin: 0; padding: 20px;
+            background-color: #f4f6f8;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
         }
-        .header { margin-bottom: 20px; border-left: 6px solid #1f4e79; padding-left: 15px; }
-        .header .main-title { margin: 0; color: #1f4e79; font-size: 36px; font-weight: 800; letter-spacing: 2px; }
-        .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
-        .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
-        
+
+        .header {
+            margin-bottom: 20px;
+            border-left: 6px solid #1f4e79;
+            padding-left: 15px;
+        }
+
+        .header .main-title {
+            margin: 0;
+            color: #1f4e79;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .header h1 {
+            margin: 5px 0 0 0;
+            color: #34495e;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin: 3px 0 0 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
         .control-panel {
-            background: #ffffff; padding: 15px; border-radius: 8px; margin-bottom: 15px;
-            display: flex; gap: 12px; align-items: center; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s; }
-        .btn:active { transform: scale(0.98); }
-        .btn.accent { background-color: #1f4e79; color: white; }
-        .btn.accent:hover { background-color: #163d5e; }
-        .btn.game-btn { background-color: #27ae60; color: white; }
-        .btn.game-btn:hover { background-color: #219653; }
-        .btn.purple-btn { background-color: #8e44ad; color: white; }
-        .btn.purple-btn:hover { background-color: #71368a; }
-        .btn.info-btn { background-color: #f39c12; color: white; }
-        .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
-        label { font-size: 14px; font-weight: 500; }
-        input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
-        .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
-        
-        .chart-container { background: #ffffff; padding: 15px; border-radius: 8px; height: 380px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; }
-        .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn.accent {
+            background-color: #1f4e79;
+            color: white;
+        }
+
+        .btn.accent:hover {
+            background-color: #163d5e;
+        }
+
+        .btn.game-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn.game-btn:hover {
+            background-color: #219653;
+        }
+
+        .btn.purple-btn {
+            background-color: #8e44ad;
+            color: white;
+        }
+
+        .btn.purple-btn:hover {
+            background-color: #71368a;
+        }
+
+        .btn.info-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7;
+            color: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input, select {
+            padding: 6px;
+            border: 1px solid #bcc6cf;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .info-text {
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: 5px;
+        }
+
+        .chart-container {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            height: 380px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .statusbar {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: #1f4e79;
+            color: white;
+            border-radius: 4px;
+            font-size: 13px;
+        }
 
         .game-container {
-            display: none; background: #020208; padding: 0; border-radius: 8px; height: 550px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6); position: relative; overflow: hidden; border: 2px solid #8e44ad;
+            display: none;
+            background: #020208;
+            padding: 0;
+            border-radius: 8px;
+            height: 550px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #8e44ad;
         }
-        .game-container.fullscreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 99999 !important; border-radius: 0 !important; border: none !important; }
-        #gameCanvas { width: 100%; height: 100%; display: block; }
-        
+
+        .game-container.fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            border-radius: 0 !important;
+            border: none !important;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
         .game-ui-overlay {
-            position: absolute; top: 12px; left: 15px; right: 15px; display: flex; justify-content: space-between;
-            align-items: center; color: #ffffff; font-family: monospace; font-size: 14px; font-weight: 600; pointer-events: none; z-index: 5;
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 5;
         }
+
         .hud-badge {
-            background: rgba(15, 23, 42, 0.85); padding: 6px 14px; border-radius: 20px;
-            border: 1.5px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); pointer-events: auto; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background: rgba(15, 23, 42, 0.85);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        .hp-bar-bg { width: 110px; height: 14px; background: rgba(0,0,0,0.7); border-radius: 7px; overflow: hidden; border: 1.5px solid #fff; display: inline-block; vertical-align: middle; }
-        .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
-        .boss-hp-bg { width: 150px; height: 14px; background: rgba(0,0,0,0.8); border-radius: 7px; overflow: hidden; border: 1.5px solid #f1c40f; display: inline-block; vertical-align: middle; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6); }
-        .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); transition: width 0.1s linear; }
-        
+
+        .hp-bar-bg {
+            width: 110px;
+            height: 14px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 1.5px solid #fff;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .hp-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4d4d, #2ecc71);
+            transition: width 0.1s linear;
+        }
+
+        .boss-hp-bg {
+            width: 150px;
+            height: 14px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 1.5px solid #f1c40f;
+            display: inline-block;
+            vertical-align: middle;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+        }
+
+        .boss-hp-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12);
+            transition: width 0.1s linear;
+        }
+
         .cutscene-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95);
-            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 50; text-align: center; backdrop-filter: blur(10px);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            text-align: center;
+            backdrop-filter: blur(10px);
         }
-        .cutscene-title { font-size: 38px; color: #e74c3c; font-weight: 900; letter-spacing: 4px; text-shadow: 0 0 25px #e74c3c; animation: pulse 0.8s infinite alternate; }
-        .cutscene-sub { font-size: 20px; color: #f1c40f; margin-top: 15px; font-weight: bold; }
-        .cutscene-caption { font-size: 18px; color: #ffffff; margin-top: 25px; background: rgba(255,255,255,0.1); padding: 10px 25px; border-radius: 20px; border: 1.5px solid #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
+
+        .cutscene-title {
+            font-size: 38px;
+            color: #e74c3c;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-shadow: 0 0 25px #e74c3c;
+            animation: pulse 0.8s infinite alternate;
+        }
+
+        .cutscene-sub {
+            font-size: 20px;
+            color: #f1c40f;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .cutscene-caption {
+            font-size: 18px;
+            color: #ffffff;
+            margin-top: 25px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 25px;
+            border-radius: 20px;
+            border: 1.5px solid #e74c3c;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
 
         .modal-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 11, 16, 0.95);
-            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border-radius: 8px; z-index: 20; backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; box-sizing: border-box;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(8, 11, 16, 0.95);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            z-index: 20;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .modal-card { background: rgba(255,255,255,0.06); padding: 25px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.15); text-align: left; max-width: 850px; width: 92%; max-height: 85vh; overflow-y: auto; }
+
+        .modal-card {
+            background: rgba(255,255,255,0.06);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            text-align: left;
+            max-width: 850px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
 
         .demo-container {
-            display: none; background: #0b0f19; padding: 20px; border-radius: 8px; height: 600px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 2px solid #8e44ad; box-sizing: border-box; color: white; overflow-y: auto;
+            display: none;
+            background: #0b0f19;
+            padding: 20px;
+            border-radius: 8px;
+            height: 600px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            border: 2px solid #8e44ad;
+            box-sizing: border-box;
+            color: white;
+            overflow-y: auto;
         }
-        .demo-layout { display: flex; gap: 20px; height: 260px; margin-bottom: 12px; }
-        .demo-viewport {
-            flex: 1.2; background: #000; border-radius: 12px; border: 2px solid #8e44ad;
-            display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
-        }
-        .demo-card { background: rgba(255,255,255,0.06); padding: 18px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.15); height: 100%; box-sizing: border-box; flex: 1; }
-        .demo-section-title { font-size: 13px; color: #f1c40f; margin: 8px 0 4px 0; font-weight: bold; }
-        .demo-grid-menu { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
-        .demo-btn { padding: 4px 8px; font-size: 11px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
-        .demo-btn:hover { background: #374151; border-color: #9ca3af; }
-        .demo-btn.active { background: #8e44ad; border-color: #a855f7; font-weight: bold; box-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
 
-        @keyframes pulse { from { transform: scale(0.95); } to { transform: scale(1.05); } }
+        .demo-layout {
+            display: flex;
+            gap: 20px;
+            height: 260px;
+            margin-bottom: 12px;
+        }
+
+        .demo-viewport {
+            flex: 1.2;
+            background: #000;
+            border-radius: 12px;
+            border: 2px solid #8e44ad;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
+        }
+
+        .demo-card {
+            background: rgba(255,255,255,0.06);
+            padding: 18px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            height: 100%;
+            box-sizing: border-box;
+            flex: 1;
+        }
+
+        .demo-section-title {
+            font-size: 13px;
+            color: #f1c40f;
+            margin: 8px 0 4px 0;
+            font-weight: bold;
+        }
+
+        .demo-grid-menu {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .demo-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: #1f2937;
+            color: white;
+            border: 1px solid #374151;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .demo-btn:hover {
+            background: #374151;
+            border-color: #9ca3af;
+        }
+
+        .demo-btn.active {
+            background: #8e44ad;
+            border-color: #a855f7;
+            font-weight: bold;
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(0.95);
+            }
+            to {
+                transform: scale(1.05);
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor (Full HTML Version)</h1>
+        <h1>Inhaler Flow Monitor (Expanded Version)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -192,13 +506,22 @@
 
     <script>
         const EDUCATION_PROGRAM = [
-            ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
-            ["inhalation", 0, 2], ["exhalation", 60, 3], ["inhalation", 0, 2]
+            ["inhalation", 0, 3],
+            ["inhalation", 60, 2],
+            ["inhalation", 0, 1],
+            ["inhalation", 0, 2],
+            ["exhalation", 60, 3],
+            ["inhalation", 0, 2]
         ];
 
-        let port = null, reader = null, isMeasuring = false;
-        let records = [], flowHistory = [];
-        let lastFFT = {}, startTime = null, currentMode = "inhalation";
+        let port = null;
+        let reader = null;
+        let isMeasuring = false;
+        let records = [];
+        let flowHistory = [];
+        let lastFFT = {};
+        let startTime = null;
+        let currentMode = "inhalation";
         let smoothedEst = 0;
 
         const ctx = document.getElementById('flowChart').getContext('2d');
@@ -206,14 +529,38 @@
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Patient Flow', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
+                    {
+                        label: 'Patient Flow',
+                        data: [],
+                        borderColor: '#c0392b',
+                        borderWidth: 2.4,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.4
+                    }
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
-                    y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
+                    x: {
+                        type: 'linear',
+                        min: 0,
+                        max: 20,
+                        title: {
+                            display: true,
+                            text: 'Time (secs)'
+                        }
+                    },
+                    y: {
+                        min: -120,
+                        max: 120,
+                        title: {
+                            display: true,
+                            text: 'Flow (L/min)'
+                        }
+                    }
                 }
             }
         });
@@ -222,7 +569,9 @@
             if (line.includes('[DETECT]')) {
                 const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
-                if (startTime === null) startTime = Date.now();
+                if (startTime === null) {
+                    startTime = Date.now();
+                }
                 let elapsed = (Date.now() - startTime) / 1000;
                 smoothedEst = est;
                 flowChart.data.datasets[0].data.push({ x: elapsed, y: smoothedEst });
@@ -238,12 +587,16 @@
                     document.getElementById('connectBtn').innerText = 'Disconnect';
                     document.getElementById('startBtn').disabled = false;
                     readLoop();
-                } catch (err) {}
+                } catch (err) {
+                    console.error("Serial connection error:", err);
+                }
             }
         }
 
         async function readLoop() {
-            if (!port || !port.readable) return;
+            if (!port || !port.readable) {
+                return;
+            }
             const textDecoder = new TextDecoderStream();
             port.readable.pipeTo(textDecoder.writable);
             reader = textDecoder.readable.getReader();
@@ -251,17 +604,25 @@
             try {
                 while (true) {
                     const { value, done } = await reader.read();
-                    if (done) break;
+                    if (done) {
+                        break;
+                    }
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
-                    for (let line of lines) { parseLine(line.trim()); }
+                    for (let line of lines) {
+                        parseLine(line.trim());
+                    }
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error("Reader error:", err);
+            }
         }
 
         document.getElementById('connectBtn').addEventListener('click', toggleConnection);
-        document.getElementById('startBtn').addEventListener('click', () => { isMeasuring = !isMeasuring; });
+        document.getElementById('startBtn').addEventListener('click', function() {
+            isMeasuring = !isMeasuring;
+        });
     </script>
 
     <script>
@@ -287,64 +648,118 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playSynthesizedVoice(text) {
-            if (!('speechSynthesis' in window)) return;
+            if (!('speechSynthesis' in window)) {
+                return;
+            }
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-TW'; utterance.pitch = 0.25; utterance.rate = 0.8;
+            utterance.lang = 'zh-TW';
+            utterance.pitch = 0.25;
+            utterance.rate = 0.8;
             window.speechSynthesis.speak(utterance);
         }
 
         function playSoundHD(type) {
-            if (!document.getElementById('soundToggle')?.checked) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!document.getElementById('soundToggle')?.checked) {
+                return;
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
             let now = audioCtx.currentTime;
 
             try {
                 if (type === 'laser') {
-                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(1500, now);
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(1500, now);
                     osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
-                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                    osc.start(); osc.stop(now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start();
+                    osc.stop(now + 0.15);
                 } else if (type === 'boss_attack') {
-                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'square'; osc.frequency.setValueAtTime(120, now);
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(120, now);
                     osc.frequency.linearRampToValueAtTime(450, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                    osc.start(); osc.stop(now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start();
+                    osc.stop(now + 0.3);
                 } else if (type === 'hit') {
-                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, now);
-                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-                    osc.start(); osc.stop(now + 0.25);
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(80, now);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start();
+                    osc.stop(now + 0.25);
                 } else if (type === 'item_pickup') {
-                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
                     osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                    osc.start(); osc.stop(now + 0.2);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start();
+                    osc.stop(now + 0.2);
                 } else if (type === 'explosion') {
-                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
                     osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
-                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                    osc.start(); osc.stop(now + 0.4);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start();
+                    osc.stop(now + 0.4);
                 }
-            } catch(e){}
+            } catch (e) {
+                console.error("Audio error:", e);
+            }
         }
 
         let gameCanvas = document.getElementById('gameCanvas');
         let gameCtx = gameCanvas.getContext('2d');
-        let currentStage = 1, gameScore = 0, playerHP = 100;
-        let globalAnimFrame = 0, isGameRunning = false;
-        let logicalWidth = 800, logicalHeight = 550;
+        let currentStage = 1;
+        let gameScore = 0;
+        let playerHP = 100;
+        let globalAnimFrame = 0;
+        let isGameRunning = false;
+        let logicalWidth = 800;
+        let logicalHeight = 550;
         
-        let rocket = { x: 100, y: 275, radius: 14, angle: 0, shieldActive: false, magnetActive: false, slowActive: false, empActive: false }; 
-        let activeBosses = [], playerProjectiles = [], bossBullets = [], collectibles = [], obstacles = [], particleEffects = [];
+        let rocket = {
+            x: 100,
+            y: 275,
+            radius: 14,
+            angle: 0,
+            shieldActive: false,
+            magnetActive: false,
+            slowActive: false,
+            empActive: false
+        }; 
+
+        let activeBosses = [];
+        let playerProjectiles = [];
+        let bossBullets = [];
+        let collectibles = [];
+        let obstacles = [];
+        let particleEffects = [];
 
         function resizeGameCanvas() {
             if (gameCanvas && gameCanvas.parentElement) {
@@ -360,143 +775,262 @@
 
         function toggleFullscreen() {
             const gameBox = document.getElementById('gameContainer');
-            if (!document.fullscreenElement) gameBox.requestFullscreen();
-            else document.exitFullscreen();
+            if (!document.fullscreenElement) {
+                gameBox.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
             setTimeout(resizeGameCanvas, 150);
         }
 
-        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y); customCtx.rotate(angle);
-            customCtx.shadowBlur = 12; customCtx.shadowColor = rocket.shieldActive ? '#38bdf8' : '#00d2d3';
+        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
+            customCtx.rotate(angle);
+            customCtx.shadowBlur = 12;
+            customCtx.shadowColor = rocket.shieldActive ? '#38bdf8' : '#00d2d3';
             
             let hullGrad = customCtx.createLinearGradient(-10, -10, 20, 10);
-            hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#475569'); hullGrad.addColorStop(1, '#0f172a');
+            hullGrad.addColorStop(0, '#1e293b');
+            hullGrad.addColorStop(0.5, '#475569');
+            hullGrad.addColorStop(1, '#0f172a');
             customCtx.fillStyle = hullGrad;
-            customCtx.beginPath(); customCtx.moveTo(20, 0); customCtx.lineTo(-10, -12); customCtx.lineTo(-5, 0); customCtx.lineTo(-10, 12); customCtx.closePath(); customCtx.fill();
+            
+            customCtx.beginPath();
+            customCtx.moveTo(20, 0);
+            customCtx.lineTo(-10, -12);
+            customCtx.lineTo(-5, 0);
+            customCtx.lineTo(-10, 12);
+            customCtx.closePath();
+            customCtx.fill();
             
             let glassGrad = customCtx.createLinearGradient(0, -4, 12, 4);
-            glassGrad.addColorStop(0, '#38bdf8'); glassGrad.addColorStop(1, '#0284c7');
-            customCtx.fillStyle = glassGrad; customCtx.beginPath(); customCtx.ellipse(4, 0, 7, 3, 0, 0, Math.PI * 2); customCtx.fill();
+            glassGrad.addColorStop(0, '#38bdf8');
+            glassGrad.addColorStop(1, '#0284c7');
+            customCtx.fillStyle = glassGrad;
+            
+            customCtx.beginPath();
+            customCtx.ellipse(4, 0, 7, 3, 0, 0, Math.PI * 2);
+            customCtx.fill();
             
             let flameLen = Math.min(25, 8 + flowMag * 0.3);
             let flameGrad = customCtx.createLinearGradient(-5, 0, -5 - flameLen, 0);
-            flameGrad.addColorStop(0, '#f97316'); flameGrad.addColorStop(1, 'transparent');
+            flameGrad.addColorStop(0, '#f97316');
+            flameGrad.addColorStop(1, 'transparent');
             customCtx.fillStyle = flameGrad;
-            customCtx.beginPath(); customCtx.moveTo(-5, -4); customCtx.lineTo(-5 - flameLen, 0); customCtx.lineTo(-5, 4); customCtx.closePath(); customCtx.fill();
+            
+            customCtx.beginPath();
+            customCtx.moveTo(-5, -4);
+            customCtx.lineTo(-5 - flameLen, 0);
+            customCtx.lineTo(-5, 4);
+            customCtx.closePath();
+            customCtx.fill();
 
             if (rocket.shieldActive) {
-                customCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; customCtx.lineWidth = 2;
-                customCtx.beginPath(); customCtx.arc(2, 0, 22, 0, Math.PI * 2); customCtx.stroke();
+                customCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                customCtx.lineWidth = 2;
+                customCtx.beginPath();
+                customCtx.arc(2, 0, 22, 0, Math.PI * 2);
+                customCtx.stroke();
             }
 
             customCtx.restore();
         }
 
-        function drawRealisticEagle(x, y, attackTimer, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
+        function drawRealisticEagle(x, y, attackTimer, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
             let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
-            [-1, 1].forEach(side => {
-                customCtx.save(); customCtx.scale(1, side); customCtx.rotate(flapAngle);
+            
+            let sides = [-1, 1];
+            for (let s = 0; s < sides.length; s++) {
+                let side = sides[s];
+                customCtx.save();
+                customCtx.scale(1, side);
+                customCtx.rotate(flapAngle);
                 let wingGrad = customCtx.createLinearGradient(0, -45, 30, 0);
-                wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(1, '#2c3e50');
+                wingGrad.addColorStop(0, '#f39c12');
+                wingGrad.addColorStop(1, '#2c3e50');
                 customCtx.fillStyle = wingGrad;
                 for (let i = 0; i < 5; i++) {
-                    customCtx.beginPath(); customCtx.moveTo(-10 + i * 4, -4 - i * 4);
+                    customCtx.beginPath();
+                    customCtx.moveTo(-10 + i * 4, -4 - i * 4);
                     customCtx.quadraticCurveTo(15 + i * 4, -45 - i * 8, 32 + i * 3, -35 - i * 6);
-                    customCtx.quadraticCurveTo(8, -10, -10 + i * 4, -4 - i * 4); customCtx.fill();
+                    customCtx.quadraticCurveTo(8, -10, -10 + i * 4, -4 - i * 4);
+                    customCtx.fill();
                 }
                 customCtx.restore();
-            });
-            let bodyGrad = customCtx.createRadialGradient(-3, 0, 3, 0, 0, 28);
-            bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(1, '#2c3e50');
-            customCtx.fillStyle = bodyGrad; customCtx.beginPath();
-            customCtx.moveTo(25, 0); customCtx.quadraticCurveTo(0, -16, -25, -8); customCtx.quadraticCurveTo(0, 16, 25, 0); customCtx.fill();
-            let beakGrad = customCtx.createLinearGradient(-10, -6, -32, 14);
-            beakGrad.addColorStop(0, '#ffe100'); beakGrad.addColorStop(1, '#d35400');
-            customCtx.fillStyle = beakGrad; customCtx.beginPath();
-            customCtx.moveTo(-10, -6); customCtx.quadraticCurveTo(-26, -8, -34, 8); customCtx.quadraticCurveTo(-20, 6, -14, 4); customCtx.fill();
-            customCtx.restore();
-        }
-
-        function drawRealisticUFO(x, y, attackTimer, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
-            customCtx.shadowColor = '#00d2d3'; customCtx.shadowBlur = 15;
-            let hullGrad = customCtx.createLinearGradient(-40, 0, 40, 15);
-            hullGrad.addColorStop(0, '#2c3e50'); hullGrad.addColorStop(0.5, '#bdc3c7'); hullGrad.addColorStop(1, '#1e272e');
-            customCtx.fillStyle = hullGrad; customCtx.beginPath(); customCtx.ellipse(0, 5, 40, 16, 0, 0, Math.PI * 2); customCtx.fill();
-            let domeGrad = customCtx.createRadialGradient(-6, -10, 2, 0, -8, 18);
-            domeGrad.addColorStop(0, '#ffffff'); domeGrad.addColorStop(1, '#12051e');
-            customCtx.fillStyle = domeGrad; customCtx.beginPath(); customCtx.ellipse(0, -5, 20, 12, 0, 0, Math.PI * 2); customCtx.fill();
-            customCtx.restore();
-        }
-
-        function drawRealisticDragon(x, y, attackTimer, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
-            let jawOpen = (attackTimer % 45 > 30) ? 14 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 6);
-            let upperGrad = customCtx.createLinearGradient(15, 0, -30, 0);
-            upperGrad.addColorStop(0, '#78281f'); upperGrad.addColorStop(1, '#e74c3c');
-            customCtx.fillStyle = upperGrad; customCtx.beginPath();
-            customCtx.moveTo(12, -jawOpen); customCtx.lineTo(-28, -14 - jawOpen); customCtx.lineTo(-30, -4 - jawOpen); customCtx.fill();
-            customCtx.fillStyle = '#512e5f'; customCtx.beginPath();
-            customCtx.moveTo(12, jawOpen); customCtx.lineTo(-25, 14 + jawOpen); customCtx.lineTo(-8, 2); customCtx.fill();
-            customCtx.restore();
-        }
-
-        function drawAirElemental(x, y, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
-            customCtx.fillStyle = "rgba(0, 210, 211, 0.4)"; customCtx.beginPath(); customCtx.arc(0, 0, 24 + Math.sin(globalAnimFrame * 0.2) * 4, 0, Math.PI * 2); customCtx.fill();
-            customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 2; customCtx.stroke();
-            customCtx.restore();
-        }
-
-        function drawMeteorHD(x, y, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y); customCtx.rotate(globalAnimFrame * 0.02);
-            customCtx.shadowColor = '#e67e22'; customCtx.shadowBlur = 18;
-            let grad = customCtx.createRadialGradient(0, 0, 8, 0, 0, 28);
-            grad.addColorStop(0, '#f39c12'); grad.addColorStop(1, '#2c3e50');
-            customCtx.fillStyle = grad; customCtx.beginPath();
-            customCtx.moveTo(0, -25); customCtx.lineTo(18, -14); customCtx.lineTo(25, 8); customCtx.lineTo(10, 25); customCtx.lineTo(-14, 20); customCtx.fill();
-            customCtx.restore();
-        }
-
-        function drawFinalBossHD(x, y, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
-            customCtx.shadowColor = '#e74c3c'; customCtx.shadowBlur = 30;
-            let grad = customCtx.createRadialGradient(0, 0, 10, 0, 0, 36);
-            grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.5, '#e74c3c'); grad.addColorStop(1, '#4a235a');
-            customCtx.fillStyle = grad; customCtx.beginPath(); customCtx.arc(0, 0, 36, 0, Math.PI * 2); customCtx.fill();
-            customCtx.strokeStyle = '#f1c40f'; customCtx.lineWidth = 3; customCtx.stroke();
-            customCtx.restore();
-        }
-
-        function drawBossHD(b, customCtx = gameCtx) {
-            let floatY = Math.sin(globalAnimFrame * 0.08) * 6;
-            if (b.isFinal) drawFinalBossHD(b.x, b.y + floatY, customCtx);
-            else if (b.name.includes("風暴精靈")) drawAirElemental(b.x, b.y + floatY, customCtx);
-            else if (b.name.includes("母艦")) drawRealisticUFO(b.x, b.y + floatY, b.attackTimer, customCtx);
-            else if (b.name.includes("赤龍")) drawRealisticDragon(b.x, b.y + floatY, b.attackTimer, customCtx);
-            else if (b.name.includes("隕石")) drawMeteorHD(b.x, b.y + floatY, customCtx);
-            else drawRealisticEagle(b.x, b.y + floatY, b.attackTimer, customCtx);
-        }
-
-        function drawCollectiblesHD(item, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(item.x, item.y);
-            if (item.type === 'coin') {
-                customCtx.fillStyle = '#f1c40f'; customCtx.beginPath(); customCtx.arc(0, 0, 8, 0, Math.PI*2); customCtx.fill();
-            } else if (item.type === 'heart') {
-                customCtx.fillStyle = '#e74c3c'; customCtx.beginPath(); customCtx.arc(0, 0, 9, 0, Math.PI*2); customCtx.fill();
-            } else if (item.type === 'shield') {
-                customCtx.fillStyle = '#3498db'; customCtx.beginPath(); customCtx.arc(0, 0, 9, 0, Math.PI*2); customCtx.fill();
-            } else {
-                customCtx.fillStyle = '#9b59b6'; customCtx.beginPath(); customCtx.arc(0, 0, 9, 0, Math.PI*2); customCtx.fill();
             }
+
+            let bodyGrad = customCtx.createRadialGradient(-3, 0, 3, 0, 0, 28);
+            bodyGrad.addColorStop(0, '#ffffff');
+            bodyGrad.addColorStop(1, '#2c3e50');
+            customCtx.fillStyle = bodyGrad;
+            customCtx.beginPath();
+            customCtx.moveTo(25, 0);
+            customCtx.quadraticCurveTo(0, -16, -25, -8);
+            customCtx.quadraticCurveTo(0, 16, 25, 0);
+            customCtx.fill();
+
+            let beakGrad = customCtx.createLinearGradient(-10, -6, -32, 14);
+            beakGrad.addColorStop(0, '#ffe100');
+            beakGrad.addColorStop(1, '#d35400');
+            customCtx.fillStyle = beakGrad;
+            customCtx.beginPath();
+            customCtx.moveTo(-10, -6);
+            customCtx.quadraticCurveTo(-26, -8, -34, 8);
+            customCtx.quadraticCurveTo(-20, 6, -14, 4);
+            customCtx.fill();
+            
             customCtx.restore();
         }
 
-        function drawObstaclesHD(obs, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(obs.x, obs.y);
-            customCtx.fillStyle = '#7f8c8d'; customCtx.beginPath(); customCtx.arc(0, 0, 12, 0, Math.PI*2); customCtx.fill();
+        function drawRealisticUFO(x, y, attackTimer, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
+            customCtx.shadowColor = '#00d2d3';
+            customCtx.shadowBlur = 15;
+            
+            let hullGrad = customCtx.createLinearGradient(-40, 0, 40, 15);
+            hullGrad.addColorStop(0, '#2c3e50');
+            hullGrad.addColorStop(0.5, '#bdc3c7');
+            hullGrad.addColorStop(1, '#1e272e');
+            customCtx.fillStyle = hullGrad;
+            customCtx.beginPath();
+            customCtx.ellipse(0, 5, 40, 16, 0, 0, Math.PI * 2);
+            customCtx.fill();
+
+            let domeGrad = customCtx.createRadialGradient(-6, -10, 2, 0, -8, 18);
+            domeGrad.addColorStop(0, '#ffffff');
+            domeGrad.addColorStop(1, '#12051e');
+            customCtx.fillStyle = domeGrad;
+            customCtx.beginPath();
+            customCtx.ellipse(0, -5, 20, 12, 0, 0, Math.PI * 2);
+            customCtx.fill();
+            
             customCtx.restore();
+        }
+
+        function drawRealisticDragon(x, y, attackTimer, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
+            let jawOpen = (attackTimer % 45 > 30) ? 14 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 6);
+            
+            let upperGrad = customCtx.createLinearGradient(15, 0, -30, 0);
+            upperGrad.addColorStop(0, '#78281f');
+            upperGrad.addColorStop(1, '#e74c3c');
+            customCtx.fillStyle = upperGrad;
+            customCtx.beginPath();
+            customCtx.moveTo(12, -jawOpen);
+            customCtx.lineTo(-28, -14 - jawOpen);
+            customCtx.lineTo(-30, -4 - jawOpen);
+            customCtx.fill();
+
+            customCtx.fillStyle = '#512e5f';
+            customCtx.beginPath();
+            customCtx.moveTo(12, jawOpen);
+            customCtx.lineTo(-25, 14 + jawOpen);
+            customCtx.lineTo(-8, 2);
+            customCtx.fill();
+            
+            customCtx.restore();
+        }
+
+        function drawAirElemental(x, y, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
+            customCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
+            customCtx.beginPath();
+            customCtx.arc(0, 0, 24 + Math.sin(globalAnimFrame * 0.2) * 4, 0, Math.PI * 2);
+            customCtx.fill();
+            customCtx.strokeStyle = "#ffffff";
+            customCtx.lineWidth = 2;
+            customCtx.stroke();
+            customCtx.restore();
+        }
+
+        function drawMeteorHD(x, y, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
+            customCtx.rotate(globalAnimFrame * 0.02);
+            customCtx.shadowColor = '#e67e22';
+            customCtx.shadowBlur = 18;
+            
+            let grad = customCtx.createRadialGradient(0, 0, 8, 0, 0, 28);
+            grad.addColorStop(0, '#f39c12');
+            grad.addColorStop(1, '#2c3e50');
+            customCtx.fillStyle = grad;
+            
+            customCtx.beginPath();
+            customCtx.moveTo(0, -25);
+            customCtx.lineTo(18, -14);
+            customCtx.lineTo(25, 8);
+            customCtx.lineTo(10, 25);
+            customCtx.lineTo(-14, 20);
+            customCtx.fill();
+            customCtx.restore();
+        }
+
+        function drawFinalBossHD(x, y, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            customCtx.save();
+            customCtx.translate(x, y);
+            customCtx.shadowColor = '#e74c3c';
+            customCtx.shadowBlur = 30;
+            
+            let grad = customCtx.createRadialGradient(0, 0, 10, 0, 0, 36);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.5, '#e74c3c');
+            grad.addColorStop(1, '#4a235a');
+            customCtx.fillStyle = grad;
+            
+            customCtx.beginPath();
+            customCtx.arc(0, 0, 36, 0, Math.PI * 2);
+            customCtx.fill();
+            customCtx.strokeStyle = '#f1c40f';
+            customCtx.lineWidth = 3;
+            customCtx.stroke();
+            customCtx.restore();
+        }
+
+        function drawBossHD(b, customCtx) {
+            if (!customCtx) {
+                customCtx = gameCtx;
+            }
+            let floatY = Math.sin(globalAnimFrame * 0.08) * 6;
+            if (b.isFinal) {
+                drawFinalBossHD(b.x, b.y + floatY, customCtx);
+            } else if (b.name.includes("風暴精靈")) {
+                drawAirElemental(b.x, b.y + floatY, customCtx);
+            } else if (b.name.includes("母艦")) {
+                drawRealisticUFO(b.x, b.y + floatY, b.attackTimer, customCtx);
+            } else if (b.name.includes("赤龍")) {
+                drawRealisticDragon(b.x, b.y + floatY, b.attackTimer, customCtx);
+            } else if (b.name.includes("隕石")) {
+                drawMeteorHD(b.x, b.y + floatY, customCtx);
+            } else {
+                drawRealisticEagle(b.x, b.y + floatY, b.attackTimer, customCtx);
+            }
         }
 
         const DEMO_ITEMS_ALL = [
@@ -536,28 +1070,40 @@
             const bossMenu = document.getElementById('bossDemoMenuList');
             const itemMenu = document.getElementById('itemDemoMenuList');
             const hazardMenu = document.getElementById('hazardDemoMenuList');
-            bossMenu.innerHTML = ""; itemMenu.innerHTML = ""; hazardMenu.innerHTML = "";
+            bossMenu.innerHTML = "";
+            itemMenu.innerHTML = "";
+            hazardMenu.innerHTML = "";
 
-            DEMO_ITEMS_ALL.forEach(item => {
+            for (let i = 0; i < DEMO_ITEMS_ALL.length; i++) {
+                let item = DEMO_ITEMS_ALL[i];
                 let btn = document.createElement('button');
                 btn.className = `demo-btn ${item.id === selectedDemoId ? 'active' : ''}`;
                 btn.innerText = item.title;
-                btn.onclick = () => {
+                btn.onclick = function() {
                     selectedDemoId = item.id;
-                    document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+                    let allBtns = document.querySelectorAll('.demo-btn');
+                    for (let j = 0; j < allBtns.length; j++) {
+                        allBtns[j].classList.remove('active');
+                    }
                     btn.classList.add('active');
                     document.getElementById('demoItemTitle').innerText = item.title;
                     document.getElementById('demoItemDesc').innerText = item.desc;
                     document.getElementById('demoItemSkill').innerText = item.skill;
 
                     playSoundHD('boss_attack');
-                    if (item.id === 'final') playSynthesizedVoice("愚蠢的飛行員，這裡將是你的終結之地！");
+                    if (item.id === 'final') {
+                        playSynthesizedVoice("愚蠢的飛行員，這裡將是你的終結之地！");
+                    }
                 };
 
-                if (item.category === 'boss') bossMenu.appendChild(btn);
-                else if (item.category === 'item') itemMenu.appendChild(btn);
-                else if (item.category === 'hazard') hazardMenu.appendChild(btn);
-            });
+                if (item.category === 'boss') {
+                    bossMenu.appendChild(btn);
+                } else if (item.category === 'item') {
+                    itemMenu.appendChild(btn);
+                } else if (item.category === 'hazard') {
+                    hazardMenu.appendChild(btn);
+                }
+            }
         }
         buildDemoMenus();
 
@@ -566,12 +1112,22 @@
             const dCtx = dCanvas.getContext('2d');
 
             function renderDemo() {
-                if (document.getElementById('demoContainer').style.display === 'none') return;
+                if (document.getElementById('demoContainer').style.display === 'none') {
+                    return;
+                }
                 globalAnimFrame++;
-                dCtx.fillStyle = '#020208'; dCtx.fillRect(0, 0, 380, 240);
+                dCtx.fillStyle = '#020208';
+                dCtx.fillRect(0, 0, 380, 240);
 
-                let cx = 280, cy = 120;
-                let mockBoss = { name: selectedDemoId, x: cx, y: cy, attackTimer: globalAnimFrame, isFinal: (selectedDemoId === 'final') };
+                let cx = 280;
+                let cy = 120;
+                let mockBoss = {
+                    name: selectedDemoId,
+                    x: cx,
+                    y: cy,
+                    attackTimer: globalAnimFrame,
+                    isFinal: (selectedDemoId === 'final')
+                };
                 drawBossHD(mockBoss, dCtx);
                 drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
 
@@ -594,11 +1150,18 @@
             document.getElementById('cutsceneCaption').innerText = "字幕：愚蠢的飛行員... 這裡將是你的終結之地！";
             playSynthesizedVoice("愚蠢的飛行員，這裡將是你的終結之地！");
 
-            setTimeout(() => {
+            setTimeout(function() {
                 overlay.style.display = 'none';
                 activeBosses.push({
-                    name: "🌌 宇宙終極霸主", x: logicalWidth - 110, y: logicalHeight / 2,
-                    hp: 600, maxHp: 600, radius: 32, isFinal: true, attackTimer: 0, color: "#e74c3c"
+                    name: "🌌 宇宙終極霸主",
+                    x: logicalWidth - 110,
+                    y: logicalHeight / 2,
+                    hp: 600,
+                    maxHp: 600,
+                    radius: 32,
+                    isFinal: true,
+                    attackTimer: 0,
+                    color: "#e74c3c"
                 });
                 document.getElementById('bossName').innerText = "🌌 宇宙終極霸主";
                 document.getElementById('bossHudBadge').style.display = 'flex';
@@ -617,8 +1180,15 @@
                 triggerFinalBossCutscene();
             } else {
                 activeBosses.push({
-                    name: `${bossTemplate.name} (R${loopNum})`, x: logicalWidth - 110, y: logicalHeight / 2,
-                    hp: 80 + loopNum * 25, maxHp: 80 + loopNum * 25, radius: 22, isFinal: false, attackTimer: 0, color: bossTemplate.color
+                    name: `${bossTemplate.name} (R${loopNum})`,
+                    x: logicalWidth - 110,
+                    y: logicalHeight / 2,
+                    hp: 80 + loopNum * 25,
+                    maxHp: 80 + loopNum * 25,
+                    radius: 22,
+                    isFinal: false,
+                    attackTimer: 0,
+                    color: bossTemplate.color
                 });
                 document.getElementById('bossName').innerText = bossTemplate.name;
                 document.getElementById('bossHudBadge').style.display = 'flex';
@@ -627,28 +1197,50 @@
 
         function gameLoop() {
             globalAnimFrame++;
-            gameCtx.fillStyle = '#020208'; gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
+            gameCtx.fillStyle = '#020208';
+            gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
 
             drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, "inhalation", Math.abs(smoothedEst));
 
-            activeBosses.forEach((b) => {
+            for (let i = 0; i < activeBosses.length; i++) {
+                let b = activeBosses[i];
                 drawBossHD(b);
                 b.attackTimer++;
 
                 if (b.attackTimer % 45 === 0) {
                     playSoundHD('boss_attack');
-                    bossBullets.push({ x: b.x - 20, y: b.y, vx: -5, vy: (Math.random() - 0.5) * 4 });
+                    bossBullets.push({
+                        x: b.x - 20,
+                        y: b.y,
+                        vx: -5,
+                        vy: (Math.random() - 0.5) * 4
+                    });
                     
                     if (b.isFinal && Math.random() < 0.25 && activeBosses.length < 3) {
                         let subBoss = CYCLE_BOSSES[Math.floor(Math.random() * 5)];
-                        activeBosses.push({ name: subBoss.name, x: b.x - 30, y: b.y + (Math.random() > 0.5 ? 70 : -70), hp: 70, maxHp: 70, radius: 18, isFinal: false, attackTimer: 0, color: subBoss.color });
+                        activeBosses.push({
+                            name: subBoss.name,
+                            x: b.x - 30,
+                            y: b.y + (Math.random() > 0.5 ? 70 : -70),
+                            hp: 70,
+                            maxHp: 70,
+                            radius: 18,
+                            isFinal: false,
+                            attackTimer: 0,
+                            color: subBoss.color
+                        });
                     }
                 }
-            });
+            }
 
-            bossBullets.forEach(bullet => {
-                bullet.x += bullet.vx; bullet.y += bullet.vy;
-                gameCtx.fillStyle = '#ff4d4d'; gameCtx.beginPath(); gameCtx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2); gameCtx.fill();
+            for (let i = 0; i < bossBullets.length; i++) {
+                let bullet = bossBullets[i];
+                bullet.x += bullet.vx;
+                bullet.y += bullet.vy;
+                gameCtx.fillStyle = '#ff4d4d';
+                gameCtx.beginPath();
+                gameCtx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2);
+                gameCtx.fill();
 
                 let dist = Math.hypot(bullet.x - rocket.x, bullet.y - rocket.y);
                 if (dist < rocket.radius + 4) {
@@ -661,10 +1253,15 @@
                     bullet.hit = true;
                     document.getElementById('hpFill').style.width = playerHP + '%';
                 }
-            });
-            bossBullets = bossBullets.filter(b => b.x > 0 && !b.hit);
+            }
 
-            if (isGameRunning) requestAnimationFrame(gameLoop);
+            bossBullets = bossBullets.filter(function(b) {
+                return b.x > 0 && !b.hit;
+            });
+
+            if (isGameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
         }
 
         function switchViewMode(mode) {
@@ -672,10 +1269,13 @@
             const gameBox = document.getElementById('gameContainer');
             const demoBox = document.getElementById('demoContainer');
 
-            chartBox.style.display = 'none'; gameBox.style.display = 'none'; demoBox.style.display = 'none';
+            chartBox.style.display = 'none';
+            gameBox.style.display = 'none';
+            demoBox.style.display = 'none';
 
             if (mode === 'both') {
-                chartBox.style.display = 'block'; gameBox.style.display = 'block';
+                chartBox.style.display = 'block';
+                gameBox.style.display = 'block';
             } else if (mode === 'game') {
                 gameBox.style.display = 'block';
             } else if (mode === 'demo') {
@@ -687,11 +1287,17 @@
 
             if (mode === 'game' || mode === 'both') {
                 resizeGameCanvas();
-                if (!isGameRunning) { isGameRunning = true; gameLoop(); nextStage(); }
+                if (!isGameRunning) {
+                    isGameRunning = true;
+                    gameLoop();
+                    nextStage();
+                }
             }
         }
 
-        setTimeout(() => { switchViewMode('both'); }, 100);
+        setTimeout(function() {
+            switchViewMode('both');
+        }, 100);
     </script>
 </body>
 </html>
