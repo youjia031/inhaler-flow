@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Dynamic Demo Edition)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Restoration)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
@@ -410,7 +410,7 @@
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor (Dynamic Exhibition Edition)</h1>
+        <h1>Inhaler Flow Monitor (Full Uncompressed Engine)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -486,9 +486,46 @@
             </div>
 
             <div class="hud-badge">
+                <button id="instructionsBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openInstructionsModal()">📖 說明書</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <span>❤️ HP</span> 
                 <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
+            </div>
+        </div>
+
+        <!-- 📖 遊戲說明書與全物件圖鑑 Modal -->
+        <div class="modal-screen" id="instructionsModal" style="display: none;">
+            <div class="modal-card">
+                <h2 style="color: #f1c40f; margin-top:0; font-size: 26px; border-bottom: 2px solid #f1c40f; padding-bottom: 8px;">📖 氣流飛行員 - 官方介紹說明書與圖鑑指南</h2>
+                
+                <h3 style="color: #38bdf8; margin-top:15px;">🎮 核心操作機制：</h3>
+                <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
+                    本遊戲結合醫療呼吸器數據與音效判定！<br>
+                    * <strong>吸氣 (Inhalation)</strong>：產生向上升力，飛船向上攀升。<br>
+                    * <strong>吐氣 (Exhalation)</strong>：產生推進力，飛船向右發射火力武器。<br>
+                    * <strong>自然平穩呼吸</strong>：維持飛行高度，閃避來自 Boss 的彈幕與障礙物。
+                </p>
+
+                <h3 style="color: #e74c3c; margin-top:15px;">🏰 5 關循環與 101 關終極戰：</h3>
+                <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
+                    * 遊戲共 100 關，每 **5 關為一輪大循環 (Loop 1~20)**。<br>
+                    * 隨輪數增加，5 大關卡 Boss 會動態解鎖新技能（如：連環雷擊、硬化護盾、全屏狂暴）。<br>
+                    * 通關第 100 關後，將迎來 **第 101 關「🌌 宇宙終極霸主」** 降臨，觸發專屬電影級登場動畫與語音！
+                </p>
+
+                <h3 style="color: #2ecc71; margin-top:15px;">🎁 12 大戰術益處道具：</h3>
+                <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
+                    包含：金幣(+50分)、穿透雷射、重型導彈、清屏核彈、醫療包(回復25%HP)、能量護盾、超導引力場、時間時鐘(減速60%)、EMP電磁塔(封印技能5秒)、黑洞生成器、反彈鏡盾、冰凍突擊砲。
+                </p>
+
+                <h3 style="color: #e74c3c; margin-top:15px;">🛑 8 大危險扣血障礙物：</h3>
+                <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
+                    包含：烏雲(-20HP)、外星黏液(-10HP+減速Debuff)、暗黑晶石(-15HP-100分)、高壓電擊網(-30HP)、追蹤碎石(-15HP)、混向龍捲風(拉扯漂移)、毒氣雲霧(持續扣血)、反向磁暴區(控制方向反轉)。
+                </p>
+
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="btn game-btn" style="padding: 10px 30px; font-size: 16px;" onclick="closeInstructionsModal()">了解！開始飛行</button>
+                </div>
             </div>
         </div>
 
@@ -782,6 +819,15 @@
             setTimeout(resizeGameCanvas, 150);
         }
 
+        function openInstructionsModal() {
+            document.getElementById('instructionsModal').style.display = 'flex';
+        }
+
+        function closeInstructionsModal() {
+            document.getElementById('instructionsModal').style.display = 'none';
+        }
+
+        /* 🚀 精密畫圖函數：飛船 */
         function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -839,6 +885,7 @@
             customCtx.restore();
         }
 
+        /* 🦅 精密畫圖函數：雷霆金屬神鷹 */
         function drawRealisticEagle(x, y, attackTimer, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -890,6 +937,7 @@
             customCtx.restore();
         }
 
+        /* 🛸 精密畫圖函數：圓盤星際母艦 */
         function drawRealisticUFO(x, y, attackTimer, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -919,6 +967,7 @@
             customCtx.restore();
         }
 
+        /* 🐉 精密畫圖函數：地獄黑金赤龍 */
         function drawRealisticDragon(x, y, attackTimer, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -947,6 +996,7 @@
             customCtx.restore();
         }
 
+        /* 🌪️ 精密畫圖函數：大氣風暴精靈 */
         function drawAirElemental(x, y, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -963,6 +1013,7 @@
             customCtx.restore();
         }
 
+        /* ☄️ 精密畫圖函數：熔岩巨型隕石 */
         function drawMeteorHD(x, y, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -988,6 +1039,7 @@
             customCtx.restore();
         }
 
+        /* 🌌 精密畫圖函數：第101關 宇宙終極霸主 */
         function drawFinalBossHD(x, y, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -1034,6 +1086,7 @@
             }
         }
 
+        /* 🎁 精密畫圖函數：道具實體畫圖 */
         function drawCollectiblesHD(item, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -1073,6 +1126,7 @@
             customCtx.restore();
         }
 
+        /* 🛑 精密畫圖函數：障礙物實體畫圖 */
         function drawObstaclesHD(obs, customCtx) {
             if (!customCtx) {
                 customCtx = gameCtx;
@@ -1206,7 +1260,7 @@
             { category: "hazard", id: "darkgem", title: "💎 暗黑晶石", desc: "扣分結晶。", skill: "💥 負面效果：造成 15 點傷害並扣 100 分。" },
             { category: "hazard", id: "electric", title: "⚡ 高壓電擊網", desc: "高危陷阱。", skill: "💥 負面效果：瞬間造成 30 點高額雷擊傷害！" },
             { category: "hazard", id: "homing", title: "☄️ 追蹤碎石", desc: "追蹤障礙。", skill: "💥 負面效果：微幅修正角度追蹤飛船，造成 15 點傷害。" },
-            { category: "hazard", id: "wind", title: "🌪️ 混亂龍捲風", desc: "氣流干擾。", skill: "💥 負面效果：強制拉扯飛船上下漂移 2 秒。" },
+            { category: "hazard", id: "wind", title: "🌪️ 混向龍捲風", desc: "氣流干擾。", skill: "💥 負面效果：強制拉扯飛船上下漂移 2 秒。" },
             { category: "hazard", id: "toxic", title: "☣️ 毒氣雲霧", desc: "持續傷害。", skill: "💥 負面效果：造成持續性扣血（每秒 5 點，持續 3 秒）。" },
             { category: "hazard", id: "magnetic_storm", title: "🧲 反向磁暴區", desc: "控制反轉。", skill: "💥 負面效果：暫時反轉呼吸控制方向！" }
         ];
@@ -1254,7 +1308,7 @@
         }
         buildDemoMenus();
 
-        /* 🎬 展台動態渲染邏輯（根據 selectedDemoId 動態繪製） */
+        /* 🎬 展台動態繪製系統 */
         function startDemoLoop() {
             const dCanvas = document.getElementById('demoCanvas');
             const dCtx = dCanvas.getContext('2d');
@@ -1270,7 +1324,6 @@
                 let cx = 250;
                 let cy = 120;
 
-                // 找選中的項目
                 let currentItem = DEMO_ITEMS_ALL.find(function(it) {
                     return it.id === selectedDemoId;
                 });
