@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor (Adaptive Centroid Engine)</title>
+    <title>呼吸訓練器 - Slow Flow Anti-Jitter Engine</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -277,7 +277,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用頻譜重心動態平均演算法。", err);
+                console.warn("未檢測到 rf_model.onnx，改用慢流速防抖動聲學演算法。", err);
             }
         }
         loadPKLModel();
@@ -319,25 +319,55 @@
             plugins: [customOverlayPlugin]
         });
 
-        // 🎯 1. 即時判斷：計算頻譜加權重心 (Spectral Centroid)
+        // 🎯 防抖動與低流速死區變數
+        let lastCentroidEMA = 0;
+        let stableBreathState = "inhalation";
+        let stateHoldTimer = 0;
+
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
+
             let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
             let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
 
-            let totalEnergy = e1 + e2 + e3 + e4 + e5 + 0.0001;
-            let centroid = (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / totalEnergy;
+            let totalEnergy = e1 + e2 + e3 + e4 + e5;
 
-            if (onnxSession) {
-                try {
-                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
-                    const results = await onnxSession.run({ float_input: inputTensor });
-                    return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
-                } catch (e) {}
+            // 1. 低流速死區 (Deadzone)：能量太低視為 Idle，強行停止漂移亂跳
+            if (totalEnergy < 5.0) { 
+                return "idle"; 
             }
-            
-            // 門檻：重心偏低頻為吸氣，偏高頻為吐氣
-            return (centroid < 2.5) ? "inhalation" : "exhalation";
+
+            // 2. 單幀頻譜重心
+            let instantaneousCentroid = (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / (totalEnergy + 0.0001);
+
+            // 3. EMA 平滑：濾除瞬間毛刺噪聲
+            if (lastCentroidEMA === 0) lastCentroidEMA = instantaneousCentroid;
+            lastCentroidEMA = (0.25 * instantaneousCentroid) + (0.75 * lastCentroidEMA);
+
+            // 4. 遲滯雙門檻 (Hysteresis Buffer)：2.3 ~ 2.7 為防抖灰色帶
+            if (stableBreathState === "inhalation") {
+                if (lastCentroidEMA > 2.7) {
+                    stateHoldTimer++;
+                    if (stateHoldTimer >= 3) { // 連續 3 幀確定才切換，防止邊界亂閃
+                        stableBreathState = "exhalation";
+                        stateHoldTimer = 0;
+                    }
+                } else {
+                    stateHoldTimer = 0;
+                }
+            } else if (stableBreathState === "exhalation") {
+                if (lastCentroidEMA < 2.3) {
+                    stateHoldTimer++;
+                    if (stateHoldTimer >= 3) {
+                        stableBreathState = "inhalation";
+                        stateHoldTimer = 0;
+                    }
+                } else {
+                    stateHoldTimer = 0;
+                }
+            }
+
+            return stableBreathState;
         }
 
         async function parseLine(line) {
@@ -365,12 +395,16 @@
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
 
-                smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
+                if (currentMode === "idle") {
+                    smoothedEst = 0.0;
+                } else {
+                    smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
+                }
 
-                if (flowYes && Math.abs(smoothedEst) > 0) {
+                if (flowYes && Math.abs(smoothedEst) > 0 && currentMode !== "idle") {
                     document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(smoothedEst).toFixed(1)} L/min`;
                 } else {
-                    document.getElementById('detectedMode').innerText = `Detected: Idle`;
+                    document.getElementById('detectedMode').innerText = `Detected: Idle (Low Flow)`;
                 }
 
                 records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
@@ -389,17 +423,16 @@
             }
         }
 
-        // 🔥 2. 後端切分：【全域平均基線歸一化版】PKL Index 切分演算法
+        // 🔥 後端切分：加入低流速自動剔除與滑動中位數濾波
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
                 return; 
             }
-            updateStatus("正在使用【頻譜重心 + 全域平均基線歸一化】進行 PKL Index 切分...");
+            updateStatus("正在分析【慢流速抗抖動 + 頻譜重心】區段切分...");
 
-            let FLOW_THRESHOLD = 3.0; 
+            let FLOW_THRESHOLD = 4.0; // 專門濾除慢速底噪死區
 
-            // 1. 計算每個時間點的頻譜重心 (Spectral Centroid)
             let rawCentroids = records.map(r => {
                 if (!r.flowYes || Math.abs(r.est) < FLOW_THRESHOLD) return null;
                 let fft = r.fft;
@@ -407,24 +440,21 @@
                 let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
 
                 let totalEnergy = e1 + e2 + e3 + e4 + e5 + 0.0001;
-                let centroid = (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / totalEnergy;
-                return centroid;
+                return (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / totalEnergy;
             });
 
-            // 2. 算這段錄音的「平均重心 (Mean Centroid)」作為 0 基準線
             let validCentroids = rawCentroids.filter(c => c !== null);
             if (validCentroids.length < 5) {
-                updateStatus("有效氣流點太少，請確保有明顯的吹氣與吸氣動作。");
+                updateStatus("有效氣流點太少，請稍微加大氣流吸/吐氣。");
                 return;
             }
 
             let sum = validCentroids.reduce((a, b) => a + b, 0);
             let meanThreshold = sum / validCentroids.length; 
 
-            // 3. 低於平均重心為吸氣 (0)，高於平均重心為吐氣 (1)
             let rawStates = [];
             let currentState = 0;
-            let hysteresis = 0.1; 
+            let hysteresis = 0.15; 
 
             for (let i = 0; i < rawCentroids.length; i++) {
                 let c = rawCentroids[i];
@@ -441,7 +471,6 @@
                 rawStates.push(currentState);
             }
 
-            // 4. 5點中位數平滑
             let smoothedStates = [...rawStates];
             for (let i = 2; i < rawStates.length - 2; i++) {
                 if (rawStates[i] === -1) continue;
@@ -452,7 +481,6 @@
                 }
             }
 
-            // 5. 併合與過濾區段 (< 0.25 秒自動剔除)
             pklSegments = [];
             let segStart = -1, segState = -1;
 
@@ -461,7 +489,7 @@
                 if (st !== segState) {
                     if (segState !== -1 && segStart !== -1) {
                         let dur = records[i - 1].elapsed - records[segStart].elapsed;
-                        if (dur >= 0.25) {
+                        if (dur >= 0.3) {
                             pklSegments.push({
                                 state: (segState === 0) ? "Inspiration" : "Expiration",
                                 start_index: segStart, end_index: i - 1,
@@ -476,7 +504,7 @@
             if (segState !== -1 && segStart !== -1) {
                 let lastIdx = records.length - 1;
                 let dur = records[lastIdx].elapsed - records[segStart].elapsed;
-                if (dur >= 0.25) {
+                if (dur >= 0.3) {
                     pklSegments.push({
                         state: (segState === 0) ? "Inspiration" : "Expiration",
                         start_index: segStart, end_index: lastIdx,
@@ -485,7 +513,7 @@
                 }
             }
 
-            updateStatus(`自適應切分完成！平均重心基準為 ${meanThreshold.toFixed(2)}，成功劃分出 ${pklSegments.length} 個區段。`);
+            updateStatus(`切分完成！基線為 ${meanThreshold.toFixed(2)}，劃分出 ${pklSegments.length} 個穩定區段。`);
             flowChart.update();
         }
 
@@ -1110,7 +1138,7 @@
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
                 
-                // 🎯 升降公式：吸氣 (curReadEst > 0) 往上 (-Y)，吐氣 (curReadEst < 0) 往下 (+Y)
+                // 吸氣 (curReadEst > 0) 往上 (-Y)，吐氣 (curReadEst < 0) 往下 (+Y)
                 let flowOffsetY = 0;
                 if (curReadEst > 0) { 
                     flowOffsetY = -(Math.abs(curReadEst) * 3.5); 
@@ -1118,7 +1146,7 @@
                     flowOffsetY = (Math.abs(curReadEst) * 3.5);  
                 }
 
-                let targetY = (logicalHeight * 0.5) + flowOffsetY; // 預設中央 (50%)
+                let targetY = (logicalHeight * 0.5) + flowOffsetY; // 靜止/低流速自動留於正中間 50%
                 targetY = Math.max(40, Math.min(logicalHeight - 40, targetY));
                 
                 let dy = targetY - rocket.y;
