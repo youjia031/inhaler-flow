@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Restoration)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (HD Dynamic Fixed)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
@@ -410,7 +410,7 @@
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor (Full Uncompressed Engine)</h1>
+        <h1>Inhaler Flow Monitor (HD Dynamic Edition)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -441,7 +441,7 @@
     </div>
 
     <div class="demo-container" id="demoContainer">
-        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與實戰影音展台</h3>
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與動態實戰展台</h3>
 
         <div class="demo-layout">
             <div class="demo-viewport">
@@ -493,7 +493,7 @@
             </div>
         </div>
 
-        <!-- 📖 遊戲說明書與全物件圖鑑 Modal -->
+        <!-- 📖 遊戲說明書 Modal -->
         <div class="modal-screen" id="instructionsModal" style="display: none;">
             <div class="modal-card">
                 <h2 style="color: #f1c40f; margin-top:0; font-size: 26px; border-bottom: 2px solid #f1c40f; padding-bottom: 8px;">📖 氣流飛行員 - 官方介紹說明書與圖鑑指南</h2>
@@ -509,18 +509,8 @@
                 <h3 style="color: #e74c3c; margin-top:15px;">🏰 5 關循環與 101 關終極戰：</h3>
                 <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
                     * 遊戲共 100 關，每 **5 關為一輪大循環 (Loop 1~20)**。<br>
-                    * 隨輪數增加，5 大關卡 Boss 會動態解鎖新技能（如：連環雷擊、硬化護盾、全屏狂暴）。<br>
-                    * 通關第 100 關後，將迎來 **第 101 關「🌌 宇宙終極霸主」** 降臨，觸發專屬電影級登場動畫與語音！
-                </p>
-
-                <h3 style="color: #2ecc71; margin-top:15px;">🎁 12 大戰術益處道具：</h3>
-                <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
-                    包含：金幣(+50分)、穿透雷射、重型導彈、清屏核彈、醫療包(回復25%HP)、能量護盾、超導引力場、時間時鐘(減速60%)、EMP電磁塔(封印技能5秒)、黑洞生成器、反彈鏡盾、冰凍突擊砲。
-                </p>
-
-                <h3 style="color: #e74c3c; margin-top:15px;">🛑 8 大危險扣血障礙物：</h3>
-                <p style="font-size: 14px; line-height: 1.6; color: #ddd;">
-                    包含：烏雲(-20HP)、外星黏液(-10HP+減速Debuff)、暗黑晶石(-15HP-100分)、高壓電擊網(-30HP)、追蹤碎石(-15HP)、混向龍捲風(拉扯漂移)、毒氣雲霧(持續扣血)、反向磁暴區(控制方向反轉)。
+                    * 隨輪數增加，5 大關卡 Boss 會動態解鎖新技能。<br>
+                    * 通關第 100 關後，將迎來 **第 101 關「🌌 宇宙終極霸主」**，觸發專屬登場動畫與語音！
                 </p>
 
                 <div style="text-align: center; margin-top: 25px;">
@@ -542,23 +532,10 @@
     <div class="statusbar" id="status">Not connected</div>
 
     <script>
-        const EDUCATION_PROGRAM = [
-            ["inhalation", 0, 3],
-            ["inhalation", 60, 2],
-            ["inhalation", 0, 1],
-            ["inhalation", 0, 2],
-            ["exhalation", 60, 3],
-            ["inhalation", 0, 2]
-        ];
-
         let port = null;
         let reader = null;
         let isMeasuring = false;
-        let records = [];
-        let flowHistory = [];
-        let lastFFT = {};
         let startTime = null;
-        let currentMode = "inhalation";
         let smoothedEst = 0;
 
         const ctx = document.getElementById('flowChart').getContext('2d');
@@ -581,23 +558,8 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: {
-                        type: 'linear',
-                        min: 0,
-                        max: 20,
-                        title: {
-                            display: true,
-                            text: 'Time (secs)'
-                        }
-                    },
-                    y: {
-                        min: -120,
-                        max: 120,
-                        title: {
-                            display: true,
-                            text: 'Flow (L/min)'
-                        }
-                    }
+                    x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
+                    y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
                 }
             }
         });
@@ -624,9 +586,7 @@
                     document.getElementById('connectBtn').innerText = 'Disconnect';
                     document.getElementById('startBtn').disabled = false;
                     readLoop();
-                } catch (err) {
-                    console.error("Serial error:", err);
-                }
+                } catch (err) {}
             }
         }
 
@@ -641,9 +601,7 @@
             try {
                 while (true) {
                     const { value, done } = await reader.read();
-                    if (done) {
-                        break;
-                    }
+                    if (done) break;
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
@@ -651,9 +609,7 @@
                         parseLine(lines[i].trim());
                     }
                 }
-            } catch (err) {
-                console.error("Reader error:", err);
-            }
+            } catch (err) {}
         }
 
         document.getElementById('connectBtn').addEventListener('click', toggleConnection);
@@ -685,9 +641,7 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playSynthesizedVoice(text) {
-            if (!('speechSynthesis' in window)) {
-                return;
-            }
+            if (!('speechSynthesis' in window)) return;
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-TW';
             utterance.pitch = 0.25;
@@ -696,28 +650,12 @@
         }
 
         function playSoundHD(type) {
-            if (!document.getElementById('soundToggle')?.checked) {
-                return;
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!document.getElementById('soundToggle')?.checked) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             let now = audioCtx.currentTime;
 
             try {
-                if (type === 'laser') {
-                    let osc = audioCtx.createOscillator();
-                    let gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(1500, now);
-                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
-                    gain.gain.setValueAtTime(0.3, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                    osc.start();
-                    osc.stop(now + 0.15);
-                } else if (type === 'boss_attack') {
+                if (type === 'boss_attack') {
                     let osc = audioCtx.createOscillator();
                     let gain = audioCtx.createGain();
                     osc.connect(gain);
@@ -740,34 +678,8 @@
                     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
                     osc.start();
                     osc.stop(now + 0.25);
-                } else if (type === 'item_pickup') {
-                    let osc = audioCtx.createOscillator();
-                    let gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(600, now);
-                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-                    gain.gain.setValueAtTime(0.3, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                    osc.start();
-                    osc.stop(now + 0.2);
-                } else if (type === 'explosion') {
-                    let osc = audioCtx.createOscillator();
-                    let gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
-                    gain.gain.setValueAtTime(0.5, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                    osc.start();
-                    osc.stop(now + 0.4);
                 }
-            } catch (e) {
-                console.error("Sound error:", e);
-            }
+            } catch (e) {}
         }
 
         let gameCanvas = document.getElementById('gameCanvas');
@@ -776,23 +688,14 @@
         let gameScore = 0;
         let playerHP = 100;
         let globalAnimFrame = 0;
+        let demoAnimFrame = 0;
         let isGameRunning = false;
+        let isDemoRunning = false;
         let logicalWidth = 800;
         let logicalHeight = 550;
         
-        let rocket = {
-            x: 100,
-            y: 275,
-            radius: 14,
-            angle: 0,
-            shieldActive: false,
-            magnetActive: false,
-            slowActive: false,
-            empActive: false
-        }; 
-
+        let rocket = { x: 100, y: 275, radius: 14, angle: 0, shieldActive: false }; 
         let activeBosses = [];
-        let playerProjectiles = [];
         let bossBullets = [];
         let collectibles = [];
         let obstacles = [];
@@ -828,16 +731,15 @@
         }
 
         /* 🚀 精密畫圖函數：飛船 */
-        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
             customCtx.rotate(angle);
-            customCtx.shadowBlur = 12;
-            customCtx.shadowColor = rocket.shieldActive ? '#38bdf8' : '#00d2d3';
             
+            // 飛船外殼
             let hullGrad = customCtx.createLinearGradient(-10, -10, 20, 10);
             hullGrad.addColorStop(0, '#1e293b');
             hullGrad.addColorStop(0.5, '#475569');
@@ -852,21 +754,21 @@
             customCtx.closePath();
             customCtx.fill();
             
+            // 駕駛艙
             let glassGrad = customCtx.createLinearGradient(0, -4, 12, 4);
             glassGrad.addColorStop(0, '#38bdf8');
             glassGrad.addColorStop(1, '#0284c7');
             customCtx.fillStyle = glassGrad;
-            
             customCtx.beginPath();
             customCtx.ellipse(4, 0, 7, 3, 0, 0, Math.PI * 2);
             customCtx.fill();
             
-            let flameLen = Math.min(25, 8 + flowMag * 0.3);
+            // 動態尾焰
+            let flameLen = 12 + Math.sin(time * 0.3) * 6;
             let flameGrad = customCtx.createLinearGradient(-5, 0, -5 - flameLen, 0);
             flameGrad.addColorStop(0, '#f97316');
             flameGrad.addColorStop(1, 'transparent');
             customCtx.fillStyle = flameGrad;
-            
             customCtx.beginPath();
             customCtx.moveTo(-5, -4);
             customCtx.lineTo(-5 - flameLen, 0);
@@ -874,29 +776,20 @@
             customCtx.closePath();
             customCtx.fill();
 
-            if (rocket.shieldActive) {
-                customCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
-                customCtx.lineWidth = 2;
-                customCtx.beginPath();
-                customCtx.arc(2, 0, 22, 0, Math.PI * 2);
-                customCtx.stroke();
-            }
-
             customCtx.restore();
         }
 
-        /* 🦅 精密畫圖函數：雷霆金屬神鷹 */
-        function drawRealisticEagle(x, y, attackTimer, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* 🦅 繪製神鷹（動態羽毛與雷電） */
+        function drawRealisticEagle(x, y, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
-            let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
+            let flapAngle = Math.sin(time * 0.15) * 0.35;
             
-            let sides = [-1, 1];
-            for (let s = 0; s < sides.length; s++) {
-                let side = sides[s];
+            // 雙翼
+            [-1, 1].forEach(side => {
                 customCtx.save();
                 customCtx.scale(1, side);
                 customCtx.rotate(flapAngle);
@@ -912,8 +805,9 @@
                     customCtx.fill();
                 }
                 customCtx.restore();
-            }
+            });
 
+            // 鷹身
             let bodyGrad = customCtx.createRadialGradient(-3, 0, 3, 0, 0, 28);
             bodyGrad.addColorStop(0, '#ffffff');
             bodyGrad.addColorStop(1, '#2c3e50');
@@ -924,29 +818,26 @@
             customCtx.quadraticCurveTo(0, 16, 25, 0);
             customCtx.fill();
 
-            let beakGrad = customCtx.createLinearGradient(-10, -6, -32, 14);
-            beakGrad.addColorStop(0, '#ffe100');
-            beakGrad.addColorStop(1, '#d35400');
-            customCtx.fillStyle = beakGrad;
+            // 鷹嘴
+            customCtx.fillStyle = '#f39c12';
             customCtx.beginPath();
             customCtx.moveTo(-10, -6);
-            customCtx.quadraticCurveTo(-26, -8, -34, 8);
-            customCtx.quadraticCurveTo(-20, 6, -14, 4);
+            customCtx.lineTo(-30, 0);
+            customCtx.lineTo(-10, 6);
             customCtx.fill();
             
             customCtx.restore();
         }
 
-        /* 🛸 精密畫圖函數：圓盤星際母艦 */
-        function drawRealisticUFO(x, y, attackTimer, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* 🛸 繪製母艦（動態旋轉光環） */
+        function drawRealisticUFO(x, y, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
-            customCtx.shadowColor = '#00d2d3';
-            customCtx.shadowBlur = 15;
             
+            // 艦體
             let hullGrad = customCtx.createLinearGradient(-40, 0, 40, 15);
             hullGrad.addColorStop(0, '#2c3e50');
             hullGrad.addColorStop(0.5, '#bdc3c7');
@@ -956,75 +847,96 @@
             customCtx.ellipse(0, 5, 40, 16, 0, 0, Math.PI * 2);
             customCtx.fill();
 
+            // 圓頂
             let domeGrad = customCtx.createRadialGradient(-6, -10, 2, 0, -8, 18);
-            domeGrad.addColorStop(0, '#ffffff');
+            domeGrad.addColorStop(0, '#a855f7');
             domeGrad.addColorStop(1, '#12051e');
             customCtx.fillStyle = domeGrad;
             customCtx.beginPath();
             customCtx.ellipse(0, -5, 20, 12, 0, 0, Math.PI * 2);
             customCtx.fill();
+
+            // 動態旋轉燈光
+            for (let i = 0; i < 5; i++) {
+                let rot = time * 0.05 + (i * Math.PI * 2 / 5);
+                let lx = Math.cos(rot) * 32;
+                let ly = Math.sin(rot) * 8 + 5;
+                customCtx.fillStyle = '#00d2d3';
+                customCtx.beginPath();
+                customCtx.arc(lx, ly, 3, 0, Math.PI * 2);
+                customCtx.fill();
+            }
             
             customCtx.restore();
         }
 
-        /* 🐉 精密畫圖函數：地獄黑金赤龍 */
-        function drawRealisticDragon(x, y, attackTimer, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* 🐉 繪製赤龍（顎骨開合與火焰） */
+        function drawRealisticDragon(x, y, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
-            let jawOpen = (attackTimer % 45 > 30) ? 14 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 6);
+            let jawOpen = Math.abs(Math.sin(time * 0.1)) * 12;
             
-            let upperGrad = customCtx.createLinearGradient(15, 0, -30, 0);
-            upperGrad.addColorStop(0, '#78281f');
-            upperGrad.addColorStop(1, '#e74c3c');
-            customCtx.fillStyle = upperGrad;
+            // 上顎
+            customCtx.fillStyle = '#e74c3c';
             customCtx.beginPath();
-            customCtx.moveTo(12, -jawOpen);
-            customCtx.lineTo(-28, -14 - jawOpen);
-            customCtx.lineTo(-30, -4 - jawOpen);
+            customCtx.moveTo(15, -jawOpen);
+            customCtx.lineTo(-25, -15 - jawOpen);
+            customCtx.lineTo(-30, 0);
             customCtx.fill();
 
-            customCtx.fillStyle = '#512e5f';
+            // 下顎
+            customCtx.fillStyle = '#c0392b';
             customCtx.beginPath();
-            customCtx.moveTo(12, jawOpen);
-            customCtx.lineTo(-25, 14 + jawOpen);
-            customCtx.lineTo(-8, 2);
+            customCtx.moveTo(15, jawOpen);
+            customCtx.lineTo(-25, 15 + jawOpen);
+            customCtx.lineTo(-30, 0);
+            customCtx.fill();
+
+            // 眼睛
+            customCtx.fillStyle = '#f1c40f';
+            customCtx.beginPath();
+            customCtx.arc(5, -8 - jawOpen * 0.5, 3, 0, Math.PI * 2);
             customCtx.fill();
             
             customCtx.restore();
         }
 
-        /* 🌪️ 精密畫圖函數：大氣風暴精靈 */
-        function drawAirElemental(x, y, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* 🌪️ 繪製風暴精靈 */
+        function drawAirElemental(x, y, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
+            
+            let radius = 24 + Math.sin(time * 0.2) * 5;
             customCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
             customCtx.beginPath();
-            customCtx.arc(0, 0, 24 + Math.sin(globalAnimFrame * 0.2) * 4, 0, Math.PI * 2);
+            customCtx.arc(0, 0, radius, 0, Math.PI * 2);
             customCtx.fill();
+            
             customCtx.strokeStyle = "#ffffff";
             customCtx.lineWidth = 2;
+            customCtx.beginPath();
+            customCtx.arc(0, 0, radius * 0.6, time * 0.1, time * 0.1 + Math.PI * 1.5);
             customCtx.stroke();
+
             customCtx.restore();
         }
 
-        /* ☄️ 精密畫圖函數：熔岩巨型隕石 */
-        function drawMeteorHD(x, y, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* ☄️ 繪製隕石 */
+        function drawMeteorHD(x, y, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
-            customCtx.rotate(globalAnimFrame * 0.02);
-            customCtx.shadowColor = '#e67e22';
-            customCtx.shadowBlur = 18;
+            customCtx.rotate(time * 0.03);
             
-            let grad = customCtx.createRadialGradient(0, 0, 8, 0, 0, 28);
+            let grad = customCtx.createRadialGradient(0, 0, 8, 0, 0, 26);
             grad.addColorStop(0, '#f39c12');
             grad.addColorStop(1, '#2c3e50');
             customCtx.fillStyle = grad;
@@ -1035,203 +947,143 @@
             customCtx.lineTo(25, 8);
             customCtx.lineTo(10, 25);
             customCtx.lineTo(-14, 20);
+            customCtx.closePath();
             customCtx.fill();
+            
             customCtx.restore();
         }
 
-        /* 🌌 精密畫圖函數：第101關 宇宙終極霸主 */
-        function drawFinalBossHD(x, y, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* 🌌 繪製終極霸主 */
+        function drawFinalBossHD(x, y, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(x, y);
-            customCtx.shadowColor = '#e74c3c';
-            customCtx.shadowBlur = 30;
             
-            let grad = customCtx.createRadialGradient(0, 0, 10, 0, 0, 36);
+            let pulsingRadius = 32 + Math.sin(time * 0.1) * 4;
+            let grad = customCtx.createRadialGradient(0, 0, 5, 0, 0, pulsingRadius);
             grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.5, '#e74c3c');
+            grad.addColorStop(0.4, '#e74c3c');
             grad.addColorStop(1, '#4a235a');
             customCtx.fillStyle = grad;
             
             customCtx.beginPath();
-            customCtx.arc(0, 0, 36, 0, Math.PI * 2);
+            customCtx.arc(0, 0, pulsingRadius, 0, Math.PI * 2);
             customCtx.fill();
+
+            // 外圍撕裂光線
             customCtx.strokeStyle = '#f1c40f';
-            customCtx.lineWidth = 3;
-            customCtx.stroke();
+            customCtx.lineWidth = 2;
+            for (let i = 0; i < 6; i++) {
+                let ang = time * 0.05 + i * (Math.PI / 3);
+                customCtx.beginPath();
+                customCtx.moveTo(Math.cos(ang) * pulsingRadius, Math.sin(ang) * pulsingRadius);
+                customCtx.lineTo(Math.cos(ang) * (pulsingRadius + 12), Math.sin(ang) * (pulsingRadius + 12));
+                customCtx.stroke();
+            }
+
             customCtx.restore();
         }
 
-        function drawBossHD(b, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
-            let floatY = Math.sin(globalAnimFrame * 0.08) * 6;
+        function drawBossHD(b, customCtx, animTime) {
+            let floatY = Math.sin((animTime || globalAnimFrame) * 0.08) * 6;
             let bossKey = b.id || b.name;
 
             if (bossKey.includes("final") || b.isFinal) {
-                drawFinalBossHD(b.x, b.y + floatY, customCtx);
+                drawFinalBossHD(b.x, b.y + floatY, customCtx, animTime);
             } else if (bossKey.includes("air") || b.name.includes("風暴精靈")) {
-                drawAirElemental(b.x, b.y + floatY, customCtx);
+                drawAirElemental(b.x, b.y + floatY, customCtx, animTime);
             } else if (bossKey.includes("ufo") || b.name.includes("母艦")) {
-                drawRealisticUFO(b.x, b.y + floatY, b.attackTimer || globalAnimFrame, customCtx);
+                drawRealisticUFO(b.x, b.y + floatY, customCtx, animTime);
             } else if (bossKey.includes("dragon") || b.name.includes("赤龍")) {
-                drawRealisticDragon(b.x, b.y + floatY, b.attackTimer || globalAnimFrame, customCtx);
+                drawRealisticDragon(b.x, b.y + floatY, customCtx, animTime);
             } else if (bossKey.includes("meteor") || b.name.includes("隕石")) {
-                drawMeteorHD(b.x, b.y + floatY, customCtx);
+                drawMeteorHD(b.x, b.y + floatY, customCtx, animTime);
             } else {
-                drawRealisticEagle(b.x, b.y + floatY, b.attackTimer || globalAnimFrame, customCtx);
+                drawRealisticEagle(b.x, b.y + floatY, customCtx, animTime);
             }
         }
 
-        /* 🎁 精密畫圖函數：道具實體畫圖 */
-        function drawCollectiblesHD(item, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
+        /* 🎁 高質感實體道具繪製 (完全不用文字) */
+        function drawCollectiblesHD(item, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
+
             customCtx.save();
             customCtx.translate(item.x, item.y);
 
+            // 浮動旋轉動畫
+            let rot = time * 0.05;
+            customCtx.rotate(rot);
+
             let typeColors = {
-                coin: '#f1c40f',
-                heart: '#e74c3c',
-                shield: '#3498db',
-                laser: '#2ecc71',
-                missile: '#e67e22',
-                bomb: '#9b59b6',
-                magnet: '#16a085',
-                clock: '#f39c12',
-                emp: '#f1c40f',
-                blackhole: '#8e44ad',
-                mirror: '#bdc3c7',
-                ice: '#3498db'
+                coin: '#f1c40f', heart: '#e74c3c', shield: '#38bdf8', laser: '#2ecc71',
+                missile: '#e67e22', bomb: '#9b59b6', magnet: '#16a085', clock: '#f39c12',
+                emp: '#f1c40f', blackhole: '#8e44ad', mirror: '#bdc3c7', ice: '#00d2d3'
             };
 
-            let color = typeColors[item.type] || '#ffffff';
-            customCtx.fillStyle = color;
-            customCtx.shadowColor = color;
-            customCtx.shadowBlur = 10;
-            customCtx.beginPath();
-            customCtx.arc(0, 0, 12, 0, Math.PI * 2);
-            customCtx.fill();
-
-            customCtx.fillStyle = '#ffffff';
-            customCtx.font = '10px sans-serif';
-            customCtx.textAlign = 'center';
-            customCtx.textBaseline = 'middle';
-            customCtx.fillText(item.type.slice(0, 3).toUpperCase(), 0, 0);
-
-            customCtx.restore();
-        }
-
-        /* 🛑 精密畫圖函數：障礙物實體畫圖 */
-        function drawObstaclesHD(obs, customCtx) {
-            if (!customCtx) {
-                customCtx = gameCtx;
-            }
-            customCtx.save();
-            customCtx.translate(obs.x, obs.y);
-
-            let hazardColors = {
-                cloud: '#7f8c8d',
-                slime: '#27ae60',
-                darkgem: '#8e44ad',
-                electric: '#f1c40f',
-                homing: '#d35400',
-                wind: '#16a085',
-                toxic: '#2ecc71',
-                magnetic_storm: '#c0392b'
-            };
-
-            let color = hazardColors[obs.type] || '#e74c3c';
-            customCtx.fillStyle = color;
-            customCtx.shadowColor = color;
-            customCtx.shadowBlur = 12;
+            let mainColor = typeColors[item.type] || '#38bdf8';
+            
+            // 外層發光能量光暈
+            customCtx.fillStyle = mainColor;
             customCtx.beginPath();
             customCtx.arc(0, 0, 14, 0, Math.PI * 2);
             customCtx.fill();
 
-            customCtx.strokeStyle = '#ffffff';
-            customCtx.lineWidth = 1.5;
-            customCtx.stroke();
+            // 內層晶石多角幾何形狀
+            customCtx.fillStyle = '#ffffff';
+            customCtx.beginPath();
+            customCtx.moveTo(0, -8);
+            customCtx.lineTo(7, 0);
+            customCtx.lineTo(0, 8);
+            customCtx.lineTo(-7, 0);
+            customCtx.closePath();
+            customCtx.fill();
 
             customCtx.restore();
         }
 
-        function spawnCollectiblesAndObstacles() {
-            if (globalAnimFrame % 120 === 0) {
-                let types = ['coin', 'heart', 'shield', 'laser', 'missile', 'bomb', 'clock', 'emp', 'blackhole'];
-                let selectedType = types[Math.floor(Math.random() * types.length)];
-                collectibles.push({
-                    x: logicalWidth + 20,
-                    y: Math.random() * (logicalHeight - 60) + 30,
-                    type: selectedType,
-                    radius: 12
-                });
-            }
+        /* 🛑 高質感實體障礙物繪製 (完全不用文字) */
+        function drawObstaclesHD(obs, customCtx, animTime) {
+            if (!customCtx) customCtx = gameCtx;
+            let time = animTime || globalAnimFrame;
 
-            if (globalAnimFrame % 180 === 0) {
-                let obsTypes = ['cloud', 'slime', 'darkgem', 'electric', 'toxic', 'wind'];
-                let selectedObs = obsTypes[Math.floor(Math.random() * obsTypes.length)];
-                obstacles.push({
-                    x: logicalWidth + 20,
-                    y: Math.random() * (logicalHeight - 60) + 30,
-                    type: selectedObs,
-                    radius: 14
-                });
-            }
-        }
+            customCtx.save();
+            customCtx.translate(obs.x, obs.y);
 
-        function updateGameObjects() {
-            for (let i = 0; i < collectibles.length; i++) {
-                let item = collectibles[i];
-                item.x -= 2;
-                
-                let dist = Math.hypot(item.x - rocket.x, item.y - rocket.y);
-                if (dist < rocket.radius + item.radius) {
-                    item.collected = true;
-                    playSoundHD('item_pickup');
-                    if (item.type === 'coin') {
-                        gameScore += 50;
-                    } else if (item.type === 'heart') {
-                        playerHP = Math.min(100, playerHP + 25);
-                        document.getElementById('hpFill').style.width = playerHP + '%';
-                    } else if (item.type === 'shield') {
-                        rocket.shieldActive = true;
-                    } else if (item.type === 'bomb') {
-                        bossBullets = [];
-                        playSoundHD('explosion');
-                    }
-                    document.getElementById('gameScore').innerText = gameScore;
+            if (obs.type === 'cloud') {
+                // 雲朵形狀
+                customCtx.fillStyle = '#7f8c8d';
+                customCtx.beginPath();
+                customCtx.arc(-6, 0, 10, 0, Math.PI * 2);
+                customCtx.arc(6, 0, 12, 0, Math.PI * 2);
+                customCtx.arc(0, -6, 10, 0, Math.PI * 2);
+                customCtx.fill();
+            } else if (obs.type === 'electric') {
+                // 高壓電網線條
+                customCtx.strokeStyle = '#f1c40f';
+                customCtx.lineWidth = 3;
+                customCtx.beginPath();
+                customCtx.moveTo(-12, -12);
+                customCtx.lineTo(0, 4);
+                customCtx.lineTo(-4, 4);
+                customCtx.lineTo(12, 12);
+                customCtx.stroke();
+            } else {
+                // 一般鋸齒危險陷阱
+                customCtx.fillStyle = '#e74c3c';
+                customCtx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    let a = i * Math.PI / 3;
+                    let r = (i % 2 === 0) ? 14 : 8;
+                    customCtx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
                 }
+                customCtx.closePath();
+                customCtx.fill();
             }
 
-            collectibles = collectibles.filter(function(item) {
-                return item.x > -20 && !item.collected;
-            });
-
-            for (let i = 0; i < obstacles.length; i++) {
-                let obs = obstacles[i];
-                obs.x -= 2.5;
-
-                let dist = Math.hypot(obs.x - rocket.x, obs.y - rocket.y);
-                if (dist < rocket.radius + obs.radius) {
-                    obs.hit = true;
-                    if (rocket.shieldActive) {
-                        rocket.shieldActive = false;
-                    } else {
-                        playerHP = Math.max(0, playerHP - 15);
-                        playSoundHD('hit');
-                        document.getElementById('hpFill').style.width = playerHP + '%';
-                    }
-                }
-            }
-
-            obstacles = obstacles.filter(function(obs) {
-                return obs.x > -20 && !obs.hit;
-            });
+            customCtx.restore();
         }
 
         const DEMO_ITEMS_ALL = [
@@ -1308,16 +1160,17 @@
         }
         buildDemoMenus();
 
-        /* 🎬 展台動態繪製系統 */
+        /* 🎬 展台動態動畫迴圈 (修復定格問題，持續動態渲染) */
         function startDemoLoop() {
             const dCanvas = document.getElementById('demoCanvas');
             const dCtx = dCanvas.getContext('2d');
+            isDemoRunning = true;
 
             function renderDemo() {
-                if (document.getElementById('demoContainer').style.display === 'none') {
+                if (!isDemoRunning || document.getElementById('demoContainer').style.display === 'none') {
                     return;
                 }
-                globalAnimFrame++;
+                demoAnimFrame++;
                 dCtx.fillStyle = '#020208';
                 dCtx.fillRect(0, 0, 380, 240);
 
@@ -1335,25 +1188,24 @@
                             name: currentItem.title,
                             x: cx,
                             y: cy,
-                            attackTimer: globalAnimFrame,
                             isFinal: (selectedDemoId === 'final')
                         };
-                        drawBossHD(mockBoss, dCtx);
-                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+                        drawBossHD(mockBoss, dCtx, demoAnimFrame);
+                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx, demoAnimFrame);
                     } else if (currentItem.category === 'item') {
                         drawCollectiblesHD({
                             x: cx,
                             y: cy,
                             type: selectedDemoId
-                        }, dCtx);
-                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+                        }, dCtx, demoAnimFrame);
+                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx, demoAnimFrame);
                     } else if (currentItem.category === 'hazard') {
                         drawObstaclesHD({
                             x: cx,
                             y: cy,
                             type: selectedDemoId
-                        }, dCtx);
-                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
+                        }, dCtx, demoAnimFrame);
+                        drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx, demoAnimFrame);
                     }
                 }
 
@@ -1426,22 +1278,11 @@
             gameCtx.fillStyle = '#020208';
             gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
 
-            spawnCollectiblesAndObstacles();
-            updateGameObjects();
-
-            drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, "inhalation", Math.abs(smoothedEst));
-
-            for (let i = 0; i < collectibles.length; i++) {
-                drawCollectiblesHD(collectibles[i]);
-            }
-
-            for (let i = 0; i < obstacles.length; i++) {
-                drawObstaclesHD(obstacles[i]);
-            }
+            drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, "inhalation", Math.abs(smoothedEst), gameCtx, globalAnimFrame);
 
             for (let i = 0; i < activeBosses.length; i++) {
                 let b = activeBosses[i];
-                drawBossHD(b);
+                drawBossHD(b, gameCtx, globalAnimFrame);
                 b.attackTimer++;
 
                 if (b.attackTimer % 45 === 0) {
@@ -1452,21 +1293,6 @@
                         vx: -5,
                         vy: (Math.random() - 0.5) * 4
                     });
-                    
-                    if (b.isFinal && Math.random() < 0.25 && activeBosses.length < 3) {
-                        let subBoss = CYCLE_BOSSES[Math.floor(Math.random() * 5)];
-                        activeBosses.push({
-                            name: subBoss.name,
-                            x: b.x - 30,
-                            y: b.y + (Math.random() > 0.5 ? 70 : -70),
-                            hp: 70,
-                            maxHp: 70,
-                            radius: 18,
-                            isFinal: false,
-                            attackTimer: 0,
-                            color: subBoss.color
-                        });
-                    }
                 }
             }
 
@@ -1481,12 +1307,8 @@
 
                 let dist = Math.hypot(bullet.x - rocket.x, bullet.y - rocket.y);
                 if (dist < rocket.radius + 4) {
-                    if (rocket.shieldActive) {
-                        rocket.shieldActive = false;
-                    } else {
-                        playerHP = Math.max(0, playerHP - 10);
-                        playSoundHD('hit');
-                    }
+                    playerHP = Math.max(0, playerHP - 10);
+                    playSoundHD('hit');
                     bullet.hit = true;
                     document.getElementById('hpFill').style.width = playerHP + '%';
                 }
