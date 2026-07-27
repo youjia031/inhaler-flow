@@ -3,34 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine</title>
-    <!-- 引入 Chart.js 繪圖庫 -->
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: #f4f6f8;
-            color: #2c3e50;
-            margin: 0;
-            padding: 20px;
+            background-color: #f4f6f8; color: #2c3e50; margin: 0; padding: 20px;
         }
-        .header {
-            margin-bottom: 20px;
-            border-left: 6px solid #1f4e79;
-            padding-left: 15px;
-        }
+        .header { margin-bottom: 20px; border-left: 6px solid #1f4e79; padding-left: 15px; }
         .header .main-title { margin: 0; color: #1f4e79; font-size: 36px; font-weight: 800; letter-spacing: 2px; }
         .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
         .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
+        
         .control-panel {
             background: #ffffff; padding: 15px; border-radius: 8px; margin-bottom: 15px;
             display: flex; gap: 12px; align-items: center; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .btn {
-            padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s;
-        }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s; }
         .btn:active { transform: scale(0.98); }
         .btn.accent { background-color: #1f4e79; color: white; }
         .btn.accent:hover { background-color: #163d5e; }
@@ -39,94 +30,73 @@
         .btn.purple-btn { background-color: #8e44ad; color: white; }
         .btn.purple-btn:hover { background-color: #71368a; }
         .btn.info-btn { background-color: #f39c12; color: white; }
-        .btn:hover { background-color: #e1e8ee; }
         .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
         label { font-size: 14px; font-weight: 500; }
         input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
         .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
-        .chart-container {
-            background: #ffffff; padding: 15px; border-radius: 8px; height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
-        }
+        
+        .chart-container { background: #ffffff; padding: 15px; border-radius: 8px; height: 380px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
         .game-container {
-            display: none; background: #080b10; padding: 0; border-radius: 8px; height: 480px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4); position: relative; overflow: hidden; border: 2px solid #1f2937;
+            display: none; background: #020208; padding: 0; border-radius: 8px; height: 550px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6); position: relative; overflow: hidden; border: 2px solid #8e44ad;
         }
-        .game-container.fullscreen {
-            position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important;
-            height: 100vh !important; z-index: 99999 !important; border-radius: 0 !important; border: none !important;
-        }
+        .game-container.fullscreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 99999 !important; border-radius: 0 !important; border: none !important; }
         #gameCanvas { width: 100%; height: 100%; display: block; }
+        
         .game-ui-overlay {
-            position: absolute; top: 15px; left: 20px; right: 20px; display: flex; justify-content: space-between;
-            align-items: center; color: #ffffff; font-family: 'Segoe UI', monospace; font-size: 15px; font-weight: 600;
-            pointer-events: none; z-index: 5;
+            position: absolute; top: 12px; left: 15px; right: 15px; display: flex; justify-content: space-between;
+            align-items: center; color: #ffffff; font-family: monospace; font-size: 14px; font-weight: 600; pointer-events: none; z-index: 5;
         }
         .hud-badge {
-            background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-radius: 20px;
-            border: 1.5px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); pointer-events: auto;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background: rgba(15, 23, 42, 0.85); padding: 6px 14px; border-radius: 20px;
+            border: 1.5px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); pointer-events: auto; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        .hp-bar-bg {
-            width: 120px; height: 16px; background: rgba(0,0,0,0.7); border-radius: 8px; overflow: hidden;
-            border: 2px solid #ffffff; display: inline-block; vertical-align: middle; margin-left: 4px;
-        }
+        .hp-bar-bg { width: 110px; height: 14px; background: rgba(0,0,0,0.7); border-radius: 7px; overflow: hidden; border: 1.5px solid #fff; display: inline-block; vertical-align: middle; }
         .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
-        .boss-hp-bg {
-            width: 180px; height: 16px; background: rgba(0,0,0,0.8); border-radius: 8px; overflow: hidden;
-            border: 2px solid #f1c40f; display: inline-block; vertical-align: middle; margin-left: 4px; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
-        }
+        .boss-hp-bg { width: 150px; height: 14px; background: rgba(0,0,0,0.8); border-radius: 7px; overflow: hidden; border: 1.5px solid #f1c40f; display: inline-block; vertical-align: middle; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6); }
         .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); transition: width 0.1s linear; }
-        .start-prompt-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 11, 16, 0.8);
-            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-size: 22px; font-weight: bold; z-index: 10; pointer-events: none;
-        }
         
+        .cutscene-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95);
+            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 50; text-align: center; backdrop-filter: blur(10px);
+        }
+        .cutscene-title { font-size: 38px; color: #e74c3c; font-weight: 900; letter-spacing: 4px; text-shadow: 0 0 25px #e74c3c; animation: pulse 0.8s infinite alternate; }
+        .cutscene-sub { font-size: 20px; color: #f1c40f; margin-top: 15px; font-weight: bold; }
+        .cutscene-caption { font-size: 18px; color: #ffffff; margin-top: 25px; background: rgba(255,255,255,0.1); padding: 10px 25px; border-radius: 20px; border: 1.5px solid #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
+
         .modal-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 11, 16, 0.95);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
             border-radius: 8px; z-index: 20; backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; box-sizing: border-box;
         }
-        .modal-card {
-            background: rgba(255,255,255,0.06); padding: 25px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.15);
-            text-align: left; max-width: 850px; width: 92%; max-height: 85vh; overflow-y: auto;
-        }
+        .modal-card { background: rgba(255,255,255,0.06); padding: 25px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.15); text-align: left; max-width: 850px; width: 92%; max-height: 85vh; overflow-y: auto; }
 
-        /* 🎥 點選式教學與實戰動作展覽模式 CSS */
         .demo-container {
-            display: none; background: #0b0f19; padding: 20px; border-radius: 8px; height: 520px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 2px solid #8e44ad; box-sizing: border-box; color: white;
-            overflow-y: auto;
+            display: none; background: #0b0f19; padding: 20px; border-radius: 8px; height: 600px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 2px solid #8e44ad; box-sizing: border-box; color: white; overflow-y: auto;
         }
-        .demo-layout { display: flex; gap: 20px; height: 280px; margin-bottom: 15px; }
+        .demo-layout { display: flex; gap: 20px; height: 260px; margin-bottom: 12px; }
         .demo-viewport {
             flex: 1.2; background: #000; border-radius: 12px; border: 2px solid #8e44ad;
-            display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden;
-            box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
+            display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
         }
-        .demo-info-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .demo-card { background: rgba(255,255,255,0.06); padding: 20px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.15); height: 100%; box-sizing: border-box; }
-        
-        .demo-section-title { font-size: 14px; color: #f1c40f; margin: 10px 0 6px 0; font-weight: bold; }
-        .demo-grid-menu { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-        .demo-btn {
-            padding: 6px 12px; font-size: 13px; background: #1f2937; color: white;
-            border: 1px solid #374151; border-radius: 6px; cursor: pointer; transition: all 0.2s;
-        }
+        .demo-card { background: rgba(255,255,255,0.06); padding: 18px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.15); height: 100%; box-sizing: border-box; flex: 1; }
+        .demo-section-title { font-size: 13px; color: #f1c40f; margin: 8px 0 4px 0; font-weight: bold; }
+        .demo-grid-menu { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+        .demo-btn { padding: 4px 8px; font-size: 11px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
         .demo-btn:hover { background: #374151; border-color: #9ca3af; }
         .demo-btn.active { background: #8e44ad; border-color: #a855f7; font-weight: bold; box-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
-        .demo-mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
-        .toggle-btn { padding: 4px 10px; font-size: 12px; border-radius: 12px; border: 1px solid #3498db; background: rgba(52, 152, 219, 0.2); color: white; cursor: pointer; }
-        .toggle-btn.active { background: #3498db; font-weight: bold; }
+
+        @keyframes pulse { from { transform: scale(0.95); } to { transform: scale(1.05); } }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor</h1>
+        <h1>Inhaler Flow Monitor (Full HTML Version)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -137,8 +107,7 @@
         <button id="clearBtn" class="btn">Clear</button>
         <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
         
-        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..." onchange="loadGameProgress()"></label>
-        <button id="manualSaveBtn" class="btn purple-btn" onclick="saveGameProgress(true)">💾 存檔(S)</button>
+        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
 
         <label>Mode: 
             <select id="modeSelect">
@@ -157,52 +126,44 @@
         <canvas id="flowChart"></canvas>
     </div>
 
-    <!-- 🎥 獨立點選式教學與遊戲動作展示模式 -->
     <div class="demo-container" id="demoContainer">
-        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 點選式物件教學與遊戲實戰動作展台</h3>
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與實戰影音展台</h3>
 
-        <div class="demo-mode-toggle">
-            <button class="toggle-btn" id="btnModeClose" onclick="setDemoViewType('close')">🔍 360° 外觀特寫</button>
-            <button class="toggle-btn active" id="btnModeAction" onclick="setDemoViewType('action')">⚔️ 遊戲實戰動作模擬</button>
-        </div>
-        
         <div class="demo-layout">
             <div class="demo-viewport">
-                <canvas id="demoCanvas" width="380" height="260"></canvas>
+                <canvas id="demoCanvas" width="380" height="240"></canvas>
             </div>
-            <div class="demo-info-panel">
-                <div class="demo-card">
-                    <h4 id="demoItemTitle" style="margin:0 0 8px 0; color:#00d2d3; font-size:20px;">請點擊下方按鈕觀看動作</h4>
-                    <p id="demoItemDesc" style="font-size:14px; color:#ccc; line-height:1.6; margin-bottom:10px;">點擊下方的 Boss 或道具按鈕，切換模式可觀察靜態外觀或遊戲實戰互動！</p>
-                    <div id="demoItemSkill" style="font-size:14px; color:#f39c12; font-weight:bold; border-top:1px dashed #444; padding-top:8px;"></div>
-                </div>
+            <div class="demo-card">
+                <h4 id="demoItemTitle" style="margin:0 0 6px 0; color:#00d2d3; font-size:18px;">請點擊下方物件觀看</h4>
+                <p id="demoItemDesc" style="font-size:13px; color:#ccc; line-height:1.5; margin-bottom:8px;">點擊物件按鈕，播放高畫質微縮動作、試聽專屬音效與詳細機制說明！</p>
+                <div id="demoItemSkill" style="font-size:13px; color:#f39c12; font-weight:bold; border-top:1px dashed #444; padding-top:6px;"></div>
             </div>
         </div>
 
-        <div class="demo-section-title">👾 5 大 Boss 影片展台 (點擊播放實戰動作)</div>
+        <div class="demo-section-title">👾 5 大循環 Boss & 101 關 Final Boss (點擊播放實戰動作與語音)</div>
         <div class="demo-grid-menu" id="bossDemoMenuList"></div>
 
-        <div class="demo-section-title">🎁 7 大益處道具 & 💥 3 大危險障礙 (點擊播放實戰動作)</div>
+        <div class="demo-section-title">🎁 12 大反制與益處道具 (Beneficial Items)</div>
         <div class="demo-grid-menu" id="itemDemoMenuList"></div>
+
+        <div class="demo-section-title" style="color: #e74c3c;">🛑 8 大危險扣血與負面障礙物 (Hazards & Obstacles)</div>
+        <div class="demo-grid-menu" id="hazardDemoMenuList"></div>
     </div>
 
-    <!-- 🎮 遊戲本體 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
-        <div class="start-prompt-overlay" id="gameStartPrompt">
-            <div style="background: rgba(31, 78, 121, 0.9); padding: 15px 30px; border-radius: 30px; border: 2px solid #3498db; text-align: center;">
-                🚀 請點擊上方「Start」按鈕開始訓練遊戲！
-            </div>
+        <div class="cutscene-overlay" id="cutsceneOverlay">
+            <div class="cutscene-title">⚠️ WARNING: ULTIMATE BOSS ⚠️</div>
+            <div class="cutscene-sub">🌌 通關 100 關考驗！第 101 關「宇宙終極霸主」降臨！</div>
+            <div class="cutscene-caption" id="cutsceneCaption">字幕：愚蠢的飛行員... 這裡將是你的終結之地！</div>
         </div>
-        
+
         <div class="game-ui-overlay">
             <div class="hud-badge">
-                🏰 關卡: <span id="gameStage" style="color:#2ecc71; font-weight:bold;">1</span>
+                🏰 關卡: <span id="gameStage" style="color:#2ecc71; font-weight:bold;">1</span> / 100
+                | 🔄 輪數: <span id="loopCount" style="color:#38bdf8">1</span>/20 (5關一輪)
                 | 🚀 得分: <span id="gameScore" style="color:#f1c40f">0</span> 
-                | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
-                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
-                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
             </div>
 
             <div class="hud-badge" id="bossHudBadge" style="display:none;">
@@ -211,20 +172,9 @@
             </div>
 
             <div class="hud-badge">
-                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 全物件與招式指南</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
-                <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-                <span style="margin-left:5px;">❤️ HP</span> 
+                <span>❤️ HP</span> 
                 <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
-            </div>
-        </div>
-
-        <div class="modal-screen" id="manualModal" style="display: none;">
-            <div class="modal-card">
-                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 5大Boss招式機制與10大道具指南 📖</h2>
-                <div style="text-align: center; margin-top: 15px;">
-                    <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉指南</button>
-                </div>
             </div>
         </div>
 
@@ -236,116 +186,26 @@
                 <button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
             </div>
         </div>
-
-        <div class="modal-screen" id="restScreen" style="display: none;">
-            <div class="modal-card" style="text-align: center;">
-                <h2 style="color: #2ecc71; margin-top:0;">🍵 關卡完成！換氣休息時間</h2>
-                <p style="color: #ccc;">做得好！自動存檔成功。請放鬆肌肉、深呼吸休息一下...</p>
-                <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
-                <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動進入下一關</p>
-            </div>
-        </div>
     </div>
 
     <div class="statusbar" id="status">Not connected</div>
 
-    <!-- 🩺 1. 醫療數據採集區塊 -->
     <script>
         const EDUCATION_PROGRAM = [
-            ["inhalation", 0,   3], ["inhalation", 60,  2], ["inhalation", 0,   1],
-            ["inhalation", 0,   2], ["exhalation", 60,  3], ["inhalation", 0,   2],
-            ["inhalation", 60,  2], ["inhalation", 0,   1], ["inhalation", 0,   2],
-            ["exhalation", 60,  3], ["inhalation", 0,   2], ["inhalation", 0,   1]
+            ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
+            ["inhalation", 0, 2], ["exhalation", 60, 3], ["inhalation", 0, 2]
         ];
-
-        function makeEducationCurves(dt = 0.05, ramp = 0.4) {
-            let times = [], inh = [], exh = [];
-            let t = 0.0;
-            for (let [mode, flow, dur] of EDUCATION_PROGRAM) {
-                if (flow === 0) {
-                    let steps = Math.max(1, Math.round(dur / dt));
-                    for (let i = 0; i < steps; i++) {
-                        times.push(Number(t.toFixed(3)));
-                        inh.push(0.0); exh.push(0.0);
-                        t += dt;
-                    }
-                    continue;
-                }
-                let target = (mode === "inhalation") ? flow : -flow;
-                let ramp_dur = Math.min(ramp, dur * 0.3);
-                let hold_dur = dur - 2 * ramp_dur;
-                if (hold_dur < 0) { ramp_dur = dur / 2; hold_dur = 0; }
-                
-                let steps_up = Math.max(1, Math.round(ramp_dur / dt));
-                let steps_hold = Math.round(hold_dur / dt);
-                let steps_down = Math.max(1, Math.round(ramp_dur / dt));
-
-                for (let i = 0; i < steps_up; i++) {
-                    let v = target * ((i + 1) / steps_up);
-                    times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
-                    t += dt;
-                }
-                for (let i = 0; i < steps_hold; i++) {
-                    times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); exh.push(target); }
-                    t += dt;
-                }
-                for (let i = 0; i < steps_down; i++) {
-                    let v = target * (1 - (i + 1) / steps_down);
-                    times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
-                    t += dt;
-                }
-            }
-            return { times, inh, exh };
-        }
-
-        const guideData = makeEducationCurves();
-        const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
-        const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
 
         let port = null, reader = null, isMeasuring = false;
         let records = [], flowHistory = [];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
         let smoothedEst = 0;
-        let pklSegments = [];
-        let onnxSession = null;
-
-        async function loadPKLModel() {
-            try {
-                onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
-                updateStatus('✅ PKL 模型載入成功！');
-            } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用慢流速防抖動聲學演算法。", err);
-            }
-        }
-        loadPKLModel();
-
-        const customOverlayPlugin = {
-            id: 'customOverlayPlugin',
-            beforeDatasetsDraw(chart) {
-                if (pklSegments.length > 0) {
-                    const { ctx, scales: { x, y } } = chart;
-                    ctx.save();
-                    pklSegments.forEach(seg => {
-                        const startX = x.getPixelForValue(seg.start_time);
-                        const endX = x.getPixelForValue(seg.end_time);
-                        ctx.fillStyle = (seg.state === "Inspiration") ? "rgba(135, 206, 235, 0.35)" : "rgba(240, 128, 128, 0.35)";
-                        ctx.fillRect(startX, y.top, endX - startX, y.bottom - y.top);
-                    });
-                    ctx.restore();
-                }
-            }
-        };
 
         const ctx = document.getElementById('flowChart').getContext('2d');
         const flowChart = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
                     { label: 'Patient Flow', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
                 ]
             },
@@ -355,241 +215,19 @@
                     x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
                     y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
                 }
-            },
-            plugins: [customOverlayPlugin]
+            }
         });
 
-        let lastCentroidEMA = 0;
-        let stableBreathState = "inhalation";
-        let stateHoldTimer = 0;
-
-        async function detectBreathModePKL(fft) {
-            if (!fft) return "inhalation";
-
-            let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
-            let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
-
-            let totalEnergy = e1 + e2 + e3 + e4 + e5;
-
-            if (totalEnergy < 5.0) { 
-                return "idle"; 
-            }
-
-            let instantaneousCentroid = (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / (totalEnergy + 0.0001);
-
-            if (lastCentroidEMA === 0) lastCentroidEMA = instantaneousCentroid;
-            lastCentroidEMA = (0.25 * instantaneousCentroid) + (0.75 * lastCentroidEMA);
-
-            if (stableBreathState === "inhalation") {
-                if (lastCentroidEMA > 2.7) {
-                    stateHoldTimer++;
-                    if (stateHoldTimer >= 3) {
-                        stableBreathState = "exhalation";
-                        stateHoldTimer = 0;
-                    }
-                } else {
-                    stateHoldTimer = 0;
-                }
-            } else if (stableBreathState === "exhalation") {
-                if (lastCentroidEMA < 2.3) {
-                    stateHoldTimer++;
-                    if (stateHoldTimer >= 3) {
-                        stableBreathState = "inhalation";
-                        stateHoldTimer = 0;
-                    }
-                } else {
-                    stateHoldTimer = 0;
-                }
-            }
-
-            return stableBreathState;
-        }
-
         async function parseLine(line) {
-            if (line.includes('[FFT]')) {
-                const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
-                for (const match of matches) { lastFFT[match[1]] = parseFloat(match[2]); }
-                return;
-            }
-            
             if (line.includes('[DETECT]')) {
-                const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
                 const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
-                const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
-                if (!flowMatch) return;
-
-                let flowYes = flowMatch[1].toUpperCase() === 'YES';
                 let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
-                let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
-
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
-
-                let manualMode = document.getElementById('modeSelect').value;
-                let pklDetected = await detectBreathModePKL(lastFFT);
-
-                currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
-
-                if (currentMode === "idle") {
-                    smoothedEst = 0.0;
-                } else {
-                    smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
-                }
-
-                if (flowYes && Math.abs(smoothedEst) > 0 && currentMode !== "idle") {
-                    document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${Math.abs(smoothedEst).toFixed(1)} L/min`;
-                } else {
-                    document.getElementById('detectedMode').innerText = `Detected: Idle (Low Flow)`;
-                }
-
-                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
-                document.getElementById('recordCount').innerText = `Records: ${records.length}`;
-                document.getElementById('saveBtn').disabled = false;
-
-                flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
-                let windowStart = Math.floor(elapsed / 20) * 20;
-                flowChart.options.scales.x.min = windowStart;
-                flowChart.options.scales.x.max = windowStart + 20;
-
-                let maxPeak = Math.max(...records.map(r => Math.abs(r.est)), 0);
-                document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
-
+                smoothedEst = est;
+                flowChart.data.datasets[0].data.push({ x: elapsed, y: smoothedEst });
                 flowChart.update('none');
             }
-        }
-
-        async function runPKLIndexSegmentation() {
-            if (records.length === 0) { 
-                alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
-                return; 
-            }
-            updateStatus("正在分析【慢流速抗抖動 + 頻譜重心】區段切分...");
-
-            let FLOW_THRESHOLD = 4.0;
-
-            let rawCentroids = records.map(r => {
-                if (!r.flowYes || Math.abs(r.est) < FLOW_THRESHOLD) return null;
-                let fft = r.fft;
-                let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
-                let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
-
-                let totalEnergy = e1 + e2 + e3 + e4 + e5 + 0.0001;
-                return (1*e1 + 2*e2 + 3*e3 + 4*e4 + 5*e5) / totalEnergy;
-            });
-
-            let validCentroids = rawCentroids.filter(c => c !== null);
-            if (validCentroids.length < 5) {
-                updateStatus("有效氣流點太少，請稍微加大氣流吸/吐氣。");
-                return;
-            }
-
-            let sum = validCentroids.reduce((a, b) => a + b, 0);
-            let meanThreshold = sum / validCentroids.length; 
-
-            let rawStates = [];
-            let currentState = 0;
-            let hysteresis = 0.15; 
-
-            for (let i = 0; i < rawCentroids.length; i++) {
-                let c = rawCentroids[i];
-                if (c === null) {
-                    rawStates.push(-1);
-                    continue;
-                }
-
-                if (currentState === 0) { 
-                    if (c > (meanThreshold + hysteresis)) currentState = 1; 
-                } else { 
-                    if (c < (meanThreshold - hysteresis)) currentState = 0; 
-                }
-                rawStates.push(currentState);
-            }
-
-            let smoothedStates = [...rawStates];
-            for (let i = 2; i < rawStates.length - 2; i++) {
-                if (rawStates[i] === -1) continue;
-                let win = rawStates.slice(i - 2, i + 3).filter(s => s !== -1);
-                if (win.length > 0) {
-                    let ones = win.filter(s => s === 1).length;
-                    smoothedStates[i] = (ones > win.length / 2) ? 1 : 0;
-                }
-            }
-
-            pklSegments = [];
-            let segStart = -1, segState = -1;
-
-            for (let i = 0; i < smoothedStates.length; i++) {
-                let st = smoothedStates[i];
-                if (st !== segState) {
-                    if (segState !== -1 && segStart !== -1) {
-                        let dur = records[i - 1].elapsed - records[segStart].elapsed;
-                        if (dur >= 0.3) {
-                            pklSegments.push({
-                                state: (segState === 0) ? "Inspiration" : "Expiration",
-                                start_index: segStart, end_index: i - 1,
-                                start_time: records[segStart].elapsed, end_time: records[i - 1].elapsed
-                            });
-                        }
-                    }
-                    segState = st; segStart = i;
-                }
-            }
-
-            if (segState !== -1 && segStart !== -1) {
-                let lastIdx = records.length - 1;
-                let dur = records[lastIdx].elapsed - records[segStart].elapsed;
-                if (dur >= 0.3) {
-                    pklSegments.push({
-                        state: (segState === 0) ? "Inspiration" : "Expiration",
-                        start_index: segStart, end_index: lastIdx,
-                        start_time: records[segStart].elapsed, end_time: records[lastIdx].elapsed
-                    });
-                }
-            }
-
-            updateStatus(`切分完成！基線為 ${meanThreshold.toFixed(2)}，劃分出 ${pklSegments.length} 個穩定區段。`);
-            flowChart.update();
-        }
-
-        function toggleMeasuring() {
-            isMeasuring = !isMeasuring;
-            if (isMeasuring) {
-                if (startTime === null) startTime = Date.now();
-                document.getElementById('startBtn').innerText = 'Stop';
-                updateStatus('Measuring...');
-            } else {
-                document.getElementById('startBtn').innerText = 'Start';
-                updateStatus('Measurement stopped (waveform frozen).');
-            }
-            if (typeof updateGameMeasurementState === 'function') updateGameMeasurementState(isMeasuring);
-        }
-
-        function clearPlot() {
-            startTime = null; records = []; smoothedEst = 0; pklSegments = [];
-            flowChart.data.datasets[2].data = [];
-            flowChart.options.scales.x.min = 0; flowChart.options.scales.x.max = 20;
-            flowChart.update();
-            document.getElementById('recordCount').innerText = 'Records: 0';
-            document.getElementById('peakFlow').innerText = 'Peak: — L/min';
-            document.getElementById('detectedMode').innerText = 'Detected: —';
-            document.getElementById('saveBtn').disabled = true;
-        }
-
-        function saveCSV() {
-            let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
-            let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
-            for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
-            csvContent += "\n";
-            records.forEach(r => {
-                let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
-                for (let i = 1; i <= 20; i++) row += `,${r.fft[i] || ''}`;
-                csvContent += row + "\n";
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `inhaler_data_${patientId}.csv`);
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         async function toggleConnection() {
@@ -599,21 +237,15 @@
                     await port.open({ baudRate: 115200 });
                     document.getElementById('connectBtn').innerText = 'Disconnect';
                     document.getElementById('startBtn').disabled = false;
-                    updateStatus('Connected. Press Start to begin.');
                     readLoop();
-                } catch (err) { updateStatus('Connection failed: ' + err.message); }
-            } else {
-                try { isMeasuring = false; if (reader) await reader.cancel(); if (port) await port.close(); } catch (err) {}
-                port = null; reader = null;
-                document.getElementById('connectBtn').innerText = 'Connect';
-                document.getElementById('startBtn').disabled = true;
+                } catch (err) {}
             }
         }
 
         async function readLoop() {
             if (!port || !port.readable) return;
             const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+            port.readable.pipeTo(textDecoder.writable);
             reader = textDecoder.readable.getReader();
             let buffer = '';
             try {
@@ -623,445 +255,139 @@
                     buffer += value;
                     let lines = buffer.split('\n');
                     buffer = lines.pop();
-                    for (let line of lines) { if (isMeasuring) await parseLine(line.trim()); }
+                    for (let line of lines) { parseLine(line.trim()); }
                 }
             } catch (err) {}
         }
 
         document.getElementById('connectBtn').addEventListener('click', toggleConnection);
-        document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
-        document.getElementById('segmentBtn').addEventListener('click', runPKLIndexSegmentation);
-        document.getElementById('clearBtn').addEventListener('click', clearPlot);
-        document.getElementById('saveBtn').addEventListener('click', saveCSV);
-        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
+        document.getElementById('startBtn').addEventListener('click', () => { isMeasuring = !isMeasuring; });
     </script>
 
-    <!-- 🎨 2. 遊戲與點選式動態影音展台 Engine (全物件獨立音效與震撼視覺演出) -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
             const gameControlHTML = `
-                <label style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px;">
+                <label style="border-left: 2px solid #ccc; padding-left: 10px;">
                     視窗: 
                     <select id="viewModeSelect" onchange="switchViewMode(this.value)">
                         <option value="both" selected>全模式 (📊+🎮)</option>
                         <option value="chart">📊 專業圖表</option>
                         <option value="game">🎮 氣流飛行員 (Game)</option>
-                        <option value="demo">🎬 點選式影音展示模式</option>
+                        <option value="demo">🎬 獨立分類圖鑑與展台</option>
                     </select>
                 </label>
                 <label>
-                    難度: 
-                    <select id="gameDifficultySelect">
-                        <option value="easy">輕鬆 (溫和無痛)</option>
-                        <option value="normal" selected>標準 (均衡演算法)</option>
-                        <option value="hard">專家 (極速高懲罰)</option>
-                    </select>
-                </label>
-                <label>
-                    🎨 畫風外觀: 
-                    <select id="skinStyleSelect" disabled>
-                        <option value="default" selected>預設向量 (預設)</option>
-                        <option value="custom">自訂圖片PNG (未啟用)</option>
-                    </select>
-                </label>
-                <button class="btn info-btn" style="padding:4px 8px; font-size:12px;" disabled title="等穩定後再開啟">🛠️ 自訂關卡(暫關)</button>
-                <label>
-                    ⚡ 倍速: 
-                    <select id="gameSpeedSelect">
-                        <option value="0.8">0.8x (慢速輕鬆)</option>
-                        <option value="1.0" selected>1.0x (標準速度)</option>
-                        <option value="1.5">1.5x (快速反應)</option>
-                        <option value="2.0">2.0x (疾速挑戰)</option>
-                    </select>
-                </label>
-                <label class="music-upload-btn">
-                    🎵 自選 MP3
-                    <input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)">
-                </label>
-                <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">預設主題曲</span>
-                <label>
-                    <input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂
+                    <input type="checkbox" id="soundToggle" checked> 🔊 音效與語音
                 </label>
             `;
             controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let bgmInterval = null, bgmStep = 0, customAudioBuffer = null, customAudioSource = null, isUsingCustomMusic = false;
 
-        const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-        const C5 = 523.25, D5 = 587.33, E5 = 659.25;
-        const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
+        function playSynthesizedVoice(text) {
+            if (!('speechSynthesis' in window)) return;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW'; utterance.pitch = 0.25; utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
 
-        // 🔊 新增：全 Boss 招式與全道具專屬音效生成器
-        function playAudioEffect(type) {
-            const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return;
-            const soundEnabled = document.getElementById('soundToggle')?.checked;
-            if (!soundEnabled) return;
+        function playSoundHD(type) {
+            if (!document.getElementById('soundToggle')?.checked) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            let now = audioCtx.currentTime;
 
             try {
-                let now = audioCtx.currentTime;
-                
-                // 金幣音效 (高音雙響)
-                if (type === 'coin') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                if (type === 'laser') {
+                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
-                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
-                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                    osc.start(); osc.stop(now + 0.25);
-                } 
-                // 雷射發射音效 (高頻向下掃頻)
-                else if (type === 'laser') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(1200, now);
-                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
-                    gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.start(); osc.stop(now + 0.2);
-                } 
-                // 導彈發射音效 (低音推進轟鳴)
-                else if (type === 'missile') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'triangle'; osc.frequency.setValueAtTime(180, now);
-                    osc.frequency.linearRampToValueAtTime(400, now + 0.25);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(); osc.stop(now + 0.3);
-                } 
-                // 畫面清屏炸彈 (重低音巨響)
-                else if (type === 'bomb') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
-                    gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-                    osc.start(); osc.stop(now + 0.6);
-                } 
-                // Buff 拾取和弦 (護盾/醫療/磁鐵)
-                else if (type === 'buff' || type === 'shield' || type === 'heart' || type === 'magnet') {
-                    [523.25, 659.25, 783.99].forEach((freq, idx) => {
-                        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                        osc.connect(gain); gain.connect(audioCtx.destination);
-                        osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now + idx * 0.05);
-                        gain.gain.setValueAtTime(0.25, now + idx * 0.05); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
-                        osc.start(now + idx * 0.05); osc.stop(now + idx * 0.05 + 0.2);
-                    });
-                } 
-                // 🦅 專屬音效：神鷹高壓雷擊
-                else if (type === 'eagle_thunder') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(900, now);
-                    osc.frequency.setValueAtTime(200, now + 0.1);
-                    osc.frequency.setValueAtTime(800, now + 0.2);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-                    osc.start(); osc.stop(now + 0.35);
-                } 
-                // 🛸 專屬音效：母艦暗黑晶石炮
-                else if (type === 'ufo_laser') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(300, now);
-                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.4);
-                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                    osc.start(); osc.stop(now + 0.4);
-                } 
-                // 🐉 專屬音效：赤龍咆哮巨焰
-                else if (type === 'dragon_fire') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, now);
-                    osc.frequency.linearRampToValueAtTime(350, now + 0.2);
-                    osc.frequency.linearRampToValueAtTime(80, now + 0.5);
-                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                    osc.start(); osc.stop(now + 0.5);
-                }
-                // 撞擊爆炸受傷
-                else if (type === 'hit') {
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(1500, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(); osc.stop(now + 0.15);
+                } else if (type === 'boss_attack') {
+                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
                     osc.connect(gain); gain.connect(audioCtx.destination);
                     osc.type = 'square'; osc.frequency.setValueAtTime(120, now);
-                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.frequency.linearRampToValueAtTime(450, now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
                     osc.start(); osc.stop(now + 0.3);
+                } else if (type === 'hit') {
+                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, now);
+                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(); osc.stop(now + 0.25);
+                } else if (type === 'item_pickup') {
+                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(); osc.stop(now + 0.2);
+                } else if (type === 'explosion') {
+                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
+                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(); osc.stop(now + 0.4);
                 }
-            } catch(e) {}
+            } catch(e){}
         }
 
-        function handleCustomMusicUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                audioCtx.decodeAudioData(e.target.result, function(buffer) {
-                    customAudioBuffer = buffer;
-                    isUsingCustomMusic = true;
-                    document.getElementById('musicStatus').innerText = "已載入: " + file.name.substring(0, 10) + "...";
-                    if (isGameRunning) startBGM();
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
+        let gameCanvas = document.getElementById('gameCanvas');
+        let gameCtx = gameCanvas.getContext('2d');
+        let currentStage = 1, gameScore = 0, playerHP = 100;
+        let globalAnimFrame = 0, isGameRunning = false;
+        let logicalWidth = 800, logicalHeight = 550;
+        
+        let rocket = { x: 100, y: 275, radius: 14, angle: 0, shieldActive: false, magnetActive: false, slowActive: false, empActive: false }; 
+        let activeBosses = [], playerProjectiles = [], bossBullets = [], collectibles = [], obstacles = [], particleEffects = [];
 
-        function startBGM() {
-            stopBGM();
-            const currentView = document.getElementById('viewModeSelect')?.value;
-            if (currentView === 'chart') return;
-            const soundEnabled = document.getElementById('soundToggle')?.checked;
-            if (!soundEnabled) return;
-
-            if (isUsingCustomMusic && customAudioBuffer) {
-                customAudioSource = audioCtx.createBufferSource();
-                customAudioSource.buffer = customAudioBuffer;
-                customAudioSource.loop = true;
-                customAudioSource.connect(audioCtx.destination);
-                customAudioSource.start(0);
-            } else {
-                bgmInterval = setInterval(() => {
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                    try {
-                        let now = audioCtx.currentTime;
-                        let idx = bgmStep % pilotTheme.length;
-                        const leadOsc = audioCtx.createOscillator();
-                        const leadGain = audioCtx.createGain();
-                        leadOsc.type = 'sawtooth'; leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-                        leadGain.gain.setValueAtTime(0.15, now); leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                        leadOsc.connect(leadGain); leadGain.connect(audioCtx.destination);
-                        leadOsc.start(now); leadOsc.stop(now + 0.16);
-                        bgmStep++;
-                    } catch(e) {}
-                }, 180);
+        function resizeGameCanvas() {
+            if (gameCanvas && gameCanvas.parentElement) {
+                let dpr = window.devicePixelRatio || 2;
+                logicalWidth = gameCanvas.parentElement.clientWidth || 800;
+                logicalHeight = gameCanvas.parentElement.clientHeight || 550;
+                gameCanvas.width = logicalWidth * dpr;
+                gameCanvas.height = logicalHeight * dpr;
+                gameCtx.scale(dpr, dpr);
             }
         }
-
-        function stopBGM() {
-            if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
-            if (customAudioSource) { try { customAudioSource.stop(); } catch(e){} customAudioSource = null; }
-        }
-
-        function toggleSoundSetting(enabled) { if (!enabled) stopBGM(); else startBGM(); }
-
-        function switchViewMode(mode) {
-            const chartBox = document.querySelector('.chart-container');
-            const gameBox = document.getElementById('gameContainer');
-            const demoBox = document.getElementById('demoContainer');
-
-            chartBox.style.display = 'none';
-            gameBox.style.display = 'none';
-            demoBox.style.display = 'none';
-
-            if (mode === 'both') {
-                chartBox.style.display = 'block'; gameBox.style.display = 'block'; chartBox.style.marginBottom = '15px';
-            } else if (mode === 'game') {
-                gameBox.style.display = 'block';
-            } else if (mode === 'demo') {
-                demoBox.style.display = 'block';
-                startDemoLoop();
-            } else {
-                chartBox.style.display = 'block';
-            }
-
-            stopGameEngine();
-            if (mode === 'game' || mode === 'both') {
-                resizeGameCanvas(); restartGameEngine();
-            } else { stopBGM(); }
-        }
-
-        setTimeout(() => { switchViewMode('both'); }, 100);
-
-        function updateGameMeasurementState(measuring) {
-            document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
-            if (measuring) startBGM(); else stopBGM();
-        }
+        window.addEventListener('resize', resizeGameCanvas);
 
         function toggleFullscreen() {
             const gameBox = document.getElementById('gameContainer');
-            if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
-                if (gameBox.requestFullscreen) gameBox.requestFullscreen();
-                else gameBox.classList.add('fullscreen');
-            } else {
-                if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
-                gameBox.classList.remove('fullscreen');
-            }
+            if (!document.fullscreenElement) gameBox.requestFullscreen();
+            else document.exitFullscreen();
             setTimeout(resizeGameCanvas, 150);
         }
 
-        let currentStage = 1, gameScore = 0, gameCombo = 0, playerHP = 100;
-        let activeBoss = null;
-        let hasShield = false, magnetTimer = 0, slowDebuffTimer = 0;
-
-        const STAGE_THEMES = [
-            { id: 1, name: "藍天風暴", bg: "#080d1a", miniBoss: "🌪️ 大氣風暴精靈", stageBoss: "🦅 雷霆金屬神鷹" },
-            { id: 2, name: "宇宙星空", bg: "#04020a", miniBoss: "☄️ 熔岩巨型隕石", stageBoss: "🛸 圓盤星際母艦" },
-            { id: 3, name: "烈焰火山", bg: "#140404", miniBoss: "🐉 地獄赤龍前哨", stageBoss: "🐉 地獄黑金赤龍 (Final Boss)" }
-        ];
-
-        function getStageTheme(stage) {
-            let idx = (stage - 1) % STAGE_THEMES.length;
-            return STAGE_THEMES[idx];
-        }
-
-        function saveGameProgress(showNotice = false) {
-            let pid = document.getElementById('patientId').value.trim() || 'default_patient';
-            let saveData = { stage: currentStage, score: gameScore, hp: playerHP, time: new Date().toLocaleString() };
-            localStorage.setItem('inhaler_save_' + pid, JSON.stringify(saveData));
-            if (showNotice) updateStatus(`💾 [${pid}] 遊戲進度已存檔！(關卡: ${currentStage}, 分數: ${gameScore})`);
-        }
-
-        function loadGameProgress() {
-            let pid = document.getElementById('patientId').value.trim() || 'default_patient';
-            let saved = localStorage.getItem('inhaler_save_' + pid);
-            if (saved) {
-                let data = JSON.parse(saved);
-                currentStage = data.stage || 1; gameScore = data.score || 0; playerHP = data.hp || 100;
-                updateStatus(`📂 成功載入患者 [${pid}] 紀錄 (關卡: ${currentStage}, 分數: ${gameScore})`);
-                document.getElementById('gameStage').innerText = currentStage;
-            }
-        }
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 's' || e.key === 'S') saveGameProgress(true);
-        });
-
-        const gameCanvas = document.getElementById('gameCanvas');
-        const gameCtx = gameCanvas.getContext('2d');
-        let gameAnimationId = null, isGameRunning = false, isGamePaused = false, isGameOver = false;
-
-        let rocket = { x: 120, y: 240, angle: 0, radius: 22 };
-        let stars = [], collectibles = [], obstacles = [], playerProjectiles = [];
-        let isResting = false, sessionStartTime = 0;
-        let globalAnimFrame = 0;
-        let logicalWidth = 800, logicalHeight = 480;
-
         function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx = gameCtx) {
-            customCtx.save();
-            customCtx.translate(x, y);
-            customCtx.rotate(angle);
-
-            if (flowMag > 2.0) {
-                let fLen = Math.min(45, flowMag * 0.5) + Math.sin(globalAnimFrame * 0.4) * 6;
-                customCtx.save();
-                customCtx.shadowBlur = 20;
-                customCtx.shadowColor = (mode === "exhalation") ? "#ff4d4d" : "#00d2d3";
-                let fGrad = customCtx.createLinearGradient(-15, 0, -15 - fLen, 0);
-                fGrad.addColorStop(0, '#ffffff');
-                fGrad.addColorStop(0.3, (mode === "exhalation") ? '#ff9f43' : '#00d2d3');
-                fGrad.addColorStop(1, 'transparent');
-                customCtx.fillStyle = fGrad;
-                customCtx.beginPath();
-                customCtx.moveTo(-12, -8); customCtx.lineTo(-15 - fLen, 0); customCtx.lineTo(-12, 8);
-                customCtx.closePath(); customCtx.fill();
-                customCtx.restore();
-            }
-
-            customCtx.shadowBlur = 15; customCtx.shadowColor = '#00d2d3';
-            let hullGrad = customCtx.createLinearGradient(-15, -15, 30, 15);
+            customCtx.save(); customCtx.translate(x, y); customCtx.rotate(angle);
+            customCtx.shadowBlur = 12; customCtx.shadowColor = rocket.shieldActive ? '#38bdf8' : '#00d2d3';
+            
+            let hullGrad = customCtx.createLinearGradient(-10, -10, 20, 10);
             hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#475569'); hullGrad.addColorStop(1, '#0f172a');
             customCtx.fillStyle = hullGrad;
-            customCtx.beginPath();
-            customCtx.moveTo(28, 0); customCtx.lineTo(-14, -16); customCtx.lineTo(-8, 0); customCtx.lineTo(-14, 16);
-            customCtx.closePath(); customCtx.fill();
-
-            let glassGrad = customCtx.createLinearGradient(0, -6, 18, 6);
+            customCtx.beginPath(); customCtx.moveTo(20, 0); customCtx.lineTo(-10, -12); customCtx.lineTo(-5, 0); customCtx.lineTo(-10, 12); customCtx.closePath(); customCtx.fill();
+            
+            let glassGrad = customCtx.createLinearGradient(0, -4, 12, 4);
             glassGrad.addColorStop(0, '#38bdf8'); glassGrad.addColorStop(1, '#0284c7');
-            customCtx.fillStyle = glassGrad;
-            customCtx.beginPath(); customCtx.ellipse(6, 0, 10, 4, 0, 0, Math.PI * 2); customCtx.fill();
+            customCtx.fillStyle = glassGrad; customCtx.beginPath(); customCtx.ellipse(4, 0, 7, 3, 0, 0, Math.PI * 2); customCtx.fill();
+            
+            let flameLen = Math.min(25, 8 + flowMag * 0.3);
+            let flameGrad = customCtx.createLinearGradient(-5, 0, -5 - flameLen, 0);
+            flameGrad.addColorStop(0, '#f97316'); flameGrad.addColorStop(1, 'transparent');
+            customCtx.fillStyle = flameGrad;
+            customCtx.beginPath(); customCtx.moveTo(-5, -4); customCtx.lineTo(-5 - flameLen, 0); customCtx.lineTo(-5, 4); customCtx.closePath(); customCtx.fill();
 
-            customCtx.strokeStyle = '#38bdf8'; customCtx.lineWidth = 1.5; customCtx.stroke();
-
-            if (hasShield) {
-                customCtx.save(); customCtx.rotate(globalAnimFrame * 0.04);
-                customCtx.shadowColor = '#00d2d3'; customCtx.shadowBlur = 20;
-                customCtx.strokeStyle = '#38bdf8'; customCtx.lineWidth = 2.5;
-                customCtx.setLineDash([10, 6]);
-                customCtx.beginPath(); customCtx.arc(0, 0, 34, 0, Math.PI * 2); customCtx.stroke();
-                customCtx.restore();
+            if (rocket.shieldActive) {
+                customCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; customCtx.lineWidth = 2;
+                customCtx.beginPath(); customCtx.arc(2, 0, 22, 0, Math.PI * 2); customCtx.stroke();
             }
-            customCtx.restore();
-        }
-
-        function drawCollectibleHD(c, customCtx = gameCtx) {
-            customCtx.save();
-            customCtx.translate(c.x, c.y);
-            customCtx.shadowBlur = 12;
-
-            if (c.type === 'coin') {
-                customCtx.shadowColor = '#f1c40f';
-                let g = customCtx.createRadialGradient(-2, -2, 1, 0, 0, c.radius);
-                g.addColorStop(0, '#fff'); g.addColorStop(0.6, '#f1c40f'); g.addColorStop(1, '#b7950b');
-                customCtx.fillStyle = g; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (c.type === 'laser') {
-                customCtx.shadowColor = '#00d2d3';
-                customCtx.fillStyle = '#00d2d3'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (c.type === 'missile') {
-                customCtx.shadowColor = '#e74c3c';
-                customCtx.fillStyle = '#ff6b6b'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (c.type === 'bomb') {
-                customCtx.shadowColor = '#a55eea';
-                customCtx.fillStyle = '#a55eea'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (c.type === 'heart') {
-                customCtx.shadowColor = '#2ecc71';
-                customCtx.fillStyle = '#2ecc71'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (c.type === 'shield') {
-                customCtx.shadowColor = '#38bdf8';
-                customCtx.fillStyle = '#38bdf8'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (c.type === 'magnet') {
-                customCtx.shadowColor = '#f39c12';
-                customCtx.fillStyle = '#f39c12'; customCtx.beginPath(); customCtx.arc(0, 0, c.radius, 0, Math.PI * 2); customCtx.fill();
-            }
-            customCtx.restore();
-        }
-
-        function drawObstacleHD(o, customCtx = gameCtx) {
-            customCtx.save();
-            customCtx.translate(o.x, o.y);
-            customCtx.shadowBlur = 15;
-
-            if (o.type === 'cloud') {
-                customCtx.shadowColor = '#94a3b8';
-                customCtx.fillStyle = '#475569'; customCtx.beginPath(); customCtx.arc(0, 0, o.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (o.type === 'slime') {
-                customCtx.shadowColor = '#d35400';
-                customCtx.fillStyle = '#e67e22'; customCtx.beginPath(); customCtx.arc(0, 0, o.radius, 0, Math.PI * 2); customCtx.fill();
-            } else if (o.type === 'darkgem') {
-                customCtx.shadowColor = '#a855f7';
-                customCtx.fillStyle = '#3b0764'; customCtx.beginPath(); customCtx.arc(0, 0, o.radius, 0, Math.PI * 2); customCtx.fill();
-            }
-            customCtx.restore();
-        }
-
-        function drawAirElemental(x, y, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
-            customCtx.fillStyle = "rgba(0, 210, 211, 0.4)";
-            customCtx.beginPath(); customCtx.arc(0, 0, 32 + Math.sin(globalAnimFrame * 0.2) * 5, 0, Math.PI * 2); customCtx.fill();
-            customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 3; customCtx.stroke();
-            customCtx.restore();
-        }
-
-        function drawMeteorHD(x, y, customCtx = gameCtx) {
-            customCtx.save(); customCtx.translate(x, y);
-            customCtx.rotate(globalAnimFrame * 0.02);
-
-            customCtx.shadowColor = '#e67e22'; customCtx.shadowBlur = 25;
-            let grad = customCtx.createRadialGradient(0, 0, 10, 0, 0, 38);
-            grad.addColorStop(0, '#f39c12'); grad.addColorStop(0.6, '#d35400'); grad.addColorStop(1, '#2c3e50');
-            customCtx.fillStyle = grad;
-
-            customCtx.beginPath();
-            customCtx.moveTo(0, -35); customCtx.lineTo(25, -20); customCtx.lineTo(35, 10);
-            customCtx.lineTo(15, 35); customCtx.lineTo(-20, 30); customCtx.lineTo(-35, -5);
-            customCtx.closePath(); customCtx.fill();
-
-            customCtx.fillStyle = 'rgba(0,0,0,0.5)';
-            customCtx.beginPath(); customCtx.arc(-10, -10, 8, 0, Math.PI * 2); customCtx.fill();
-            customCtx.beginPath(); customCtx.arc(12, 12, 6, 0, Math.PI * 2); customCtx.fill();
-
-            customCtx.strokeStyle = '#f1c40f'; customCtx.lineWidth = 2;
-            customCtx.beginPath(); customCtx.moveTo(-10, -10); customCtx.lineTo(5, 5); customCtx.lineTo(12, 12); customCtx.stroke();
 
             customCtx.restore();
         }
@@ -1069,394 +395,148 @@
         function drawRealisticEagle(x, y, attackTimer, customCtx = gameCtx) {
             customCtx.save(); customCtx.translate(x, y);
             let flapAngle = Math.sin(globalAnimFrame * 0.12) * 0.25;
-            let isAtk = (attackTimer % 50 > 35);
-
             [-1, 1].forEach(side => {
                 customCtx.save(); customCtx.scale(1, side); customCtx.rotate(flapAngle);
-                let wingGrad = customCtx.createLinearGradient(0, -60, 40, 0);
-                wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(0.5, '#d35400'); wingGrad.addColorStop(1, '#2c3e50');
+                let wingGrad = customCtx.createLinearGradient(0, -45, 30, 0);
+                wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(1, '#2c3e50');
                 customCtx.fillStyle = wingGrad;
-                for (let i = 0; i < 6; i++) {
-                    customCtx.beginPath();
-                    customCtx.moveTo(-15 + i * 6, -5 - i * 6);
-                    customCtx.quadraticCurveTo(20 + i * 6, -65 - i * 10, 45 + i * 4, -50 - i * 8);
-                    customCtx.quadraticCurveTo(10, -15, -15 + i * 6, -5 - i * 6);
-                    customCtx.fill(); customCtx.strokeStyle = "#ffe100"; customCtx.lineWidth = 1; customCtx.stroke();
+                for (let i = 0; i < 5; i++) {
+                    customCtx.beginPath(); customCtx.moveTo(-10 + i * 4, -4 - i * 4);
+                    customCtx.quadraticCurveTo(15 + i * 4, -45 - i * 8, 32 + i * 3, -35 - i * 6);
+                    customCtx.quadraticCurveTo(8, -10, -10 + i * 4, -4 - i * 4); customCtx.fill();
                 }
                 customCtx.restore();
             });
-
-            let bodyGrad = customCtx.createRadialGradient(-5, 0, 5, 0, 0, 40);
-            bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(0.4, '#7f8c8d'); bodyGrad.addColorStop(1, '#2c3e50');
+            let bodyGrad = customCtx.createRadialGradient(-3, 0, 3, 0, 0, 28);
+            bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(1, '#2c3e50');
             customCtx.fillStyle = bodyGrad; customCtx.beginPath();
-            customCtx.moveTo(35, 0); customCtx.quadraticCurveTo(0, -22, -35, -12); customCtx.quadraticCurveTo(-45, 0, -35, 12); customCtx.quadraticCurveTo(0, 22, 35, 0);
-            customCtx.fill(); customCtx.strokeStyle = "#f1c40f"; customCtx.lineWidth = 1.5; customCtx.stroke();
-
-            let beakGrad = customCtx.createLinearGradient(-15, -10, -45, 20);
+            customCtx.moveTo(25, 0); customCtx.quadraticCurveTo(0, -16, -25, -8); customCtx.quadraticCurveTo(0, 16, 25, 0); customCtx.fill();
+            let beakGrad = customCtx.createLinearGradient(-10, -6, -32, 14);
             beakGrad.addColorStop(0, '#ffe100'); beakGrad.addColorStop(1, '#d35400');
             customCtx.fillStyle = beakGrad; customCtx.beginPath();
-            customCtx.moveTo(-15, -8); customCtx.quadraticCurveTo(-38, -10, -48, 12); customCtx.quadraticCurveTo(-30, 8, -20, 5); customCtx.lineTo(-15, 8);
-            customCtx.closePath(); customCtx.fill(); customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 1.2; customCtx.stroke();
-
-            customCtx.fillStyle = "#ffffff"; customCtx.beginPath(); customCtx.ellipse(-10, -7, 6, 4, -Math.PI / 8, 0, Math.PI * 2); customCtx.fill();
-            customCtx.fillStyle = isAtk ? "#ff0000" : "#d35400"; customCtx.beginPath(); customCtx.arc(-11, -7, 2.8, 0, Math.PI * 2); customCtx.fill();
+            customCtx.moveTo(-10, -6); customCtx.quadraticCurveTo(-26, -8, -34, 8); customCtx.quadraticCurveTo(-20, 6, -14, 4); customCtx.fill();
             customCtx.restore();
         }
 
         function drawRealisticUFO(x, y, attackTimer, customCtx = gameCtx) {
             customCtx.save(); customCtx.translate(x, y);
-            let isAtk = (attackTimer % 50 > 35);
-
-            customCtx.fillStyle = isAtk ? 'rgba(231, 76, 60, 0.25)' : 'rgba(0, 210, 211, 0.2)';
-            customCtx.beginPath(); customCtx.ellipse(0, 0, 70, 35, 0, 0, Math.PI * 2); customCtx.fill();
-
-            let hullGrad = customCtx.createLinearGradient(-60, 0, 60, 20);
+            customCtx.shadowColor = '#00d2d3'; customCtx.shadowBlur = 15;
+            let hullGrad = customCtx.createLinearGradient(-40, 0, 40, 15);
             hullGrad.addColorStop(0, '#2c3e50'); hullGrad.addColorStop(0.5, '#bdc3c7'); hullGrad.addColorStop(1, '#1e272e');
-            customCtx.fillStyle = hullGrad; customCtx.beginPath();
-            customCtx.ellipse(0, 8, 55, 22, 0, 0, Math.PI * 2); customCtx.fill();
-            customCtx.strokeStyle = '#00d2d3'; customCtx.lineWidth = 2; customCtx.stroke();
-
-            let domeGrad = customCtx.createRadialGradient(-10, -15, 2, 0, -10, 25);
-            domeGrad.addColorStop(0, '#ffffff'); domeGrad.addColorStop(0.5, '#3498db'); domeGrad.addColorStop(1, '#12051e');
-            customCtx.fillStyle = domeGrad; customCtx.beginPath(); customCtx.ellipse(0, -8, 28, 18, 0, 0, Math.PI * 2); customCtx.fill();
-
-            for (let i = -3; i <= 3; i++) {
-                customCtx.fillStyle = (i % 2 === 0) ? '#f1c40f' : '#e74c3c';
-                customCtx.beginPath(); customCtx.arc(i * 15, 18 - Math.abs(i) * 2, 4, 0, Math.PI * 2); customCtx.fill();
-            }
+            customCtx.fillStyle = hullGrad; customCtx.beginPath(); customCtx.ellipse(0, 5, 40, 16, 0, 0, Math.PI * 2); customCtx.fill();
+            let domeGrad = customCtx.createRadialGradient(-6, -10, 2, 0, -8, 18);
+            domeGrad.addColorStop(0, '#ffffff'); domeGrad.addColorStop(1, '#12051e');
+            customCtx.fillStyle = domeGrad; customCtx.beginPath(); customCtx.ellipse(0, -5, 20, 12, 0, 0, Math.PI * 2); customCtx.fill();
             customCtx.restore();
         }
 
         function drawRealisticDragon(x, y, attackTimer, customCtx = gameCtx) {
             customCtx.save(); customCtx.translate(x, y);
-            let jawOpen = (attackTimer % 50 > 35) ? 18 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 8);
-
-            customCtx.fillStyle = '#f1c40f';
-            customCtx.beginPath(); customCtx.moveTo(5, -12 - jawOpen); customCtx.quadraticCurveTo(25, -45 - jawOpen, -5, -22 - jawOpen); customCtx.fill();
-
-            let upperGrad = customCtx.createLinearGradient(20, 0, -40, 0);
+            let jawOpen = (attackTimer % 45 > 30) ? 14 : Math.abs(Math.sin(globalAnimFrame * 0.1) * 6);
+            let upperGrad = customCtx.createLinearGradient(15, 0, -30, 0);
             upperGrad.addColorStop(0, '#78281f'); upperGrad.addColorStop(1, '#e74c3c');
-            customCtx.fillStyle = upperGrad;
-            customCtx.beginPath(); customCtx.moveTo(18, -jawOpen); customCtx.lineTo(-38, -18 - jawOpen); customCtx.lineTo(-42, -5 - jawOpen); customCtx.lineTo(-12, -2);
-            customCtx.closePath(); customCtx.fill();
-
-            customCtx.fillStyle = '#512e5f';
-            customCtx.beginPath(); customCtx.moveTo(18, jawOpen); customCtx.lineTo(-35, 18 + jawOpen); customCtx.lineTo(-12, 2);
-            customCtx.closePath(); customCtx.fill();
-
-            customCtx.fillStyle = '#ffffff';
-            for (let t = 0; t < 5; t++) {
-                customCtx.beginPath(); customCtx.moveTo(-10 - t * 6, -jawOpen); customCtx.lineTo(-13 - t * 6, -jawOpen + 6); customCtx.lineTo(-16 - t * 6, -jawOpen); customCtx.fill();
-                customCtx.beginPath(); customCtx.moveTo(-10 - t * 6, jawOpen); customCtx.lineTo(-13 - t * 6, jawOpen - 6); customCtx.lineTo(-16 - t * 6, jawOpen); customCtx.fill();
-            }
-
-            customCtx.fillStyle = '#f1c40f'; customCtx.beginPath(); customCtx.arc(-5, -12 - jawOpen, 5, 0, Math.PI * 2); customCtx.fill();
+            customCtx.fillStyle = upperGrad; customCtx.beginPath();
+            customCtx.moveTo(12, -jawOpen); customCtx.lineTo(-28, -14 - jawOpen); customCtx.lineTo(-30, -4 - jawOpen); customCtx.fill();
+            customCtx.fillStyle = '#512e5f'; customCtx.beginPath();
+            customCtx.moveTo(12, jawOpen); customCtx.lineTo(-25, 14 + jawOpen); customCtx.lineTo(-8, 2); customCtx.fill();
             customCtx.restore();
         }
 
-        function drawBossHD(boss, customCtx = gameCtx) {
-            let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
-            let name = boss.name || "";
-            
-            if (name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY, customCtx);
-            else if (name.includes("母艦")) drawRealisticUFO(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
-            else if (name.includes("赤龍")) drawRealisticDragon(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
-            else if (name.includes("隕石")) drawMeteorHD(boss.x, boss.y + floatY, customCtx);
-            else drawRealisticEagle(boss.x, boss.y + floatY, boss.attackTimer, customCtx);
+        function drawAirElemental(x, y, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
+            customCtx.fillStyle = "rgba(0, 210, 211, 0.4)"; customCtx.beginPath(); customCtx.arc(0, 0, 24 + Math.sin(globalAnimFrame * 0.2) * 4, 0, Math.PI * 2); customCtx.fill();
+            customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 2; customCtx.stroke();
+            customCtx.restore();
         }
 
-        function initStars() {
-            stars = [];
-            for(let i=0; i<60; i++) stars.push({ x: Math.random() * logicalWidth, y: Math.random() * logicalHeight, size: Math.random() * 2 + 0.8, baseSpeed: Math.random() * 2 + 0.5 });
+        function drawMeteorHD(x, y, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y); customCtx.rotate(globalAnimFrame * 0.02);
+            customCtx.shadowColor = '#e67e22'; customCtx.shadowBlur = 18;
+            let grad = customCtx.createRadialGradient(0, 0, 8, 0, 0, 28);
+            grad.addColorStop(0, '#f39c12'); grad.addColorStop(1, '#2c3e50');
+            customCtx.fillStyle = grad; customCtx.beginPath();
+            customCtx.moveTo(0, -25); customCtx.lineTo(18, -14); customCtx.lineTo(25, 8); customCtx.lineTo(10, 25); customCtx.lineTo(-14, 20); customCtx.fill();
+            customCtx.restore();
         }
 
-        function resizeGameCanvas() {
-            if (gameCanvas && gameCanvas.parentElement) {
-                let dpr = window.devicePixelRatio || 1;
-                logicalWidth = gameCanvas.parentElement.clientWidth || 800;
-                logicalHeight = gameCanvas.parentElement.clientHeight || 480;
+        function drawFinalBossHD(x, y, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(x, y);
+            customCtx.shadowColor = '#e74c3c'; customCtx.shadowBlur = 30;
+            let grad = customCtx.createRadialGradient(0, 0, 10, 0, 0, 36);
+            grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.5, '#e74c3c'); grad.addColorStop(1, '#4a235a');
+            customCtx.fillStyle = grad; customCtx.beginPath(); customCtx.arc(0, 0, 36, 0, Math.PI * 2); customCtx.fill();
+            customCtx.strokeStyle = '#f1c40f'; customCtx.lineWidth = 3; customCtx.stroke();
+            customCtx.restore();
+        }
 
-                gameCanvas.width = logicalWidth * dpr;
-                gameCanvas.height = logicalHeight * dpr;
-                gameCtx.scale(dpr, dpr);
+        function drawBossHD(b, customCtx = gameCtx) {
+            let floatY = Math.sin(globalAnimFrame * 0.08) * 6;
+            if (b.isFinal) drawFinalBossHD(b.x, b.y + floatY, customCtx);
+            else if (b.name.includes("風暴精靈")) drawAirElemental(b.x, b.y + floatY, customCtx);
+            else if (b.name.includes("母艦")) drawRealisticUFO(b.x, b.y + floatY, b.attackTimer, customCtx);
+            else if (b.name.includes("赤龍")) drawRealisticDragon(b.x, b.y + floatY, b.attackTimer, customCtx);
+            else if (b.name.includes("隕石")) drawMeteorHD(b.x, b.y + floatY, customCtx);
+            else drawRealisticEagle(b.x, b.y + floatY, b.attackTimer, customCtx);
+        }
 
-                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = logicalHeight / 2;
-                initStars();
+        function drawCollectiblesHD(item, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(item.x, item.y);
+            if (item.type === 'coin') {
+                customCtx.fillStyle = '#f1c40f'; customCtx.beginPath(); customCtx.arc(0, 0, 8, 0, Math.PI*2); customCtx.fill();
+            } else if (item.type === 'heart') {
+                customCtx.fillStyle = '#e74c3c'; customCtx.beginPath(); customCtx.arc(0, 0, 9, 0, Math.PI*2); customCtx.fill();
+            } else if (item.type === 'shield') {
+                customCtx.fillStyle = '#3498db'; customCtx.beginPath(); customCtx.arc(0, 0, 9, 0, Math.PI*2); customCtx.fill();
+            } else {
+                customCtx.fillStyle = '#9b59b6'; customCtx.beginPath(); customCtx.arc(0, 0, 9, 0, Math.PI*2); customCtx.fill();
             }
-        }
-        window.addEventListener('resize', resizeGameCanvas);
-
-        function restartGameEngine() {
-            stopGameEngine();
-            isGameRunning = true; isGamePaused = false; isGameOver = false; isResting = false;
-            playerHP = 100; gameScore = 0; gameCombo = 0; activeBoss = null;
-            hasShield = false; magnetTimer = 0; slowDebuffTimer = 0;
-            collectibles = []; obstacles = []; playerProjectiles = []; globalAnimFrame = 0;
-            
-            rocket.x = 120; rocket.y = logicalHeight / 2;
-            sessionStartTime = Date.now();
-
-            document.getElementById('bossHudBadge').style.display = 'none';
-            document.getElementById('restScreen').style.display = 'none';
-            document.getElementById('gameOverScreen').style.display = 'none';
-            document.getElementById('gameStage').innerText = currentStage;
-            
-            gameLoop();
+            customCtx.restore();
         }
 
-        function triggerBossSpawn(type) {
-            let theme = getStageTheme(currentStage);
-            let bName = (type === 'mini') ? theme.miniBoss : theme.stageBoss;
-            let maxHp = (type === 'mini') ? (50 + currentStage * 20) : (120 + currentStage * 35);
-
-            activeBoss = { type: type, name: bName, x: logicalWidth - 120, y: logicalHeight / 2, hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0 };
-            document.getElementById('bossName').innerText = bName;
-            document.getElementById('bossHudBadge').style.display = 'flex';
-            document.getElementById('bossHpFill').style.width = '100%';
-            updateStatus(`⚠️ 警告！${bName} 出現了！(血量: ${maxHp} HP)`);
+        function drawObstaclesHD(obs, customCtx = gameCtx) {
+            customCtx.save(); customCtx.translate(obs.x, obs.y);
+            customCtx.fillStyle = '#7f8c8d'; customCtx.beginPath(); customCtx.arc(0, 0, 12, 0, Math.PI*2); customCtx.fill();
+            customCtx.restore();
         }
 
-        function damageBoss(dmg) {
-            if (!activeBoss) return;
-            activeBoss.hp -= dmg;
-            document.getElementById('bossHpFill').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
-            if (activeBoss.hp <= 0) {
-                updateStatus(`🎉 成功擊敗 ${activeBoss.name}！`);
-                let isFinal = activeBoss.name.includes("Final Boss");
-                activeBoss = null; document.getElementById('bossHudBadge').style.display = 'none';
-                if (isFinal) {
-                    alert("🏆 恭喜破關！你已順利通關所有宇宙階級 Boss！");
-                    restartGameEngine();
-                } else {
-                    triggerStageComplete();
-                }
-            }
-        }
-
-        function toggleGamePause() {
-            if (!isGameRunning || isGameOver) return;
-            isGamePaused = !isGamePaused;
-            const btn = document.getElementById('gamePauseBtn');
-            if (isGamePaused) { btn.innerText = "繼續"; stopBGM(); }
-            else { btn.innerText = "暫停"; startBGM(); }
-        }
-
-        function triggerGameOver() {
-            isGameOver = true; stopBGM(); playAudioEffect('hit');
-            document.getElementById('finalScore').innerText = gameScore;
-            document.getElementById('gameOverScreen').style.display = 'flex';
-            stopGameEngine();
-        }
-
-        function stopGameEngine() {
-            isGameRunning = false;
-            if (gameAnimationId) { cancelAnimationFrame(gameAnimationId); gameAnimationId = null; }
-        }
-
-        function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
-        function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
-
-        function gameLoop() {
-            if (!isGameRunning || isGameOver) return;
-            globalAnimFrame++;
-
-            let theme = getStageTheme(currentStage);
-            gameCtx.fillStyle = theme.bg; gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
-
-            let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
-
-            if (magnetTimer > 0) magnetTimer--;
-            if (slowDebuffTimer > 0) slowDebuffTimer--;
-            document.getElementById('shieldBadge').style.display = hasShield ? 'inline' : 'none';
-            document.getElementById('magnetBadge').style.display = (magnetTimer > 0) ? 'inline' : 'none';
-
-            gameCtx.fillStyle = '#ffffff';
-            stars.forEach(s => {
-                s.x -= s.baseSpeed * userSpeedMult;
-                if (s.x < 0) s.x = logicalWidth;
-                gameCtx.fillRect(s.x, s.y, s.size, s.size);
-            });
-
-            let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
-
-            if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-                let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
-                
-                let flowOffsetY = 0;
-                if (curReadEst > 0) { 
-                    flowOffsetY = -(Math.abs(curReadEst) * 3.5); 
-                } else if (curReadEst < 0) {
-                    flowOffsetY = (Math.abs(curReadEst) * 3.5);  
-                }
-
-                let targetY = (logicalHeight * 0.5) + flowOffsetY;
-                targetY = Math.max(40, Math.min(logicalHeight - 40, targetY));
-                
-                let dy = targetY - rocket.y;
-                let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
-                rocket.y += dy * speedFactor;
-                rocket.angle = Math.atan2(dy, 25);
-
-                let elapsed = (Date.now() - sessionStartTime) / 1000;
-                if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
-                else if (elapsed > 20 && !activeBoss) { triggerBossSpawn('stage'); }
-
-                let spawnY = Math.random() * (logicalHeight - 80) + 40;
-                let rand = Math.random();
-                if (rand < 0.015) collectibles.push({ type: 'coin', x: logicalWidth + 20, y: spawnY, radius: 12, collected: false });
-                else if (rand < 0.020) collectibles.push({ type: 'laser', x: logicalWidth + 20, y: spawnY, radius: 14, collected: false });
-                else if (rand < 0.024) collectibles.push({ type: 'missile', x: logicalWidth + 20, y: spawnY, radius: 14, collected: false });
-                else if (rand < 0.027) collectibles.push({ type: 'bomb', x: logicalWidth + 20, y: spawnY, radius: 15, collected: false });
-                else if (rand < 0.031) collectibles.push({ type: 'heart', x: logicalWidth + 20, y: spawnY, radius: 12, collected: false });
-                else if (rand < 0.034) collectibles.push({ type: 'shield', x: logicalWidth + 20, y: spawnY, radius: 13, collected: false });
-                else if (rand < 0.037) collectibles.push({ type: 'magnet', x: logicalWidth + 20, y: spawnY, radius: 13, collected: false });
-
-                let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
-                let obsRate = (diff === 'easy') ? 0.005 : (diff === 'hard') ? 0.025 : 0.012;
-                let dmgMult = (diff === 'easy') ? 0.5 : (diff === 'hard') ? 1.5 : 1.0;
-
-                if (Math.random() < obsRate) obstacles.push({ type: 'cloud', x: logicalWidth + 30, y: spawnY, radius: 15, damage: 20 * dmgMult, hit: false });
-                else if (Math.random() < obsRate * 0.7) obstacles.push({ type: 'slime', x: logicalWidth + 30, y: spawnY, radius: 14, damage: 10 * dmgMult, hit: false });
-                else if (Math.random() < obsRate * 0.5) obstacles.push({ type: 'darkgem', x: logicalWidth + 30, y: spawnY, radius: 13, damage: 15 * dmgMult, hit: false });
-
-                collectibles.forEach((c) => {
-                    if (magnetTimer > 0) {
-                        let mdx = rocket.x - c.x, mdy = rocket.y - c.y;
-                        c.x += mdx * 0.08; c.y += mdy * 0.08;
-                    } else {
-                        c.x -= 3 * userSpeedMult;
-                    }
-                    
-                    drawCollectibleHD(c);
-
-                    let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
-                    if (dist < c.radius + rocket.radius) {
-                        c.collected = true;
-                        if (c.type === 'coin') { gameScore += 50; gameCombo++; playAudioEffect('coin'); damageBoss(10); }
-                        else if (c.type === 'laser') { gameScore += 100; playAudioEffect('laser'); playerProjectiles.push({ type: 'laser', x: rocket.x + 20, y: rocket.y, vx: 18, damage: 25 }); }
-                        else if (c.type === 'missile') { gameScore += 120; playAudioEffect('missile'); playerProjectiles.push({ type: 'missile', x: rocket.x + 20, y: rocket.y, vx: 12, damage: 30 }); }
-                        else if (c.type === 'bomb') { gameScore += 200; playAudioEffect('bomb'); obstacles = []; damageBoss(40); }
-                        else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('heart'); }
-                        else if (c.type === 'shield') { hasShield = true; playAudioEffect('shield'); }
-                        else if (c.type === 'magnet') { magnetTimer = 300; playAudioEffect('magnet'); }
-                    }
-                });
-
-                playerProjectiles.forEach((p) => {
-                    p.x += p.vx;
-                    gameCtx.save();
-                    gameCtx.shadowBlur = 10; gameCtx.shadowColor = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
-                    gameCtx.fillStyle = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
-                    gameCtx.fillRect(p.x, p.y - 4, 25, 8);
-                    gameCtx.restore();
-
-                    if (activeBoss) {
-                        let bDist = Math.hypot(p.x - activeBoss.x, p.y - activeBoss.y);
-                        if (bDist < activeBoss.radius + 15) { damageBoss(p.damage); p.hit = true; }
-                    }
-                });
-
-                if (activeBoss) {
-                    drawBossHD(activeBoss);
-                    activeBoss.attackTimer++;
-                    if (activeBoss.attackTimer % 45 === 0) {
-                        if (activeBoss.name.includes("神鷹")) playAudioEffect('eagle_thunder');
-                        else if (activeBoss.name.includes("母艦")) playAudioEffect('ufo_laser');
-                        else if (activeBoss.name.includes("赤龍")) playAudioEffect('dragon_fire');
-                        obstacles.push({ type: 'cloud', x: activeBoss.x - 20, y: activeBoss.y, radius: 13, damage: 20 * dmgMult, hit: false });
-                    }
-                }
-
-                obstacles.forEach((o) => {
-                    o.x -= 4 * userSpeedMult;
-                    drawObstacleHD(o);
-
-                    let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
-                    if (dist < o.radius + rocket.radius) {
-                        o.hit = true;
-                        if (hasShield) {
-                            hasShield = false; updateStatus("🛡️ 護盾抵擋了一次傷害！");
-                        } else {
-                            playerHP = Math.max(0, playerHP - o.damage); playAudioEffect('hit');
-                            if (o.type === 'slime') slowDebuffTimer = 180;
-                            if (o.type === 'darkgem') gameScore = Math.max(0, gameScore - 100);
-                            if (playerHP <= 0) { triggerGameOver(); return; }
-                        }
-                    }
-                });
-
-                collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
-                obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
-                playerProjectiles = playerProjectiles.filter(p => p.x < logicalWidth + 50 && !p.hit);
-            }
-
-            let curFlowForRocket = activeMeasuring ? smoothedEst : 0.0; 
-            let curModeForRocket = (curFlowForRocket < 0) ? "exhalation" : "inhalation";
-            
-            drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, curModeForRocket, Math.abs(curFlowForRocket));
-
-            document.getElementById('gameScore').innerText = gameScore;
-            document.getElementById('gameCombo').innerText = gameCombo;
-            document.getElementById('hpFill').style.width = `${playerHP}%`;
-
-            gameAnimationId = requestAnimationFrame(gameLoop);
-        }
-
-        function triggerStageComplete() {
-            saveGameProgress(false);
-            currentStage++;
-            document.getElementById('gameStage').innerText = currentStage;
-            isResting = true; collectibles = []; obstacles = []; playerProjectiles = [];
-
-            const restScreen = document.getElementById('restScreen');
-            const countdownEl = document.getElementById('restCountdown');
-            let countdown = 15;
-            restScreen.style.display = 'flex';
-
-            let restInterval = setInterval(() => {
-                countdown--; countdownEl.innerText = countdown;
-                if (countdown <= 0) {
-                    clearInterval(restInterval);
-                    restScreen.style.display = 'none';
-                    isResting = false;
-                    sessionStartTime = Date.now();
-                }
-            }, 1000);
-        }
-
-        // 🎬 3. 點選式影音展台 (含專屬招式音效與強烈視覺動畫演出)
         const DEMO_ITEMS_ALL = [
-            { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 小 Boss，大氣層氣流凝聚而成的漩渦體。", skill: "⚔️ 招式【風暴亂流】：隨機在畫面上下方生成風暴雲團。" },
-            { category: "boss", id: "eagle", title: "🦅 雷霆金屬神鷹", desc: "Stage 1 關卡 Boss，帶有高壓電極的金屬神鷹。", skill: "⚔️ 招式【高壓雷擊】：向前方直線發射雷擊雲團，造成 20 點重傷。" },
-            { category: "boss", id: "meteor", title: "☄️ 熔岩巨型隕石", desc: "Stage 2 小 Boss，熾熱的外星隕石核心，擁有超厚外殼。", skill: "⚔️ 招式【熔岩噴濺】：噴出熾熱黏液，造成傷害並減速飛船。" },
-            { category: "boss", id: "ufo", title: "🛸 圓盤星際母艦", desc: "Stage 2 關卡 Boss，外星艦隊旗艦，配備高頻離子炮。", skill: "⚔️ 招式【高頻離子炮】：釋放暗黑晶石陣，碰撞扣 100 分與 15 HP。" },
-            { category: "boss", id: "dragon", title: "🐉 地獄黑金赤龍", desc: "Final Boss 終極霸主，張開巨顎噴射離子火焰！", skill: "⚔️ 招式【龍息離子焰】：頻繁噴射雙重衝擊波，考驗控氣切換！" },
+            { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 關卡 Boss。", skill: "⚔️ 招式【風暴亂流】：隨輪數（Loop）疊加【氣流加壓】。" },
+            { category: "boss", id: "eagle", title: "🦅 雷霆金屬神鷹", desc: "Stage 2 關卡 Boss。", skill: "⚔️ 招式【高壓雷擊】：隨輪數解鎖【連環電光波】。" },
+            { category: "boss", id: "meteor", title: "☄️ 熔岩巨型隕石", desc: "Stage 3 關卡 Boss。", skill: "⚔️ 招式【熔岩噴濺】：隨輪數解鎖【熔岩硬化護盾】。" },
+            { category: "boss", id: "ufo", title: "🛸 圓盤星際母艦", desc: "Stage 4 關卡 Boss。", skill: "⚔️ 招式【暗黑晶石陣】：隨輪數解鎖【高頻干擾光束】。" },
+            { category: "boss", id: "dragon", title: "🐉 地獄黑金赤龍", desc: "Stage 5 關卡 Boss。", skill: "⚔️ 招式【龍息衝擊波】：隨輪數解鎖【烈焰全屏狂暴】。" },
+            { category: "boss", id: "final", title: "🌌 宇宙終極霸主 (101關)", desc: "100關通關後降臨！具備專屬登場動畫與語音。", skill: "⚔️ 招式【全 Boss 招式輪替】+ 召喚小 Boss 共同作戰！" },
             
-            { category: "item", id: "coin", title: "🟡 金幣 (Coin)", desc: "基礎得分道具。", skill: "🎁 功能：拾取獲得 +50 分，並累積 COMBO 傷害。" },
-            { category: "item", id: "laser", title: "🔫 雷射光束 (Laser)", desc: "前向戰術武器。", skill: "🎁 功能：發射穿透雷射，直接攻擊前方 Boss (25 傷害)。" },
-            { category: "item", id: "missile", title: "🚀 重型導彈 (Missile)", desc: "高爆導彈。", skill: "🎁 功能：發射高傷害追蹤導彈 (30 傷害)。" },
-            { category: "item", id: "bomb", title: "💣 畫面清屏炸彈 (Bomb)", desc: "能量清屏波。", skill: "🎁 功能：引爆全螢幕障礙物，並重創 Boss 40 點！" },
-            { category: "item", id: "heart", title: "❤️ 醫療包 (Heart)", desc: "補給裝置。", skill: "🎁 功能：即時修復裝甲，回復 25 點 HP。" },
-            { category: "item", id: "shield", title: "🛡️ 能量護盾 (Shield)", desc: "防禦護罩。", skill: "🎁 功能：抵擋一次來自障礙物或 Boss 的撞擊傷害。" },
-            { category: "item", id: "magnet", title: "🧲 磁鐵 (Magnet)", desc: "磁場引力。", skill: "🎁 功能：自動將周圍的所有金幣與道具吸引過來。" },
-            { category: "item", id: "cloud", title: "☁️ 烏雲 (Cloud)", desc: "自然障礙物。", skill: "💥 傷害：造成 20 點傷害，干擾視線與飛行。" },
-            { category: "item", id: "slime", title: "🧪 黏液 (Slime)", desc: "外星有機黏液。", skill: "💥 傷害：造成 10 點傷害，並施加減速 Debuff。" },
-            { category: "item", id: "darkgem", title: "💎 暗黑晶石 (Dark Gem)", desc: "高危結晶。", skill: "💥 傷害：造成 15 點傷害，並扣除 100 點積分。" }
+            { category: "item", id: "coin", title: "🟡 金幣", desc: "益處得分道具。", skill: "🎁 功能：拾取獲得 +50 分與 COMBO 堆疊。" },
+            { category: "item", id: "laser", title: "🔫 穿透雷射", desc: "戰術武器。", skill: "🎁 功能：貫穿前方 Boss 造成 25 點傷害。" },
+            { category: "item", id: "missile", title: "🚀 重型導彈", desc: "高爆導彈。", skill: "🎁 功能：發射追蹤導彈造成 30 點傷害。" },
+            { category: "item", id: "bomb", title: "💣 清屏核彈", desc: "全屏清場。", skill: "🎁 功能：引爆全螢幕彈幕並重創 Boss 40 點！" },
+            { category: "item", id: "heart", title: "❤️ 醫療包", desc: "修復裝置。", skill: "🎁 功能：即時回復 25% HP。" },
+            { category: "item", id: "shield", title: "🛡️ 能量護盾", desc: "防禦護牆。", skill: "🎁 功能：抵擋一次碰撞傷害。" },
+            { category: "item", id: "magnet", title: "🧲 超導引力場", desc: "磁力引力。", skill: "🎁 功能：自動將全場金幣與道具吸引過來。" },
+            { category: "item", id: "clock", title: "⏳ 時間時鐘", desc: "戰術減速。", skill: "🎁 功能：全場彈幕與 Boss 動作減速 60%！" },
+            { category: "item", id: "emp", title: "⚡ EMP 電磁塔", desc: "技能封印。", skill: "🎁 功能：封印 Boss 技能施放 5 秒！" },
+            { category: "item", id: "blackhole", title: "🌀 黑洞生成器", desc: "彈幕吞噬。", skill: "🎁 功能：吞噬周圍所有敵方彈幕！" },
+            { category: "item", id: "mirror", title: "🛡️ 反彈鏡盾", desc: "彈幕反射。", skill: "🎁 功能：將 Boss 的彈幕原封不動反射回去！" },
+            { category: "item", id: "ice", title: "❄️ 冰凍突擊砲", desc: "控制武器。", skill: "🎁 功能：凍結 Boss 動作並使其受傷害翻倍！" },
+
+            { category: "hazard", id: "cloud", title: "☁️ 烏雲", desc: "危險障礙。", skill: "💥 負面效果：碰撞造成 20 點傷害。" },
+            { category: "hazard", id: "slime", title: "🧪 外星黏液", desc: "減速障礙。", skill: "💥 負面效果：造成 10 點傷害與 3 秒減速 Debuff。" },
+            { category: "hazard", id: "darkgem", title: "💎 暗黑晶石", desc: "扣分結晶。", skill: "💥 負面效果：造成 15 點傷害並扣 100 分。" },
+            { category: "hazard", id: "electric", title: "⚡ 高壓電擊網", desc: "高危陷阱。", skill: "💥 負面效果：瞬間造成 30 點高額雷擊傷害！" },
+            { category: "hazard", id: "homing", title: "☄️ 追蹤碎石", desc: "追蹤障礙。", skill: "💥 負面效果：微幅修正角度追蹤飛船，造成 15 點傷害。" },
+            { category: "hazard", id: "wind", title: "🌪️ 混亂龍捲風", desc: "氣流干擾。", skill: "💥 負面效果：強制拉扯飛船上下漂移 2 秒。" },
+            { category: "hazard", id: "toxic", title: "☣️ 毒氣雲霧", desc: "持續傷害。", skill: "💥 負面效果：造成持續性扣血（每秒 5 點，持續 3 秒）。" },
+            { category: "hazard", id: "magnetic_storm", title: "🧲 反向磁暴區", desc: "控制反轉。", skill: "💥 負面效果：暫時反轉呼吸控制方向！" }
         ];
 
-        let selectedDemoId = "eagle";
-        let demoViewType = "action";
-
-        function setDemoViewType(type) {
-            demoViewType = type;
-            document.getElementById('btnModeClose').classList.toggle('active', type === 'close');
-            document.getElementById('btnModeAction').classList.toggle('active', type === 'action');
-        }
+        let selectedDemoId = "final";
 
         function buildDemoMenus() {
             const bossMenu = document.getElementById('bossDemoMenuList');
             const itemMenu = document.getElementById('itemDemoMenuList');
-            bossMenu.innerHTML = ""; itemMenu.innerHTML = "";
+            const hazardMenu = document.getElementById('hazardDemoMenuList');
+            bossMenu.innerHTML = ""; itemMenu.innerHTML = ""; hazardMenu.innerHTML = "";
 
             DEMO_ITEMS_ALL.forEach(item => {
                 let btn = document.createElement('button');
@@ -1470,15 +550,13 @@
                     document.getElementById('demoItemDesc').innerText = item.desc;
                     document.getElementById('demoItemSkill').innerText = item.skill;
 
-                    // 點擊即觸發對應專屬音效展示！
-                    if (item.id === 'eagle') playAudioEffect('eagle_thunder');
-                    else if (item.id === 'ufo') playAudioEffect('ufo_laser');
-                    else if (item.id === 'dragon') playAudioEffect('dragon_fire');
-                    else playAudioEffect(item.id);
+                    playSoundHD('boss_attack');
+                    if (item.id === 'final') playSynthesizedVoice("愚蠢的飛行員，這裡將是你的終結之地！");
                 };
 
                 if (item.category === 'boss') bossMenu.appendChild(btn);
-                else itemMenu.appendChild(btn);
+                else if (item.category === 'item') itemMenu.appendChild(btn);
+                else if (item.category === 'hazard') hazardMenu.appendChild(btn);
             });
         }
         buildDemoMenus();
@@ -1490,101 +568,130 @@
             function renderDemo() {
                 if (document.getElementById('demoContainer').style.display === 'none') return;
                 globalAnimFrame++;
-                dCtx.fillStyle = '#080b10'; dCtx.fillRect(0, 0, 380, 260);
+                dCtx.fillStyle = '#020208'; dCtx.fillRect(0, 0, 380, 240);
 
-                let cx = 190, cy = 130;
-
-                if (demoViewType === 'close') {
-                    // 🔍 模式一：360° 特寫
-                    if (selectedDemoId === 'air') drawAirElemental(cx, cy, dCtx);
-                    else if (selectedDemoId === 'eagle') drawRealisticEagle(cx, cy, globalAnimFrame, dCtx);
-                    else if (selectedDemoId === 'meteor') drawMeteorHD(cx, cy, dCtx);
-                    else if (selectedDemoId === 'ufo') drawRealisticUFO(cx, cy, globalAnimFrame, dCtx);
-                    else if (selectedDemoId === 'dragon') drawRealisticDragon(cx, cy, globalAnimFrame, dCtx);
-                    else if (selectedDemoId === 'coin') drawCollectibleHD({ type: 'coin', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'laser') drawCollectibleHD({ type: 'laser', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'missile') drawCollectibleHD({ type: 'missile', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'bomb') drawCollectibleHD({ type: 'bomb', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'heart') drawCollectibleHD({ type: 'heart', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'shield') drawCollectibleHD({ type: 'shield', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'magnet') drawCollectibleHD({ type: 'magnet', x: cx, y: cy, radius: 25 }, dCtx);
-                    else if (selectedDemoId === 'cloud') drawObstacleHD({ type: 'cloud', x: cx, y: cy, radius: 30 }, dCtx);
-                    else if (selectedDemoId === 'slime') drawObstacleHD({ type: 'slime', x: cx, y: cy, radius: 30 }, dCtx);
-                    else if (selectedDemoId === 'darkgem') drawObstacleHD({ type: 'darkgem', x: cx, y: cy, radius: 30 }, dCtx);
-                } else {
-                    // ⚔️ 模式二：誇張實戰招式動態展示
-                    let shipX = 70, shipY = 130 + Math.sin(globalAnimFrame * 0.05) * 20;
-
-                    if (selectedDemoId === 'eagle' || selectedDemoId === 'air' || selectedDemoId === 'ufo' || selectedDemoId === 'dragon' || selectedDemoId === 'meteor') {
-                        drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-
-                        let bX = 300, bY = 130;
-                        let mockBoss = { name: (selectedDemoId==='air'?"風暴精靈":selectedDemoId==='ufo'?"母艦":selectedDemoId==='dragon'?"赤龍":selectedDemoId==='meteor'?"隕石":"神鷹"), x: bX, y: bY, attackTimer: globalAnimFrame };
-                        drawBossHD(mockBoss, dCtx);
-
-                        let bulletX = bX - ((globalAnimFrame * 5) % 250);
-
-                        // 誇張 Boss 招式動畫
-                        if (selectedDemoId === 'eagle') {
-                            // 雷擊閃電波
-                            dCtx.save(); dCtx.shadowColor = '#00d2d3'; dCtx.shadowBlur = 20;
-                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY, radius: 24 }, dCtx);
-                            dCtx.strokeStyle = '#ffe100'; dCtx.lineWidth = 4;
-                            dCtx.beginPath(); dCtx.moveTo(bulletX - 15, bY - 20); dCtx.lineTo(bulletX + 8, bY); dCtx.lineTo(bulletX - 8, bY + 8); dCtx.lineTo(bulletX + 15, bY + 20);
-                            dCtx.stroke(); dCtx.restore();
-                        } else if (selectedDemoId === 'dragon') {
-                            // 烈焰龍息離子波
-                            dCtx.save(); dCtx.shadowColor = '#e74c3c'; dCtx.shadowBlur = 25;
-                            dCtx.fillStyle = '#ff6b6b';
-                            dCtx.beginPath(); dCtx.arc(bulletX, bY - 18, 16, 0, Math.PI*2); dCtx.fill();
-                            dCtx.fillStyle = '#f1c40f';
-                            dCtx.beginPath(); dCtx.arc(bulletX + 25, bY + 18, 16, 0, Math.PI*2); dCtx.fill();
-                            dCtx.restore();
-                        } else if (selectedDemoId === 'ufo') {
-                            // 暗黑晶石陣
-                            drawObstacleHD({ type: 'darkgem', x: bulletX, y: bY, radius: 22 }, dCtx);
-                            drawObstacleHD({ type: 'darkgem', x: bulletX + 35, y: bY - 30, radius: 16 }, dCtx);
-                        } else if (selectedDemoId === 'meteor') {
-                            drawObstacleHD({ type: 'slime', x: bulletX, y: bY + Math.sin(bulletX * 0.1) * 20, radius: 20 }, dCtx);
-                        } else if (selectedDemoId === 'air') {
-                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY + Math.cos(bulletX * 0.08) * 35, radius: 18 }, dCtx);
-                        }
-
-                    } else {
-                        // 誇張道具與障礙物互動
-                        let itemX = 320 - ((globalAnimFrame * 4) % 270);
-                        let isCollided = (itemX < shipX + 35);
-
-                        if (isCollided) {
-                            if (selectedDemoId === 'shield') {
-                                hasShield = true;
-                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-                            } else if (selectedDemoId === 'laser') {
-                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-                                dCtx.save(); dCtx.fillStyle = '#00d2d3'; dCtx.shadowColor = '#00d2d3'; dCtx.shadowBlur = 20;
-                                dCtx.fillRect(shipX + 25, shipY - 6, 220, 12); dCtx.restore();
-                            } else if (selectedDemoId === 'bomb') {
-                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-                                dCtx.save(); dCtx.fillStyle = 'rgba(165, 94, 234, 0.5)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
-                            } else if (selectedDemoId.match(/(cloud|slime|darkgem)/)) {
-                                dCtx.save(); dCtx.fillStyle = 'rgba(231, 76, 60, 0.5)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
-                                drawPlayerSpaceshipHD(shipX, shipY, 0, "exhalation", 8.0, dCtx);
-                            } else {
-                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
-                            }
-                        } else {
-                            hasShield = false;
-                            drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 3.0, dCtx);
-                            if (selectedDemoId.match(/(cloud|slime|darkgem)/)) drawObstacleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 22 }, dCtx);
-                            else drawCollectibleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 22 }, dCtx);
-                        }
-                    }
-                }
+                let cx = 280, cy = 120;
+                let mockBoss = { name: selectedDemoId, x: cx, y: cy, attackTimer: globalAnimFrame, isFinal: (selectedDemoId === 'final') };
+                drawBossHD(mockBoss, dCtx);
+                drawPlayerSpaceshipHD(80, cy, 0, "inhalation", 3.0, dCtx);
 
                 requestAnimationFrame(renderDemo);
             }
             renderDemo();
         }
+
+        const CYCLE_BOSSES = [
+            { id: 1, name: "🌪️ 大氣風暴精靈", color: "#00d2d3" },
+            { id: 2, name: "🦅 雷霆金屬神鷹", color: "#f1c40f" },
+            { id: 3, name: "☄️ 熔岩巨型隕石", color: "#e67e22" },
+            { id: 4, name: "🛸 圓盤星際母艦", color: "#9b59b6" },
+            { id: 5, name: "🐉 地獄黑金赤龍", color: "#e74c3c" }
+        ];
+
+        function triggerFinalBossCutscene() {
+            let overlay = document.getElementById('cutsceneOverlay');
+            overlay.style.display = 'flex';
+            document.getElementById('cutsceneCaption').innerText = "字幕：愚蠢的飛行員... 這裡將是你的終結之地！";
+            playSynthesizedVoice("愚蠢的飛行員，這裡將是你的終結之地！");
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                activeBosses.push({
+                    name: "🌌 宇宙終極霸主", x: logicalWidth - 110, y: logicalHeight / 2,
+                    hp: 600, maxHp: 600, radius: 32, isFinal: true, attackTimer: 0, color: "#e74c3c"
+                });
+                document.getElementById('bossName').innerText = "🌌 宇宙終極霸主";
+                document.getElementById('bossHudBadge').style.display = 'flex';
+            }, 4500);
+        }
+
+        function nextStage() {
+            let loopNum = Math.floor((currentStage - 1) / 5) + 1;
+            let bossIdx = (currentStage - 1) % 5;
+            let bossTemplate = CYCLE_BOSSES[bossIdx];
+
+            document.getElementById('gameStage').innerText = currentStage;
+            document.getElementById('loopCount').innerText = loopNum;
+
+            if (currentStage === 101) {
+                triggerFinalBossCutscene();
+            } else {
+                activeBosses.push({
+                    name: `${bossTemplate.name} (R${loopNum})`, x: logicalWidth - 110, y: logicalHeight / 2,
+                    hp: 80 + loopNum * 25, maxHp: 80 + loopNum * 25, radius: 22, isFinal: false, attackTimer: 0, color: bossTemplate.color
+                });
+                document.getElementById('bossName').innerText = bossTemplate.name;
+                document.getElementById('bossHudBadge').style.display = 'flex';
+            }
+        }
+
+        function gameLoop() {
+            globalAnimFrame++;
+            gameCtx.fillStyle = '#020208'; gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
+
+            drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, "inhalation", Math.abs(smoothedEst));
+
+            activeBosses.forEach((b) => {
+                drawBossHD(b);
+                b.attackTimer++;
+
+                if (b.attackTimer % 45 === 0) {
+                    playSoundHD('boss_attack');
+                    bossBullets.push({ x: b.x - 20, y: b.y, vx: -5, vy: (Math.random() - 0.5) * 4 });
+                    
+                    if (b.isFinal && Math.random() < 0.25 && activeBosses.length < 3) {
+                        let subBoss = CYCLE_BOSSES[Math.floor(Math.random() * 5)];
+                        activeBosses.push({ name: subBoss.name, x: b.x - 30, y: b.y + (Math.random() > 0.5 ? 70 : -70), hp: 70, maxHp: 70, radius: 18, isFinal: false, attackTimer: 0, color: subBoss.color });
+                    }
+                }
+            });
+
+            bossBullets.forEach(bullet => {
+                bullet.x += bullet.vx; bullet.y += bullet.vy;
+                gameCtx.fillStyle = '#ff4d4d'; gameCtx.beginPath(); gameCtx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2); gameCtx.fill();
+
+                let dist = Math.hypot(bullet.x - rocket.x, bullet.y - rocket.y);
+                if (dist < rocket.radius + 4) {
+                    if (rocket.shieldActive) {
+                        rocket.shieldActive = false;
+                    } else {
+                        playerHP = Math.max(0, playerHP - 10);
+                        playSoundHD('hit');
+                    }
+                    bullet.hit = true;
+                    document.getElementById('hpFill').style.width = playerHP + '%';
+                }
+            });
+            bossBullets = bossBullets.filter(b => b.x > 0 && !b.hit);
+
+            if (isGameRunning) requestAnimationFrame(gameLoop);
+        }
+
+        function switchViewMode(mode) {
+            const chartBox = document.querySelector('.chart-container');
+            const gameBox = document.getElementById('gameContainer');
+            const demoBox = document.getElementById('demoContainer');
+
+            chartBox.style.display = 'none'; gameBox.style.display = 'none'; demoBox.style.display = 'none';
+
+            if (mode === 'both') {
+                chartBox.style.display = 'block'; gameBox.style.display = 'block';
+            } else if (mode === 'game') {
+                gameBox.style.display = 'block';
+            } else if (mode === 'demo') {
+                demoBox.style.display = 'block';
+                startDemoLoop();
+            } else {
+                chartBox.style.display = 'block';
+            }
+
+            if (mode === 'game' || mode === 'both') {
+                resizeGameCanvas();
+                if (!isGameRunning) { isGameRunning = true; gameLoop(); nextStage(); }
+            }
+        }
+
+        setTimeout(() => { switchViewMode('both'); }, 100);
     </script>
 </body>
 </html>
