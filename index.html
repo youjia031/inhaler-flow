@@ -162,8 +162,8 @@
         <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 點選式物件教學與遊戲實戰動作展台</h3>
 
         <div class="demo-mode-toggle">
-            <button class="toggle-btn active" id="btnModeClose" onclick="setDemoViewType('close')">🔍 360° 外觀特寫</button>
-            <button class="toggle-btn" id="btnModeAction" onclick="setDemoViewType('action')">⚔️ 遊戲實戰動作模擬</button>
+            <button class="toggle-btn" id="btnModeClose" onclick="setDemoViewType('close')">🔍 360° 外觀特寫</button>
+            <button class="toggle-btn active" id="btnModeAction" onclick="setDemoViewType('action')">⚔️ 遊戲實戰動作模擬</button>
         </div>
         
         <div class="demo-layout">
@@ -1331,7 +1331,7 @@
             }, 1000);
         }
 
-        // 🎬 3. 點選式影音展台 + 實戰動作模擬 Engine
+        // 🎬 3. 點選式影音展台 + 實戰動作模擬 Engine (精準重寫 Boss 招式彈幕邏輯)
         const DEMO_ITEMS_ALL = [
             // Boss 專區
             { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 小 Boss，大氣層氣流凝聚而成的漩渦體。", skill: "⚔️ 招式【風暴亂流】：隨機在畫面上下方生成風暴雲團。" },
@@ -1354,7 +1354,7 @@
         ];
 
         let selectedDemoId = "eagle";
-        let demoViewType = "close"; // 'close' 為特寫, 'action' 為實戰動作模擬
+        let demoViewType = "action"; // 預設直接開【⚔️ 遊戲實戰動作模擬】
 
         function setDemoViewType(type) {
             demoViewType = type;
@@ -1398,7 +1398,7 @@
                 let cx = 190, cy = 130;
 
                 if (demoViewType === 'close') {
-                    // 🔍 模式一：特寫展示
+                    // 🔍 模式一：360° 外觀特寫
                     if (selectedDemoId === 'air') drawAirElemental(cx, cy, dCtx);
                     else if (selectedDemoId === 'eagle') drawRealisticEagle(cx, cy, globalAnimFrame, dCtx);
                     else if (selectedDemoId === 'meteor') { dCtx.fillStyle='#e67e22'; dCtx.beginPath(); dCtx.arc(cx, cy, 35, 0, Math.PI*2); dCtx.fill(); }
@@ -1415,29 +1415,76 @@
                     else if (selectedDemoId === 'slime') drawObstacleHD({ type: 'slime', x: cx, y: cy, radius: 30 }, dCtx);
                     else if (selectedDemoId === 'darkgem') drawObstacleHD({ type: 'darkgem', x: cx, y: cy, radius: 30 }, dCtx);
                 } else {
-                    // ⚔️ 模式二：遊戲實戰動作模擬展示
+                    // ⚔️ 模式二：真實 Boss 招式彈幕與實戰動作演練
                     let shipX = 70, shipY = 130 + Math.sin(globalAnimFrame * 0.05) * 20;
-                    drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
 
                     if (selectedDemoId === 'eagle' || selectedDemoId === 'air' || selectedDemoId === 'ufo' || selectedDemoId === 'dragon' || selectedDemoId === 'meteor') {
-                        // 模擬 Boss 對抗畫面
-                        let bX = 290, bY = 130;
-                        let mockBoss = { name: (selectedDemoId==='air'?"風暴精靈":selectedDemoId==='ufo'?"母艦":selectedDemoId==='dragon'?"赤龍":"神鷹"), x: bX, y: bY, attackTimer: globalAnimFrame };
+                        // 1. 繪製 Boss 對決狀態下的玩家飛船
+                        drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
+
+                        // 2. 繪製 Boss 本體
+                        let bX = 300, bY = 130;
+                        let mockBoss = { name: (selectedDemoId==='air'?"風暴精靈":selectedDemoId==='ufo'?"母艦":selectedDemoId==='dragon'?"赤龍":selectedDemoId==='meteor'?"隕石":"神鷹"), x: bX, y: bY, attackTimer: globalAnimFrame };
                         drawBossHD(mockBoss, dCtx);
-                        
-                        // 模擬發射攻擊彈幕
-                        let bulletX = bX - ((globalAnimFrame * 4) % 220);
-                        dCtx.fillStyle = '#ff4d4d'; dCtx.beginPath(); dCtx.arc(bulletX, bY, 8, 0, Math.PI*2); dCtx.fill();
-                    } else {
-                        // 模擬飛船與道具/障礙物互動
-                        let itemX = 300 - ((globalAnimFrame * 3) % 250);
-                        if (itemX < shipX + 25) {
-                            // 模擬碰撞效果
-                            dCtx.save(); dCtx.shadowColor = '#f1c40f'; dCtx.shadowBlur = 20;
-                            dCtx.strokeStyle = '#ffffff'; dCtx.lineWidth = 2;
-                            dCtx.beginPath(); dCtx.arc(shipX, shipY, 30, 0, Math.PI*2); dCtx.stroke();
+
+                        // 3. 繪製 Boss 獨家招式真實彈幕！
+                        let bulletX = bX - ((globalAnimFrame * 4) % 250);
+
+                        if (selectedDemoId === 'eagle') {
+                            // 🦅 神鷹招式：雷擊雲團 (帶閃電與電光)
+                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY, radius: 20 }, dCtx);
+                            dCtx.save(); dCtx.strokeStyle = '#ffe100'; dCtx.lineWidth = 3;
+                            dCtx.beginPath(); dCtx.moveTo(bulletX - 10, bY - 15); dCtx.lineTo(bulletX + 5, bY); dCtx.lineTo(bulletX - 5, bY + 5); dCtx.lineTo(bulletX + 10, bY + 15);
+                            dCtx.stroke(); dCtx.restore();
+                        } else if (selectedDemoId === 'dragon') {
+                            // 🐉 赤龍招式：龍息離子火焰雙重波
+                            dCtx.save(); dCtx.shadowColor = '#e74c3c'; dCtx.shadowBlur = 15;
+                            dCtx.fillStyle = '#ff6b6b';
+                            dCtx.beginPath(); dCtx.arc(bulletX, bY - 15, 12, 0, Math.PI*2); dCtx.fill();
+                            dCtx.beginPath(); dCtx.arc(bulletX + 20, bY + 15, 12, 0, Math.PI*2); dCtx.fill();
                             dCtx.restore();
+                        } else if (selectedDemoId === 'ufo') {
+                            // 🛸 母艦招式：高頻離子暗黑晶石陣
+                            drawObstacleHD({ type: 'darkgem', x: bulletX, y: bY, radius: 18 }, dCtx);
+                            drawObstacleHD({ type: 'darkgem', x: bulletX + 30, y: bY - 25, radius: 14 }, dCtx);
+                        } else if (selectedDemoId === 'meteor') {
+                            // ☄️ 隕石招式：熾熱有機黏液噴發
+                            drawObstacleHD({ type: 'slime', x: bulletX, y: bY + Math.sin(bulletX * 0.1) * 15, radius: 18 }, dCtx);
+                        } else if (selectedDemoId === 'air') {
+                            // 🌪️ 風暴精靈招式：風暴亂流
+                            drawObstacleHD({ type: 'cloud', x: bulletX, y: bY + Math.cos(bulletX * 0.08) * 30, radius: 16 }, dCtx);
+                        }
+
+                    } else {
+                        // 道具與障礙物實戰：模擬飛船吃道具與觸發效果
+                        let itemX = 320 - ((globalAnimFrame * 3) % 270);
+                        let isCollided = (itemX < shipX + 30);
+
+                        if (isCollided) {
+                            // 觸發效果動態演出
+                            if (selectedDemoId === 'shield') {
+                                // 吃到護盾：飛船身上跳出亮藍色護盾罩
+                                hasShield = true;
+                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
+                            } else if (selectedDemoId === 'laser') {
+                                // 吃到雷射：飛船向前發射極光雷射
+                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
+                                dCtx.save(); dCtx.fillStyle = '#00d2d3'; dCtx.shadowColor = '#00d2d3'; dCtx.shadowBlur = 15;
+                                dCtx.fillRect(shipX + 25, shipY - 4, 200, 8); dCtx.restore();
+                            } else if (selectedDemoId === 'bomb') {
+                                // 吃到炸彈：全螢幕炸裂波
+                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
+                                dCtx.save(); dCtx.fillStyle = 'rgba(165, 94, 234, 0.3)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
+                            } else if (selectedDemoId.match(/(cloud|slime|darkgem)/)) {
+                                // 撞到障礙物：飛船閃紅光提示受到重傷
+                                dCtx.save(); dCtx.fillStyle = 'rgba(231, 76, 60, 0.4)'; dCtx.fillRect(0, 0, 380, 260); dCtx.restore();
+                                drawPlayerSpaceshipHD(shipX, shipY, 0, "exhalation", 8.0, dCtx);
+                            } else {
+                                drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
+                            }
                         } else {
+                            hasShield = false;
+                            drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 3.0, dCtx);
                             if (selectedDemoId.match(/(cloud|slime|darkgem)/)) drawObstacleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 18 }, dCtx);
                             else drawCollectibleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 18 }, dCtx);
                         }
