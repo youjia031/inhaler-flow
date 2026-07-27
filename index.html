@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
+    <title>呼吸訓練器 - Inhaler Flow Monitor (HD Visual & Adaptive Engine)</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -50,8 +50,8 @@
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
         .game-container {
-            display: none; background: #0d1117; padding: 0; border-radius: 8px; height: 480px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3); position: relative; overflow: hidden; border: 2px solid #30363d;
+            display: none; background: #080b10; padding: 0; border-radius: 8px; height: 480px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4); position: relative; overflow: hidden; border: 2px solid #1f2937;
         }
         .game-container.fullscreen {
             position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important;
@@ -64,9 +64,9 @@
             pointer-events: none; z-index: 5;
         }
         .hud-badge {
-            background: rgba(22, 27, 34, 0.95); padding: 8px 16px; border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.6); backdrop-filter: blur(6px); pointer-events: auto;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; box-shadow: 0 0 12px rgba(0,0,0,0.6);
+            background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-radius: 20px;
+            border: 1.5px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); pointer-events: auto;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         .hp-bar-bg {
             width: 120px; height: 16px; background: rgba(0,0,0,0.7); border-radius: 8px; overflow: hidden;
@@ -79,18 +79,18 @@
         }
         .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); transition: width 0.1s linear; }
         .start-prompt-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.75);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 11, 16, 0.8);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
             font-size: 22px; font-weight: bold; z-index: 10; pointer-events: none;
         }
         
         .modal-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.95);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 11, 16, 0.95);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border-radius: 8px; z-index: 20; backdrop-filter: blur(8px); overflow-y: auto; padding: 20px; box-sizing: border-box;
+            border-radius: 8px; z-index: 20; backdrop-filter: blur(10px); overflow-y: auto; padding: 20px; box-sizing: border-box;
         }
         .modal-card {
-            background: rgba(255,255,255,0.08); padding: 25px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06); padding: 25px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.15);
             text-align: left; max-width: 800px; width: 92%; max-height: 85vh; overflow-y: auto;
         }
         .lore-section { margin-bottom: 20px; }
@@ -161,7 +161,7 @@
             </div>
 
             <div class="hud-badge">
-                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件故事圖鑑</button>
+                <button id="manualBtn" class="btn info-btn" style="padding:4px 10px; font-size:12px;" onclick="openManualModal()">📖 10+5全物件圖鑑</button>
                 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕🖥️</button>
                 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
                 <span style="margin-left:5px;">❤️ HP</span> 
@@ -171,80 +171,17 @@
 
         <div class="modal-screen" id="manualModal" style="display: none;">
             <div class="modal-card">
-                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 10大道具與5大Boss全指南 📖</h2>
-                
+                <h2 style="color: #f1c40f; margin-top:0; text-align:center;">🌌 宇宙圖鑑 - 10大道具與5大Boss指南 📖</h2>
                 <div class="lore-section">
-                    <div class="lore-title">👾 5 大 Boss 體系（小 Boss / 關卡 Boss / 最終 Boss）</div>
+                    <div class="lore-title">👾 5 大 Boss 體系</div>
                     <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#3498db;">
-                            <h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4>
-                            <p>大氣層氣流凝聚而成的漩渦體，會對飛船進行範圍衝擊。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#f1c40f;">
-                            <h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4>
-                            <p>雙翼帶有高壓電極的金屬神鷹，大氣層關卡終點的守護者。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#e67e22;">
-                            <h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4>
-                            <p>熾熱的外星隕石核心，會在宇宙航道中突襲飛行員。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#9b59b6;">
-                            <h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4>
-                            <p>外星艦隊的旗艦，配備離子護盾與光束圓盤。</p>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;">
-                            <h4>🐉 地獄黑金赤龍 (Stage 3 終極 Final Boss)</h4>
-                            <p>棲息於火山星雲深處的終極霸主！擁有一張能咬碎合金的開合巨顎，會噴射滅世級別的等離子火焰流！</p>
-                        </div>
+                        <div class="lore-item" style="border-color:#3498db;"><h4>🌪️ 大氣風暴精靈 (Stage 1 小 Boss)</h4><p>大氣層氣流凝聚而成的漩渦體。</p></div>
+                        <div class="lore-item" style="border-color:#f1c40f;"><h4>🦅 雷霆金屬神鷹 (Stage 1 關卡 Boss)</h4><p>帶有高壓電極的金屬神鷹。</p></div>
+                        <div class="lore-item" style="border-color:#e67e22;"><h4>☄️ 熔岩巨型隕石 (Stage 2 小 Boss)</h4><p>熾熱的外星隕石核心。</p></div>
+                        <div class="lore-item" style="border-color:#9b59b6;"><h4>🛸 圓盤星際母艦 (Stage 2 關卡 Boss)</h4><p>外星艦隊旗艦。</p></div>
+                        <div class="lore-item" style="border-color:#e74c3c; grid-column: span 2;"><h4>🐉 地獄黑金赤龍 (Final Boss)</h4><p>終極霸主！張開巨顎噴射離子火焰！</p></div>
                     </div>
                 </div>
-
-                <div class="lore-section">
-                    <div class="lore-title">⚔️ 10 大地圖實體道具與危險障礙物</div>
-                    <div class="lore-grid">
-                        <div class="lore-item" style="border-color:#f1c40f;">
-                            <h4>🟡 能量金幣 (Coin)</h4>
-                            <div class="desc">效果：增加 50 分，發射基礎子彈對 Boss 造成 10 點傷害。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#00d2d3;">
-                            <h4>⚡ 脈衝雷射槍 (Laser)</h4>
-                            <div class="desc">效果：發射貫穿光束消滅障礙，對 Boss 造成 25 點傷害！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c;">
-                            <h4>🚀 追蹤量子飛彈 (Missile)</h4>
-                            <div class="desc">效果：發射量子飛彈鎖定 Boss，造成 30 點大量傷害！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#a55eea;">
-                            <h4>💣 等離子新星爆彈 (Nova Bomb)</h4>
-                            <div class="desc">效果：觸發全螢幕衝擊波清空障礙，對 Boss 造成 40 點重傷！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#2ecc71;">
-                            <h4>🟢 醫療修復膠囊 (Heart)</h4>
-                            <div class="desc">效果：立即修復裝甲，恢復 25 點 HP 血量。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#00d2d3;">
-                            <h4>🛡️ 能量防護罩 (Shield)</h4>
-                            <div class="desc">效果：生成能量罩，抵擋一次障礙物或 Boss 彈幕傷害。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#f39c12;">
-                            <h4>🧲 強力磁鐵 (Magnet)</h4>
-                            <div class="desc">效果：開啟 6 秒磁場，自動吸引畫面上所有金幣與武器！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#e74c3c;">
-                            <h4>⛈️ 雷暴烏雲 (Cloud)</h4>
-                            <div class="desc">危險：撞擊會造成飛船系統短路，扣除 20 點 HP。</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#d35400;">
-                            <h4>🕸️ 泥濘黏液 (Slime)</h4>
-                            <div class="desc">危險：撞擊扣除 10 點 HP，並使飛船升降跟隨速度降低 3 秒！</div>
-                        </div>
-                        <div class="lore-item" style="border-color:#2c3e50;">
-                            <h4>🖤 詛咒黑寶石 (Dark Gem)</h4>
-                            <div class="desc">危險：撞擊扣除 15 點 HP，並且強制倒扣 100 點分數！</div>
-                        </div>
-                    </div>
-                </div>
-
                 <div style="text-align: center; margin-top: 15px;">
                     <button class="btn game-btn" style="padding: 10px 30px; font-size:15px;" onclick="closeManualModal()">關閉圖鑑指南</button>
                 </div>
@@ -340,7 +277,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用自適應頻譜特徵演算法。", err);
+                console.warn("未檢測到 rf_model.onnx，改用動態降噪自適應分析。", err);
             }
         }
         loadPKLModel();
@@ -446,111 +383,101 @@
             }
         }
 
-        // 🔥 【動態自適應自鎖版】PKL Index 切分演算法
+        // 🔥 【極致精準重構】降噪門檻 + 動態基線校準 + 時域遲滯鎖 PKL Index 切分演算法
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
                 return; 
             }
-            updateStatus("正在使用【自適應頻譜特徵 + 遲滯切換法】進行 PKL Index 切分...");
+            updateStatus("正在使用【降噪 + 動態基線校準 + 遲滯鎖】精準切分...");
 
-            // 1. 篩選出有效氣流點 (排除靜止與極低氣流)
-            let validRecords = records.filter(r => r.flowYes && Math.abs(r.est) >= 2.5);
-            if (validRecords.length === 0) {
+            // 1. 自動背景降噪門檻濾除 (Noise Gate)
+            let activeRecords = records.filter(r => r.flowYes && Math.abs(r.est) >= 2.0);
+            if (activeRecords.length === 0) {
                 updateStatus("未檢測到足夠強度的氣流數據。");
                 return;
             }
 
-            // 2. 特徵提取：計算全域的「高頻比重」與「衰減斜率」
-            let featureScores = records.map(r => {
-                if (!r.flowYes || Math.abs(r.est) < 2.5) return null;
+            // 2. 提取特徵分流數值
+            let scores = records.map(r => {
+                if (!r.flowYes || Math.abs(r.est) < 2.0) return null;
                 let fft = r.fft;
-                let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
+                let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
+                let e3 = Math.abs(fft[3] || 0), e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
 
-                let lowE = Math.abs(e1) + Math.abs(e2) + 0.0001;
-                let highE = Math.abs(e4) + Math.abs(e5);
-                let highLowRatio = highE / lowE;
-                let decaySlope = e5 - e1;
+                let lowEnergy = e1 + e2 + 0.0001;
+                let highEnergy = e4 + e5;
+                let hlRatio = highEnergy / lowEnergy;
+                let slope = (fft[5] || 0) - (fft[1] || 0);
 
-                return (highLowRatio * 1.5) + (decaySlope * 0.8);
+                return (hlRatio * 2.0) + (slope * 1.0) + ((e3 / lowEnergy) * 0.5);
             });
 
-            // 3. 自動動態尋找這段數據的「自適應動態門檻 (Adaptive Threshold)」
-            let validScores = featureScores.filter(s => s !== null).sort((a, b) => a - b);
-            let medianThreshold = validScores[Math.floor(validScores.length * 0.5)];
+            // 3. 自動校準這段特徵的中位數點 (Dynamic Median Baseline)
+            let validScores = scores.filter(s => s !== null).sort((a, b) => a - b);
+            let baseline = validScores[Math.floor(validScores.length * 0.5)];
 
-            // 4. 時域遲滯判定 (Hysteresis Filter) - 避免過渡邊界頻繁跳動
-            let rawStates = [];
-            let currentState = 0; // 0: Inhale, 1: Exhale
-            let hysteresisMargin = 0.15; // 遲滯容補區間
+            // 4. 時域遲滯鎖 (Hysteresis Lock)
+            let states = [];
+            let currState = 0; // 0: Inhale, 1: Exhale
+            let lockMargin = 0.12;
 
-            for (let i = 0; i < featureScores.length; i++) {
-                let score = featureScores[i];
-                if (score === null) {
-                    rawStates.push(-1);
+            for (let i = 0; i < scores.length; i++) {
+                let sc = scores[i];
+                if (sc === null) {
+                    states.push(-1);
                     continue;
                 }
-
-                if (currentState === 0) { // 當前為吸氣狀態
-                    if (score > (medianThreshold + hysteresisMargin)) {
-                        currentState = 1; // 必須明顯高於門檻才切換為吐氣
-                    }
-                } else { // 當前為吐氣狀態
-                    if (score < (medianThreshold - hysteresisMargin)) {
-                        currentState = 0; // 必須明顯低於門檻才切換為吸氣
-                    }
+                if (currState === 0) {
+                    if (sc > (baseline + lockMargin)) currState = 1;
+                } else {
+                    if (sc < (baseline - lockMargin)) currState = 0;
                 }
-                rawStates.push(currentState);
+                states.push(currState);
             }
 
-            // 5. 連續性平滑處理 (滑動中位數濾波)
-            let smoothedStates = [...rawStates];
-            for (let i = 2; i < rawStates.length - 2; i++) {
-                if (rawStates[i] === -1) continue;
-                let window = [rawStates[i-2], rawStates[i-1], rawStates[i], rawStates[i+1], rawStates[i+2]].filter(s => s !== -1);
-                let ones = window.filter(s => s === 1).length;
-                smoothedStates[i] = (ones > window.length / 2) ? 1 : 0;
+            // 5. 五點中位數平滑消除微小雜波 (5-Point Median Smooth)
+            let smoothStates = [...states];
+            for (let i = 2; i < states.length - 2; i++) {
+                if (states[i] === -1) continue;
+                let win = [states[i-2], states[i-1], states[i], states[i+1], states[i+2]].filter(s => s !== -1);
+                let ones = win.filter(s => s === 1).length;
+                smoothStates[i] = (ones > win.length / 2) ? 1 : 0;
             }
 
-            // 6. 區段併合 (合併並過濾掉短於 0.25 秒的雜訊誤判)
+            // 6. 區段併合與極短突波剔除
             pklSegments = [];
             let segStart = -1, segState = -1;
 
-            for (let i = 0; i < smoothedStates.length; i++) {
-                let st = smoothedStates[i];
+            for (let i = 0; i < smoothStates.length; i++) {
+                let st = smoothStates[i];
                 if (st !== segState) {
                     if (segState !== -1 && segStart !== -1) {
-                        let duration = records[i - 1].elapsed - records[segStart].elapsed;
-                        if (duration >= 0.25) { // 至少持續 0.25 秒才算有效呼吸區段
+                        let dur = records[i - 1].elapsed - records[segStart].elapsed;
+                        if (dur >= 0.2) {
                             pklSegments.push({
                                 state: (segState === 0) ? "Inspiration" : "Expiration",
-                                start_index: segStart,
-                                end_index: i - 1,
-                                start_time: records[segStart].elapsed,
-                                end_time: records[i - 1].elapsed
+                                start_index: segStart, end_index: i - 1,
+                                start_time: records[segStart].elapsed, end_time: records[i - 1].elapsed
                             });
                         }
                     }
-                    segState = st;
-                    segStart = i;
+                    segState = st; segStart = i;
                 }
             }
 
             if (segState !== -1 && segStart !== -1) {
                 let lastIdx = records.length - 1;
-                let duration = records[lastIdx].elapsed - records[segStart].elapsed;
-                if (duration >= 0.25) {
+                if ((records[lastIdx].elapsed - records[segStart].elapsed) >= 0.2) {
                     pklSegments.push({
                         state: (segState === 0) ? "Inspiration" : "Expiration",
-                        start_index: segStart,
-                        end_index: lastIdx,
-                        start_time: records[segStart].elapsed,
-                        end_time: records[lastIdx].elapsed
+                        start_index: segStart, end_index: lastIdx,
+                        start_time: records[segStart].elapsed, end_time: records[lastIdx].elapsed
                     });
                 }
             }
 
-            updateStatus(`自適應 PKL 切分完成！成功排除雜訊，劃分出 ${pklSegments.length} 個穩定區段。`);
+            updateStatus(`高精準 PKL 切分完成！共劃分出 ${pklSegments.length} 個穩定呼吸區段。`);
             flowChart.update();
         }
 
@@ -639,7 +566,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 遊戲主引擎 -->
+    <!-- 🎨 2. 高畫質 Retina Canvas 遊戲引擎（極致美術細節繪製） -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -815,9 +742,9 @@
         let hasShield = false, magnetTimer = 0, slowDebuffTimer = 0;
 
         const STAGE_THEMES = [
-            { id: 1, name: "藍天風暴", bg: "#0d1117", miniBoss: "🌪️ 大氣風暴精靈", stageBoss: "🦅 雷霆金屬神鷹" },
-            { id: 2, name: "宇宙星空", bg: "#050515", miniBoss: "☄️ 熔岩巨型隕石", stageBoss: "🛸 圓盤星際母艦" },
-            { id: 3, name: "烈焰火山", bg: "#1a0808", miniBoss: "🐉 地獄赤龍前哨", stageBoss: "🐉 地獄黑金赤龍 (Final Boss)" }
+            { id: 1, name: "藍天風暴", bg: "#080d1a", miniBoss: "🌪️ 大氣風暴精靈", stageBoss: "🦅 雷霆金屬神鷹" },
+            { id: 2, name: "宇宙星空", bg: "#04020a", miniBoss: "☄️ 熔岩巨型隕石", stageBoss: "🛸 圓盤星際母艦" },
+            { id: 3, name: "烈焰火山", bg: "#140404", miniBoss: "🐉 地獄赤龍前哨", stageBoss: "🐉 地獄黑金赤龍 (Final Boss)" }
         ];
 
         function getStageTheme(stage) {
@@ -855,6 +782,111 @@
         let stars = [], collectibles = [], obstacles = [], playerProjectiles = [];
         let isResting = false, sessionStartTime = 0;
         let globalAnimFrame = 0;
+        let logicalWidth = 800, logicalHeight = 480;
+
+        // 🎨 高畫質圖像繪製引擎 (HD Visual Renderer)
+        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag) {
+            gameCtx.save();
+            gameCtx.translate(x, y);
+            gameCtx.rotate(angle);
+
+            // 動態噴射焰火 (Flame Glow)
+            if (flowMag > 2.0) {
+                let fLen = Math.min(45, flowMag * 0.5) + Math.sin(globalAnimFrame * 0.4) * 6;
+                gameCtx.save();
+                gameCtx.shadowBlur = 20;
+                gameCtx.shadowColor = (mode === "exhalation") ? "#ff4d4d" : "#00d2d3";
+                let fGrad = gameCtx.createLinearGradient(-15, 0, -15 - fLen, 0);
+                fGrad.addColorStop(0, '#ffffff');
+                fGrad.addColorStop(0.3, (mode === "exhalation") ? '#ff9f43' : '#00d2d3');
+                fGrad.addColorStop(1, 'transparent');
+                gameCtx.fillStyle = fGrad;
+                gameCtx.beginPath();
+                gameCtx.moveTo(-12, -8); gameCtx.lineTo(-15 - fLen, 0); gameCtx.lineTo(-12, 8);
+                gameCtx.closePath(); gameCtx.fill();
+                gameCtx.restore();
+            }
+
+            // 機身金屬陰影與本體
+            gameCtx.shadowBlur = 15; gameCtx.shadowColor = '#00d2d3';
+            let hullGrad = gameCtx.createLinearGradient(-15, -15, 30, 15);
+            hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#475569'); hullGrad.addColorStop(1, '#0f172a');
+            gameCtx.fillStyle = hullGrad;
+            gameCtx.beginPath();
+            gameCtx.moveTo(28, 0); gameCtx.lineTo(-14, -16); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 16);
+            gameCtx.closePath(); gameCtx.fill();
+
+            // 駕駛艙高光玻璃
+            let glassGrad = gameCtx.createLinearGradient(0, -6, 18, 6);
+            glassGrad.addColorStop(0, '#38bdf8'); glassGrad.addColorStop(1, '#0284c7');
+            gameCtx.fillStyle = glassGrad;
+            gameCtx.beginPath(); gameCtx.ellipse(6, 0, 10, 4, 0, 0, Math.PI * 2); gameCtx.fill();
+
+            // 機翼邊界螢光線條
+            gameCtx.strokeStyle = '#38bdf8'; gameCtx.lineWidth = 1.5; gameCtx.stroke();
+
+            // 防護罩 (Shield)
+            if (hasShield) {
+                gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.04);
+                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 20;
+                gameCtx.strokeStyle = '#38bdf8'; gameCtx.lineWidth = 2.5;
+                gameCtx.setLineDash([10, 6]);
+                gameCtx.beginPath(); gameCtx.arc(0, 0, 34, 0, Math.PI * 2); gameCtx.stroke();
+                gameCtx.restore();
+            }
+            gameCtx.restore();
+        }
+
+        // 🎨 HD 道具與障礙物繪製 (HD Objects)
+        function drawCollectibleHD(c) {
+            gameCtx.save();
+            gameCtx.translate(c.x, c.y);
+            gameCtx.shadowBlur = 12;
+
+            if (c.type === 'coin') {
+                gameCtx.shadowColor = '#f1c40f';
+                let g = gameCtx.createRadialGradient(-2, -2, 1, 0, 0, c.radius);
+                g.addColorStop(0, '#fff'); g.addColorStop(0.6, '#f1c40f'); g.addColorStop(1, '#b7950b');
+                gameCtx.fillStyle = g; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (c.type === 'laser') {
+                gameCtx.shadowColor = '#00d2d3';
+                gameCtx.fillStyle = '#00d2d3'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (c.type === 'missile') {
+                gameCtx.shadowColor = '#e74c3c';
+                gameCtx.fillStyle = '#ff6b6b'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (c.type === 'bomb') {
+                gameCtx.shadowColor = '#a55eea';
+                gameCtx.fillStyle = '#a55eea'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (c.type === 'heart') {
+                gameCtx.shadowColor = '#2ecc71';
+                gameCtx.fillStyle = '#2ecc71'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (c.type === 'shield') {
+                gameCtx.shadowColor = '#38bdf8';
+                gameCtx.fillStyle = '#38bdf8'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (c.type === 'magnet') {
+                gameCtx.shadowColor = '#f39c12';
+                gameCtx.fillStyle = '#f39c12'; gameCtx.beginPath(); gameCtx.arc(0, 0, c.radius, 0, Math.PI * 2); gameCtx.fill();
+            }
+            gameCtx.restore();
+        }
+
+        function drawObstacleHD(o) {
+            gameCtx.save();
+            gameCtx.translate(o.x, o.y);
+            gameCtx.shadowBlur = 15;
+
+            if (o.type === 'cloud') {
+                gameCtx.shadowColor = '#94a3b8';
+                gameCtx.fillStyle = '#475569'; gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (o.type === 'slime') {
+                gameCtx.shadowColor = '#d35400';
+                gameCtx.fillStyle = '#e67e22'; gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI * 2); gameCtx.fill();
+            } else if (o.type === 'darkgem') {
+                gameCtx.shadowColor = '#a855f7';
+                gameCtx.fillStyle = '#3b0764'; gameCtx.beginPath(); gameCtx.arc(0, 0, o.radius, 0, Math.PI * 2); gameCtx.fill();
+            }
+            gameCtx.restore();
+        }
 
         function drawAirElemental(x, y) {
             gameCtx.save(); gameCtx.translate(x, y);
@@ -952,32 +984,6 @@
             gameCtx.restore();
         }
 
-        function drawPlayerRocketHD(x, y, angle, mode, flowMag) {
-            gameCtx.save(); gameCtx.translate(x, y); gameCtx.rotate(angle);
-
-            if (flowMag > 3.0) {
-                let flameLen = Math.min(35, flowMag * 0.4) + Math.sin(globalAnimFrame * 0.5) * 4;
-                gameCtx.save(); gameCtx.shadowBlur = 15; gameCtx.shadowColor = (mode === "exhalation") ? "#e74c3c" : "#3498db";
-                let grad = gameCtx.createLinearGradient(-12, 0, -12 - flameLen, 0);
-                grad.addColorStop(0, (mode === "exhalation") ? '#f1c40f' : '#00d2d3'); grad.addColorStop(1, 'transparent');
-                gameCtx.fillStyle = grad; gameCtx.beginPath(); gameCtx.moveTo(-12, -7); gameCtx.lineTo(-12 - flameLen, 0); gameCtx.lineTo(-12, 7);
-                gameCtx.closePath(); gameCtx.fill(); gameCtx.restore();
-            }
-
-            gameCtx.shadowBlur = 12; gameCtx.shadowColor = '#3498db';
-            gameCtx.fillStyle = '#2c3e50'; gameCtx.beginPath(); gameCtx.moveTo(24, 0); gameCtx.lineTo(-12, -14); gameCtx.lineTo(-6, 0); gameCtx.lineTo(-12, 14); gameCtx.closePath(); gameCtx.fill();
-            gameCtx.fillStyle = '#ecf0f1'; gameCtx.beginPath(); gameCtx.moveTo(18, 0); gameCtx.lineTo(-8, -10); gameCtx.lineTo(-10, 10); gameCtx.closePath(); gameCtx.fill();
-            gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-
-            if (hasShield) {
-                gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.05);
-                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 18; gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3;
-                gameCtx.setLineDash([8, 6]); gameCtx.beginPath(); gameCtx.arc(0, 0, 32, 0, Math.PI*2); gameCtx.stroke();
-                gameCtx.restore();
-            }
-            gameCtx.restore();
-        }
-
         function drawBossHD(boss) {
             let floatY = Math.sin(globalAnimFrame * 0.08) * 8;
             if (boss.name.includes("風暴精靈")) drawAirElemental(boss.x, boss.y + floatY);
@@ -988,15 +994,21 @@
 
         function initStars() {
             stars = [];
-            let w = gameCanvas.width || 800, h = gameCanvas.height || 480;
-            for(let i=0; i<50; i++) stars.push({ x: Math.random() * w, y: Math.random() * h, size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5 });
+            for(let i=0; i<60; i++) stars.push({ x: Math.random() * logicalWidth, y: Math.random() * logicalHeight, size: Math.random() * 2 + 0.8, baseSpeed: Math.random() * 2 + 0.5 });
         }
 
+        // 螢幕 Retina 雙倍超高解析度自動適應 Scaling 引擎
         function resizeGameCanvas() {
             if (gameCanvas && gameCanvas.parentElement) {
-                gameCanvas.width = gameCanvas.parentElement.clientWidth || 800;
-                gameCanvas.height = gameCanvas.parentElement.clientHeight || 480;
-                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = gameCanvas.height / 2;
+                let dpr = window.devicePixelRatio || 1;
+                logicalWidth = gameCanvas.parentElement.clientWidth || 800;
+                logicalHeight = gameCanvas.parentElement.clientHeight || 480;
+
+                gameCanvas.width = logicalWidth * dpr;
+                gameCanvas.height = logicalHeight * dpr;
+                gameCtx.scale(dpr, dpr);
+
+                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = logicalHeight / 2;
                 initStars();
             }
         }
@@ -1009,7 +1021,7 @@
             hasShield = false; magnetTimer = 0; slowDebuffTimer = 0;
             collectibles = []; obstacles = []; playerProjectiles = []; globalAnimFrame = 0;
             
-            rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2;
+            rocket.x = 120; rocket.y = logicalHeight / 2;
             sessionStartTime = Date.now();
 
             document.getElementById('bossHudBadge').style.display = 'none';
@@ -1025,7 +1037,7 @@
             let bName = (type === 'mini') ? theme.miniBoss : theme.stageBoss;
             let maxHp = (type === 'mini') ? (50 + currentStage * 20) : (120 + currentStage * 35);
 
-            activeBoss = { type: type, name: bName, x: gameCanvas.width - 120, y: gameCanvas.height / 2, hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0 };
+            activeBoss = { type: type, name: bName, x: logicalWidth - 120, y: logicalHeight / 2, hp: maxHp, maxHp: maxHp, radius: 42, attackTimer: 0 };
             document.getElementById('bossName').innerText = bName;
             document.getElementById('bossHudBadge').style.display = 'flex';
             document.getElementById('bossHpFill').style.width = '100%';
@@ -1077,7 +1089,7 @@
             globalAnimFrame++;
 
             let theme = getStageTheme(currentStage);
-            gameCtx.fillStyle = theme.bg; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.fillStyle = theme.bg; gameCtx.fillRect(0, 0, logicalWidth, logicalHeight);
 
             let userSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
 
@@ -1089,7 +1101,7 @@
             gameCtx.fillStyle = '#ffffff';
             stars.forEach(s => {
                 s.x -= s.baseSpeed * userSpeedMult;
-                if (s.x < 0) s.x = gameCanvas.width;
+                if (s.x < 0) s.x = logicalWidth;
                 gameCtx.fillRect(s.x, s.y, s.size, s.size);
             });
 
@@ -1106,8 +1118,8 @@
                     flowOffsetY = (absFlow * 3.2);
                 }
 
-                let targetY = (gameCanvas.height / 2) + flowOffsetY;
-                targetY = Math.max(35, Math.min(gameCanvas.height - 35, targetY));
+                let targetY = (logicalHeight / 2) + flowOffsetY;
+                targetY = Math.max(35, Math.min(logicalHeight - 35, targetY));
                 
                 let dy = targetY - rocket.y;
                 let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
@@ -1118,19 +1130,19 @@
                 if (elapsed > 8 && elapsed < 9 && !activeBoss) { triggerBossSpawn('mini'); }
                 else if (elapsed > 20 && !activeBoss) { triggerBossSpawn('stage'); }
 
-                let spawnY = Math.random() * (gameCanvas.height - 80) + 40;
+                let spawnY = Math.random() * (logicalHeight - 80) + 40;
                 let rand = Math.random();
-                if (rand < 0.015) collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                else if (rand < 0.020) collectibles.push({ type: 'laser', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
-                else if (rand < 0.024) collectibles.push({ type: 'missile', x: gameCanvas.width + 20, y: spawnY, radius: 14, collected: false });
-                else if (rand < 0.027) collectibles.push({ type: 'bomb', x: gameCanvas.width + 20, y: spawnY, radius: 15, collected: false });
-                else if (rand < 0.031) collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, collected: false });
-                else if (rand < 0.034) collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
-                else if (rand < 0.037) collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, collected: false });
+                if (rand < 0.015) collectibles.push({ type: 'coin', x: logicalWidth + 20, y: spawnY, radius: 12, collected: false });
+                else if (rand < 0.020) collectibles.push({ type: 'laser', x: logicalWidth + 20, y: spawnY, radius: 14, collected: false });
+                else if (rand < 0.024) collectibles.push({ type: 'missile', x: logicalWidth + 20, y: spawnY, radius: 14, collected: false });
+                else if (rand < 0.027) collectibles.push({ type: 'bomb', x: logicalWidth + 20, y: spawnY, radius: 15, collected: false });
+                else if (rand < 0.031) collectibles.push({ type: 'heart', x: logicalWidth + 20, y: spawnY, radius: 12, collected: false });
+                else if (rand < 0.034) collectibles.push({ type: 'shield', x: logicalWidth + 20, y: spawnY, radius: 13, collected: false });
+                else if (rand < 0.037) collectibles.push({ type: 'magnet', x: logicalWidth + 20, y: spawnY, radius: 13, collected: false });
 
-                if (Math.random() < 0.012) obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 15, damage: 20, hit: false });
-                else if (Math.random() < 0.008) obstacles.push({ type: 'slime', x: gameCanvas.width + 30, y: spawnY, radius: 14, damage: 10, hit: false });
-                else if (Math.random() < 0.006) obstacles.push({ type: 'darkgem', x: gameCanvas.width + 30, y: spawnY, radius: 13, damage: 15, hit: false });
+                if (Math.random() < 0.012) obstacles.push({ type: 'cloud', x: logicalWidth + 30, y: spawnY, radius: 15, damage: 20, hit: false });
+                else if (Math.random() < 0.008) obstacles.push({ type: 'slime', x: logicalWidth + 30, y: spawnY, radius: 14, damage: 10, hit: false });
+                else if (Math.random() < 0.006) obstacles.push({ type: 'darkgem', x: logicalWidth + 30, y: spawnY, radius: 13, damage: 15, hit: false });
 
                 collectibles.forEach((c) => {
                     if (magnetTimer > 0) {
@@ -1140,15 +1152,7 @@
                         c.x -= 3 * userSpeedMult;
                     }
                     
-                    gameCtx.save();
-                    if (c.type === 'coin') { gameCtx.fillStyle = '#f1c40f'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'laser') { gameCtx.fillStyle = '#00d2d3'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'missile') { gameCtx.fillStyle = '#e74c3c'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'bomb') { gameCtx.fillStyle = '#a55eea'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'heart') { gameCtx.fillStyle = '#2ecc71'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'shield') { gameCtx.fillStyle = '#3498db'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    else if (c.type === 'magnet') { gameCtx.fillStyle = '#f39c12'; gameCtx.beginPath(); gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); gameCtx.fill(); }
-                    gameCtx.restore();
+                    drawCollectibleHD(c);
 
                     let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
                     if (dist < c.radius + rocket.radius) {
@@ -1165,8 +1169,12 @@
 
                 playerProjectiles.forEach((p) => {
                     p.x += p.vx;
+                    gameCtx.save();
+                    gameCtx.shadowBlur = 10; gameCtx.shadowColor = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
                     gameCtx.fillStyle = (p.type === 'laser') ? '#00d2d3' : '#e74c3c';
                     gameCtx.fillRect(p.x, p.y - 4, 25, 8);
+                    gameCtx.restore();
+
                     if (activeBoss) {
                         let bDist = Math.hypot(p.x - activeBoss.x, p.y - activeBoss.y);
                         if (bDist < activeBoss.radius + 15) { damageBoss(p.damage); p.hit = true; }
@@ -1183,8 +1191,7 @@
 
                 obstacles.forEach((o) => {
                     o.x -= 4 * userSpeedMult;
-                    gameCtx.fillStyle = (o.type === 'slime') ? '#d35400' : (o.type === 'darkgem' ? '#2c3e50' : '#e74c3c');
-                    gameCtx.beginPath(); gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2); gameCtx.fill();
+                    drawObstacleHD(o);
 
                     let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
                     if (dist < o.radius + rocket.radius) {
@@ -1202,13 +1209,13 @@
 
                 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
                 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
-                playerProjectiles = playerProjectiles.filter(p => p.x < gameCanvas.width + 50 && !p.hit);
+                playerProjectiles = playerProjectiles.filter(p => p.x < logicalWidth + 50 && !p.hit);
             }
 
             let curFlowForRocket = activeMeasuring ? smoothedEst : 0.0; 
             let curModeForRocket = (curFlowForRocket < 0) ? "exhalation" : "inhalation";
             
-            drawPlayerRocketHD(rocket.x, rocket.y, rocket.angle, curModeForRocket, Math.abs(curFlowForRocket));
+            drawPlayerSpaceshipHD(rocket.x, rocket.y, rocket.angle, curModeForRocket, Math.abs(curFlowForRocket));
 
             document.getElementById('gameScore').innerText = gameScore;
             document.getElementById('gameCombo').innerText = gameCombo;
