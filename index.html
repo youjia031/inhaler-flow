@@ -94,15 +94,15 @@
             text-align: left; max-width: 850px; width: 92%; max-height: 85vh; overflow-y: auto;
         }
 
-        /* 🎥 獨立點選式教學影片展覽模式 CSS */
+        /* 🎥 點選式教學與實戰動作展覽模式 CSS */
         .demo-container {
-            display: none; background: #0b0f19; padding: 20px; border-radius: 8px; height: 500px;
+            display: none; background: #0b0f19; padding: 20px; border-radius: 8px; height: 520px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 2px solid #8e44ad; box-sizing: border-box; color: white;
             overflow-y: auto;
         }
         .demo-layout { display: flex; gap: 20px; height: 280px; margin-bottom: 15px; }
         .demo-viewport {
-            flex: 1; background: #000; border-radius: 12px; border: 2px solid #8e44ad;
+            flex: 1.2; background: #000; border-radius: 12px; border: 2px solid #8e44ad;
             display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden;
             box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
         }
@@ -117,6 +117,9 @@
         }
         .demo-btn:hover { background: #374151; border-color: #9ca3af; }
         .demo-btn.active { background: #8e44ad; border-color: #a855f7; font-weight: bold; box-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
+        .demo-mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
+        .toggle-btn { padding: 4px 10px; font-size: 12px; border-radius: 12px; border: 1px solid #3498db; background: rgba(52, 152, 219, 0.2); color: white; cursor: pointer; }
+        .toggle-btn.active { background: #3498db; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -154,29 +157,34 @@
         <canvas id="flowChart"></canvas>
     </div>
 
-    <!-- 🎥 獨立點選式教學影片展覽模式 -->
+    <!-- 🎥 獨立點選式教學與遊戲動作展示模式 -->
     <div class="demo-container" id="demoContainer">
-        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 點選式物件教學與動態特寫影音展台</h3>
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 點選式物件教學與遊戲實戰動作展台</h3>
+
+        <div class="demo-mode-toggle">
+            <button class="toggle-btn active" id="btnModeClose" onclick="setDemoViewType('close')">🔍 360° 外觀特寫</button>
+            <button class="toggle-btn" id="btnModeAction" onclick="setDemoViewType('action')">⚔️ 遊戲實戰動作模擬</button>
+        </div>
         
         <div class="demo-layout">
             <div class="demo-viewport">
-                <canvas id="demoCanvas" width="320" height="260"></canvas>
+                <canvas id="demoCanvas" width="380" height="260"></canvas>
             </div>
             <div class="demo-info-panel">
                 <div class="demo-card">
-                    <h4 id="demoItemTitle" style="margin:0 0 8px 0; color:#00d2d3; font-size:20px;">請點擊下方按鈕觀看特寫</h4>
-                    <p id="demoItemDesc" style="font-size:14px; color:#ccc; line-height:1.6; margin-bottom:10px;">點擊下方的 Boss 或道具按鈕，影片視窗會即時播放該物件的特寫示範動態！</p>
+                    <h4 id="demoItemTitle" style="margin:0 0 8px 0; color:#00d2d3; font-size:20px;">請點擊下方按鈕觀看動作</h4>
+                    <p id="demoItemDesc" style="font-size:14px; color:#ccc; line-height:1.6; margin-bottom:10px;">點擊下方的 Boss 或道具按鈕，切換模式可觀察靜態外觀或遊戲實戰互動！</p>
                     <div id="demoItemSkill" style="font-size:14px; color:#f39c12; font-weight:bold; border-top:1px dashed #444; padding-top:8px;"></div>
                 </div>
             </div>
         </div>
 
         <!-- 👾 5 大 Boss 專區按鈕 -->
-        <div class="demo-section-title">👾 5 大 Boss 影片展台 (點擊播放特寫)</div>
+        <div class="demo-section-title">👾 5 大 Boss 影片展台 (點擊播放實戰動作)</div>
         <div class="demo-grid-menu" id="bossDemoMenuList"></div>
 
         <!-- 🎁 10 大道具與障礙物專區按鈕 -->
-        <div class="demo-section-title">🎁 7 大益處道具 & 💥 3 大危險障礙 (點擊播放特寫)</div>
+        <div class="demo-section-title">🎁 7 大益處道具 & 💥 3 大危險障礙 (點擊播放實戰動作)</div>
         <div class="demo-grid-menu" id="itemDemoMenuList"></div>
     </div>
 
@@ -866,51 +874,51 @@
         let globalAnimFrame = 0;
         let logicalWidth = 800, logicalHeight = 480;
 
-        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag) {
-            gameCtx.save();
-            gameCtx.translate(x, y);
-            gameCtx.rotate(angle);
+        function drawPlayerSpaceshipHD(x, y, angle, mode, flowMag, customCtx = gameCtx) {
+            customCtx.save();
+            customCtx.translate(x, y);
+            customCtx.rotate(angle);
 
             if (flowMag > 2.0) {
                 let fLen = Math.min(45, flowMag * 0.5) + Math.sin(globalAnimFrame * 0.4) * 6;
-                gameCtx.save();
-                gameCtx.shadowBlur = 20;
-                gameCtx.shadowColor = (mode === "exhalation") ? "#ff4d4d" : "#00d2d3";
-                let fGrad = gameCtx.createLinearGradient(-15, 0, -15 - fLen, 0);
+                customCtx.save();
+                customCtx.shadowBlur = 20;
+                customCtx.shadowColor = (mode === "exhalation") ? "#ff4d4d" : "#00d2d3";
+                let fGrad = customCtx.createLinearGradient(-15, 0, -15 - fLen, 0);
                 fGrad.addColorStop(0, '#ffffff');
                 fGrad.addColorStop(0.3, (mode === "exhalation") ? '#ff9f43' : '#00d2d3');
                 fGrad.addColorStop(1, 'transparent');
-                gameCtx.fillStyle = fGrad;
-                gameCtx.beginPath();
-                gameCtx.moveTo(-12, -8); gameCtx.lineTo(-15 - fLen, 0); gameCtx.lineTo(-12, 8);
-                gameCtx.closePath(); gameCtx.fill();
-                gameCtx.restore();
+                customCtx.fillStyle = fGrad;
+                customCtx.beginPath();
+                customCtx.moveTo(-12, -8); customCtx.lineTo(-15 - fLen, 0); customCtx.lineTo(-12, 8);
+                customCtx.closePath(); customCtx.fill();
+                customCtx.restore();
             }
 
-            gameCtx.shadowBlur = 15; gameCtx.shadowColor = '#00d2d3';
-            let hullGrad = gameCtx.createLinearGradient(-15, -15, 30, 15);
+            customCtx.shadowBlur = 15; customCtx.shadowColor = '#00d2d3';
+            let hullGrad = customCtx.createLinearGradient(-15, -15, 30, 15);
             hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#475569'); hullGrad.addColorStop(1, '#0f172a');
-            gameCtx.fillStyle = hullGrad;
-            gameCtx.beginPath();
-            gameCtx.moveTo(28, 0); gameCtx.lineTo(-14, -16); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 16);
-            gameCtx.closePath(); gameCtx.fill();
+            customCtx.fillStyle = hullGrad;
+            customCtx.beginPath();
+            customCtx.moveTo(28, 0); customCtx.lineTo(-14, -16); customCtx.lineTo(-8, 0); customCtx.lineTo(-14, 16);
+            customCtx.closePath(); customCtx.fill();
 
-            let glassGrad = gameCtx.createLinearGradient(0, -6, 18, 6);
+            let glassGrad = customCtx.createLinearGradient(0, -6, 18, 6);
             glassGrad.addColorStop(0, '#38bdf8'); glassGrad.addColorStop(1, '#0284c7');
-            gameCtx.fillStyle = glassGrad;
-            gameCtx.beginPath(); gameCtx.ellipse(6, 0, 10, 4, 0, 0, Math.PI * 2); gameCtx.fill();
+            customCtx.fillStyle = glassGrad;
+            customCtx.beginPath(); customCtx.ellipse(6, 0, 10, 4, 0, 0, Math.PI * 2); customCtx.fill();
 
-            gameCtx.strokeStyle = '#38bdf8'; gameCtx.lineWidth = 1.5; gameCtx.stroke();
+            customCtx.strokeStyle = '#38bdf8'; customCtx.lineWidth = 1.5; customCtx.stroke();
 
             if (hasShield) {
-                gameCtx.save(); gameCtx.rotate(globalAnimFrame * 0.04);
-                gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 20;
-                gameCtx.strokeStyle = '#38bdf8'; gameCtx.lineWidth = 2.5;
-                gameCtx.setLineDash([10, 6]);
-                gameCtx.beginPath(); gameCtx.arc(0, 0, 34, 0, Math.PI * 2); gameCtx.stroke();
-                gameCtx.restore();
+                customCtx.save(); customCtx.rotate(globalAnimFrame * 0.04);
+                customCtx.shadowColor = '#00d2d3'; customCtx.shadowBlur = 20;
+                customCtx.strokeStyle = '#38bdf8'; customCtx.lineWidth = 2.5;
+                customCtx.setLineDash([10, 6]);
+                customCtx.beginPath(); customCtx.arc(0, 0, 34, 0, Math.PI * 2); customCtx.stroke();
+                customCtx.restore();
             }
-            gameCtx.restore();
+            customCtx.restore();
         }
 
         function drawCollectibleHD(c, customCtx = gameCtx) {
@@ -1323,7 +1331,7 @@
             }, 1000);
         }
 
-        // 🎬 3. 點選式影音展台 (Demo Showcase Engine)
+        // 🎬 3. 點選式影音展台 + 實戰動作模擬 Engine
         const DEMO_ITEMS_ALL = [
             // Boss 專區
             { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 小 Boss，大氣層氣流凝聚而成的漩渦體。", skill: "⚔️ 招式【風暴亂流】：隨機在畫面上下方生成風暴雲團。" },
@@ -1346,6 +1354,13 @@
         ];
 
         let selectedDemoId = "eagle";
+        let demoViewType = "close"; // 'close' 為特寫, 'action' 為實戰動作模擬
+
+        function setDemoViewType(type) {
+            demoViewType = type;
+            document.getElementById('btnModeClose').classList.toggle('active', type === 'close');
+            document.getElementById('btnModeAction').classList.toggle('active', type === 'action');
+        }
 
         function buildDemoMenus() {
             const bossMenu = document.getElementById('bossDemoMenuList');
@@ -1378,25 +1393,56 @@
             function renderDemo() {
                 if (document.getElementById('demoContainer').style.display === 'none') return;
                 globalAnimFrame++;
-                dCtx.fillStyle = '#080b10'; dCtx.fillRect(0, 0, 320, 260);
+                dCtx.fillStyle = '#080b10'; dCtx.fillRect(0, 0, 380, 260);
 
-                let cx = 160, cy = 130;
-                
-                if (selectedDemoId === 'air') drawAirElemental(cx, cy, dCtx);
-                else if (selectedDemoId === 'eagle') drawRealisticEagle(cx, cy, globalAnimFrame, dCtx);
-                else if (selectedDemoId === 'meteor') { dCtx.fillStyle='#e67e22'; dCtx.beginPath(); dCtx.arc(cx, cy, 35, 0, Math.PI*2); dCtx.fill(); }
-                else if (selectedDemoId === 'ufo') drawRealisticUFO(cx, cy, globalAnimFrame, dCtx);
-                else if (selectedDemoId === 'dragon') drawRealisticDragon(cx, cy, globalAnimFrame, dCtx);
-                else if (selectedDemoId === 'coin') drawCollectibleHD({ type: 'coin', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'laser') drawCollectibleHD({ type: 'laser', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'missile') drawCollectibleHD({ type: 'missile', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'bomb') drawCollectibleHD({ type: 'bomb', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'heart') drawCollectibleHD({ type: 'heart', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'shield') drawCollectibleHD({ type: 'shield', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'magnet') drawCollectibleHD({ type: 'magnet', x: cx, y: cy, radius: 25 }, dCtx);
-                else if (selectedDemoId === 'cloud') drawObstacleHD({ type: 'cloud', x: cx, y: cy, radius: 30 }, dCtx);
-                else if (selectedDemoId === 'slime') drawObstacleHD({ type: 'slime', x: cx, y: cy, radius: 30 }, dCtx);
-                else if (selectedDemoId === 'darkgem') drawObstacleHD({ type: 'darkgem', x: cx, y: cy, radius: 30 }, dCtx);
+                let cx = 190, cy = 130;
+
+                if (demoViewType === 'close') {
+                    // 🔍 模式一：特寫展示
+                    if (selectedDemoId === 'air') drawAirElemental(cx, cy, dCtx);
+                    else if (selectedDemoId === 'eagle') drawRealisticEagle(cx, cy, globalAnimFrame, dCtx);
+                    else if (selectedDemoId === 'meteor') { dCtx.fillStyle='#e67e22'; dCtx.beginPath(); dCtx.arc(cx, cy, 35, 0, Math.PI*2); dCtx.fill(); }
+                    else if (selectedDemoId === 'ufo') drawRealisticUFO(cx, cy, globalAnimFrame, dCtx);
+                    else if (selectedDemoId === 'dragon') drawRealisticDragon(cx, cy, globalAnimFrame, dCtx);
+                    else if (selectedDemoId === 'coin') drawCollectibleHD({ type: 'coin', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'laser') drawCollectibleHD({ type: 'laser', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'missile') drawCollectibleHD({ type: 'missile', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'bomb') drawCollectibleHD({ type: 'bomb', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'heart') drawCollectibleHD({ type: 'heart', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'shield') drawCollectibleHD({ type: 'shield', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'magnet') drawCollectibleHD({ type: 'magnet', x: cx, y: cy, radius: 25 }, dCtx);
+                    else if (selectedDemoId === 'cloud') drawObstacleHD({ type: 'cloud', x: cx, y: cy, radius: 30 }, dCtx);
+                    else if (selectedDemoId === 'slime') drawObstacleHD({ type: 'slime', x: cx, y: cy, radius: 30 }, dCtx);
+                    else if (selectedDemoId === 'darkgem') drawObstacleHD({ type: 'darkgem', x: cx, y: cy, radius: 30 }, dCtx);
+                } else {
+                    // ⚔️ 模式二：遊戲實戰動作模擬展示
+                    let shipX = 70, shipY = 130 + Math.sin(globalAnimFrame * 0.05) * 20;
+                    drawPlayerSpaceshipHD(shipX, shipY, 0, "inhalation", 5.0, dCtx);
+
+                    if (selectedDemoId === 'eagle' || selectedDemoId === 'air' || selectedDemoId === 'ufo' || selectedDemoId === 'dragon' || selectedDemoId === 'meteor') {
+                        // 模擬 Boss 對抗畫面
+                        let bX = 290, bY = 130;
+                        let mockBoss = { name: (selectedDemoId==='air'?"風暴精靈":selectedDemoId==='ufo'?"母艦":selectedDemoId==='dragon'?"赤龍":"神鷹"), x: bX, y: bY, attackTimer: globalAnimFrame };
+                        drawBossHD(mockBoss, dCtx);
+                        
+                        // 模擬發射攻擊彈幕
+                        let bulletX = bX - ((globalAnimFrame * 4) % 220);
+                        dCtx.fillStyle = '#ff4d4d'; dCtx.beginPath(); dCtx.arc(bulletX, bY, 8, 0, Math.PI*2); dCtx.fill();
+                    } else {
+                        // 模擬飛船與道具/障礙物互動
+                        let itemX = 300 - ((globalAnimFrame * 3) % 250);
+                        if (itemX < shipX + 25) {
+                            // 模擬碰撞效果
+                            dCtx.save(); dCtx.shadowColor = '#f1c40f'; dCtx.shadowBlur = 20;
+                            dCtx.strokeStyle = '#ffffff'; dCtx.lineWidth = 2;
+                            dCtx.beginPath(); dCtx.arc(shipX, shipY, 30, 0, Math.PI*2); dCtx.stroke();
+                            dCtx.restore();
+                        } else {
+                            if (selectedDemoId.match(/(cloud|slime|darkgem)/)) drawObstacleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 18 }, dCtx);
+                            else drawCollectibleHD({ type: selectedDemoId, x: itemX, y: shipY, radius: 18 }, dCtx);
+                        }
+                    }
+                }
 
                 requestAnimationFrame(renderDemo);
             }
