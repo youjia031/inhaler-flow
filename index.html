@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor (HD Visual & Anti-Jitter Engine)</title>
+    <title>呼吸訓練器 - Inhaler Flow Monitor (Fixed Direction Engine)</title>
     <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 ONNX Runtime Web 用於前端載入 PKL 模型檔 -->
@@ -277,7 +277,7 @@
                 onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
                 updateStatus('✅ PKL 模型載入成功！');
             } catch (err) {
-                console.warn("未檢測到 rf_model.onnx，改用強防抖鎖定切分演算法。", err);
+                console.warn("未檢測到 rf_model.onnx，改用頻譜能量特徵分析。", err);
             }
         }
         loadPKLModel();
@@ -319,19 +319,25 @@
             plugins: [customOverlayPlugin]
         });
 
+        // 🎯 修正即時吸吐氣偵測邏輯，避免通通誤判為 Exhalation (吐氣)
         async function detectBreathModePKL(fft) {
             if (!fft) return "inhalation";
-            let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
-            let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
+            let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
+            let e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
 
             if (onnxSession) {
                 try {
-                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
+                    const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, (fft[3]||0), e4, e5]), [1, 5]);
                     const results = await onnxSession.run({ float_input: inputTensor });
                     return (results.label.data[0] === 0) ? "inhalation" : "exhalation";
                 } catch (e) {}
             }
-            return (ratio_3to1 > 0.5) ? "exhalation" : "inhalation";
+            
+            // 修正無模型時的備用規則：吐氣通常在 4~5kHz 有較強顯著高頻能量
+            let lowE = e1 + e2 + 0.0001;
+            let highE = e4 + e5;
+            let ratio = highE / lowE;
+            return (ratio > 1.8) ? "exhalation" : "inhalation";
         }
 
         async function parseLine(line) {
@@ -359,6 +365,7 @@
 
                 currentMode = (manualMode !== "auto") ? manualMode : pklDetected;
 
+                // 🎯 正值代表吸氣（Inspiration），負值代表吐氣（Expiration）
                 smoothedEst = flowYes ? ((currentMode === "exhalation") ? -Math.abs(est) : Math.abs(est)) : 0.0;
 
                 if (flowYes && Math.abs(smoothedEst) > 0) {
@@ -383,32 +390,24 @@
             }
         }
 
-        // 🔥【極致防抖鎖定版】PKL Index 切分演算法（徹底解決跳點與閃爍）
+        // 🔥【強自鎖防抖】PKL Index 切分演算法
         async function runPKLIndexSegmentation() {
             if (records.length === 0) { 
                 alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); 
                 return; 
             }
-            updateStatus("正在使用【雙重防抖＋自適應強自鎖】進行 PKL Index 切分...");
+            updateStatus("正在使用【雙重防抖＋強自鎖】進行 PKL Index 切分...");
 
-            // 1. 嚴格過濾微弱氣流（提高雜訊門檻至 5.0 L/min，過濾靜音與環境雜音）
             const FLOW_THRESHOLD = 5.0; 
 
-            // 2. 提取相對穩定的聲學能量特徵
             let rawScores = records.map(r => {
                 if (!r.flowYes || Math.abs(r.est) < FLOW_THRESHOLD) return null;
                 let fft = r.fft;
                 let e1 = Math.abs(fft[1] || 0), e2 = Math.abs(fft[2] || 0);
                 let e4 = Math.abs(fft[4] || 0), e5 = Math.abs(fft[5] || 0);
-
-                let lowE = e1 + e2 + 0.0001;
-                let highE = e4 + e5;
-                let hlRatio = highE / lowE;
-
-                return hlRatio;
+                return (e4 + e5) / (e1 + e2 + 0.0001);
             });
 
-            // 3. 計算有效數據的動態基線 (中位數)
             let validScores = rawScores.filter(s => s !== null).sort((a, b) => a - b);
             if (validScores.length < 5) {
                 updateStatus("有效氣流點太少，請確保吹氣/吸氣力道足夠。");
@@ -418,9 +417,8 @@
             let lowBound = validScores[Math.floor(validScores.length * 0.35)];
             let highBound = validScores[Math.floor(validScores.length * 0.65)];
 
-            // 4. 強制狀態自鎖（State Locking）— 避免過渡期跳動
             let lockedStates = [];
-            let currentState = 0; // 0: Inhale, 1: Exhale
+            let currentState = 0; 
 
             for (let i = 0; i < rawScores.length; i++) {
                 let score = rawScores[i];
@@ -437,7 +435,6 @@
                 lockedStates.push(currentState);
             }
 
-            // 5. 擴大滑動平滑視窗 (7 點中位數濾波)
             let smoothedStates = [...lockedStates];
             const W = 3;
             for (let i = W; i < lockedStates.length - W; i++) {
@@ -449,7 +446,6 @@
                 }
             }
 
-            // 6. 併合區段並剔除短於 0.4 秒的瞬時雜訊
             pklSegments = [];
             let segStart = -1, segState = -1;
 
@@ -483,7 +479,7 @@
                 }
             }
 
-            updateStatus(`防抖切分完成！共劃分出 ${pklSegments.length} 個穩定呼吸區段。`);
+            updateStatus(`切分完成！共劃分出 ${pklSegments.length} 個穩定呼吸區段。`);
             flowChart.update();
         }
 
@@ -572,7 +568,7 @@
         function updateStatus(msg) { document.getElementById('status').innerText = msg; }
     </script>
 
-    <!-- 🎨 2. 高畫質 Retina Canvas 遊戲引擎 -->
+    <!-- 🎨 2. 遊戲引擎：修正 Y 軸升降邏輯（吸氣往上，吐氣往下） -->
     <script>
         const controlPanel = document.querySelector('.control-panel');
         if (controlPanel) {
@@ -1107,17 +1103,20 @@
 
             if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
                 let curReadEst = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0.0;
-                let absFlow = Math.abs(curReadEst);
-
+                
+                // 🎯 核心修正：正確映射吸氣/吐氣與畫面 Y 軸升降
+                // 吸氣 (curReadEst > 0) -> -Y 向上飛
+                // 吐氣 (curReadEst < 0) -> +Y 向下降
+                // 靜止 (curReadEst = 0) -> 保持在畫面正中央 (50% 高度)
                 let flowOffsetY = 0;
                 if (curReadEst > 0) { 
-                    flowOffsetY = -(absFlow * 3.2);
+                    flowOffsetY = -(Math.abs(curReadEst) * 3.5); // 吸氣往上
                 } else if (curReadEst < 0) {
-                    flowOffsetY = (absFlow * 3.2);
+                    flowOffsetY = (Math.abs(curReadEst) * 3.5);  // 吐氣往下
                 }
 
-                let targetY = (logicalHeight / 2) + flowOffsetY;
-                targetY = Math.max(35, Math.min(logicalHeight - 35, targetY));
+                let targetY = (logicalHeight * 0.5) + flowOffsetY; // 預設基準點放在正中央 (50%)
+                targetY = Math.max(40, Math.min(logicalHeight - 40, targetY));
                 
                 let dy = targetY - rocket.y;
                 let speedFactor = (slowDebuffTimer > 0) ? 0.03 : 0.12;
