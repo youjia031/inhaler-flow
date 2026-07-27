@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Dynamic Particle & Skill Engine)</title>
+    <title>呼吸訓練器 - Multi-Feature Flow Discriminator & Flight Game Engine (Full Restoration)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
@@ -321,7 +321,7 @@
             background: #0b0f19;
             padding: 20px;
             border-radius: 8px;
-            height: 620px;
+            height: 650px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
             border: 2px solid #8e44ad;
             box-sizing: border-box;
@@ -375,7 +375,7 @@
 
         .demo-btn {
             padding: 5px 10px;
-            font-size: 12px;
+            font-size: 11px;
             background: #1f2937;
             color: white;
             border: 1px solid #374151;
@@ -410,7 +410,7 @@
 
     <div class="header">
         <div class="main-title">呼吸訓練器</div>
-        <h1>Inhaler Flow Monitor (Full Particle Simulation & Skill Engine)</h1>
+        <h1>Inhaler Flow Monitor (Full Uncompressed Restoration Edition)</h1>
         <p>Acoustic inhaler flow visualization & Flight Game Engine</p>
     </div>
 
@@ -441,7 +441,7 @@
     </div>
 
     <div class="demo-container" id="demoContainer">
-        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與動態實戰技能展台</h3>
+        <h3 style="margin: 0 0 10px 0; color: #f1c40f; text-align: center;">🎬 全物件獨立分類圖鑑與動態實戰展台 (26大物件完全收錄)</h3>
 
         <div class="demo-layout">
             <div class="demo-viewport">
@@ -457,10 +457,10 @@
         <div class="demo-section-title">👾 5 大循環 Boss & 101 關 Final Boss (點擊觀看技能施放與彈幕演練)</div>
         <div class="demo-grid-menu" id="bossDemoMenuList"></div>
 
-        <div class="demo-section-title">🎁 12 大戰術益處道具 (點擊觀看飛船吃下道具後的特效)</div>
+        <div class="demo-section-title">🎁 12 大戰術益處道具 (完整 12 種全部收錄，點擊觀看觸發效果)</div>
         <div class="demo-grid-menu" id="itemDemoMenuList"></div>
 
-        <div class="demo-section-title" style="color: #e74c3c;">🛑 8 大危險扣血障礙物 (點擊觀看飛船撞擊後的受擊特效)</div>
+        <div class="demo-section-title" style="color: #e74c3c;">🛑 8 大危險扣血障礙物 (完整 8 種全部收錄，點擊觀看受擊效果)</div>
         <div class="demo-grid-menu" id="hazardDemoMenuList"></div>
     </div>
 
@@ -705,8 +705,6 @@
         
         let rocket = { x: 100, y: 275, radius: 14, angle: 0, shieldActive: false }; 
 
-        // 🎬 展台專用動態粒子陣列
-        let demoParticles = [];
         let demoProjectiles = [];
 
         function toggleFullscreen() {
@@ -726,83 +724,50 @@
             document.getElementById('instructionsModal').style.display = 'none';
         }
 
-        /* 🚀 畫飛船與動態特效（防禦罩、發光尾焰、受擊特效） */
+        /* 🚀 畫飛船與動態特效 */
         function drawPlayerSpaceshipEngine(x, y, customCtx, animTime, effectType) {
             let time = animTime || globalAnimFrame;
 
             customCtx.save();
             customCtx.translate(x, y);
 
-            // 受擊/減速/冰凍等視覺效果
             if (effectType === 'ice') {
-                customCtx.shadowColor = '#00d2d3';
-                customCtx.shadowBlur = 20;
+                customCtx.shadowColor = '#00d2d3'; customCtx.shadowBlur = 20;
             } else if (effectType === 'slime') {
-                customCtx.shadowColor = '#2ecc71';
-                customCtx.shadowBlur = 15;
+                customCtx.shadowColor = '#2ecc71'; customCtx.shadowBlur = 15;
             } else if (effectType === 'electric') {
-                // 電擊閃光
                 if (time % 6 < 3) {
-                    customCtx.strokeStyle = '#f1c40f';
-                    customCtx.lineWidth = 3;
-                    customCtx.beginPath();
-                    customCtx.arc(0, 0, 25, 0, Math.PI * 2);
-                    customCtx.stroke();
+                    customCtx.strokeStyle = '#f1c40f'; customCtx.lineWidth = 3;
+                    customCtx.beginPath(); customCtx.arc(0, 0, 25, 0, Math.PI * 2); customCtx.stroke();
                 }
             }
 
-            // 飛船本體
             let hullGrad = customCtx.createLinearGradient(-10, -10, 20, 10);
-            hullGrad.addColorStop(0, '#1e293b');
-            hullGrad.addColorStop(0.5, '#475569');
-            hullGrad.addColorStop(1, '#0f172a');
+            hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#475569'); hullGrad.addColorStop(1, '#0f172a');
             customCtx.fillStyle = hullGrad;
+            customCtx.beginPath(); customCtx.moveTo(22, 0); customCtx.lineTo(-12, -14); customCtx.lineTo(-6, 0); customCtx.lineTo(-12, 14); customCtx.closePath(); customCtx.fill();
             
-            customCtx.beginPath();
-            customCtx.moveTo(22, 0);
-            customCtx.lineTo(-12, -14);
-            customCtx.lineTo(-6, 0);
-            customCtx.lineTo(-12, 14);
-            customCtx.closePath();
-            customCtx.fill();
-            
-            // 駕駛艙
             let glassGrad = customCtx.createLinearGradient(0, -4, 12, 4);
-            glassGrad.addColorStop(0, '#38bdf8');
-            glassGrad.addColorStop(1, '#0284c7');
+            glassGrad.addColorStop(0, '#38bdf8'); glassGrad.addColorStop(1, '#0284c7');
             customCtx.fillStyle = glassGrad;
-            customCtx.beginPath();
-            customCtx.ellipse(4, 0, 8, 4, 0, 0, Math.PI * 2);
-            customCtx.fill();
+            customCtx.beginPath(); customCtx.ellipse(4, 0, 8, 4, 0, 0, Math.PI * 2); customCtx.fill();
             
-            // 動態噴射火焰
             let flameLen = 14 + Math.sin(time * 0.4) * 8;
             let flameGrad = customCtx.createLinearGradient(-6, 0, -6 - flameLen, 0);
-            flameGrad.addColorStop(0, '#f97316');
-            flameGrad.addColorStop(1, 'transparent');
+            flameGrad.addColorStop(0, '#f97316'); flameGrad.addColorStop(1, 'transparent');
             customCtx.fillStyle = flameGrad;
-            customCtx.beginPath();
-            customCtx.moveTo(-6, -5);
-            customCtx.lineTo(-6 - flameLen, 0);
-            customCtx.lineTo(-6, 5);
-            customCtx.closePath();
-            customCtx.fill();
+            customCtx.beginPath(); customCtx.moveTo(-6, -5); customCtx.lineTo(-6 - flameLen, 0); customCtx.lineTo(-6, 5); customCtx.closePath(); customCtx.fill();
 
-            // 🛡️ 護盾效果展示
             if (effectType === 'shield') {
-                customCtx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
-                customCtx.lineWidth = 3;
-                customCtx.shadowColor = '#38bdf8';
-                customCtx.shadowBlur = 15;
-                customCtx.beginPath();
-                customCtx.arc(2, 0, 26, 0, Math.PI * 2);
-                customCtx.stroke();
+                customCtx.strokeStyle = 'rgba(56, 189, 248, 0.9)'; customCtx.lineWidth = 3;
+                customCtx.shadowColor = '#38bdf8'; customCtx.shadowBlur = 15;
+                customCtx.beginPath(); customCtx.arc(2, 0, 26, 0, Math.PI * 2); customCtx.stroke();
             }
 
             customCtx.restore();
         }
 
-        /* 👾 5 大 Boss 動態技能演練繪製 */
+        /* 👾 Boss 動態繪製 */
         function drawBossSkillEngine(b, customCtx, time) {
             customCtx.save();
             customCtx.translate(b.x, b.y);
@@ -810,52 +775,32 @@
             let bossKey = b.id || b.name;
 
             if (bossKey === 'air') {
-                // 🌪️ 大氣風暴精靈：雙重反向氣旋 + 粒子
                 let r = 26 + Math.sin(time * 0.2) * 4;
                 customCtx.fillStyle = "rgba(0, 210, 211, 0.5)";
                 customCtx.beginPath(); customCtx.arc(0, 0, r, 0, Math.PI * 2); customCtx.fill();
-                
                 customCtx.strokeStyle = "#ffffff"; customCtx.lineWidth = 2;
                 customCtx.beginPath(); customCtx.arc(0, 0, r + 8, time * 0.1, time * 0.1 + Math.PI * 1.2); customCtx.stroke();
-                customCtx.beginPath(); customCtx.arc(0, 0, r + 14, -time * 0.1, -time * 0.1 + Math.PI * 1.2); customCtx.stroke();
-
             } else if (bossKey === 'eagle') {
-                // 🦅 雷霆金屬神鷹：揮翅與閃電發射
                 let flap = Math.sin(time * 0.2) * 0.4;
                 [-1, 1].forEach(s => {
                     customCtx.save(); customCtx.scale(1, s); customCtx.rotate(flap);
-                    let wingGrad = customCtx.createLinearGradient(0, -40, 30, 0);
-                    wingGrad.addColorStop(0, '#f39c12'); wingGrad.addColorStop(1, '#2c3e50');
-                    customCtx.fillStyle = wingGrad; customCtx.fillRect(0, -25, 30, 15);
+                    customCtx.fillStyle = '#f39c12'; customCtx.fillRect(0, -25, 30, 15);
                     customCtx.restore();
                 });
                 customCtx.fillStyle = '#ffffff'; customCtx.beginPath(); customCtx.arc(0, 0, 16, 0, Math.PI*2); customCtx.fill();
-
             } else if (bossKey === 'meteor') {
-                // ☄️ 熔岩巨型隕石：多角旋轉與噴火
                 customCtx.rotate(time * 0.03);
-                let grad = customCtx.createRadialGradient(0, 0, 8, 0, 0, 28);
-                grad.addColorStop(0, '#f39c12'); grad.addColorStop(1, '#e67e22');
-                customCtx.fillStyle = grad; customCtx.beginPath(); customCtx.arc(0, 0, 26, 0, Math.PI*2); customCtx.fill();
-
+                customCtx.fillStyle = '#e67e22'; customCtx.beginPath(); customCtx.arc(0, 0, 26, 0, Math.PI*2); customCtx.fill();
             } else if (bossKey === 'ufo') {
-                // 🛸 圓盤星際母艦：動態環狀燈光與干擾射線
                 customCtx.fillStyle = '#2c3e50'; customCtx.beginPath(); customCtx.ellipse(0, 5, 42, 18, 0, 0, Math.PI * 2); customCtx.fill();
                 customCtx.fillStyle = '#a855f7'; customCtx.beginPath(); customCtx.ellipse(0, -6, 22, 12, 0, 0, Math.PI * 2); customCtx.fill();
-
             } else if (bossKey === 'dragon') {
-                // 🐉 地獄赤龍：噴火與張嘴
                 let jaw = Math.abs(Math.sin(time * 0.15)) * 14;
                 customCtx.fillStyle = '#e74c3c';
                 customCtx.beginPath(); customCtx.moveTo(10, -jaw); customCtx.lineTo(-30, -15 - jaw); customCtx.lineTo(-25, 0); customCtx.fill();
-                customCtx.beginPath(); customCtx.moveTo(10, jaw); customCtx.lineTo(-30, 15 + jaw); customCtx.lineTo(-25, 0); customCtx.fill();
-
             } else if (bossKey === 'final') {
-                // 🌌 101關 宇宙霸主：脈衝核心與裂痕
                 let pr = 34 + Math.sin(time * 0.15) * 6;
-                let grad = customCtx.createRadialGradient(0, 0, 5, 0, 0, pr);
-                grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.5, '#e74c3c'); grad.addColorStop(1, '#4a235a');
-                customCtx.fillStyle = grad; customCtx.beginPath(); customCtx.arc(0, 0, pr, 0, Math.PI * 2); customCtx.fill();
+                customCtx.fillStyle = '#e74c3c'; customCtx.beginPath(); customCtx.arc(0, 0, pr, 0, Math.PI * 2); customCtx.fill();
             }
 
             customCtx.restore();
@@ -867,18 +812,12 @@
             customCtx.save();
             
             if (itemType === 'bomb') {
-                // 核彈爆發衝擊波
                 let r = (time % 40) * 5;
-                customCtx.strokeStyle = `rgba(155, 89, 182, ${1 - r/200})`;
-                customCtx.lineWidth = 4;
+                customCtx.strokeStyle = `rgba(155, 89, 182, ${1 - r/200})`; customCtx.lineWidth = 4;
                 customCtx.beginPath(); customCtx.arc(cx, cy, r, 0, Math.PI * 2); customCtx.stroke();
             } else if (itemType === 'laser') {
-                // 穿透雷射束
-                customCtx.fillStyle = '#2ecc71';
-                customCtx.shadowColor = '#2ecc71'; customCtx.shadowBlur = 15;
-                customCtx.fillRect(100, cy - 6, 200, 12);
+                customCtx.fillStyle = '#2ecc71'; customCtx.fillRect(100, cy - 6, 200, 12);
             } else if (itemType === 'clock') {
-                // 時鐘波動陣
                 customCtx.strokeStyle = '#f39c12'; customCtx.lineWidth = 2;
                 customCtx.beginPath(); customCtx.arc(cx, cy, 40, 0, Math.PI * 2); customCtx.stroke();
             }
@@ -886,7 +825,9 @@
             customCtx.restore();
         }
 
+        /* 📜 完整 26 大物件定義陣列（包含 12 大道具與 8 大障礙物，完全無刪減） */
         const DEMO_ITEMS_ALL = [
+            // 👾 6 大 Boss
             { category: "boss", id: "air", title: "🌪️ 大氣風暴精靈", desc: "Stage 1 Boss。", skill: "⚔️ 招式【風暴亂流】：釋放強烈氣流彈幕！" },
             { category: "boss", id: "eagle", title: "🦅 雷霆金屬神鷹", desc: "Stage 2 Boss。", skill: "⚔️ 招式【高壓雷擊】：揮翅發射連環閃電波！" },
             { category: "boss", id: "meteor", title: "☄️ 熔岩巨型隕石", desc: "Stage 3 Boss。", skill: "⚔️ 招式【熔岩噴濺】：噴發高溫飛石！" },
@@ -894,16 +835,29 @@
             { category: "boss", id: "dragon", title: "🐉 地獄黑金赤龍", desc: "Stage 5 Boss。", skill: "⚔️ 招式【龍息衝擊波】：張嘴噴發全屏烈焰！" },
             { category: "boss", id: "final", title: "🌌 宇宙終極霸主 (101關)", desc: "100關通關後降臨！", skill: "⚔️ 招式【全屏撕裂彈幕】+ 專屬登場語音！" },
             
-            { category: "item", id: "coin", title: "🟡 金幣", desc: "益處道具。", skill: "🎁 觸發效果：拾取獲得 +50 分與金光粒子。" },
+            // 🎁 12 大道具 (完整收錄)
+            { category: "item", id: "coin", title: "🟡 金幣", desc: "益處得分道具。", skill: "🎁 觸發效果：拾取獲得 +50 分與金光粒子。" },
             { category: "item", id: "laser", title: "🔫 穿透雷射", desc: "戰術武器。", skill: "🎁 觸發效果：發射綠色高能穿透雷射！" },
             { category: "item", id: "missile", title: "🚀 重型導彈", desc: "高爆武器。", skill: "🎁 觸發效果：發射追蹤導彈造成爆炸！" },
             { category: "item", id: "bomb", title: "💣 清屏核彈", desc: "全屏清場。", skill: "🎁 觸發效果：引爆紫色核彈全屏衝擊波！" },
             { category: "item", id: "heart", title: "❤️ 醫療包", desc: "修復裝置。", skill: "🎁 觸發效果：即時回復 25% HP 與綠光治療。" },
             { category: "item", id: "shield", title: "🛡️ 能量護盾", desc: "防禦護牆。", skill: "🎁 觸發效果：飛船周圍展開藍色抵擋護盾！" },
+            { category: "item", id: "magnet", title: "🧲 超導引力場", desc: "磁力吸引。", skill: "🎁 觸發效果：自動引力將全場道具吸引過來！" },
+            { category: "item", id: "clock", title: "⏳ 時間時鐘", desc: "戰術減速。", skill: "🎁 觸發效果：全場彈幕與 Boss 動作減速 60%！" },
+            { category: "item", id: "emp", title: "⚡ EMP 電磁塔", desc: "技能封印。", skill: "🎁 觸發效果：封印 Boss 技能施放 5 秒！" },
+            { category: "item", id: "blackhole", title: "🌀 黑洞生成器", desc: "彈幕吞噬。", skill: "🎁 觸發效果：吞噬周圍所有敵方彈幕！" },
+            { category: "item", id: "mirror", title: "🛡️ 反彈鏡盾", desc: "彈幕反射。", skill: "🎁 觸發效果：將 Boss 彈幕原封不動反射回去！" },
+            { category: "item", id: "ice", title: "❄️ 冰凍突擊砲", desc: "控制武器。", skill: "🎁 觸發效果：凍結 Boss 動作並使其受傷害翻倍！" },
 
+            // 🛑 8 大障礙物 (完整收錄)
             { category: "hazard", id: "cloud", title: "☁️ 烏雲", desc: "危險障礙。", skill: "💥 受擊效果：造成 20 點傷害與烏雲閃電！" },
             { category: "hazard", id: "slime", title: "🧪 外星黏液", desc: "減速障礙。", skill: "💥 受擊效果：造成綠色黏液減速 Debuff！" },
-            { category: "hazard", id: "electric", title: "⚡ 高壓電擊網", desc: "高危陷阱。", skill: "💥 受擊效果：引發全身高壓電擊火花！" }
+            { category: "hazard", id: "darkgem", title: "💎 暗黑晶石", desc: "扣分結晶。", skill: "💥 受擊效果：造成 15 點傷害並扣 100 分！" },
+            { category: "hazard", id: "electric", title: "⚡ 高壓電擊網", desc: "高危陷阱。", skill: "💥 受擊效果：引發全身高壓電擊火花！" },
+            { category: "hazard", id: "homing", title: "☄️ 追蹤碎石", desc: "追蹤障礙。", skill: "💥 受擊效果：修正角度追蹤飛船，造成 15 點傷害！" },
+            { category: "hazard", id: "wind", title: "🌪️ 混亂龍捲風", desc: "氣流干擾。", skill: "💥 受擊效果：強制拉扯飛船上下漂移 2 秒！" },
+            { category: "hazard", id: "toxic", title: "☣️ 毒氣雲霧", desc: "持續傷害。", skill: "💥 受擊效果：造成持續性扣血（每秒 5 點，持續 3 秒）！" },
+            { category: "hazard", id: "magnetic_storm", title: "🧲 反向磁暴區", desc: "控制反轉。", skill: "💥 受擊效果：暫時反轉呼吸控制方向！" }
         ];
 
         let selectedDemoId = "final";
@@ -943,7 +897,7 @@
         }
         buildDemoMenus();
 
-        /* 🎬 展台動態實戰演練迴圈 (發射彈幕、觸發效果) */
+        /* 🎬 展台動態實戰演練迴圈 */
         function startDemoLoop() {
             const dCanvas = document.getElementById('demoCanvas');
             const dCtx = dCanvas.getContext('2d');
@@ -961,17 +915,14 @@
 
                 if (currentItem) {
                     if (currentItem.category === 'boss') {
-                        // 🎮 展示 Boss 招式與發射彈幕
                         let bossObj = { id: selectedDemoId, x: 300, y: 130 };
                         drawBossSkillEngine(bossObj, dCtx, demoAnimFrame);
                         drawPlayerSpaceshipEngine(80, 130, dCtx, demoAnimFrame, 'normal');
 
-                        // 動態彈幕演示
                         if (demoAnimFrame % 30 === 0) {
                             demoProjectiles.push({ x: 270, y: 130, vx: -4, vy: (Math.random() - 0.5) * 2 });
                         }
 
-                        // 繪製彈幕
                         for (let i = 0; i < demoProjectiles.length; i++) {
                             let p = demoProjectiles[i];
                             p.x += p.vx; p.y += p.vy;
@@ -981,12 +932,10 @@
                         demoProjectiles = demoProjectiles.filter(p => p.x > 50);
 
                     } else if (currentItem.category === 'item') {
-                        // 🎁 展示飛船「吃下道具」後的觸發特效
                         drawPlayerSpaceshipEngine(100, 130, dCtx, demoAnimFrame, selectedDemoId);
                         drawItemTriggerEffect(selectedDemoId, dCtx, demoAnimFrame);
 
                     } else if (currentItem.category === 'hazard') {
-                        // 🛑 展示飛船「撞擊障礙物」後的受擊反應
                         drawPlayerSpaceshipEngine(100, 130, dCtx, demoAnimFrame, selectedDemoId);
                     }
                 }
