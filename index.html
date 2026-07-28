@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整自訂版 v4.1</title>
+<title>呼吸訓練器 - 完整自訂版 v4.2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -149,6 +149,24 @@ background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-s
 }
 .music-upload-btn:hover { background: #9b59b6; }
 
+/* 操控方式標示 */
+.control-hint {
+position: absolute;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+color: rgba(255,255,255,0.2);
+font-size: 11px;
+font-family: 'Segoe UI', monospace;
+text-align: center;
+pointer-events: none;
+z-index: 1;
+background: rgba(0,0,0,0.5);
+padding: 4px 12px;
+border-radius: 12px;
+}
+.control-hint .active { color: #f1c40f; }
+
 /* ===== 擴充功能樣式 ===== */
 #introContainer {
 display: none;
@@ -276,7 +294,7 @@ margin: 0 6px;
 
 #qualitySelect { padding: 4px 8px; border-radius: 4px; border: 1px solid #bcc6cf; background: white; font-size: 13px; }
 
-/* ===== 開發模式開關 ===== */
+/* ===== 開發模式 ===== */
 .dev-mode-indicator {
 display: inline-block;
 padding: 2px 10px;
@@ -286,7 +304,6 @@ font-weight: bold;
 }
 .dev-mode-indicator.on { background: #8e44ad; color: white; }
 .dev-mode-indicator.off { background: #2c3e50; color: #8b949e; }
-
 .dev-hidden { display: none !important; }
 
 /* ===== 自訂關卡編輯器 ===== */
@@ -453,6 +470,28 @@ border-radius: 8px;
 .boss-skip-btn { background: #1f4e79; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; margin-top: 12px; font-weight: bold; }
 .boss-skip-btn:hover { background: #163d5e; }
 
+/* 操控方式開關 */
+.control-toggle {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+background: #161b22;
+padding: 4px 10px;
+border-radius: 16px;
+border: 1px solid #30363d;
+}
+.control-toggle label {
+color: #8b949e;
+font-size: 11px;
+cursor: pointer;
+}
+.control-toggle input[type="checkbox"] {
+accent-color: #1f4e79;
+width: 14px;
+height: 14px;
+cursor: pointer;
+}
+
 @media (max-width: 768px) {
 .intro-card { flex: 1 1 100%; }
 #finalBossOverlay video { max-width: 95%; }
@@ -545,6 +584,13 @@ border-radius: 8px;
 <audio id="bossAudio" loop></audio>
 <button class="boss-skip-btn" onclick="skipBossSequence()">⏭️ 跳過動畫</button>
 </div>
+
+<!-- ===== 操控提示 ===== -->
+<div class="control-hint" id="controlHint">
+⌨️ 鍵盤: <span class="active" id="hintKeyboard">↑↓</span> ｜ 
+🖱️ 滑鼠: <span id="hintMouse">移動</span> ｜ 
+🌬️ 呼吸裝置: <span id="hintBreath">等待啟動</span>
+</div>
 </div>
 
 <!-- ===== 介紹圖鑑 ===== -->
@@ -564,123 +610,82 @@ border-radius: 8px;
 </div>
 </div>
 
-<!-- ===== 自訂關卡編輯器（簡易版） ===== -->
+<!-- ===== 自訂關卡編輯器 ===== -->
 <div id="levelEditor" class="dev-hidden">
 <h4>🎮 自訂關卡設計師</h4>
 <p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">點擊按鈕切換開關，所有設定即時生效</p>
 
-<!-- 基礎設定 -->
 <div class="setting-group">
     <label>📊 基礎設定</label>
     <div style="display:flex; flex-wrap:wrap; gap:10px;">
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">起始關卡</label>
-            <input type="number" id="customLevel" value="1" min="1" max="100" style="width:80px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">生成速度</label>
-            <select id="customSpawnRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-                <option value="0.005">極慢</option>
-                <option value="0.008">慢</option>
-                <option value="0.015" selected>普通</option>
-                <option value="0.025">快</option>
-                <option value="0.04">極快</option>
-                <option value="0.06">地獄</option>
-            </select>
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">敵人速度</label>
-            <select id="customEnemySpeed" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-                <option value="0.5">極慢</option>
-                <option value="0.7">慢</option>
-                <option value="1.0" selected>普通</option>
-                <option value="1.3">快</option>
-                <option value="1.8">極快</option>
-                <option value="2.5">閃電</option>
-            </select>
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">Boss 出現頻率</label>
-            <select id="customBossRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-                <option value="0.001">極少</option>
-                <option value="0.003" selected>普通</option>
-                <option value="0.006">多</option>
-                <option value="0.012">非常多</option>
-            </select>
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">道具出現率</label>
-            <select id="customItemRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-                <option value="0.01">少</option>
-                <option value="0.025" selected>普通</option>
-                <option value="0.04">多</option>
-                <option value="0.06">氾濫</option>
-            </select>
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">障礙物出現率</label>
-            <select id="customObstacleRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-                <option value="0.005">少</option>
-                <option value="0.015" selected>普通</option>
-                <option value="0.025">多</option>
-                <option value="0.04">氾濫</option>
-            </select>
-        </div>
+        <div><label style="font-size:11px; color:#5a6a7a;">起始關卡</label>
+        <input type="number" id="customLevel" value="1" min="1" max="100" style="width:80px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">生成速度</label>
+        <select id="customSpawnRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
+            <option value="0.005">極慢</option><option value="0.008">慢</option>
+            <option value="0.015" selected>普通</option><option value="0.025">快</option>
+            <option value="0.04">極快</option><option value="0.06">地獄</option>
+        </select></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">敵人速度</label>
+        <select id="customEnemySpeed" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
+            <option value="0.5">極慢</option><option value="0.7">慢</option>
+            <option value="1.0" selected>普通</option><option value="1.3">快</option>
+            <option value="1.8">極快</option><option value="2.5">閃電</option>
+        </select></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">Boss 出現頻率</label>
+        <select id="customBossRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
+            <option value="0.001">極少</option><option value="0.003" selected>普通</option>
+            <option value="0.006">多</option><option value="0.012">非常多</option>
+        </select></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">道具出現率</label>
+        <select id="customItemRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
+            <option value="0.01">少</option><option value="0.025" selected>普通</option>
+            <option value="0.04">多</option><option value="0.06">氾濫</option>
+        </select></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">障礙物出現率</label>
+        <select id="customObstacleRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
+            <option value="0.005">少</option><option value="0.015" selected>普通</option>
+            <option value="0.025">多</option><option value="0.04">氾濫</option>
+        </select></div>
     </div>
 </div>
 
-<!-- Boss 技能 -->
 <div class="setting-group">
     <label>👹 Boss 技能（點擊切換）</label>
     <div class="btn-group" id="skillCheckboxes"></div>
 </div>
 
-<!-- 道具 -->
 <div class="setting-group">
     <label>🎁 道具（點擊切換）</label>
     <div class="btn-group" id="itemCheckboxes"></div>
 </div>
 
-<!-- 障礙物 -->
 <div class="setting-group">
     <label>🚧 障礙物（點擊切換）</label>
     <div class="btn-group" id="obstacleCheckboxes"></div>
 </div>
 
-<!-- Boss 類型 -->
 <div class="setting-group">
     <label>👾 Boss 類型（點擊切換）</label>
     <div class="btn-group" id="bossCheckboxes"></div>
 </div>
 
-<!-- 進階設定 -->
 <div class="setting-group">
     <label>⚙️ 進階設定</label>
     <div style="display:flex; flex-wrap:wrap; gap:10px;">
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">起始 HP</label>
-            <input type="number" id="customHP" value="100" min="10" max="500" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">金幣分數</label>
-            <input type="number" id="customCoinScore" value="50" min="10" max="500" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">Boss HP 倍率</label>
-            <input type="number" id="customBossHP" value="1" min="0.5" max="5" step="0.5" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">障礙物傷害倍率</label>
-            <input type="number" id="customDamageMult" value="1" min="0.5" max="3" step="0.5" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-        </div>
-        <div>
-            <label style="font-size:11px; color:#5a6a7a;">升級所需分數</label>
-            <input type="number" id="customLevelUpScore" value="80" min="30" max="300" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-        </div>
+        <div><label style="font-size:11px; color:#5a6a7a;">起始 HP</label>
+        <input type="number" id="customHP" value="100" min="10" max="500" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">金幣分數</label>
+        <input type="number" id="customCoinScore" value="50" min="10" max="500" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">Boss HP 倍率</label>
+        <input type="number" id="customBossHP" value="1" min="0.5" max="5" step="0.5" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">障礙物傷害倍率</label>
+        <input type="number" id="customDamageMult" value="1" min="0.5" max="3" step="0.5" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
+        <div><label style="font-size:11px; color:#5a6a7a;">升級所需分數</label>
+        <input type="number" id="customLevelUpScore" value="80" min="30" max="300" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
     </div>
 </div>
 
-<!-- 按鈕 -->
 <div class="editor-actions">
     <button class="editor-btn save" onclick="applySimpleLevelConfig()">✅ 套用設定</button>
     <button class="editor-btn close" onclick="toggleLevelEditor()">❌ 關閉</button>
@@ -696,7 +701,6 @@ border-radius: 8px;
 <div id="skinEditor" class="dev-hidden">
 <h4>🎨 自訂外觀</h4>
 <p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">上傳圖片替換遊戲元素，支援 PNG / JPG</p>
-
 <div class="skin-group">
     <label>🌌 遊戲背景</label>
     <div class="skin-preview">
@@ -705,7 +709,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('bg')">清除</button>
     </div>
 </div>
-
 <div class="skin-group">
     <label>🚀 飛船</label>
     <div class="skin-preview">
@@ -714,7 +717,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('rocket')">清除</button>
     </div>
 </div>
-
 <div class="skin-group">
     <label>🪙 金幣</label>
     <div class="skin-preview">
@@ -723,7 +725,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('coin')">清除</button>
     </div>
 </div>
-
 <div class="skin-group">
     <label>❤️ 治癒之心</label>
     <div class="skin-preview">
@@ -732,7 +733,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('heart')">清除</button>
     </div>
 </div>
-
 <div class="skin-group">
     <label>🛡️ 護盾</label>
     <div class="skin-preview">
@@ -741,7 +741,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('shield')">清除</button>
     </div>
 </div>
-
 <div class="skin-group">
     <label>⛈️ 障礙物</label>
     <div class="skin-preview">
@@ -750,7 +749,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('cloud')">清除</button>
     </div>
 </div>
-
 <div class="skin-group">
     <label>👹 Boss</label>
     <div class="skin-preview">
@@ -759,7 +757,6 @@ border-radius: 8px;
         <button class="clear-btn" onclick="clearSkin('boss')">清除</button>
     </div>
 </div>
-
 <div class="editor-actions" style="margin-top:8px;">
     <button class="editor-btn close" onclick="toggleSkinEditor()">❌ 關閉</button>
     <button class="editor-btn reset" onclick="resetAllSkins()">🔄 重置所有外觀</button>
@@ -823,38 +820,122 @@ let onnxSession=null;
 let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
 
-// ===== 開發模式開關 =====
-let devModeEnabled = false;
+// =====================================================
+// 🆕 鍵盤與滑鼠操控
+// =====================================================
+let keyboardControlEnabled = true;
+let mouseControlEnabled = true;
+let keyboardY = null; // 鍵盤控制的目標 Y 位置
+let mouseY = null;    // 滑鼠控制的目標 Y 位置
+let useKeyboardControl = false;
+let useMouseControl = false;
 
-function toggleDevMode() {
-    devModeEnabled = !devModeEnabled;
-    const btn = document.getElementById('devModeToggle');
-    const indicator = document.getElementById('devIndicator');
-    if (btn) {
-        btn.textContent = devModeEnabled ? '🔧 開發模式 ON' : '🔧 開發模式 OFF';
-        btn.classList.toggle('active', devModeEnabled);
+// 鍵盤事件
+document.addEventListener('keydown', function(e) {
+    if (!keyboardControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
+    const step = 15;
+    const gameHeight = gameCanvas?.height || 480;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        if (keyboardY === null) keyboardY = rocket.y;
+        keyboardY = Math.max(30, keyboardY - step);
+        useKeyboardControl = true;
+        document.getElementById('hintKeyboard').style.color = '#f1c40f';
+        document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+    } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        if (keyboardY === null) keyboardY = rocket.y;
+        keyboardY = Math.min(gameHeight - 30, keyboardY + step);
+        useKeyboardControl = true;
+        document.getElementById('hintKeyboard').style.color = '#f1c40f';
+        document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+    } else if (e.key === ' ' || e.key === 'Space') {
+        e.preventDefault();
+        // 空白鍵可以當作暫停或特殊功能
+        if (isGameRunning && !isGameOver) toggleGamePause();
     }
-    if (indicator) {
-        indicator.textContent = devModeEnabled ? '🔧 開發中' : '🎮 一般模式';
-        indicator.className = 'dev-mode-indicator ' + (devModeEnabled ? 'on' : 'off');
+});
+
+// 鍵盤釋放時重置
+document.addEventListener('keyup', function(e) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
+        // 不立即重置，讓飛船慢慢回到呼吸控制
+        setTimeout(() => {
+            if (!useKeyboardControl) return;
+            // 5秒後如果沒有按鍵，回到呼吸控制
+        }, 3000);
     }
-    // 顯示/隱藏開發功能
-    document.querySelectorAll('.dev-hidden').forEach(el => {
-        el.style.display = devModeEnabled ? '' : 'none';
-    });
-    // 顯示/隱藏開發按鈕
-    document.querySelectorAll('.dev-btn').forEach(el => {
-        el.style.display = devModeEnabled ? '' : 'none';
-    });
-    // 關閉所有編輯器
-    if (!devModeEnabled) {
-        const editors = ['levelEditor', 'skinEditor'];
-        editors.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
+});
+
+// 滑鼠事件 - 在 gameCanvas 上
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        canvas.addEventListener('mousemove', function(e) {
+            if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleY = canvas.height / rect.height;
+            const mouseRelativeY = (e.clientY - rect.top) * scaleY;
+            mouseY = Math.max(30, Math.min(canvas.height - 30, mouseRelativeY));
+            useMouseControl = true;
+            document.getElementById('hintMouse').style.color = '#f1c40f';
+            document.getElementById('hintMouse').textContent = '🖱️ 使用中';
         });
+        
+        canvas.addEventListener('mouseleave', function() {
+            // 滑鼠離開時，慢慢回到呼吸控制
+            setTimeout(() => {
+                if (useMouseControl) {
+                    // 2秒後如果滑鼠沒有回來，回到呼吸控制
+                    setTimeout(() => {
+                        if (useMouseControl) {
+                            mouseY = null;
+                            useMouseControl = false;
+                            document.getElementById('hintMouse').style.color = '';
+                            document.getElementById('hintMouse').textContent = '移動';
+                        }
+                    }, 3000);
+                }
+            }, 100);
+        });
+        
+        // 觸控支援（手機）
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleY = canvas.height / rect.height;
+            const touchRelativeY = (touch.clientY - rect.top) * scaleY;
+            mouseY = Math.max(30, Math.min(canvas.height - 30, touchRelativeY));
+            useMouseControl = true;
+            document.getElementById('hintMouse').style.color = '#f1c40f';
+            document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+        }, { passive: false });
     }
-    updateStatus(devModeEnabled ? '🔧 開發模式已開啟' : '🎮 開發模式已關閉');
+});
+
+// 操控方式切換
+function toggleKeyboardControl() {
+    keyboardControlEnabled = !keyboardControlEnabled;
+    if (!keyboardControlEnabled) {
+        keyboardY = null;
+        useKeyboardControl = false;
+        document.getElementById('hintKeyboard').style.color = '';
+        document.getElementById('hintKeyboard').textContent = '↑↓';
+    }
+    updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
+}
+
+function toggleMouseControl() {
+    mouseControlEnabled = !mouseControlEnabled;
+    if (!mouseControlEnabled) {
+        mouseY = null;
+        useMouseControl = false;
+        document.getElementById('hintMouse').style.color = '';
+        document.getElementById('hintMouse').textContent = '移動';
+    }
+    updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
 }
 
 async function loadPKLModel(){
@@ -986,6 +1067,9 @@ function toggleMeasuring(){
 isMeasuring=!isMeasuring;
 if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Start';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
 if(typeof updateGameMeasurementState==='function'){updateGameMeasurementState(isMeasuring);}
+// 更新呼吸裝置狀態提示
+document.getElementById('hintBreath').textContent = isMeasuring ? '🌬️ 使用中' : '等待啟動';
+document.getElementById('hintBreath').style.color = isMeasuring ? '#2ecc71' : '';
 }
 
 function clearPlot(){
@@ -1043,6 +1127,12 @@ const html=`
 <span id="expansionControls">
 <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
 <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
+<span class="control-toggle">
+<input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
+<label for="keyboardToggle">⌨️ 鍵盤</label>
+<input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
+<label for="mouseToggle">🖱️ 滑鼠</label>
+</span>
 <span id="devControls" style="display:flex;gap:6px;align-items:center;">
 <button id="devModeToggle" class="btn dev-toggle" onclick="toggleDevMode()">🔧 開發模式 OFF</button>
 <span id="devIndicator" class="dev-mode-indicator off">🎮 一般模式</span>
@@ -1056,7 +1146,6 @@ const html=`
 </span>
 `;
 controlPanel.insertAdjacentHTML('beforeend',html);
-// 預設隱藏開發按鈕
 document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
 }
 
@@ -1117,7 +1206,7 @@ setTimeout(resizeGameCanvas,150);
 document.addEventListener('fullscreenchange',()=>{const gameBox=document.getElementById('gameContainer');if(!document.fullscreenElement)gameBox.classList.remove('fullscreen');else gameBox.classList.add('fullscreen');setTimeout(resizeGameCanvas,150);});
 
 // ============================================================
-// 遊戲引擎（精簡版，保留核心功能）
+// 遊戲引擎
 // ============================================================
 const gameCanvas=document.getElementById('gameCanvas');
 const gameCtx=gameCanvas.getContext('2d');
@@ -1130,7 +1219,7 @@ let hasShield=false,feverTimer=0,magnetTimer=0,doubleScoreTimer=0,slowDebuffTime
 let restTimer=null,isResting=false,sessionStartTime=0;
 let bossActive=false,currentBoss=null;
 
-// ===== Boss、道具、障礙物定義（精簡） =====
+// ===== Boss、道具、障礙物定義 =====
 const BOSS_TYPES=[
 {type:'boss_fire',name:'🔥 火龍',emoji:'🐉',color:'#e74c3c',hp:200,speed:1.2,radius:30,skills:['火焰吐息','烈焰護盾']},
 {type:'boss_ice',name:'❄️ 冰霜巨人',emoji:'🧊',color:'#3498db',hp:300,speed:0.8,radius:35,skills:['冰凍光環','寒冰之牆']},
@@ -1242,6 +1331,7 @@ playerHP=100;gameScore=0;gameCombo=0;
 hasShield=false;feverTimer=0;magnetTimer=0;doubleScoreTimer=0;slowDebuffTimer=0;
 particles=[];collectibles=[];obstacles=[];bgmStep=0;
 bossActive=false;currentBoss=null;
+keyboardY=null;mouseY=null;useKeyboardControl=false;useMouseControl=false;
 let h=gameCanvas.height||480;
 rocket.x=120;rocket.y=h/2;rocket.angle=0;
 sessionStartTime=Date.now();
@@ -1256,6 +1346,13 @@ document.getElementById('magnetBadge').style.display='none';
 document.getElementById('doubleBadge').style.display='none';
 document.getElementById('slowBadge').style.display='none';
 document.getElementById('bossWarning').style.display='none';
+// 重置操控提示
+document.getElementById('hintKeyboard').style.color='';
+document.getElementById('hintKeyboard').textContent='↑↓';
+document.getElementById('hintMouse').style.color='';
+document.getElementById('hintMouse').textContent='移動';
+document.getElementById('hintBreath').textContent='等待啟動';
+document.getElementById('hintBreath').style.color='';
 updateGameMeasurementState(typeof isMeasuring!=='undefined'?isMeasuring:false);
 gameLoop();
 }
@@ -1270,13 +1367,12 @@ else{btn.innerText="暫停";btn.style.backgroundColor="#27ae60";startBGM();}
 function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');document.getElementById('finalScore').innerText=gameScore;document.getElementById('gameOverScreen').style.display='flex';stopGameEngine();}
 function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
 
-// ===== 繪製函式（精簡） =====
+// ===== 繪製函式 =====
 function drawItem(ctx,x,y,type,radius){
 ctx.save();ctx.translate(x,y);const r=radius||12;
 if(customSkins[type]){
 try{const img=new Image();img.src=customSkins[type];if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
 }
-// 預設繪製（精簡）
 ctx.fillStyle='#f1c40f';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
 ctx.fillStyle='white';ctx.font=`${r*0.6}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillText(type==='coin'?'$':type==='heart'?'❤':type==='shield'?'◈':type==='magnet'?'N':type==='double'?'2x':type==='fever'?'⚡':type==='star'?'★':type==='wing'?'W':type==='clock'?'⏰':'?',0,0);
@@ -1309,7 +1405,7 @@ ctx.fillText(boss.emoji||'👹',0,0);
 ctx.restore();
 }
 
-// ===== 主遊戲循環（精簡但完整） =====
+// ===== 主遊戲循環 =====
 function gameLoop(){
 if(!isGameRunning||isGameOver)return;
 gameCtx.globalAlpha=1.0;
@@ -1330,15 +1426,50 @@ let activeMeasuring=typeof isMeasuring!=='undefined'?isMeasuring:false;
 if(activeMeasuring&&!isGamePaused&&!isResting&&!isGameOver){
 let flow=(typeof smoothedEst!=='undefined'&&!isNaN(smoothedEst))?smoothedEst:0;
 let flowMag=Math.abs(flow);
-let sensitivity=(diff==='easy')?1.8:(diff==='hard'?0.8:1.2);
-let targetY=gameCanvas.height/2-(flow*2.2*sensitivity);
-if(isNaN(targetY))targetY=gameCanvas.height/2;
-targetY=Math.max(30,Math.min(gameCanvas.height-30,targetY));
-let dy=targetY-rocket.y;if(isNaN(dy))dy=0;
-let rocketSpeedFactor=(slowDebuffTimer>0)?0.04:0.1;
-rocket.y+=dy*Math.min(0.25,rocketSpeedFactor*userSpeedMult);
-rocket.angle=Math.atan2(dy,25);
 
+// ===== 🆕 操控優先級：鍵盤 > 滑鼠 > 呼吸裝置 =====
+let targetY = null;
+
+// 1. 鍵盤控制（優先）
+if (keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
+    targetY = keyboardY;
+    // 如果5秒沒按鍵，慢慢回到呼吸控制
+    // 這裡透過計時器處理，在外部 keyup 事件中處理
+}
+
+// 2. 滑鼠控制（第二優先）
+if (targetY === null && mouseControlEnabled && useMouseControl && mouseY !== null) {
+    targetY = mouseY;
+}
+
+// 3. 呼吸裝置控制（預設）
+if (targetY === null) {
+    // 如果呼吸裝置有數據，使用呼吸控制
+    if (Math.abs(flow) > 0.5) {
+        let sensitivity = (diff==='easy')?1.8:(diff==='hard'?0.8:1.2);
+        targetY = gameCanvas.height/2 - (flow * 2.2 * sensitivity);
+        // 如果使用呼吸控制，更新提示
+        document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+        document.getElementById('hintBreath').style.color = '#2ecc71';
+    } else {
+        // 沒有呼吸數據時，停留在中間
+        targetY = gameCanvas.height / 2;
+        document.getElementById('hintBreath').textContent = '等待呼吸';
+        document.getElementById('hintBreath').style.color = '';
+    }
+}
+
+// 限制範圍
+targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
+
+// 平滑移動到目標位置
+let dy = targetY - rocket.y;
+if (isNaN(dy)) dy = 0;
+let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
+rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
+rocket.angle = Math.atan2(dy, 25);
+
+// 計時器更新
 if(feverTimer>0){feverTimer--;if(feverTimer===0)document.getElementById('feverBadge').style.display='none';}
 if(magnetTimer>0){magnetTimer--;if(magnetTimer===0)document.getElementById('magnetBadge').style.display='none';}
 if(doubleScoreTimer>0){doubleScoreTimer--;if(doubleScoreTimer===0)document.getElementById('doubleBadge').style.display='none';}
@@ -1498,7 +1629,7 @@ restTimer=setInterval(()=>{countdown--;countdownEl.innerText=countdown;if(countd
 }
 
 // ============================================================
-// 關卡系統
+// 關卡系統（精簡）
 // ============================================================
 const EXP={
 currentLevel:1,maxLevel:100,bossSkills:[],
@@ -1592,7 +1723,7 @@ setTimeout(()=>{EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','
 };
 
 // ============================================================
-// 自訂關卡編輯器（簡易版）
+// 自訂關卡編輯器（精簡）
 // ============================================================
 const ALL_SKILLS=[
 {id:'shield',label:'🛡️ 護盾',type:'passive'},{id:'lightning',label:'⚡ 閃電鏈',type:'active'},
@@ -1749,6 +1880,38 @@ if(editor.style.display==='block'){buildAllCheckboxes();}
 }
 
 // ============================================================
+// 開發模式
+// ============================================================
+let devModeEnabled = false;
+function toggleDevMode() {
+devModeEnabled = !devModeEnabled;
+const btn = document.getElementById('devModeToggle');
+const indicator = document.getElementById('devIndicator');
+if (btn) {
+btn.textContent = devModeEnabled ? '🔧 開發模式 ON' : '🔧 開發模式 OFF';
+btn.classList.toggle('active', devModeEnabled);
+}
+if (indicator) {
+indicator.textContent = devModeEnabled ? '🔧 開發中' : '🎮 一般模式';
+indicator.className = 'dev-mode-indicator ' + (devModeEnabled ? 'on' : 'off');
+}
+document.querySelectorAll('.dev-hidden').forEach(el => {
+el.style.display = devModeEnabled ? '' : 'none';
+});
+document.querySelectorAll('.dev-btn').forEach(el => {
+el.style.display = devModeEnabled ? '' : 'none';
+});
+if (!devModeEnabled) {
+const editors = ['levelEditor', 'skinEditor'];
+editors.forEach(id => {
+const el = document.getElementById(id);
+if (el) el.style.display = 'none';
+});
+}
+updateStatus(devModeEnabled ? '🔧 開發模式已開啟' : '🎮 開發模式已關閉');
+}
+
+// ============================================================
 // 圖鑑系統（精簡）
 // ============================================================
 const INTRO_DATA=[
@@ -1902,14 +2065,16 @@ const select=document.getElementById('viewModeSelect');
 if(select&&!Array.from(select.options).some(o=>o.value==='intro')){
 const opt=document.createElement('option');opt.value='intro';opt.text='📖 介紹圖鑑';select.appendChild(opt);
 }
-// 預設隱藏開發功能
 document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
 console.log('✅ 完整擴充功能已載入！');
-console.log('🔧 點擊「開發模式」按鈕開啟進階功能');
+console.log('⌨️ 鍵盤 ↑↓ / W S 操控飛船');
+console.log('🖱️ 滑鼠移動操控飛船');
+console.log('🔧 點擊「開發模式」開啟進階功能');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
 
+// 暴露全域函式
 window.restartGameEngine=restartGameEngine;
 window.toggleGamePause=toggleGamePause;
 window.toggleFullscreen=toggleFullscreen;
@@ -1934,6 +2099,25 @@ window.uploadSkin=uploadSkin;
 window.clearSkin=clearSkin;
 window.resetAllSkins=resetAllSkins;
 window.toggleDevMode=toggleDevMode;
+window.toggleKeyboardControl=toggleKeyboardControl;
+window.toggleMouseControl=toggleMouseControl;
+
+// ===== 鍵盤計時器：自動切換回呼吸控制 =====
+let keyboardTimeout = null;
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
+        if (keyboardTimeout) clearTimeout(keyboardTimeout);
+        // 5秒後如果沒有按鍵，釋放鍵盤控制
+        keyboardTimeout = setTimeout(() => {
+            if (useKeyboardControl) {
+                useKeyboardControl = false;
+                keyboardY = null;
+                document.getElementById('hintKeyboard').style.color = '';
+                document.getElementById('hintKeyboard').textContent = '↑↓';
+            }
+        }, 5000);
+    }
+});
 </script>
 </body>
 </html>
