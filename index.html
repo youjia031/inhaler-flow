@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整自訂版 v4.0</title>
+<title>呼吸訓練器 - 完整自訂版 v4.1</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -53,6 +53,15 @@ cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s
 .btn.orange-btn:hover { background-color: #d35400; }
 .btn.teal-btn { background-color: #1abc9c; color: white; }
 .btn.teal-btn:hover { background-color: #16a085; }
+.btn.dev-toggle { 
+background-color: #2c3e50; 
+color: white; 
+padding: 4px 12px; 
+font-size: 12px; 
+border-radius: 20px;
+}
+.btn.dev-toggle.active { background-color: #8e44ad; }
+.btn.dev-toggle:hover { background-color: #34495e; }
 .btn:hover { background-color: #e1e8ee; }
 .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
 label { font-size: 14px; font-weight: 500; }
@@ -267,7 +276,20 @@ margin: 0 6px;
 
 #qualitySelect { padding: 4px 8px; border-radius: 4px; border: 1px solid #bcc6cf; background: white; font-size: 13px; }
 
-/* ===== 自訂關卡編輯器（簡易版） ===== */
+/* ===== 開發模式開關 ===== */
+.dev-mode-indicator {
+display: inline-block;
+padding: 2px 10px;
+border-radius: 12px;
+font-size: 10px;
+font-weight: bold;
+}
+.dev-mode-indicator.on { background: #8e44ad; color: white; }
+.dev-mode-indicator.off { background: #2c3e50; color: #8b949e; }
+
+.dev-hidden { display: none !important; }
+
+/* ===== 自訂關卡編輯器 ===== */
 #levelEditor {
 display: none;
 background: #161b22;
@@ -543,7 +565,7 @@ border-radius: 8px;
 </div>
 
 <!-- ===== 自訂關卡編輯器（簡易版） ===== -->
-<div id="levelEditor">
+<div id="levelEditor" class="dev-hidden">
 <h4>🎮 自訂關卡設計師</h4>
 <p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">點擊按鈕切換開關，所有設定即時生效</p>
 
@@ -671,11 +693,10 @@ border-radius: 8px;
 </div>
 
 <!-- ===== 自訂外觀編輯器 ===== -->
-<div id="skinEditor">
+<div id="skinEditor" class="dev-hidden">
 <h4>🎨 自訂外觀</h4>
 <p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">上傳圖片替換遊戲元素，支援 PNG / JPG</p>
 
-<!-- 背景 -->
 <div class="skin-group">
     <label>🌌 遊戲背景</label>
     <div class="skin-preview">
@@ -685,7 +706,6 @@ border-radius: 8px;
     </div>
 </div>
 
-<!-- 飛船 -->
 <div class="skin-group">
     <label>🚀 飛船</label>
     <div class="skin-preview">
@@ -695,7 +715,6 @@ border-radius: 8px;
     </div>
 </div>
 
-<!-- 金幣 -->
 <div class="skin-group">
     <label>🪙 金幣</label>
     <div class="skin-preview">
@@ -705,7 +724,6 @@ border-radius: 8px;
     </div>
 </div>
 
-<!-- 治癒之心 -->
 <div class="skin-group">
     <label>❤️ 治癒之心</label>
     <div class="skin-preview">
@@ -715,7 +733,6 @@ border-radius: 8px;
     </div>
 </div>
 
-<!-- 護盾 -->
 <div class="skin-group">
     <label>🛡️ 護盾</label>
     <div class="skin-preview">
@@ -725,9 +742,8 @@ border-radius: 8px;
     </div>
 </div>
 
-<!-- 障礙物 -->
 <div class="skin-group">
-    <label>⛈️ 障礙物（雷暴雲）</label>
+    <label>⛈️ 障礙物</label>
     <div class="skin-preview">
         <div id="cloudPreview" class="no-image">無圖片</div>
         <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('cloud', this)"></label>
@@ -735,7 +751,6 @@ border-radius: 8px;
     </div>
 </div>
 
-<!-- Boss -->
 <div class="skin-group">
     <label>👹 Boss</label>
     <div class="skin-preview">
@@ -756,7 +771,7 @@ border-radius: 8px;
 <div class="statusbar" id="status">Not connected</div>
 
 <!-- ============================================================ -->
-<!-- JavaScript：原有功能 + 完整擴充 -->
+<!-- JavaScript -->
 <!-- ============================================================ -->
 <script>
 // =====================================================
@@ -807,6 +822,40 @@ let pklSegments=[];
 let onnxSession=null;
 let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
+
+// ===== 開發模式開關 =====
+let devModeEnabled = false;
+
+function toggleDevMode() {
+    devModeEnabled = !devModeEnabled;
+    const btn = document.getElementById('devModeToggle');
+    const indicator = document.getElementById('devIndicator');
+    if (btn) {
+        btn.textContent = devModeEnabled ? '🔧 開發模式 ON' : '🔧 開發模式 OFF';
+        btn.classList.toggle('active', devModeEnabled);
+    }
+    if (indicator) {
+        indicator.textContent = devModeEnabled ? '🔧 開發中' : '🎮 一般模式';
+        indicator.className = 'dev-mode-indicator ' + (devModeEnabled ? 'on' : 'off');
+    }
+    // 顯示/隱藏開發功能
+    document.querySelectorAll('.dev-hidden').forEach(el => {
+        el.style.display = devModeEnabled ? '' : 'none';
+    });
+    // 顯示/隱藏開發按鈕
+    document.querySelectorAll('.dev-btn').forEach(el => {
+        el.style.display = devModeEnabled ? '' : 'none';
+    });
+    // 關閉所有編輯器
+    if (!devModeEnabled) {
+        const editors = ['levelEditor', 'skinEditor'];
+        editors.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    }
+    updateStatus(devModeEnabled ? '🔧 開發模式已開啟' : '🎮 開發模式已關閉');
+}
 
 async function loadPKLModel(){
 try{onnxSession=await ort.InferenceSession.create('./rf_model.onnx');updateStatus('✅ PKL 模型載入成功！');}catch(err){console.warn("未檢測到 rf_model.onnx",err);}
@@ -994,13 +1043,21 @@ const html=`
 <span id="expansionControls">
 <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
 <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
+<span id="devControls" style="display:flex;gap:6px;align-items:center;">
+<button id="devModeToggle" class="btn dev-toggle" onclick="toggleDevMode()">🔧 開發模式 OFF</button>
+<span id="devIndicator" class="dev-mode-indicator off">🎮 一般模式</span>
+</span>
+<span class="dev-hidden dev-btn" style="display:none;gap:6px;align-items:center;">
 <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
 <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
 <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
 <button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
 </span>
+</span>
 `;
 controlPanel.insertAdjacentHTML('beforeend',html);
+// 預設隱藏開發按鈕
+document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
 }
 
 // ===== 音效系統 =====
@@ -1060,7 +1117,7 @@ setTimeout(resizeGameCanvas,150);
 document.addEventListener('fullscreenchange',()=>{const gameBox=document.getElementById('gameContainer');if(!document.fullscreenElement)gameBox.classList.remove('fullscreen');else gameBox.classList.add('fullscreen');setTimeout(resizeGameCanvas,150);});
 
 // ============================================================
-// 遊戲引擎
+// 遊戲引擎（精簡版，保留核心功能）
 // ============================================================
 const gameCanvas=document.getElementById('gameCanvas');
 const gameCtx=gameCanvas.getContext('2d');
@@ -1073,7 +1130,7 @@ let hasShield=false,feverTimer=0,magnetTimer=0,doubleScoreTimer=0,slowDebuffTime
 let restTimer=null,isResting=false,sessionStartTime=0;
 let bossActive=false,currentBoss=null;
 
-// ===== 8種 Boss =====
+// ===== Boss、道具、障礙物定義（精簡） =====
 const BOSS_TYPES=[
 {type:'boss_fire',name:'🔥 火龍',emoji:'🐉',color:'#e74c3c',hp:200,speed:1.2,radius:30,skills:['火焰吐息','烈焰護盾']},
 {type:'boss_ice',name:'❄️ 冰霜巨人',emoji:'🧊',color:'#3498db',hp:300,speed:0.8,radius:35,skills:['冰凍光環','寒冰之牆']},
@@ -1085,7 +1142,6 @@ const BOSS_TYPES=[
 {type:'boss_spider',name:'🕷️ 蜘蛛女王',emoji:'🕷️',color:'#6c3483',hp:250,speed:1.3,radius:32,skills:['蛛網','毒素']},
 ];
 
-// ===== 10種道具 =====
 const ITEM_TYPES=[
 {type:'coin',emoji:'🪙',color:'#f1c40f',label:'金幣',score:50},
 {type:'heart',emoji:'❤️',color:'#2ecc71',label:'治癒之心',heal:25},
@@ -1099,7 +1155,6 @@ const ITEM_TYPES=[
 {type:'key',emoji:'🔑',color:'#f1c40f',label:'鑰匙',unlock:true},
 ];
 
-// ===== 10種障礙物 =====
 const OBSTACLE_TYPES=[
 {type:'cloud',emoji:'⛈️',color:'#4a4a5a',label:'雷暴雲',damage:25},
 {type:'poison',emoji:'🟣',color:'#8e44ad',label:'毒霧',damage:40},
@@ -1114,90 +1169,26 @@ const OBSTACLE_TYPES=[
 ];
 
 // ===== 自訂外觀系統 =====
-let customSkins = {
-bg: null,
-rocket: null,
-coin: null,
-heart: null,
-shield: null,
-cloud: null,
-boss: null
-};
+let customSkins = {bg:null,rocket:null,coin:null,heart:null,shield:null,cloud:null,boss:null};
 
-// 從 localStorage 載入外觀
 function loadSkins(){
-try{
-const saved=localStorage.getItem('customSkins');
-if(saved){
-const parsed=JSON.parse(saved);
-Object.keys(parsed).forEach(key=>{
-if(customSkins.hasOwnProperty(key) && parsed[key]){
-customSkins[key]=parsed[key];
-updateSkinPreview(key);
+try{const saved=localStorage.getItem('customSkins');if(saved){const parsed=JSON.parse(saved);Object.keys(parsed).forEach(key=>{if(customSkins.hasOwnProperty(key)&&parsed[key]){customSkins[key]=parsed[key];updateSkinPreview(key);}});}}catch(e){}
 }
-});
-}
-}catch(e){}
-}
-
-// 儲存外觀到 localStorage
-function saveSkins(){
-try{
-localStorage.setItem('customSkins', JSON.stringify(customSkins));
-}catch(e){}
-}
-
-// 更新預覽
+function saveSkins(){try{localStorage.setItem('customSkins',JSON.stringify(customSkins));}catch(e){}}
 function updateSkinPreview(key){
-const preview=document.getElementById(`${key}Preview`);
-if(!preview)return;
-if(customSkins[key]){
-preview.innerHTML=`<img src="${customSkins[key]}" style="max-width:80px;max-height:80px;border-radius:6px;">`;
-preview.className='skin-preview-img';
-}else{
-preview.innerHTML='無圖片';
-preview.className='no-image';
+const preview=document.getElementById(`${key}Preview`);if(!preview)return;
+if(customSkins[key]){preview.innerHTML=`<img src="${customSkins[key]}" style="max-width:80px;max-height:80px;border-radius:6px;">`;preview.className='skin-preview-img';}
+else{preview.innerHTML='無圖片';preview.className='no-image';}
 }
-}
-
-// 上傳外觀
-function uploadSkin(key, input){
-const file=input.files[0];
-if(!file)return;
+function uploadSkin(key,input){
+const file=input.files[0];if(!file)return;
 const reader=new FileReader();
-reader.onload=function(e){
-customSkins[key]=e.target.result;
-saveSkins();
-updateSkinPreview(key);
-updateStatus(`✅ ${key} 外觀已更新！`);
-};
+reader.onload=function(e){customSkins[key]=e.target.result;saveSkins();updateSkinPreview(key);updateStatus(`✅ ${key} 外觀已更新！`);};
 reader.readAsDataURL(file);
 }
-
-// 清除外觀
-function clearSkin(key){
-customSkins[key]=null;
-saveSkins();
-updateSkinPreview(key);
-updateStatus(`已清除 ${key} 外觀`);
-}
-
-// 重置所有外觀
-function resetAllSkins(){
-if(!confirm('確定要清除所有自訂外觀嗎？'))return;
-Object.keys(customSkins).forEach(key=>{customSkins[key]=null;updateSkinPreview(key);});
-saveSkins();
-updateStatus('✅ 所有外觀已重置');
-}
-
-// 切換外觀編輯器
-function toggleSkinEditor(){
-const editor=document.getElementById('skinEditor');
-if(editor){
-editor.style.display=editor.style.display==='none'?'block':'none';
-if(editor.style.display==='block')loadSkins();
-}
-}
+function clearSkin(key){customSkins[key]=null;saveSkins();updateSkinPreview(key);updateStatus(`已清除 ${key} 外觀`);}
+function resetAllSkins(){if(!confirm('確定要清除所有自訂外觀嗎？'))return;Object.keys(customSkins).forEach(key=>{customSkins[key]=null;updateSkinPreview(key);});saveSkins();updateStatus('✅ 所有外觀已重置');}
+function toggleSkinEditor(){const editor=document.getElementById('skinEditor');if(editor){editor.style.display=editor.style.display==='none'?'block':'none';if(editor.style.display==='block')loadSkins();}}
 
 // ===== 畫質設定 =====
 const QUALITY_SETTINGS={
@@ -1279,32 +1270,16 @@ else{btn.innerText="暫停";btn.style.backgroundColor="#27ae60";startBGM();}
 function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');document.getElementById('finalScore').innerText=gameScore;document.getElementById('gameOverScreen').style.display='flex';stopGameEngine();}
 function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
 
-// ===== 繪製函式 =====
+// ===== 繪製函式（精簡） =====
 function drawItem(ctx,x,y,type,radius){
 ctx.save();ctx.translate(x,y);const r=radius||12;
 if(customSkins[type]){
-try{
-const img=new Image();img.src=customSkins[type];
-if(img.complete && img.naturalWidth>0){
-ctx.drawImage(img,-r,-r,r*2,r*2);
-ctx.restore();return;
+try{const img=new Image();img.src=customSkins[type];if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
 }
-}catch(e){}
-}
-// 預設繪製
-switch(type){
-case'coin':ctx.shadowColor='#f1c40f';ctx.shadowBlur=20;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle='#f1c40f';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#b7950b';ctx.font=`${r}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★',0,1);break;
-case'heart':ctx.shadowColor='#2ecc71';ctx.shadowBlur=25;ctx.beginPath();ctx.moveTo(0,r*0.4);ctx.bezierCurveTo(-r*0.5,-r*0.2,-r*1.1,-r*0.5,-r*1.0,-r*0.9);ctx.bezierCurveTo(-r*0.9,-r*1.4,-r*0.4,-r*1.6,0,-r*1.1);ctx.bezierCurveTo(r*0.4,-r*1.6,r*0.9,-r*1.4,r*1.0,-r*0.9);ctx.bezierCurveTo(r*1.1,-r*0.5,r*0.5,-r*0.2,0,r*0.4);ctx.fillStyle='#2ecc71';ctx.fill();break;
-case'shield':ctx.shadowColor='#00d2d3';ctx.shadowBlur=25;ctx.beginPath();ctx.moveTo(0,-r*1.2);ctx.lineTo(r*0.9,-r*0.5);ctx.lineTo(r*0.9,r*0.3);ctx.lineTo(0,r*1.2);ctx.lineTo(-r*0.9,r*0.3);ctx.lineTo(-r*0.9,-r*0.5);ctx.closePath();ctx.fillStyle='#00d2d3';ctx.fill();break;
-case'magnet':ctx.shadowColor='#f39c12';ctx.shadowBlur=20;ctx.fillStyle='#e67e22';ctx.fillRect(-r*0.7,-r*0.9,r*0.35,r*1.6);ctx.fillRect(r*0.35,-r*0.9,r*0.35,r*1.6);ctx.fillRect(-r*0.7,-r*0.9,r*1.4,r*0.35);ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font=`${r*0.5}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('N',-r*0.5,-r*0.2);ctx.fillText('S',r*0.5,-r*0.2);break;
-case'double':ctx.shadowColor='#2ecc71';ctx.shadowBlur=25;ctx.beginPath();ctx.moveTo(0,-r*1.2);ctx.lineTo(r*1.0,-r*0.2);ctx.lineTo(r*0.7,r*1.0);ctx.lineTo(-r*0.7,r*1.0);ctx.lineTo(-r*1.0,-r*0.2);ctx.closePath();ctx.fillStyle='#2ecc71';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font=`bold ${r*0.7}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('2x',0,0);break;
-case'fever':ctx.shadowColor='#a55eea';ctx.shadowBlur=30;for(let i=0;i<8;i++){const a=i*Math.PI/4,d=r*0.7+Math.sin(Date.now()/200+i)*r*0.2;ctx.beginPath();ctx.arc(Math.cos(a)*d,Math.sin(a)*d*0.7,r*0.25,0,Math.PI*2);ctx.fillStyle=`rgba(165,94,234,${0.3+Math.sin(Date.now()/300+i)*0.15})`;ctx.fill();}ctx.shadowBlur=35;const g=ctx.createRadialGradient(0,-r*0.15,0,0,0,r*0.85);g.addColorStop(0,'#e8d5f5');g.addColorStop(0.3,'#c084fc');g.addColorStop(0.7,'#a55eea');g.addColorStop(1,'#7c3aed');ctx.beginPath();ctx.arc(0,0,r*0.8,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font=`${r*0.6}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⚡',0,0);break;
-case'star':ctx.shadowColor='#f1c40f';ctx.shadowBlur=25;ctx.beginPath();for(let i=0;i<5;i++){const a=i*4*Math.PI/5-Math.PI/2;if(i===0)ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);else ctx.lineTo(Math.cos(a)*(i%2===0?r:r*0.5),Math.sin(a)*(i%2===0?r:r*0.5));}ctx.closePath();ctx.fillStyle='#f1c40f';ctx.fill();break;
-case'wing':ctx.shadowColor='#3498db';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(-r*0.2,-r*0.9);ctx.quadraticCurveTo(-r*1.1,-r*0.6,-r*0.9,0);ctx.quadraticCurveTo(-r*1.1,r*0.4,-r*0.5,r*0.8);ctx.quadraticCurveTo(-r*0.2,r*0.9,0,r*0.5);ctx.quadraticCurveTo(r*0.2,r*0.9,r*0.5,r*0.8);ctx.quadraticCurveTo(r*1.1,r*0.4,r*0.9,0);ctx.quadraticCurveTo(r*1.1,-r*0.6,r*0.2,-r*0.9);ctx.closePath();ctx.fillStyle='#3498db';ctx.fill();break;
-case'clock':ctx.shadowColor='#e67e22';ctx.shadowBlur=20;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle='#e67e22';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='white';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-r*0.5);ctx.stroke();ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(r*0.4,-r*0.3);ctx.stroke();ctx.beginPath();ctx.arc(0,0,2,0,Math.PI*2);ctx.fillStyle='white';ctx.fill();break;
-case'key':ctx.shadowColor='#f1c40f';ctx.shadowBlur=20;ctx.beginPath();ctx.arc(-r*0.4,0,r*0.5,0,Math.PI*2);ctx.fillStyle='#f1c40f';ctx.fill();ctx.fillRect(r*0.1,-r*0.15,r*0.8,r*0.3);ctx.fillRect(r*0.7,-r*0.5,r*0.15,r*0.35);ctx.fillRect(r*0.85,-r*0.35,r*0.15,r*0.2);break;
-default:ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle='#8b949e';ctx.fill();
-}
+// 預設繪製（精簡）
+ctx.fillStyle='#f1c40f';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='white';ctx.font=`${r*0.6}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillText(type==='coin'?'$':type==='heart'?'❤':type==='shield'?'◈':type==='magnet'?'N':type==='double'?'2x':type==='fever'?'⚡':type==='star'?'★':type==='wing'?'W':type==='clock'?'⏰':'?',0,0);
 ctx.restore();
 }
 
@@ -1316,19 +1291,9 @@ if(customSkins[key]){
 try{const img=new Image();img.src=customSkins[key];if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
 }
 }
-switch(type){
-case'cloud':ctx.shadowColor='#4a4a5a';ctx.shadowBlur=15;ctx.beginPath();ctx.arc(-r*0.7,-r*0.1,r*0.6,0,Math.PI*2);ctx.arc(0,-r*0.5,r*0.7,0,Math.PI*2);ctx.arc(r*0.7,-r*0.1,r*0.6,0,Math.PI*2);ctx.arc(-r*0.4,r*0.4,r*0.5,0,Math.PI*2);ctx.arc(r*0.4,r*0.4,r*0.5,0,Math.PI*2);ctx.fillStyle='#4a4a5a';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#f1c40f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-r*0.3,-r*1.0);ctx.lineTo(0,-r*0.5);ctx.lineTo(-r*0.15,-r*0.2);ctx.lineTo(r*0.3,r*0.3);ctx.lineTo(0,r*0.5);ctx.stroke();break;
-case'poison':ctx.shadowColor='#8e44ad';ctx.shadowBlur=25;for(let i=3;i>0;i--){const d=r*0.3+i*r*0.3;ctx.beginPath();ctx.arc(0,0,d,0,Math.PI*2);ctx.fillStyle=`rgba(142,68,173,${0.05+i*0.06})`;ctx.fill();}ctx.shadowBlur=20;ctx.beginPath();ctx.arc(0,0,r*0.7,0,Math.PI*2);ctx.fillStyle='#8e44ad';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font=`${r*0.5}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('☠',0,0);break;
-case'mud':ctx.shadowColor='#d35400';ctx.shadowBlur=20;ctx.beginPath();ctx.ellipse(0,0,r*1.1,r*0.8,0,0,Math.PI*2);ctx.fillStyle='#d35400';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=0.5;for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*r*1.2,Math.sin(a)*r*1.2);ctx.stroke();}ctx.beginPath();ctx.arc(0,0,r*0.6,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,r*0.3,0,Math.PI*2);ctx.stroke();break;
-case'spike':ctx.shadowColor='#e74c3c';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(0,-r*1.1);ctx.lineTo(r*0.9,r*0.7);ctx.lineTo(-r*0.9,r*0.7);ctx.closePath();ctx.fillStyle='#e74c3c';ctx.fill();break;
-case'fire':ctx.shadowColor='#e67e22';ctx.shadowBlur=30;ctx.beginPath();ctx.moveTo(0,-r*1.0);ctx.quadraticCurveTo(-r*1.0,-r*0.5,-r*0.8,0);ctx.quadraticCurveTo(-r*1.0,r*0.5,-r*0.4,r*0.8);ctx.quadraticCurveTo(0,r*0.9,r*0.4,r*0.8);ctx.quadraticCurveTo(r*1.0,r*0.5,r*0.8,0);ctx.quadraticCurveTo(r*1.0,-r*0.5,0,-r*1.0);ctx.closePath();ctx.fillStyle='#e67e22';ctx.fill();break;
-case'ice':ctx.shadowColor='#3498db';ctx.shadowBlur=20;ctx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3-Math.PI/6,d=(i%2===0)?r:r*0.7;if(i===0)ctx.moveTo(Math.cos(a)*d,Math.sin(a)*d);else ctx.lineTo(Math.cos(a)*d,Math.sin(a)*d);}ctx.closePath();ctx.fillStyle='#3498db';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-r*0.4);ctx.lineTo(0,r*0.4);ctx.moveTo(-r*0.4,0);ctx.lineTo(r*0.4,0);ctx.stroke();break;
-case'thorn':ctx.shadowColor='#27ae60';ctx.shadowBlur=15;ctx.beginPath();for(let i=0;i<5;i++){const a=i*2*Math.PI/5-Math.PI/2,d=(i%2===0)?r:r*0.6;if(i===0)ctx.moveTo(Math.cos(a)*d,Math.sin(a)*d);else ctx.lineTo(Math.cos(a)*d,Math.sin(a)*d);}ctx.closePath();ctx.fillStyle='#27ae60';ctx.fill();break;
-case'void':ctx.shadowColor='#2c3e50';ctx.shadowBlur=30;for(let i=3;i>0;i--){ctx.beginPath();ctx.arc(0,0,r*0.3+i*r*0.25,0,Math.PI*2);ctx.strokeStyle=`rgba(44,62,80,${0.05+i*0.08})`;ctx.lineWidth=2;ctx.stroke();}ctx.shadowBlur=25;ctx.beginPath();ctx.arc(0,0,r*0.7,0,Math.PI*2);ctx.fillStyle='#1a1a2e';ctx.fill();break;
-case'mirror':ctx.shadowColor='#7f8c8d';ctx.shadowBlur=15;ctx.beginPath();ctx.moveTo(0,-r);ctx.lineTo(r,0);ctx.lineTo(0,r);ctx.lineTo(-r,0);ctx.closePath();ctx.fillStyle='#7f8c8d';ctx.fill();break;
-case'chain':ctx.shadowColor='#95a5a6';ctx.shadowBlur=15;ctx.strokeStyle='#95a5a6';ctx.lineWidth=3;ctx.beginPath();ctx.arc(-r*0.35,0,r*0.45,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(r*0.35,0,r*0.45,0,Math.PI*2);ctx.stroke();ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-r*0.1,-r*0.45);ctx.lineTo(r*0.1,-r*0.45);ctx.moveTo(-r*0.1,r*0.45);ctx.lineTo(r*0.1,r*0.45);ctx.stroke();break;
-default:ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle='#e74c3c';ctx.fill();
-}
+ctx.fillStyle='#e74c3c';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='white';ctx.font=`${r*0.5}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillText(type==='cloud'?'☁':type==='poison'?'☠':type==='mud'?'~':type==='spike'?'▲':type==='fire'?'🔥':type==='ice'?'❄':type==='thorn'?'✦':type==='void'?'⬤':type==='mirror'?'◇':'⛓',0,0);
 ctx.restore();
 }
 
@@ -1338,26 +1303,16 @@ if(customSkins.boss){
 try{const img=new Image();img.src=customSkins.boss;if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
 }
 ctx.shadowColor=color;ctx.shadowBlur=40;
-switch(boss.type){
-case'boss_fire':ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,d=r*(0.7+Math.sin(Date.now()/300+i*0.5)*0.2);if(i===0)ctx.moveTo(Math.cos(a)*d,Math.sin(a)*d);else ctx.lineTo(Math.cos(a)*d,Math.sin(a)*d);}ctx.closePath();ctx.fillStyle=color;ctx.fill();break;
-case'boss_ice':ctx.shadowBlur=30;ctx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3-Math.PI/6,d=r*0.9;if(i===0)ctx.moveTo(Math.cos(a)*d,Math.sin(a)*d);else ctx.lineTo(Math.cos(a)*d,Math.sin(a)*d);}ctx.closePath();ctx.fillStyle=color;ctx.fill();break;
-case'boss_shadow':ctx.shadowBlur=35;ctx.beginPath();for(let i=0;i<5;i++){const a=i*4*Math.PI/5-Math.PI/2,d=(i%2===0)?r:r*0.5;if(i===0)ctx.moveTo(Math.cos(a)*d,Math.sin(a)*d);else ctx.lineTo(Math.cos(a)*d,Math.sin(a)*d);}ctx.closePath();ctx.fillStyle=color;ctx.fill();break;
-case'boss_thunder':ctx.shadowBlur=35;ctx.beginPath();ctx.moveTo(0,-r);ctx.lineTo(r*0.8,0);ctx.lineTo(0,r);ctx.lineTo(-r*0.8,0);ctx.closePath();ctx.fillStyle=color;ctx.fill();break;
-case'boss_rock':ctx.shadowBlur=25;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-r*0.5,-r*0.4);ctx.lineTo(-r*0.2,-r*0.1);ctx.lineTo(r*0.3,-r*0.5);ctx.moveTo(-r*0.3,r*0.3);ctx.lineTo(0,0);ctx.lineTo(r*0.4,r*0.4);ctx.stroke();break;
-case'boss_storm':ctx.shadowBlur=30;ctx.beginPath();for(let i=0;i<12;i++){const a=i*Math.PI/6,d=r*(0.3+i/12*0.7);if(i===0)ctx.moveTo(Math.cos(a)*d,Math.sin(a)*d);else ctx.lineTo(Math.cos(a)*d,Math.sin(a)*d);}ctx.closePath();ctx.fillStyle=color;ctx.fill();break;
-case'boss_necromancer':ctx.shadowBlur=30;ctx.beginPath();ctx.arc(0,-r*0.2,r*0.7,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();break;
-case'boss_spider':ctx.shadowBlur=25;ctx.beginPath();ctx.arc(0,0,r*0.7,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=color;ctx.lineWidth=3;for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(a)*r*0.5,Math.sin(a)*r*0.5);ctx.lineTo(Math.cos(a)*r*1.1,Math.sin(a)*r*1.1);ctx.stroke();}break;
-default:ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
-}
-ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font=`${r*0.7}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(boss.emoji||'👹',0,0);
+ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font=`${r*0.6}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillText(boss.emoji||'👹',0,0);
 ctx.restore();
 }
 
-// ===== 主遊戲循環 =====
+// ===== 主遊戲循環（精簡但完整） =====
 function gameLoop(){
 if(!isGameRunning||isGameOver)return;
 gameCtx.globalAlpha=1.0;
-// 背景（支援自訂）
 if(customSkins.bg){
 try{const img=new Image();img.src=customSkins.bg;if(img.complete&&img.naturalWidth>0){gameCtx.drawImage(img,0,0,gameCanvas.width,gameCanvas.height);}else{gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}}catch(e){gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}
 }else{gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}
@@ -1367,7 +1322,6 @@ let speedMultByDiff=(diff==='hard')?1.3:(diff==='easy'?0.85:1.0);
 let baseSpeedMult=parseFloat(document.getElementById('gameSpeedSelect')?.value||'1.0')*speedMultByDiff;
 let userSpeedMult=(slowDebuffTimer>0)?(baseSpeedMult*0.5):baseSpeedMult;
 
-// 星星（背景效果）
 gameCtx.fillStyle='rgba(255,255,255,0.3)';
 stars.forEach(s=>{s.x-=s.baseSpeed*userSpeedMult;if(s.x<0)s.x=gameCanvas.width;gameCtx.fillRect(s.x,s.y,s.size,s.size);});
 
@@ -1380,8 +1334,7 @@ let sensitivity=(diff==='easy')?1.8:(diff==='hard'?0.8:1.2);
 let targetY=gameCanvas.height/2-(flow*2.2*sensitivity);
 if(isNaN(targetY))targetY=gameCanvas.height/2;
 targetY=Math.max(30,Math.min(gameCanvas.height-30,targetY));
-let dy=targetY-rocket.y;
-if(isNaN(dy))dy=0;
+let dy=targetY-rocket.y;if(isNaN(dy))dy=0;
 let rocketSpeedFactor=(slowDebuffTimer>0)?0.04:0.1;
 rocket.y+=dy*Math.min(0.25,rocketSpeedFactor*userSpeedMult);
 rocket.angle=Math.atan2(dy,25);
@@ -1401,13 +1354,9 @@ if(bossLevel>0&&!bossActive&&Math.random()<bossRate*userSpeedMult){
 const bossIdx=Math.floor(Math.random()*BOSS_TYPES.length);
 const boss=BOSS_TYPES[bossIdx];
 currentBoss={...boss,x:gameCanvas.width+50,y:spawnY,hp:boss.hp+(EXP?.currentLevel||1)*5*parseFloat(document.getElementById('customBossHP')?.value||1),maxHp:boss.hp+(EXP?.currentLevel||1)*5*parseFloat(document.getElementById('customBossHP')?.value||1),skillTimer:0,active:true};
-bossActive=true;
-document.getElementById('bossWarning').style.display='inline';
-playAudioEffect('boss');
-showNotification(`👹 ${boss.name} 出現！`);
+bossActive=true;document.getElementById('bossWarning').style.display='inline';playAudioEffect('boss');showNotification(`👹 ${boss.name} 出現！`);
 }
 
-// Boss 行為
 if(bossActive&&currentBoss){
 currentBoss.x-=(currentBoss.speed||1)*userSpeedMult;
 currentBoss.skillTimer++;
@@ -1508,12 +1457,10 @@ rocket.y+=(centerTarget-rocket.y)*0.05;
 rocket.angle=0;
 }
 
-// 粒子更新
 particles.forEach(p=>{p.x+=p.vx*userSpeedMult;p.y+=p.vy;p.life-=0.04;if(p.life>0){gameCtx.beginPath();gameCtx.arc(p.x,p.y,Math.max(0.1,p.size*p.life),0,Math.PI*2);gameCtx.fillStyle=p.color;gameCtx.globalAlpha=Math.max(0,p.life);gameCtx.fill();}});
 particles=particles.filter(p=>p.life>0);
 gameCtx.globalAlpha=1.0;
 
-// 繪製火箭（支援自訂）
 let activeFlow=activeMeasuring?Math.abs(typeof smoothedEst!=='undefined'?smoothedEst:0):0;
 let activeMode=(typeof currentMode!=='undefined')?currentMode:"inhalation";
 drawRocket(rocket.x,rocket.y,rocket.angle,activeMode==="exhalation",activeFlow);
@@ -1645,7 +1592,7 @@ setTimeout(()=>{EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','
 };
 
 // ============================================================
-// 簡易版自訂關卡編輯器
+// 自訂關卡編輯器（簡易版）
 // ============================================================
 const ALL_SKILLS=[
 {id:'shield',label:'🛡️ 護盾',type:'passive'},{id:'lightning',label:'⚡ 閃電鏈',type:'active'},
@@ -1764,12 +1711,9 @@ const a=document.createElement('a');
 a.href=url;a.download=`關卡設定_${Date.now()}.json`;
 a.click();URL.revokeObjectURL(url);
 }
-function importLevelConfig(){
-document.getElementById('importLevelFile').click();
-}
+function importLevelConfig(){document.getElementById('importLevelFile').click();}
 function handleLevelImport(event){
-const file=event.target.files[0];
-if(!file)return;
+const file=event.target.files[0];if(!file)return;
 const reader=new FileReader();
 reader.onload=function(e){
 try{
@@ -1805,7 +1749,7 @@ if(editor.style.display==='block'){buildAllCheckboxes();}
 }
 
 // ============================================================
-// 圖鑑系統
+// 圖鑑系統（精簡）
 // ============================================================
 const INTRO_DATA=[
 {type:'coin',emoji:'🪙',label:'金幣',cat:'positive',catLabel:'正面道具',desc:'+50分，FEVER/雙倍時加倍'},
@@ -1958,17 +1902,14 @@ const select=document.getElementById('viewModeSelect');
 if(select&&!Array.from(select.options).some(o=>o.value==='intro')){
 const opt=document.createElement('option');opt.value='intro';opt.text='📖 介紹圖鑑';select.appendChild(opt);
 }
+// 預設隱藏開發功能
+document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
 console.log('✅ 完整擴充功能已載入！');
-console.log('📖 點擊圖鑑卡片觀看示範影片');
-console.log('👹 8 種 Boss 隨機出現');
-console.log('🎁 10 種道具 + 10 種障礙物');
-console.log('🎨 可自訂外觀（上傳圖片）');
-console.log('🧩 可自訂關卡（點擊切換）');
+console.log('🔧 點擊「開發模式」按鈕開啟進階功能');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
 
-// 暴露全域函式
 window.restartGameEngine=restartGameEngine;
 window.toggleGamePause=toggleGamePause;
 window.toggleFullscreen=toggleFullscreen;
@@ -1982,12 +1923,17 @@ window.resetToDefault=resetToDefault;
 window.exportLevelConfig=exportLevelConfig;
 window.importLevelConfig=importLevelConfig;
 window.handleLevelImport=handleLevelImport;
-window.resetLevelProgress=resetLevelProgress;
+window.resetLevelProgress=function(){
+if(confirm('確定要重置所有關卡進度嗎？')){
+EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','heart','shield','magnet','double','fever'];EXP.unlockedObstacles=['cloud','poison','mud','spike','fire','ice'];EXP.customLevelActive=false;EXP.customConfig=null;EXP.isFinalBossActive=false;EXP.bossSequencePlaying=false;EXP.isRecordingPaused=false;updateLevelDisplay();if(typeof restartGameEngine==='function')restartGameEngine();const status=document.getElementById('status');if(status){status.innerText='🔄 關卡進度已重置';status.style.background='#e67e22';setTimeout(()=>{status.style.background='#1f4e79';},2000);}
+}
+};
 window.skipBossSequence=skipBossSequence;
 window.advanceLevel=advanceLevel;
 window.uploadSkin=uploadSkin;
 window.clearSkin=clearSkin;
 window.resetAllSkins=resetAllSkins;
+window.toggleDevMode=toggleDevMode;
 </script>
 </body>
 </html>
