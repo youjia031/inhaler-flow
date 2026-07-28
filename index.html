@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整擴充版 v2.0</title>
+<title>呼吸訓練器 - 完整擴充版 v3.0</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -220,7 +220,7 @@ align-items: center;
 background: #161b22;
 padding: 30px;
 border-radius: 16px;
-max-width: 600px;
+max-width: 650px;
 width: 90%;
 border: 1px solid #30363d;
 }
@@ -443,12 +443,12 @@ border-radius: 8px;
 <!-- ===== 自訂關卡編輯器 ===== -->
 <div id="levelEditor">
 <h4 style="color:#f0f6fc; margin:0 0 8px 0;">✏️ 自訂關卡編輯器</h4>
-<textarea id="levelConfig" rows="8">{
+<textarea id="levelConfig" rows="10">{
 "level": 1,
-"bossSkills": ["護盾", "閃電鏈"],
+"bossSkills": ["護盾", "閃電鏈", "火焰風暴"],
 "items": ["coin", "heart", "shield", "magnet", "double", "fever", "star", "wing", "clock", "key"],
 "obstacles": ["cloud", "poison", "mud", "spike", "fire", "ice", "thorn", "void", "mirror", "chain"],
-"bossTypes": ["火龍", "冰霜巨人", "暗影刺客", "雷霆鳳凰", "岩石泰坦"],
+"bossTypes": ["火龍", "冰霜巨人", "暗影刺客", "雷霆鳳凰", "岩石泰坦", "風暴領主", "死靈法師", "蜘蛛女王"],
 "spawnRate": 0.015,
 "enemySpeed": 1.0,
 "particleCount": 50,
@@ -875,10 +875,13 @@ document.getElementById('status').innerText = msg;
 </script>
 
 <!-- ============================================================ -->
-<!-- 遊戲引擎 + 擴充功能 -->
+<!-- 遊戲引擎 + 完整擴充功能 -->
 <!-- ============================================================ -->
 <script>
-// ===== 控制面板擴充 =====
+// ============================================================
+// 第一部分：控制面板擴充 + 音效系統
+// ============================================================
+
 const controlPanel = document.querySelector('.control-panel');
 if (controlPanel) {
 const html = `
@@ -1105,7 +1108,10 @@ else gameBox.classList.add('fullscreen');
 setTimeout(resizeGameCanvas, 150);
 });
 
-// ===== 遊戲引擎 =====
+// ============================================================
+// 第二部分：遊戲引擎
+// ============================================================
+
 const gameCanvas = document.getElementById('gameCanvas');
 const gameCtx = gameCanvas.getContext('2d');
 let gameAnimationId = null;
@@ -1117,27 +1123,27 @@ let hasShield = false, feverTimer = 0, magnetTimer = 0, doubleScoreTimer = 0, sl
 let restTimer = null, isResting = false, sessionStartTime = 0;
 let bossActive = false, currentBoss = null;
 
-// ===== 多種 Boss 定義 =====
+// ===== 8種 Boss 定義 =====
 const BOSS_TYPES = [
-{ name: '🔥 火龍', emoji: '🐉', color: '#e74c3c', hp: 200, speed: 1.2, radius: 30,
+{ type: 'boss_fire', name: '🔥 火龍', emoji: '🐉', color: '#e74c3c', hp: 200, speed: 1.2, radius: 30,
 skills: ['火焰吐息', '烈焰護盾'] },
-{ name: '❄️ 冰霜巨人', emoji: '🧊', color: '#3498db', hp: 300, speed: 0.8, radius: 35,
+{ type: 'boss_ice', name: '❄️ 冰霜巨人', emoji: '🧊', color: '#3498db', hp: 300, speed: 0.8, radius: 35,
 skills: ['冰凍光環', '寒冰之牆'] },
-{ name: '🌑 暗影刺客', emoji: '🗡️', color: '#8e44ad', hp: 150, speed: 2.0, radius: 22,
+{ type: 'boss_shadow', name: '🌑 暗影刺客', emoji: '🗡️', color: '#8e44ad', hp: 150, speed: 2.0, radius: 22,
 skills: ['暗影突襲', '隱身'] },
-{ name: '⚡ 雷霆鳳凰', emoji: '🦅', color: '#f1c40f', hp: 180, speed: 1.5, radius: 28,
+{ type: 'boss_thunder', name: '⚡ 雷霆鳳凰', emoji: '🦅', color: '#f1c40f', hp: 180, speed: 1.5, radius: 28,
 skills: ['閃電風暴', '復活'] },
-{ name: '🪨 岩石泰坦', emoji: '🗿', color: '#7f8c8d', hp: 400, speed: 0.5, radius: 40,
+{ type: 'boss_rock', name: '🪨 岩石泰坦', emoji: '🗿', color: '#7f8c8d', hp: 400, speed: 0.5, radius: 40,
 skills: ['地震', '岩石護甲'] },
-{ name: '🌪️ 風暴領主', emoji: '🌪️', color: '#1abc9c', hp: 220, speed: 1.8, radius: 26,
+{ type: 'boss_storm', name: '🌪️ 風暴領主', emoji: '🌪️', color: '#1abc9c', hp: 220, speed: 1.8, radius: 26,
 skills: ['龍捲風', '風牆'] },
-{ name: '💀 死靈法師', emoji: '🧙', color: '#2c3e50', hp: 160, speed: 1.0, radius: 25,
+{ type: 'boss_necromancer', name: '💀 死靈法師', emoji: '🧙', color: '#2c3e50', hp: 160, speed: 1.0, radius: 25,
 skills: ['召喚骷髏', '詛咒'] },
-{ name: '🕷️ 蜘蛛女王', emoji: '🕷️', color: '#6c3483', hp: 250, speed: 1.3, radius: 32,
+{ type: 'boss_spider', name: '🕷️ 蜘蛛女王', emoji: '🕷️', color: '#6c3483', hp: 250, speed: 1.3, radius: 32,
 skills: ['蛛網', '毒素'] },
 ];
 
-// ===== 多種道具 =====
+// ===== 10種道具 =====
 const ITEM_TYPES = [
 { type: 'coin', emoji: '🪙', color: '#f1c40f', label: '金幣', score: 50 },
 { type: 'heart', emoji: '❤️', color: '#2ecc71', label: '治癒之心', heal: 25 },
@@ -1151,7 +1157,7 @@ const ITEM_TYPES = [
 { type: 'key', emoji: '🔑', color: '#f1c40f', label: '鑰匙', unlock: true },
 ];
 
-// ===== 多種障礙物 =====
+// ===== 10種障礙物 =====
 const OBSTACLE_TYPES = [
 { type: 'cloud', emoji: '⛈️', color: '#4a4a5a', label: '雷暴雲', damage: 25 },
 { type: 'poison', emoji: '🟣', color: '#8e44ad', label: '毒霧', damage: 40 },
@@ -1328,36 +1334,34 @@ audioAnalyser.getByteFrequencyData(audioDataArray);
 spawnY = gameCanvas.height - (audioDataArray[5] / 255) * (gameCanvas.height - 80);
 }
 
-// Boss 出現（每5關出現，隨機Boss）
-const bossLevel = Math.floor(EXP?.currentLevel / 5) || 0;
+// ===== Boss 出現（每5關出現，隨機Boss） =====
+const bossLevel = Math.floor((EXP?.currentLevel || 1) / 5);
 if (bossLevel > 0 && !bossActive && Math.random() < 0.003 * userSpeedMult) {
 const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
+const boss = BOSS_TYPES[bossIdx];
 currentBoss = {
-...BOSS_TYPES[bossIdx],
+...boss,
 x: gameCanvas.width + 50,
 y: spawnY,
-hp: BOSS_TYPES[bossIdx].hp + EXP?.currentLevel * 5 || 200,
-maxHp: BOSS_TYPES[bossIdx].hp + EXP?.currentLevel * 5 || 200,
-skills: BOSS_TYPES[bossIdx].skills || [],
+hp: boss.hp + (EXP?.currentLevel || 1) * 5,
+maxHp: boss.hp + (EXP?.currentLevel || 1) * 5,
 skillTimer: 0,
 active: true
 };
 bossActive = true;
 document.getElementById('bossWarning').style.display = 'inline';
 playAudioEffect('boss');
-showNotification(`👹 ${currentBoss.name} 出現！`);
+showNotification(`👹 ${boss.name} 出現！`);
 }
 
-// Boss 行為
+// ===== Boss 行為 =====
 if (bossActive && currentBoss) {
 currentBoss.x -= (currentBoss.speed || 1) * userSpeedMult;
 currentBoss.skillTimer++;
-// Boss 技能發動
 if (currentBoss.skillTimer > 120 && Math.random() < 0.02) {
 const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
 showNotification(`💥 ${currentBoss.name} 使用 ${skill}！`);
-if (skill === '火焰吐息' || skill === '閃電風暴') {
-// 主動攻擊：發射彈幕
+if (skill === '火焰吐息' || skill === '閃電風暴' || skill === '龍捲風' || skill === '暗影突襲') {
 for (let i = 0; i < 8; i++) {
 const angle = (i / 8) * Math.PI * 2;
 obstacles.push({
@@ -1367,23 +1371,23 @@ vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3,
 radius: 8, damage: 15, hit: false, baseSpeed: 3
 });
 }
-} else if (skill === '冰凍光環' || skill === '岩石護甲') {
-// 被動技能：減速周圍
+} else if (skill === '冰凍光環' || skill === '岩石護甲' || skill === '寒冰之牆' || skill === '蛛網') {
 slowDebuffTimer = 120;
 document.getElementById('slowBadge').style.display = 'inline';
-} else if (skill === '暗影突襲') {
+} else if (skill === '詛咒' || skill === '毒素') {
 playerHP = Math.max(0, playerHP - 20);
 playAudioEffect('hit');
 if (playerHP <= 0) { triggerGameOver(); return; }
 }
 currentBoss.skillTimer = 0;
 }
+
 // 繪製 Boss
 gameCtx.save();
 gameCtx.translate(currentBoss.x, currentBoss.y);
 const bossScale = 1 + Math.sin(Date.now() / 500) * 0.03;
 gameCtx.scale(bossScale, bossScale);
-// Boss 光環
+
 if (settings.glow) {
 const grad = gameCtx.createRadialGradient(0, 0, 10, 0, 0, currentBoss.radius * 1.5);
 grad.addColorStop(0, currentBoss.color + '40');
@@ -1393,7 +1397,6 @@ gameCtx.beginPath();
 gameCtx.arc(0, 0, currentBoss.radius * 1.5, 0, Math.PI * 2);
 gameCtx.fill();
 }
-// Boss 身體
 gameCtx.shadowColor = currentBoss.color;
 gameCtx.shadowBlur = settings.shadows ? 30 : 0;
 gameCtx.fillStyle = currentBoss.color;
@@ -1401,19 +1404,18 @@ gameCtx.beginPath();
 gameCtx.arc(0, 0, currentBoss.radius, 0, Math.PI * 2);
 gameCtx.fill();
 gameCtx.shadowBlur = 0;
-// Boss 表情
 gameCtx.font = `${currentBoss.radius}px sans-serif`;
 gameCtx.textAlign = 'center';
 gameCtx.textBaseline = 'middle';
 gameCtx.fillText(currentBoss.emoji, 0, 0);
-// Boss HP 條
 gameCtx.restore();
+
+// Boss HP 條
 const hpPct = currentBoss.hp / currentBoss.maxHp;
 gameCtx.fillStyle = 'rgba(0,0,0,0.7)';
 gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60, 6);
 gameCtx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
 gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60 * hpPct, 6);
-// Boss 名稱
 gameCtx.fillStyle = '#f0f6fc';
 gameCtx.font = '10px sans-serif';
 gameCtx.textAlign = 'center';
@@ -1431,7 +1433,6 @@ playAudioEffect('hit');
 if (playerHP <= 0) { triggerGameOver(); return; }
 }
 }
-// Boss 死亡
 if (currentBoss.x < -50) {
 bossActive = false;
 currentBoss = null;
@@ -1439,8 +1440,8 @@ document.getElementById('bossWarning').style.display = 'none';
 }
 }
 
-// 生成道具（使用解鎖列表）
-const unlockedItems = EXP?.unlockedItems || ['coin', 'heart'];
+// ===== 生成道具 =====
+const unlockedItems = EXP?.unlockedItems || ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
 const itemPool = ITEM_TYPES.filter(i => unlockedItems.includes(i.type));
 if (itemPool.length > 0 && Math.random() < 0.025 * userSpeedMult) {
 const item = itemPool[Math.floor(Math.random() * itemPool.length)];
@@ -1455,8 +1456,8 @@ scoreMult: 1
 });
 }
 
-// 生成障礙物（使用解鎖列表）
-const unlockedObstacles = EXP?.unlockedObstacles || ['cloud'];
+// ===== 生成障礙物 =====
+const unlockedObstacles = EXP?.unlockedObstacles || ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
 const obstaclePool = OBSTACLE_TYPES.filter(o => unlockedObstacles.includes(o.type));
 if (obstaclePool.length > 0 && Math.random() < 0.015 * userSpeedMult) {
 const obs = obstaclePool[Math.floor(Math.random() * obstaclePool.length)];
@@ -1473,7 +1474,7 @@ slow: obs.slow || false
 });
 }
 
-// 更新道具
+// ===== 更新道具 =====
 collectibles.forEach((c) => {
 c.x -= c.baseSpeed * userSpeedMult;
 if (magnetTimer > 0) {
@@ -1485,17 +1486,12 @@ c.y += (rocket.y - c.y) * 0.12;
 }
 gameCtx.beginPath();
 gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-if (c.type === 'coin') { gameCtx.fillStyle = '#f1c40f'; }
-else if (c.type === 'heart') { gameCtx.fillStyle = '#2ecc71'; }
-else if (c.type === 'shield') { gameCtx.fillStyle = '#00d2d3'; }
-else if (c.type === 'magnet') { gameCtx.fillStyle = '#f39c12'; }
-else if (c.type === 'double') { gameCtx.fillStyle = '#2ecc71'; }
-else if (c.type === 'fever') { gameCtx.fillStyle = '#a55eea'; }
-else if (c.type === 'star') { gameCtx.fillStyle = '#f1c40f'; }
-else if (c.type === 'wing') { gameCtx.fillStyle = '#3498db'; }
-else if (c.type === 'clock') { gameCtx.fillStyle = '#e67e22'; }
-else if (c.type === 'key') { gameCtx.fillStyle = '#f1c40f'; }
-else { gameCtx.fillStyle = '#8b949e'; }
+const colors = {
+coin:'#f1c40f', heart:'#2ecc71', shield:'#00d2d3', magnet:'#f39c12',
+double:'#2ecc71', fever:'#a55eea', star:'#f1c40f', wing:'#3498db',
+clock:'#e67e22', key:'#f1c40f'
+};
+gameCtx.fillStyle = colors[c.type] || '#8b949e';
 gameCtx.fill();
 if (settings.glow) {
 gameCtx.shadowColor = gameCtx.fillStyle;
@@ -1503,7 +1499,6 @@ gameCtx.shadowBlur = 15;
 gameCtx.fill();
 gameCtx.shadowBlur = 0;
 }
-// 道具表情
 gameCtx.fillStyle = '#ffffff';
 gameCtx.font = '12px sans-serif';
 gameCtx.textAlign = 'center';
@@ -1539,16 +1534,13 @@ feverTimer = 300;
 document.getElementById('feverBadge').style.display = 'inline';
 playAudioEffect('buff');
 } else if (c.type === 'wing') {
-// 加速效果
 userSpeedMult *= 1.5;
 setTimeout(() => { userSpeedMult /= 1.5; }, 3000);
 playAudioEffect('buff');
 } else if (c.type === 'clock') {
-// 額外時間
 sessionStartTime -= 30000;
 playAudioEffect('buff');
 } else if (c.type === 'key') {
-// 解鎖特殊效果
 if (typeof window.advanceLevel === 'function') window.advanceLevel();
 playAudioEffect('buff');
 }
@@ -1556,21 +1548,17 @@ c.collected = true;
 }
 });
 
-// 更新障礙物
+// ===== 更新障礙物 =====
 obstacles.forEach((o) => {
 o.x -= o.baseSpeed * userSpeedMult;
 gameCtx.beginPath();
 gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
-if (o.type === 'poison') { gameCtx.fillStyle = '#8e44ad'; }
-else if (o.type === 'mud') { gameCtx.fillStyle = '#d35400'; }
-else if (o.type === 'spike') { gameCtx.fillStyle = '#e74c3c'; }
-else if (o.type === 'fire') { gameCtx.fillStyle = '#e67e22'; }
-else if (o.type === 'ice') { gameCtx.fillStyle = '#3498db'; }
-else if (o.type === 'thorn') { gameCtx.fillStyle = '#27ae60'; }
-else if (o.type === 'void') { gameCtx.fillStyle = '#2c3e50'; }
-else if (o.type === 'mirror') { gameCtx.fillStyle = '#7f8c8d'; }
-else if (o.type === 'chain') { gameCtx.fillStyle = '#95a5a6'; }
-else { gameCtx.fillStyle = '#e74c3c'; }
+const obsColors = {
+cloud:'#4a4a5a', poison:'#8e44ad', mud:'#d35400', spike:'#e74c3c',
+fire:'#e67e22', ice:'#3498db', thorn:'#27ae60', void:'#2c3e50',
+mirror:'#7f8c8d', chain:'#95a5a6', boss_shot:'#e74c3c'
+};
+gameCtx.fillStyle = obsColors[o.type] || '#e74c3c';
 gameCtx.fill();
 if (settings.glow) {
 gameCtx.shadowColor = gameCtx.fillStyle;
@@ -1578,7 +1566,6 @@ gameCtx.shadowBlur = 10;
 gameCtx.fill();
 gameCtx.shadowBlur = 0;
 }
-// 障礙物表情
 gameCtx.fillStyle = '#ffffff';
 gameCtx.font = '14px sans-serif';
 gameCtx.textAlign = 'center';
@@ -1587,7 +1574,7 @@ gameCtx.fillText(o.emoji || '💥', o.x, o.y);
 
 let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
 if (dist < o.radius + rocket.radius) {
-if (hasShield && o.type !== 'mud') {
+if (hasShield && o.type !== 'mud' && o.type !== 'ice' && o.type !== 'chain') {
 hasShield = false;
 document.getElementById('shieldBadge').style.display = 'none';
 playAudioEffect('hit');
@@ -1597,7 +1584,7 @@ slowDebuffTimer = (diff === 'hard') ? 360 : 240;
 document.getElementById('slowBadge').style.display = 'inline';
 playAudioEffect('hit');
 } else {
-playerHP = Math.max(0, playerHP - o.damage);
+playerHP = Math.max(0, playerHP - (o.damage || 10));
 if (diff !== 'easy') gameCombo = 0;
 playAudioEffect('hit');
 }
@@ -1727,7 +1714,10 @@ startBGM();
 }, 1000);
 }
 
-// ===== 擴充功能：關卡系統 =====
+// ============================================================
+// 第三部分：關卡系統 + 圖鑑 + 擴充功能
+// ============================================================
+
 const EXP = {
 currentLevel: 1,
 maxLevel: 100,
@@ -1741,7 +1731,7 @@ customConfig: null,
 isRecordingPaused: false,
 currentSpawnRate: 0.015,
 currentSpeedBonus: 1.0,
-bossTypes: ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦']
+bossTypes: ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦', '風暴領主', '死靈法師', '蜘蛛女王']
 };
 window.__expansion = EXP;
 
@@ -1771,13 +1761,6 @@ function getRandomObstacleType() {
 const all = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice', 'thorn', 'void', 'mirror', 'chain'];
 const available = all.filter(item => !EXP.unlockedObstacles.includes(item));
 if (available.length === 0) return 'cloud';
-return available[Math.floor(Math.random() * available.length)];
-}
-
-function getRandomBossType() {
-const all = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦', '風暴領主', '死靈法師', '蜘蛛女王'];
-const available = all.filter(item => !EXP.bossTypes.includes(item));
-if (available.length === 0) return all[Math.floor(Math.random() * all.length)];
 return available[Math.floor(Math.random() * available.length)];
 }
 
@@ -1821,13 +1804,11 @@ if (EXP.currentLevel > EXP.maxLevel) {
 triggerFinalBoss();
 return;
 }
-// 每5關新增Boss技能（輪流主動/被動）
 if (EXP.currentLevel % 5 === 0) {
 const skill = getRandomBossSkill();
 EXP.bossSkills.push(skill);
 showNotification(`👹 新 Boss 技能: ${skill.name} (${skill.type})`);
 }
-// 每3關新增道具
 if (EXP.currentLevel % 3 === 0) {
 const newItem = getRandomItemType();
 if (!EXP.unlockedItems.includes(newItem)) {
@@ -1836,7 +1817,6 @@ const itemInfo = ITEM_TYPES.find(i => i.type === newItem);
 showNotification(`🎁 新道具: ${itemInfo?.emoji || '🎁'} ${itemInfo?.label || newItem}`);
 }
 }
-// 每4關新增障礙物
 if (EXP.currentLevel % 4 === 0) {
 const newObstacle = getRandomObstacleType();
 if (!EXP.unlockedObstacles.includes(newObstacle)) {
@@ -1845,20 +1825,12 @@ const obsInfo = OBSTACLE_TYPES.find(o => o.type === newObstacle);
 showNotification(`⚠️ 新障礙物: ${obsInfo?.emoji || '⚠️'} ${obsInfo?.label || newObstacle}`);
 }
 }
-// 每7關新增Boss類型
-if (EXP.currentLevel % 7 === 0) {
-const newBoss = getRandomBossType();
-if (!EXP.bossTypes.includes(newBoss)) {
-EXP.bossTypes.push(newBoss);
-showNotification(`👾 新 Boss: ${newBoss}`);
-}
-}
 EXP.currentSpawnRate = Math.min(0.015 + EXP.currentLevel * 0.0008, 0.05);
 EXP.currentSpeedBonus = 1 + (EXP.currentLevel - 1) * 0.008;
 updateLevelDisplay();
 };
 
-// ===== 自動關卡推進（每100分） =====
+// ===== 自動關卡推進 =====
 setInterval(() => {
 const scoreEl = document.getElementById('gameScore');
 if (!scoreEl) return;
@@ -1927,7 +1899,7 @@ EXP.currentLevel = 1;
 EXP.bossSkills = [];
 EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
 EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
-EXP.bossTypes = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦'];
+EXP.bossTypes = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦', '風暴領主', '死靈法師', '蜘蛛女王'];
 EXP.isFinalBossActive = false;
 updateLevelDisplay();
 if (status) {
@@ -1952,7 +1924,7 @@ EXP.currentLevel = config.level || 1;
 EXP.bossSkills = config.bossSkills || [];
 EXP.unlockedItems = config.items || ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
 EXP.unlockedObstacles = config.obstacles || ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
-EXP.bossTypes = config.bossTypes || ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦'];
+EXP.bossTypes = config.bossTypes || ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦', '風暴領主', '死靈法師', '蜘蛛女王'];
 if (config.spawnRate) EXP.currentSpawnRate = config.spawnRate;
 if (config.enemySpeed) EXP.currentSpeedBonus = config.enemySpeed;
 updateLevelDisplay();
@@ -1975,7 +1947,7 @@ EXP.currentLevel = 1;
 EXP.bossSkills = [];
 EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
 EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
-EXP.bossTypes = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦'];
+EXP.bossTypes = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦', '風暴領主', '死靈法師', '蜘蛛女王'];
 EXP.customLevelActive = false;
 EXP.customConfig = null;
 EXP.isFinalBossActive = false;
@@ -1992,70 +1964,117 @@ setTimeout(() => { status.style.background = '#1f4e79'; }, 2000);
 }
 };
 
-// ===== 圖鑑系統（點擊播放示範影片） =====
-const introData = [
+// ============================================================
+// 第四部分：圖鑑系統（包含所有 8 種 Boss）
+// ============================================================
+
+// 圖鑑資料（包含所有道具、障礙物、8種Boss）
+const INTRO_DATA = [
 // 正面道具
-{ type: 'coin', label: '🪙 金幣', cat: 'positive', catLabel: '正面道具', desc: '+50分，FEVER/雙倍時加倍' },
-{ type: 'heart', label: '❤️ 治癒之心', cat: 'positive', catLabel: '正面道具', desc: '恢復 HP +25' },
-{ type: 'shield', label: '🛡️ 護盾', cat: 'positive', catLabel: '正面道具', desc: '抵擋一次障礙物傷害' },
-{ type: 'magnet', label: '🧲 磁鐵', cat: 'positive', catLabel: '正面道具', desc: '吸引 200px 內道具' },
-{ type: 'double', label: '💎 雙倍積分', cat: 'positive', catLabel: '正面道具', desc: '得分 ×2' },
-{ type: 'fever', label: '⚡ FEVER', cat: 'positive', catLabel: '正面道具', desc: '得分 ×2 + 超大吸取' },
-{ type: 'star', label: '⭐ 星星', cat: 'positive', catLabel: '正面道具', desc: '+100分' },
-{ type: 'wing', label: '🪶 翅膀', cat: 'positive', catLabel: '正面道具', desc: '加速 3 秒' },
-{ type: 'clock', label: '⏰ 時鐘', cat: 'positive', catLabel: '正面道具', desc: '增加 30 秒遊戲時間' },
-{ type: 'key', label: '🔑 鑰匙', cat: 'positive', catLabel: '正面道具', desc: '立即升一關' },
+{ type: 'coin', emoji: '🪙', label: '金幣', cat: 'positive', catLabel: '正面道具', desc: '+50分，FEVER/雙倍時加倍' },
+{ type: 'heart', emoji: '❤️', label: '治癒之心', cat: 'positive', catLabel: '正面道具', desc: '恢復 HP +25' },
+{ type: 'shield', emoji: '🛡️', label: '護盾', cat: 'positive', catLabel: '正面道具', desc: '抵擋一次障礙物傷害' },
+{ type: 'magnet', emoji: '🧲', label: '磁鐵', cat: 'positive', catLabel: '正面道具', desc: '吸引 200px 內道具' },
+{ type: 'double', emoji: '💎', label: '雙倍積分', cat: 'positive', catLabel: '正面道具', desc: '得分 ×2' },
+{ type: 'fever', emoji: '⚡', label: 'FEVER', cat: 'positive', catLabel: '正面道具', desc: '得分 ×2 + 超大吸取' },
+{ type: 'star', emoji: '⭐', label: '星星', cat: 'positive', catLabel: '正面道具', desc: '+100分' },
+{ type: 'wing', emoji: '🪶', label: '翅膀', cat: 'positive', catLabel: '正面道具', desc: '加速 3 秒' },
+{ type: 'clock', emoji: '⏰', label: '時鐘', cat: 'positive', catLabel: '正面道具', desc: '增加 30 秒遊戲時間' },
+{ type: 'key', emoji: '🔑', label: '鑰匙', cat: 'positive', catLabel: '正面道具', desc: '立即升一關' },
 // 負面道具
-{ type: 'curse', label: '💀 詛咒寶石', cat: 'negative', catLabel: '負面道具', desc: '扣 HP 15~25，扣分 -100' },
+{ type: 'curse', emoji: '💀', label: '詛咒寶石', cat: 'negative', catLabel: '負面道具', desc: '扣 HP 15~25，扣分 -100' },
 // 障礙物
-{ type: 'cloud', label: '⛈️ 雷暴雲', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：10/25/35' },
-{ type: 'poison', label: '🟣 毒霧', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：40/50' },
-{ type: 'mud', label: '🕸️ 黏液', cat: 'obstacle', catLabel: '障礙物', desc: '減速 50%' },
-{ type: 'spike', label: '🔺 尖刺', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：30' },
-{ type: 'fire', label: '🔥 火焰', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：35' },
-{ type: 'ice', label: '❄️ 冰塊', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：20，減速' },
-{ type: 'thorn', label: '🌿 荊棘', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：15' },
-{ type: 'void', label: '🌌 虛空', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：50' },
-{ type: 'mirror', label: '🪞 鏡像', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：10，反彈' },
-{ type: 'chain', label: '⛓️ 鎖鏈', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：20，減速' },
-// Boss
-{ type: 'boss', label: '👹 關卡 Boss', cat: 'boss', catLabel: 'Boss', desc: '多種Boss隨機出現，每5關新增技能' },
-{ type: 'finalboss', label: '🏆 最終 Boss', cat: 'final', catLabel: '最終 Boss', desc: '第100關觸發，專屬動畫' },
+{ type: 'cloud', emoji: '⛈️', label: '雷暴雲', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：10/25/35' },
+{ type: 'poison', emoji: '🟣', label: '毒霧', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：40/50' },
+{ type: 'mud', emoji: '🕸️', label: '黏液', cat: 'obstacle', catLabel: '障礙物', desc: '減速 50%' },
+{ type: 'spike', emoji: '🔺', label: '尖刺', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：30' },
+{ type: 'fire', emoji: '🔥', label: '火焰', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：35' },
+{ type: 'ice', emoji: '❄️', label: '冰塊', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：20，減速' },
+{ type: 'thorn', emoji: '🌿', label: '荊棘', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：15' },
+{ type: 'void', emoji: '🌌', label: '虛空', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：50' },
+{ type: 'mirror', emoji: '🪞', label: '鏡像', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：10，反彈' },
+{ type: 'chain', emoji: '⛓️', label: '鎖鏈', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：20，減速' },
+// 所有 8 種 Boss
+{ type: 'boss_fire', emoji: '🐉', label: '🔥 火龍', cat: 'boss', catLabel: 'Boss', desc: '火焰吐息 · 烈焰護盾', color: '#e74c3c', skills: ['火焰吐息', '烈焰護盾'] },
+{ type: 'boss_ice', emoji: '🧊', label: '❄️ 冰霜巨人', cat: 'boss', catLabel: 'Boss', desc: '冰凍光環 · 寒冰之牆', color: '#3498db', skills: ['冰凍光環', '寒冰之牆'] },
+{ type: 'boss_shadow', emoji: '🗡️', label: '🌑 暗影刺客', cat: 'boss', catLabel: 'Boss', desc: '暗影突襲 · 隱身', color: '#8e44ad', skills: ['暗影突襲', '隱身'] },
+{ type: 'boss_thunder', emoji: '🦅', label: '⚡ 雷霆鳳凰', cat: 'boss', catLabel: 'Boss', desc: '閃電風暴 · 復活', color: '#f1c40f', skills: ['閃電風暴', '復活'] },
+{ type: 'boss_rock', emoji: '🗿', label: '🪨 岩石泰坦', cat: 'boss', catLabel: 'Boss', desc: '地震 · 岩石護甲', color: '#7f8c8d', skills: ['地震', '岩石護甲'] },
+{ type: 'boss_storm', emoji: '🌪️', label: '🌪️ 風暴領主', cat: 'boss', catLabel: 'Boss', desc: '龍捲風 · 風牆', color: '#1abc9c', skills: ['龍捲風', '風牆'] },
+{ type: 'boss_necromancer', emoji: '🧙', label: '💀 死靈法師', cat: 'boss', catLabel: 'Boss', desc: '召喚骷髏 · 詛咒', color: '#2c3e50', skills: ['召喚骷髏', '詛咒'] },
+{ type: 'boss_spider', emoji: '🕷️', label: '🕷️ 蜘蛛女王', cat: 'boss', catLabel: 'Boss', desc: '蛛網 · 毒素', color: '#6c3483', skills: ['蛛網', '毒素'] },
+// 最終 Boss
+{ type: 'finalboss', emoji: '👾', label: '🏆 最終 Boss - 虛空領主', cat: 'final', catLabel: '最終 Boss', desc: '第100關觸發 · 專屬動畫與配樂 · 擁有全部 Boss 技能' },
 ];
 
+// ===== 建立圖鑑 =====
 function buildIntroGrid() {
 const grid = document.getElementById('introGrid');
 if (!grid) return;
-introData.forEach((item, idx) => {
+grid.innerHTML = '';
+
+const categories = [
+{ key: 'positive', label: '🎁 正面道具' },
+{ key: 'negative', label: '⚠️ 負面道具' },
+{ key: 'obstacle', label: '🚧 障礙物' },
+{ key: 'boss', label: '👹 Boss 類型（共8種）' },
+{ key: 'final', label: '🏆 最終 Boss' }
+];
+
+categories.forEach(cat => {
+const header = document.createElement('div');
+header.style.cssText = 'width:100%; margin:10px 0 5px 0; padding:8px 12px; background:#1a1a2e; border-radius:6px; border-left:4px solid #1f4e79;';
+header.innerHTML = `<span style="color:#f0f6fc; font-weight:bold; font-size:14px;">${cat.label}</span>`;
+grid.appendChild(header);
+
+const items = INTRO_DATA.filter(item => item.cat === cat.key);
+items.forEach((item, idx) => {
 const card = document.createElement('div');
 card.className = `intro-card ${item.cat}`;
 if (item.cat === 'boss') card.classList.add('boss-card');
 if (item.cat === 'final') card.classList.add('final-card');
+
+if (item.color) {
+card.style.borderLeftColor = item.color;
+card.style.borderLeftWidth = '4px';
+}
+
+let skillTags = '';
+if (item.skills && item.skills.length > 0) {
+skillTags = `<div style="text-align:center; margin-top:4px;">
+${item.skills.map(s => `<span style="display:inline-block; background:#2a1a3a; color:#d4a0df; padding:1px 8px; border-radius:10px; font-size:9px; margin:1px;">${s}</span>`).join('')}
+</div>`;
+}
+
 card.innerHTML = `
 <span class="category-tag ${item.cat}">${item.catLabel}</span>
-<span class="icon">${item.label.split(' ')[0]}</span>
+<span class="icon">${item.emoji || item.label.split(' ')[0]}</span>
 <h4>${item.label}</h4>
 <p>${item.desc}</p>
+${skillTags}
 <div class="demo-container">
 <canvas id="demo_${item.type}_${idx}" width="200" height="70"></canvas>
 <span class="demo-label">🎬 點擊播放示範</span>
 </div>
 <div class="click-hint">👆 點擊卡片觀看詳細示範</div>
 `;
-card.onclick = () => openDemoModal(item.type, item.label, item.desc);
+
+card.onclick = () => openDemoModal(item.type, item.label, item.desc, item.color);
 grid.appendChild(card);
-// 啟動小預覽動畫
-setTimeout(() => drawDemoPreview(`demo_${item.type}_${idx}`, item.type), 100);
+
+setTimeout(() => drawDemoPreview(`demo_${item.type}_${idx}`, item.type, item.color), 100);
+});
 });
 }
 
-// 小預覽動畫
-function drawDemoPreview(canvasId, type) {
+// ===== 小預覽動畫 =====
+function drawDemoPreview(canvasId, type, color) {
 const canvas = document.getElementById(canvasId);
 if (!canvas) return;
 const ctx = canvas.getContext('2d');
 const w = canvas.width, h = canvas.height;
 let frame = 0;
+
 function animate() {
 frame++;
 ctx.clearRect(0, 0, w, h);
@@ -2064,75 +2083,63 @@ grad.addColorStop(0, '#08080e');
 grad.addColorStop(1, '#12121e');
 ctx.fillStyle = grad;
 ctx.fillRect(0, 0, w, h);
-// 簡化版動畫
-const cx = w/2, cy = h/2;
-const t = frame/30;
+
+const cx = w/2, cy = h/2, t = frame/30;
+const isBoss = type.startsWith('boss_') || type === 'finalboss';
+const bossColor = color || '#8e44ad';
+
+if (isBoss) {
+ctx.save();
+ctx.translate(cx, cy);
+const bp = 1 + Math.sin(t * 1.2) * 0.05;
+ctx.scale(bp, bp);
+ctx.shadowColor = bossColor;
+ctx.shadowBlur = 25;
+ctx.strokeStyle = bossColor;
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.arc(0, 0, 22, 0, Math.PI * 2);
+ctx.stroke();
+ctx.shadowBlur = 15;
+ctx.fillStyle = bossColor;
+ctx.beginPath();
+ctx.arc(0, 0, 16, 0, Math.PI * 2);
+ctx.fill();
+ctx.shadowBlur = 0;
+ctx.fillStyle = 'white';
+ctx.font = '18px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+const emojis = {
+boss_fire: '🐉', boss_ice: '🧊', boss_shadow: '🗡️', boss_thunder: '🦅',
+boss_rock: '🗿', boss_storm: '🌪️', boss_necromancer: '🧙', boss_spider: '🕷️',
+finalboss: '👾'
+};
+ctx.fillText(emojis[type] || '👹', 0, 0);
+ctx.restore();
+const names = {
+boss_fire: '火龍', boss_ice: '冰霜巨人', boss_shadow: '暗影刺客', boss_thunder: '雷霆鳳凰',
+boss_rock: '岩石泰坦', boss_storm: '風暴領主', boss_necromancer: '死靈法師', boss_spider: '蜘蛛女王',
+finalboss: '虛空領主'
+};
+ctx.fillStyle = bossColor;
+ctx.font = '7px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText(names[type] || 'Boss', w/2, h-2);
+} else {
+// 非 Boss 的簡化動畫
 ctx.fillStyle = '#8b949e';
 ctx.font = '28px sans-serif';
 ctx.textAlign = 'center';
 ctx.textBaseline = 'middle';
-if (type === 'coin') {
-ctx.save(); ctx.translate(cx, cy); ctx.rotate(t);
-ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(0,0,16,0,Math.PI*2); ctx.fill();
-ctx.fillStyle = '#b7950b'; ctx.font = '16px sans-serif'; ctx.fillText('★',0,0);
-ctx.restore();
-} else if (type === 'heart') {
-const p=1+Math.sin(t*2.5)*0.08;
-ctx.save(); ctx.translate(cx, cy); ctx.scale(p,p);
-ctx.fillStyle='#2ecc71'; ctx.beginPath();
-ctx.moveTo(0,5); ctx.bezierCurveTo(-7,-2,-16,-7,-14,-14);
-ctx.bezierCurveTo(-12,-22,-5,-26,0,-18);
-ctx.bezierCurveTo(5,-26,12,-22,14,-14);
-ctx.bezierCurveTo(16,-7,7,-2,0,5);
-ctx.fill(); ctx.restore();
-} else if (type === 'shield') {
-ctx.save(); ctx.translate(cx, cy);
-ctx.strokeStyle='#00d2d3'; ctx.lineWidth=2;
-ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.stroke();
-ctx.beginPath(); ctx.moveTo(0,-12); ctx.lineTo(10,-5); ctx.lineTo(10,4);
-ctx.lineTo(0,12); ctx.lineTo(-10,4); ctx.lineTo(-10,-5); ctx.closePath();
-ctx.fillStyle='rgba(0,210,211,0.2)'; ctx.fill();
-ctx.restore();
-} else if (type === 'curse') {
-ctx.save(); ctx.translate(cx, cy);
-ctx.fillStyle='#2c3e50'; ctx.beginPath();
-ctx.moveTo(0,-14); ctx.lineTo(10,-4); ctx.lineTo(8,10); ctx.lineTo(-8,10); ctx.lineTo(-10,-4); ctx.closePath();
-ctx.fill(); ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.5; ctx.stroke();
-ctx.fillStyle='#e74c3c'; ctx.font='14px sans-serif'; ctx.fillText('☠',0,0);
-ctx.restore();
-} else if (type === 'cloud') {
-ctx.fillStyle='#4a4a5a';
-ctx.beginPath(); ctx.arc(cx-12,cy-2,8,0,Math.PI*2);
-ctx.arc(cx,cy-6,10,0,Math.PI*2);
-ctx.arc(cx+12,cy-2,8,0,Math.PI*2);
-ctx.arc(cx-6,cy+4,6,0,Math.PI*2);
-ctx.arc(cx+6,cy+4,6,0,Math.PI*2);
-ctx.fill();
-if(Math.sin(t*1.8)>0.3){ctx.strokeStyle='#f1c40f';ctx.lineWidth=2;
-ctx.beginPath();ctx.moveTo(cx-4,cy-12);ctx.lineTo(cx,cy-6);ctx.lineTo(cx-2,cy-2);ctx.lineTo(cx+4,cy+4);ctx.stroke();}
-} else if (type === 'boss') {
-ctx.save(); ctx.translate(cx, cy);
-ctx.fillStyle='#f1c40f';
-ctx.beginPath(); ctx.moveTo(-14,-8); ctx.lineTo(-10,-16); ctx.lineTo(-6,-10); ctx.lineTo(0,-18); ctx.lineTo(6,-10); ctx.lineTo(10,-16); ctx.lineTo(14,-8); ctx.closePath(); ctx.fill();
-ctx.fillStyle='#8e44ad'; ctx.beginPath(); ctx.arc(0,3,13,0,Math.PI*2); ctx.fill();
-ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(-5,0,3,0,Math.PI*2); ctx.arc(5,0,3,0,Math.PI*2); ctx.fill();
-ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(-5,2,1.5,0,Math.PI*2); ctx.arc(5,2,1.5,0,Math.PI*2); ctx.fill();
-ctx.restore();
-} else if (type === 'finalboss') {
-ctx.save(); ctx.translate(cx, cy);
-for(let i=3;i>0;i--){ctx.beginPath();ctx.arc(0,0,6+i*5+Math.sin(t*0.5+i)*2,0,Math.PI*2);
-ctx.strokeStyle=`rgba(231,76,60,${0.05+i*0.04})`;ctx.lineWidth=1;ctx.stroke();}
-ctx.fillStyle='#e74c3c'; ctx.shadowColor='#e74c3c'; ctx.shadowBlur=15;
-ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill();
-ctx.shadowBlur=0; ctx.fillStyle='#f1c40f';
-ctx.beginPath(); ctx.moveTo(-14,-8); ctx.lineTo(-10,-16); ctx.lineTo(-6,-10); ctx.lineTo(0,-18); ctx.lineTo(6,-10); ctx.lineTo(10,-16); ctx.lineTo(14,-8); ctx.closePath(); ctx.fill();
-ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(-5,0,3,0,Math.PI*2); ctx.arc(5,0,3,0,Math.PI*2); ctx.fill();
-ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(-4,-1,1.2,0,Math.PI*2); ctx.arc(4,-1,1.2,0,Math.PI*2); ctx.fill();
-ctx.restore();
-} else {
-ctx.fillStyle = '#8b949e';
-ctx.font = '20px sans-serif';
-ctx.fillText('🎬', cx, cy);
+const emojiMap = {
+coin:'🪙', heart:'❤️', shield:'🛡️', magnet:'🧲', double:'💎',
+fever:'⚡', star:'⭐', wing:'🪶', clock:'⏰', key:'🔑',
+curse:'💀', cloud:'⛈️', poison:'🟣', mud:'🕸️', spike:'🔺',
+fire:'🔥', ice:'❄️', thorn:'🌿', void:'🌌', mirror:'🪞', chain:'⛓️'
+};
+ctx.fillText(emojiMap[type] || '🎬', cx, cy);
 }
 ctx.fillStyle = 'rgba(139,148,158,0.3)';
 ctx.font = '7px sans-serif';
@@ -2144,10 +2151,10 @@ requestAnimationFrame(animate);
 animate();
 }
 
-// 示範影片 Modal（點擊後放大播放）
+// ===== 示範影片 Modal =====
 let demoAnimId = null;
 
-function openDemoModal(type, label, desc) {
+function openDemoModal(type, label, desc, color) {
 const modal = document.getElementById('demoModal');
 const canvas = document.getElementById('demoCanvas');
 const title = document.getElementById('demoTitle');
@@ -2158,13 +2165,13 @@ title.textContent = `🎬 ${label} 示範影片`;
 info.textContent = desc || '點擊關閉按鈕或點擊外部關閉';
 modal.style.display = 'flex';
 
-// 停止舊動畫
 if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
 
-// 啟動完整版動畫
 const ctx = canvas.getContext('2d');
 const w = canvas.width, h = canvas.height;
 let frame = 0;
+const bossColor = color || '#8e44ad';
+const isBoss = type.startsWith('boss_') || type === 'finalboss';
 
 function animateDemo() {
 frame++;
@@ -2176,179 +2183,80 @@ ctx.fillStyle = grad;
 ctx.fillRect(0, 0, w, h);
 const cx = w/2, cy = h/2, t = frame/30;
 
-// 完整版動畫 - 使用與圖鑑相同的繪製邏輯
+if (isBoss) {
 ctx.save();
 ctx.translate(cx, cy);
-// 根據類型繪製
-if (type === 'coin') {
-ctx.rotate(t);
-ctx.shadowColor = '#f1c40f'; ctx.shadowBlur = 30;
-ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2);
-ctx.fillStyle = '#f1c40f'; ctx.fill();
-ctx.strokeStyle = '#d4a800'; ctx.lineWidth = 2; ctx.stroke();
-ctx.shadowBlur = 0;
-ctx.fillStyle = '#b7950b'; ctx.font = '28px sans-serif';
-ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-ctx.fillText('★', 0, 0);
-ctx.restore();
-for (let i=0;i<12;i++) {
-const a=t*0.5+i*Math.PI/6, r=36+Math.sin(t*2+i)*6;
+const bp = 1 + Math.sin(t * 1.2) * 0.05;
+ctx.scale(bp, bp);
+ctx.shadowColor = bossColor;
+ctx.shadowBlur = 40;
+ctx.strokeStyle = bossColor;
+ctx.lineWidth = 3;
 ctx.beginPath();
-ctx.moveTo(cx+Math.cos(a)*30, cy+Math.sin(a)*30);
-ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
-ctx.strokeStyle = `rgba(241,196,15,${0.15+Math.sin(t+i)*0.1})`;
-ctx.lineWidth=2; ctx.stroke();
-}
-} else if (type === 'heart') {
-const p=1+Math.sin(t*2.5)*0.12;
-ctx.save(); ctx.translate(cx, cy); ctx.scale(p,p);
-ctx.shadowColor = '#2ecc71'; ctx.shadowBlur = 40;
-ctx.beginPath();
-ctx.moveTo(0,10); ctx.bezierCurveTo(-12,-2,-28,-10,-24,-22);
-ctx.bezierCurveTo(-20,-36,-8,-42,0,-30);
-ctx.bezierCurveTo(8,-42,20,-36,24,-22);
-ctx.bezierCurveTo(28,-10,12,-2,0,10);
-ctx.fillStyle = '#2ecc71'; ctx.fill();
-ctx.restore();
-for (let i=0;i<12;i++) {
-const a=t*1.2+i*0.523, d=28+Math.sin(t*1.5+i)*8;
-const px=cx+Math.cos(a)*d, py=cy+Math.sin(a*0.7+t)*d*0.6-6;
-ctx.beginPath();
-ctx.arc(px, py, 3+Math.sin(t*1.8+i)*1, 0, Math.PI*2);
-ctx.fillStyle = `rgba(46,204,113,${0.12+Math.sin(t*0.7+i)*0.08})`;
-ctx.fill();
-}
-} else if (type === 'shield') {
-ctx.save(); ctx.translate(cx, cy);
-const sp=1+Math.sin(t*1.8)*0.08; ctx.scale(sp,sp);
-ctx.shadowColor = '#00d2d3'; ctx.shadowBlur = 40;
-ctx.beginPath(); ctx.arc(0,0,36,0,Math.PI*2);
-ctx.strokeStyle = '#00d2d3'; ctx.lineWidth=3; ctx.stroke();
-ctx.beginPath(); ctx.arc(0,0,28,0,Math.PI*2);
-ctx.strokeStyle = 'rgba(0,210,211,0.3)'; ctx.lineWidth=2; ctx.setLineDash([4,6]); ctx.stroke(); ctx.setLineDash([]);
-ctx.shadowBlur = 20;
-ctx.beginPath(); ctx.moveTo(0,-20); ctx.lineTo(16,-8); ctx.lineTo(16,6);
-ctx.lineTo(0,20); ctx.lineTo(-16,6); ctx.lineTo(-16,-8); ctx.closePath();
-ctx.fillStyle = 'rgba(0,210,211,0.25)'; ctx.fill();
-ctx.strokeStyle = '#00d2d3'; ctx.lineWidth=2; ctx.stroke();
-ctx.restore();
-for (let i=0;i<20;i++) {
-const a=t*0.4+i*0.314, r1=38+Math.sin(t*1.5+i)*4, r2=r1+6;
-ctx.beginPath();
-ctx.moveTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1);
-ctx.lineTo(cx+Math.cos(a)*r2, cy+Math.sin(a)*r2);
-ctx.strokeStyle = `rgba(0,210,211,${0.08+Math.sin(t*0.6+i)*0.06})`;
-ctx.lineWidth=2; ctx.stroke();
-}
-} else if (type === 'curse') {
-ctx.save(); ctx.translate(cx, cy);
-for (let i=0;i<8;i++) {
-const a=t*0.3+i*0.785, r=24+Math.sin(t*1.5+i)*6;
-ctx.beginPath();
-ctx.arc(Math.cos(a)*r, Math.sin(a*0.6+t*0.2)*r*0.7, 3+Math.sin(t+i)*1, 0, Math.PI*2);
-ctx.fillStyle = `rgba(44,62,80,${0.2+Math.sin(t*0.4+i)*0.12})`;
-ctx.fill();
-}
-ctx.shadowColor = '#2c3e50'; ctx.shadowBlur = 35;
-ctx.beginPath(); ctx.moveTo(0,-26); ctx.lineTo(18,-6); ctx.lineTo(14,16); ctx.lineTo(-14,16); ctx.lineTo(-18,-6); ctx.closePath();
-const g=ctx.createLinearGradient(-18,-26,18,16);
-g.addColorStop(0,'#34495e'); g.addColorStop(0.5,'#1a1a2e'); g.addColorStop(1,'#0d1117');
-ctx.fillStyle = g; ctx.fill();
-ctx.strokeStyle = '#e74c3c'; ctx.lineWidth=2; ctx.stroke();
-ctx.shadowBlur=0; ctx.fillStyle='#e74c3c'; ctx.font='24px sans-serif';
-ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('☠',0,0);
-ctx.restore();
-for (let i=0;i<8;i++) {
-const a=t*0.5+i*0.785, r=32+Math.sin(t*0.6+i)*5;
-const px=cx+Math.cos(a)*r, py=cy+Math.sin(a*0.5+t*0.2)*r*0.5;
-ctx.beginPath(); ctx.arc(px, py, 2+Math.sin(t+i)*0.5, 0, Math.PI*2);
-ctx.fillStyle = `rgba(231,76,60,${0.1+Math.sin(t*0.4+i)*0.06})`;
-ctx.fill();
-}
-} else if (type === 'cloud') {
-ctx.save(); ctx.translate(cx, cy);
-ctx.shadowColor = '#4a4a5a'; ctx.shadowBlur = 15;
-ctx.beginPath(); ctx.arc(-20,0,14,0,Math.PI*2);
-ctx.arc(0,-8,16,0,Math.PI*2);
-ctx.arc(20,0,14,0,Math.PI*2);
-ctx.arc(-10,8,12,0,Math.PI*2);
-ctx.arc(10,8,12,0,Math.PI*2);
-ctx.fillStyle = '#4a4a5a'; ctx.fill();
-if (Math.sin(t*1.8)>0.3) {
-ctx.shadowColor = '#f1c40f'; ctx.shadowBlur = 40;
-ctx.strokeStyle = '#f1c40f'; ctx.lineWidth=3;
-ctx.beginPath(); ctx.moveTo(-8,-22); ctx.lineTo(0,-12); ctx.lineTo(-4,-6); ctx.lineTo(8,4); ctx.lineTo(0,12);
+ctx.arc(0, 0, 40, 0, Math.PI * 2);
 ctx.stroke();
-}
-ctx.restore();
-for (let i=0;i<14;i++) {
-const x=cx+(Math.sin(t*0.5+i*2.1)*45);
-const y=cy+12+((i*5+frame*3)%40)-20;
-ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+6);
-ctx.strokeStyle = `rgba(100,150,255,${0.12+Math.sin(t*0.3+i)*0.06})`;
-ctx.lineWidth=1; ctx.stroke();
-}
-} else if (type === 'boss') {
-ctx.save(); ctx.translate(cx, cy);
-const bp=1+Math.sin(t*1.2)*0.05; ctx.scale(bp,bp);
-ctx.shadowColor='#f1c40f'; ctx.shadowBlur=30;
-ctx.fillStyle='#f1c40f';
-ctx.beginPath(); ctx.moveTo(-24,-14); ctx.lineTo(-18,-26); ctx.lineTo(-10,-18); ctx.lineTo(0,-28); ctx.lineTo(10,-18); ctx.lineTo(18,-26); ctx.lineTo(24,-14); ctx.closePath(); ctx.fill();
-ctx.shadowColor='#8e44ad'; ctx.shadowBlur=20;
-ctx.fillStyle='#8e44ad'; ctx.beginPath(); ctx.arc(0,6,22,0,Math.PI*2); ctx.fill();
-ctx.shadowColor='#f1c40f'; ctx.shadowBlur=25;
-ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(-10,2,6,0,Math.PI*2); ctx.arc(10,2,6,0,Math.PI*2); ctx.fill();
-ctx.shadowBlur=0; ctx.fillStyle='#e74c3c';
-ctx.beginPath(); ctx.arc(-10+Math.sin(t*0.5)*0.5,5,3,0,Math.PI*2); ctx.arc(10+Math.sin(t*0.5+1)*0.5,5,3,0,Math.PI*2); ctx.fill();
-ctx.strokeStyle='#2c3e50'; ctx.lineWidth=2;
-ctx.beginPath(); ctx.arc(0,12,10,0.1,Math.PI-0.1); ctx.stroke();
-ctx.restore();
-for (let i=0;i<18;i++) {
-const a=t*0.2+i*0.349, r=32+Math.sin(t*1.2+i)*5;
-ctx.beginPath(); ctx.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 3+Math.sin(t*0.6+i)*0.5, 0, Math.PI*2);
-ctx.fillStyle = `rgba(142,68,173,${0.1+Math.sin(t*0.4+i)*0.06})`;
-ctx.fill();
-}
-} else if (type === 'finalboss') {
-ctx.save(); ctx.translate(cx, cy);
-const fb=1+Math.sin(t*0.8)*0.04; ctx.scale(fb,fb);
-for (let i=6;i>0;i--) {
-const r=10+i*8+Math.sin(t*0.5+i)*4;
-ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
-ctx.strokeStyle = `rgba(231,76,60,${0.04+i*0.035+Math.sin(t*0.3+i)*0.02})`;
-ctx.lineWidth=1; ctx.stroke();
-}
-ctx.shadowColor='#e74c3c'; ctx.shadowBlur=50;
-const g7=ctx.createRadialGradient(-4,-4,0,0,0,28);
-g7.addColorStop(0,'#c0392b'); g7.addColorStop(0.3,'#e74c3c'); g7.addColorStop(0.7,'#a93226'); g7.addColorStop(1,'#7a1a1a');
-ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fillStyle=g7; ctx.fill();
-ctx.shadowColor='#f1c40f'; ctx.shadowBlur=40;
-ctx.fillStyle='#f1c40f';
-ctx.beginPath(); ctx.moveTo(-28,-16); ctx.lineTo(-22,-30); ctx.lineTo(-14,-22); ctx.lineTo(0,-32); ctx.lineTo(14,-22); ctx.lineTo(22,-30); ctx.lineTo(28,-16); ctx.closePath(); ctx.fill();
-ctx.shadowColor='#e74c3c'; ctx.shadowBlur=35;
-ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(-12,0,7,0,Math.PI*2); ctx.arc(12,0,7,0,Math.PI*2); ctx.fill();
-ctx.shadowBlur=0; ctx.fillStyle='white';
-ctx.beginPath(); ctx.arc(-10+Math.sin(t*2)*1.5,-1,3,0,Math.PI*2); ctx.arc(10+Math.sin(t*2+0.5)*1.5,-1,3,0,Math.PI*2); ctx.fill();
-ctx.fillStyle='#2c3e50';
-ctx.beginPath(); ctx.moveTo(-10,14); ctx.lineTo(-7,22); ctx.lineTo(-4,14); ctx.fill();
-ctx.beginPath(); ctx.moveTo(4,14); ctx.lineTo(7,22); ctx.lineTo(10,14); ctx.fill();
-ctx.restore();
-for (let i=0;i<24;i++) {
-const a=t*0.12+i*0.262, r=30+Math.sin(t*1.2+i)*7, len=5+Math.sin(t*0.6+i)*2;
+ctx.shadowBlur = 25;
+ctx.fillStyle = bossColor;
 ctx.beginPath();
-ctx.moveTo(cx+Math.cos(a)*(r-len), cy+Math.sin(a)*(r-len));
-ctx.lineTo(cx+Math.cos(a)*(r+len), cy+Math.sin(a)*(r+len));
-ctx.strokeStyle = `rgba(231,76,60,${0.06+Math.sin(t*0.3+i)*0.04})`;
-ctx.lineWidth=2; ctx.stroke();
-}
-} else {
-ctx.fillStyle='#8b949e'; ctx.font='40px sans-serif';
-ctx.textAlign='center'; ctx.textBaseline='middle';
-ctx.fillText('🎬', 0, 0);
+ctx.arc(0, 0, 30, 0, Math.PI * 2);
+ctx.fill();
+ctx.shadowBlur = 0;
+ctx.fillStyle = 'white';
+ctx.font = '36px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+const emojis = {
+boss_fire: '🐉', boss_ice: '🧊', boss_shadow: '🗡️', boss_thunder: '🦅',
+boss_rock: '🗿', boss_storm: '🌪️', boss_necromancer: '🧙', boss_spider: '🕷️',
+finalboss: '👾'
+};
+ctx.fillText(emojis[type] || '👹', 0, 0);
 ctx.restore();
+// Boss 技能展示
+const names = {
+boss_fire: '🔥 火龍', boss_ice: '❄️ 冰霜巨人', boss_shadow: '🌑 暗影刺客',
+boss_thunder: '⚡ 雷霆鳳凰', boss_rock: '🪨 岩石泰坦', boss_storm: '🌪️ 風暴領主',
+boss_necromancer: '💀 死靈法師', boss_spider: '🕷️ 蜘蛛女王', finalboss: '👾 虛空領主'
+};
+ctx.fillStyle = bossColor;
+ctx.font = 'bold 18px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText(names[type] || 'Boss', cx, cy - 42);
+// 技能標籤
+const skills = {
+boss_fire: ['火焰吐息', '烈焰護盾'], boss_ice: ['冰凍光環', '寒冰之牆'],
+boss_shadow: ['暗影突襲', '隱身'], boss_thunder: ['閃電風暴', '復活'],
+boss_rock: ['地震', '岩石護甲'], boss_storm: ['龍捲風', '風牆'],
+boss_necromancer: ['召喚骷髏', '詛咒'], boss_spider: ['蛛網', '毒素'],
+finalboss: ['全部技能']
+};
+const skillList = skills[type] || ['技能'];
+ctx.fillStyle = '#8b949e';
+ctx.font = '14px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+ctx.fillText('技能: ' + skillList.join(' · '), cx, cy + 40);
+} else {
+// 非 Boss 的示範（簡化但完整）
+ctx.fillStyle = '#8b949e';
+ctx.font = '60px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+const emojiMap = {
+coin:'🪙', heart:'❤️', shield:'🛡️', magnet:'🧲', double:'💎',
+fever:'⚡', star:'⭐', wing:'🪶', clock:'⏰', key:'🔑',
+curse:'💀', cloud:'⛈️', poison:'🟣', mud:'🕸️', spike:'🔺',
+fire:'🔥', ice:'❄️', thorn:'🌿', void:'🌌', mirror:'🪞', chain:'⛓️'
+};
+ctx.fillText(emojiMap[type] || '🎬', cx, cy);
+ctx.fillStyle = '#5a6a7a';
+ctx.font = '14px sans-serif';
+ctx.textBaseline = 'bottom';
+ctx.fillText(label || '', cx, cy - 50);
 }
 
-ctx.fillStyle = 'rgba(139,148,158,0.4)';
+ctx.fillStyle = 'rgba(139,148,158,0.3)';
 ctx.font = '11px sans-serif';
 ctx.textAlign = 'center';
 ctx.textBaseline = 'bottom';
@@ -2358,10 +2266,7 @@ demoAnimId = requestAnimationFrame(animateDemo);
 }
 animateDemo();
 
-// 點擊外部關閉
-modal.onclick = function(e) {
-if (e.target === modal) closeDemoModal();
-};
+modal.onclick = function(e) { if (e.target === modal) closeDemoModal(); };
 }
 
 function closeDemoModal() {
@@ -2370,15 +2275,15 @@ modal.style.display = 'none';
 if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
 }
 
-// ===== 初始化 =====
+// ============================================================
+// 第五部分：初始化
+// ============================================================
+
 function initExpansion() {
-// 設定畫質
 setQuality('high');
-// 建立圖鑑
 buildIntroGrid();
-// 更新關卡顯示
 updateLevelDisplay();
-// 加入介紹圖鑑選項
+
 const select = document.getElementById('viewModeSelect');
 if (select && !Array.from(select.options).some(o => o.value === 'intro')) {
 const opt = document.createElement('option');
@@ -2386,10 +2291,11 @@ opt.value = 'intro';
 opt.text = '📖 介紹圖鑑';
 select.appendChild(opt);
 }
+
 console.log('✅ 完整擴充功能已載入！');
-console.log('📖 點擊圖鑑卡片觀看示範影片');
-console.log('🔁 每80分自動升一關');
-console.log('👹 多種Boss隨機出現，每5關新增技能');
+console.log('📖 點擊圖鑑卡片觀看示範影片 (共 ' + INTRO_DATA.length + ' 種)');
+console.log('👹 8 種 Boss 隨機出現，每5關新增技能');
+console.log('🎁 10 種道具 + 10 種障礙物');
 console.log('🖥️ 可調整畫質與自訂參數');
 }
 
@@ -2410,6 +2316,7 @@ window.toggleLevelEditor = toggleLevelEditor;
 window.applyLevelConfig = applyLevelConfig;
 window.resetLevelProgress = resetLevelProgress;
 window.skipBossSequence = skipBossSequence;
+window.advanceLevel = advanceLevel;
 </script>
 </body>
 </html>
