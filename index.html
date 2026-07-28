@@ -3,15 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - Inhaler Flow Monitor (Web) 完整擴充版</title>
+<title>呼吸訓練器 - 完整擴充版 v2.0</title>
 
-<!-- 引入 Chart.js 繪圖庫 -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- 引入 ONNX Runtime Web -->
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <style>
 /* ===== 原有樣式 ===== */
+* { box-sizing: border-box; }
 body {
 font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 background-color: #f4f6f8;
@@ -24,13 +23,7 @@ margin-bottom: 20px;
 border-left: 6px solid #1f4e79;
 padding-left: 15px;
 }
-.header .main-title {
-margin: 0;
-color: #1f4e79;
-font-size: 36px;
-font-weight: 800;
-letter-spacing: 2px;
-}
+.header .main-title { margin: 0; color: #1f4e79; font-size: 36px; font-weight: 800; letter-spacing: 2px; }
 .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
 .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
 .control-panel {
@@ -68,7 +61,6 @@ height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
 }
 .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
 
-/* 遊戲 UI */
 .game-container {
 display: none;
 background: #0d1117;
@@ -90,11 +82,7 @@ z-index: 99999 !important;
 border-radius: 0 !important;
 border: none !important;
 }
-#gameCanvas {
-width: 100%;
-height: 100%;
-display: block;
-}
+#gameCanvas { width: 100%; height: 100%; display: block; }
 .game-ui-overlay {
 position: absolute;
 top: 15px;
@@ -161,17 +149,8 @@ overflow-y: auto;
 border: 1px solid #30363d;
 margin-top: 15px;
 }
-#introContainer h2 {
-color: #f0f6fc;
-border-bottom: 2px solid #1f4e79;
-padding-bottom: 10px;
-}
-.intro-grid {
-display: flex;
-flex-wrap: wrap;
-gap: 15px;
-margin-top: 15px;
-}
+#introContainer h2 { color: #f0f6fc; border-bottom: 2px solid #1f4e79; padding-bottom: 10px; }
+.intro-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
 .intro-card {
 background: #161b22;
 padding: 15px;
@@ -182,26 +161,16 @@ border: 1px solid #30363d;
 transition: transform 0.2s;
 position: relative;
 overflow: hidden;
+cursor: pointer;
 }
-.intro-card:hover {
-transform: scale(1.03);
-border-color: #1f4e79;
-}
+.intro-card:hover { transform: scale(1.03); border-color: #1f4e79; }
 .intro-card .icon { font-size: 42px; display: block; text-align: center; margin-bottom: 4px; }
 .intro-card h4 { color: #f0f6fc; margin: 6px 0 3px 0; text-align: center; font-size: 14px; }
 .intro-card p { color: #8b949e; font-size: 11px; margin: 2px 0; text-align: center; }
-.intro-card .effect {
-color: #b0b8c0;
-font-size: 10px;
-text-align: center;
-margin-top: 3px;
-padding: 2px 6px;
-background: rgba(255,255,255,0.05);
-border-radius: 4px;
-}
+.intro-card .effect { color: #b0b8c0; font-size: 10px; text-align: center; margin-top: 3px; padding: 2px 6px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+.intro-card .click-hint { color: #5a6a7a; font-size: 9px; text-align: center; margin-top: 4px; }
 
-/* 分類標籤 */
-.intro-card .category-tag {
+.category-tag {
 position: absolute;
 top: 8px;
 right: 8px;
@@ -219,14 +188,12 @@ text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 .category-tag.boss { background: #4a1a6a; color: #d4a0df; border: 1px solid #8e44ad; }
 .category-tag.final { background: #6a1a1a; color: #f0a0a0; border: 1px solid #e74c3c; }
 
-/* 卡片邊框分類 */
 .intro-card.positive { border-left: 4px solid #2ecc71; }
 .intro-card.negative { border-left: 4px solid #e74c3c; }
 .intro-card.obstacle { border-left: 4px solid #f39c12; }
 .intro-card.boss-card { border-left: 4px solid #8e44ad; }
 .intro-card.final-card { border-left: 4px solid #e74c3c; border-color: #e74c3c; }
 
-/* 示範影片 */
 .demo-container {
 background: #0a0a12;
 border-radius: 6px;
@@ -235,28 +202,54 @@ margin-top: 6px;
 border: 1px solid #1a1a2e;
 position: relative;
 }
-.demo-container canvas {
-width: 100%;
-border-radius: 4px;
-background: #0a0a12;
-display: block;
-}
-.demo-label {
-color: #5a6a7a;
-font-size: 9px;
-text-align: center;
-margin-top: 3px;
-display: block;
-letter-spacing: 0.5px;
-}
+.demo-container canvas { width: 100%; border-radius: 4px; background: #0a0a12; display: block; }
+.demo-label { color: #5a6a7a; font-size: 9px; text-align: center; margin-top: 3px; display: block; }
 
-/* 關卡資訊 */
-#levelInfo {
-color: #f1c40f;
-font-weight: bold;
-font-size: 13px;
-margin-left: 10px;
+/* 示範影片 Modal */
+#demoModal {
+display: none;
+position: fixed;
+top: 0; left: 0;
+width: 100vw; height: 100vh;
+background: rgba(0,0,0,0.92);
+z-index: 99999;
+justify-content: center;
+align-items: center;
 }
+#demoModal .modal-content {
+background: #161b22;
+padding: 30px;
+border-radius: 16px;
+max-width: 600px;
+width: 90%;
+border: 1px solid #30363d;
+}
+#demoModal .modal-content h3 { color: #f0f6fc; margin-top: 0; text-align: center; }
+#demoModal .modal-content canvas {
+width: 100%;
+border-radius: 8px;
+background: #0a0a12;
+}
+#demoModal .modal-content .modal-info {
+color: #8b949e;
+font-size: 13px;
+margin: 10px 0;
+text-align: center;
+}
+#demoModal .modal-content .close-btn {
+background: #e74c3c;
+color: white;
+border: none;
+padding: 8px 20px;
+border-radius: 4px;
+cursor: pointer;
+font-weight: bold;
+display: block;
+margin: 10px auto 0;
+}
+#demoModal .modal-content .close-btn:hover { background: #c0392b; }
+
+#levelInfo { color: #f1c40f; font-weight: bold; font-size: 13px; margin-left: 10px; }
 .level-progress {
 width: 100px;
 height: 6px;
@@ -267,24 +260,11 @@ display: inline-block;
 vertical-align: middle;
 margin: 0 6px;
 }
-.level-progress-fill {
-height: 100%;
-background: linear-gradient(90deg, #f1c40f, #e74c3c);
-transition: width 0.3s;
-width: 1%;
-}
+.level-progress-fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #e74c3c); transition: width 0.3s; width: 1%; }
 #bossSkillDisplay { font-size: 11px; color: #8e44ad; }
 
-/* 畫質 */
-#qualitySelect {
-padding: 4px 8px;
-border-radius: 4px;
-border: 1px solid #bcc6cf;
-background: white;
-font-size: 13px;
-}
+#qualitySelect, #customQualitySelect { padding: 4px 8px; border-radius: 4px; border: 1px solid #bcc6cf; background: white; font-size: 13px; }
 
-/* 自訂關卡編輯器 */
 #levelEditor {
 display: none;
 background: #161b22;
@@ -320,7 +300,6 @@ font-size: 13px;
 .editor-btn.close { background: #e74c3c; color: white; }
 .editor-btn.close:hover { background: #c0392b; }
 
-/* 控制面板擴充 */
 #expansionControls {
 display: flex;
 gap: 10px;
@@ -330,14 +309,11 @@ border-left: 2px solid #ccc;
 padding-left: 10px;
 }
 
-/* 最終Boss覆蓋層 */
 #finalBossOverlay {
 display: none;
 position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
+top: 0; left: 0;
+width: 100%; height: 100%;
 background: rgba(0,0,0,0.92);
 z-index: 30;
 flex-direction: column;
@@ -345,40 +321,17 @@ justify-content: center;
 align-items: center;
 border-radius: 8px;
 }
-#finalBossOverlay video {
-max-width: 80%;
-max-height: 55%;
-border-radius: 12px;
-border: 2px solid #f1c40f;
-}
-#finalBossOverlay .boss-title {
-color: #f1c40f;
-font-size: 28px;
-font-weight: 800;
-margin-bottom: 5px;
-text-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
-}
-#finalBossOverlay .boss-subtitle {
-color: #8b949e;
-font-size: 14px;
-margin-bottom: 15px;
-}
-.boss-skip-btn {
-background: #1f4e79;
-color: white;
-border: none;
-padding: 8px 20px;
-border-radius: 4px;
-cursor: pointer;
-margin-top: 12px;
-font-weight: bold;
-}
+#finalBossOverlay video { max-width: 80%; max-height: 55%; border-radius: 12px; border: 2px solid #f1c40f; }
+#finalBossOverlay .boss-title { color: #f1c40f; font-size: 28px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.3); }
+#finalBossOverlay .boss-subtitle { color: #8b949e; font-size: 14px; margin-bottom: 15px; }
+.boss-skip-btn { background: #1f4e79; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; margin-top: 12px; font-weight: bold; }
 .boss-skip-btn:hover { background: #163d5e; }
 
 @media (max-width: 768px) {
 .intro-card { flex: 1 1 100%; }
 #finalBossOverlay video { max-width: 95%; }
 #expansionControls { border-left: none; padding-left: 0; }
+#demoModal .modal-content { padding: 15px; }
 }
 </style>
 </head>
@@ -433,6 +386,7 @@ font-weight: bold;
 <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
 <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X SCORE</span>
 <span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOWED</span>
+<span id="bossWarning" style="display:none; color:#e74c3c; font-weight:bold;">👹 BOSS!</span>
 </div>
 <div class="hud-badge">
 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕 🖥️</button>
@@ -458,53 +412,47 @@ font-weight: bold;
 <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
 </div>
 </div>
-
-<!-- 最終Boss覆蓋層 -->
 <div id="finalBossOverlay">
 <div class="boss-title">👾 虛空領主 · 降臨</div>
 <div class="boss-subtitle">⚔️ 最終試煉 · 第 100 關 ⚔️</div>
-<video id="bossVideo" muted playsinline><source src="" type="video/mp4">您的瀏覽器不支援影片</video>
+<video id="bossVideo" muted playsinline><source src="" type="video/mp4"></video>
 <audio id="bossAudio" loop></audio>
 <button class="boss-skip-btn" onclick="skipBossSequence()">⏭️ 跳過動畫</button>
-<p style="color:#8b949e; font-size:12px; margin-top:10px;">🎵 專屬音樂 · 語音即將登場</p>
 </div>
 </div>
 
 <!-- ===== 介紹圖鑑 ===== -->
 <div id="introContainer">
-<h2>🎬 道具與 Boss 完全圖鑑</h2>
-<p style="color:#8b949e; margin-bottom:15px;">在「視窗」下拉選單中選擇「介紹圖鑑」即可顯示</p>
-<div class="intro-grid">
-<!-- 正面道具 -->
-<div class="intro-card"><span class="icon">🪙</span><h4>金幣</h4><p>+50分</p><div class="effect">FEVER/雙倍時加倍</div></div>
-<div class="intro-card"><span class="icon">❤️</span><h4>治癒之心</h4><p>恢復 HP +25</p><div class="effect">最高恢復至 100</div></div>
-<div class="intro-card"><span class="icon">🛡️</span><h4>護盾</h4><p>抵擋一次障礙物傷害</p><div class="effect">時效持續至被擊破</div></div>
-<div class="intro-card"><span class="icon">🧲</span><h4>強力磁鐵</h4><p>吸引 200px 內道具</p><div class="effect">持續約 5.8 秒</div></div>
-<div class="intro-card"><span class="icon">💎</span><h4>雙倍積分</h4><p>得分 ×2</p><div class="effect">持續約 5.8 秒</div></div>
-<div class="intro-card"><span class="icon">⚡</span><h4>FEVER 狂熱</h4><p>得分 ×2</p><div class="effect">超大吸取範圍</div></div>
-<!-- 負面道具 -->
-<div class="intro-card"><span class="icon">💀</span><h4>詛咒寶石</h4><p>扣 HP 15~25</p><div class="effect">扣分 -100｜COMBO 歸零</div></div>
-<!-- 障礙物 -->
-<div class="intro-card"><span class="icon">⛈️</span><h4>雷暴雲</h4><p>傷害：10/25/35</p><div class="effect">依難度不同</div></div>
-<div class="intro-card"><span class="icon">🟣</span><h4>毒霧</h4><p>傷害：40/50</p><div class="effect">輕鬆模式不生成</div></div>
-<div class="intro-card"><span class="icon">🕸️</span><h4>減速黏液</h4><p>減速 50%</p><div class="effect">輕鬆模式不生成</div></div>
-<!-- Boss -->
-<div class="intro-card boss-card"><span class="icon">👹</span><h4>關卡 Boss</h4><p>每5關新增技能</p><div class="effect">🛡️ ⚡ 🌀 🔥 💀</div></div>
-<!-- 最終Boss -->
-<div class="intro-card final-card"><span class="icon">🏆</span><h4>最終 Boss</h4><p>第100關觸發</p><div class="effect">專屬動畫+配樂</div></div>
+<h2>🎬 道具、障礙物與 Boss 完全圖鑑</h2>
+<p style="color:#8b949e; margin-bottom:15px;">點擊卡片觀看詳細示範影片</p>
+<div class="intro-grid" id="introGrid">
+<!-- 由 JavaScript 動態生成 -->
+</div>
+</div>
+
+<!-- ===== 示範影片 Modal ===== -->
+<div id="demoModal">
+<div class="modal-content">
+<h3 id="demoTitle">🎬 示範影片</h3>
+<canvas id="demoCanvas" width="500" height="200"></canvas>
+<div class="modal-info" id="demoInfo">點擊關閉按鈕或點擊外部關閉</div>
+<button class="close-btn" onclick="closeDemoModal()">❌ 關閉</button>
 </div>
 </div>
 
 <!-- ===== 自訂關卡編輯器 ===== -->
 <div id="levelEditor">
 <h4 style="color:#f0f6fc; margin:0 0 8px 0;">✏️ 自訂關卡編輯器</h4>
-<textarea id="levelConfig" rows="6">{
+<textarea id="levelConfig" rows="8">{
 "level": 1,
-"bossSkills": ["護盾"],
-"items": ["coin", "heart"],
-"obstacles": ["cloud"],
+"bossSkills": ["護盾", "閃電鏈"],
+"items": ["coin", "heart", "shield", "magnet", "double", "fever", "star", "wing", "clock", "key"],
+"obstacles": ["cloud", "poison", "mud", "spike", "fire", "ice", "thorn", "void", "mirror", "chain"],
+"bossTypes": ["火龍", "冰霜巨人", "暗影刺客", "雷霆鳳凰", "岩石泰坦"],
 "spawnRate": 0.015,
-"enemySpeed": 1.0
+"enemySpeed": 1.0,
+"particleCount": 50,
+"quality": "high"
 }</textarea>
 <div class="editor-actions">
 <button class="editor-btn save" onclick="applyLevelConfig()">✅ 套用關卡</button>
@@ -517,7 +465,7 @@ font-weight: bold;
 <div class="statusbar" id="status">Not connected</div>
 
 <!-- ============================================================ -->
-<!-- 原有 JavaScript -->
+<!-- 原有 JavaScript（完整保留） -->
 <!-- ============================================================ -->
 <script>
 // =====================================================
@@ -927,36 +875,38 @@ document.getElementById('status').innerText = msg;
 </script>
 
 <!-- ============================================================ -->
-<!-- 遊戲引擎 -->
+<!-- 遊戲引擎 + 擴充功能 -->
 <!-- ============================================================ -->
 <script>
+// ===== 控制面板擴充 =====
 const controlPanel = document.querySelector('.control-panel');
 if (controlPanel) {
-const gameControlHTML = `
+const html = `
 <label style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px;">
 視窗:
 <select id="viewModeSelect" onchange="switchViewMode(this.value)">
 <option value="chart">📊 專業圖表</option>
-<option value="game">🎮 氣流飛行員 (Game)</option>
-<option value="both" selected>全模式 (併排顯示 📊+🎮)</option>
+<option value="game">🎮 氣流飛行員</option>
+<option value="both" selected>全模式</option>
+<option value="intro">📖 介紹圖鑑</option>
 </select>
 </label>
 <label>
 難度:
 <select id="gameDifficultySelect">
-<option value="easy">輕鬆 (溫和無痛)</option>
-<option value="normal" selected>標準 (均衡演算法)</option>
-<option value="hard">專家 (極速高懲罰)</option>
+<option value="easy">輕鬆</option>
+<option value="normal" selected>標準</option>
+<option value="hard">專家</option>
 </select>
 </label>
 <label>
 ⚡ 倍速:
 <select id="gameSpeedSelect">
-<option value="0.8">0.8x (慢速輕鬆)</option>
-<option value="1.0" selected>1.0x (標準速度)</option>
-<option value="1.5">1.5x (快速反應)</option>
-<option value="2.0">2.0x (疾速挑戰)</option>
-<option value="2.5">2.5x (極速高超)</option>
+<option value="0.8">0.8x</option>
+<option value="1.0" selected>1.0x</option>
+<option value="1.5">1.5x</option>
+<option value="2.0">2.0x</option>
+<option value="2.5">2.5x</option>
 </select>
 </label>
 <label class="music-upload-btn">
@@ -964,20 +914,36 @@ const gameControlHTML = `
 <input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)">
 </label>
 <span id="musicStatus" style="font-size:12px; color:#8e44ad; font-weight:bold;">預設主題曲</span>
+<label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
+<span id="expansionControls">
+<span id="levelInfo">
+🏁 Lv.<span id="levelDisplay">1</span>
+<span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span>
+<span id="bossSkillDisplay"></span>
+</span>
 <label>
-<input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 開啟音樂
+🖥️ 畫質:
+<select id="qualitySelect" onchange="setQuality(this.value)">
+<option value="ultra">極致</option>
+<option value="high" selected>高</option>
+<option value="medium">中</option>
+<option value="low">低</option>
+<option value="potato">馬鈴薯</option>
+</select>
 </label>
+<button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px; font-size:12px;">⚙️ 自訂畫質</button>
+<button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px; font-size:12px;">🧩 自訂關卡</button>
+<button class="btn" onclick="resetLevelProgress()" style="padding:4px 12px; font-size:12px; background:#e67e22; color:white;">🔄 重置</button>
+</span>
 `;
-controlPanel.insertAdjacentHTML('beforeend', gameControlHTML);
+controlPanel.insertAdjacentHTML('beforeend', html);
 }
 
+// ===== 音效系統 =====
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let bgmInterval = null;
-let bgmStep = 0;
-let customAudioBuffer = null;
-let customAudioSource = null;
-let audioAnalyser = null;
-let audioDataArray = null;
+let bgmInterval = null, bgmStep = 0;
+let customAudioBuffer = null, customAudioSource = null;
+let audioAnalyser = null, audioDataArray = null;
 let isUsingCustomMusic = false;
 
 function handleCustomMusicUpload(event) {
@@ -990,62 +956,61 @@ audioCtx.decodeAudioData(e.target.result, (buffer) => {
 customAudioBuffer = buffer;
 isUsingCustomMusic = true;
 document.getElementById('musicStatus').innerText = `🎶 自選: ${file.name.substring(0, 10)}...`;
-updateStatus(`✅ 音樂解析成功！將自動根據音樂節奏生成遊戲物件。`);
+updateStatus(`✅ 音樂解析成功！`);
 if (isMeasuring) startBGM();
-}, (err) => {
-alert("音訊檔案解析失敗，請上傳標準 MP3 或 WAV 格式。");
-});
+}, () => { alert("音訊檔案解析失敗，請上傳標準 MP3 或 WAV 格式。"); });
 };
 reader.readAsArrayBuffer(file);
 }
-const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
-const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, B4, A4, G4, E4, C4, G4];
+
+const C4=261.63,E4=329.63,G4=392.00,C5=523.25,D5=587.33,E5=659.25;
+const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, E5, C5, G4, E4, C4, G4];
 
 function playAudioEffect(type) {
-const soundEnabled = document.getElementById('soundToggle')?.checked;
-if (!soundEnabled) return;
+if (!document.getElementById('soundToggle')?.checked) return;
 if (audioCtx.state === 'suspended') audioCtx.resume();
 try {
 let now = audioCtx.currentTime;
 if (type === 'coin') {
-const osc = audioCtx.createOscillator();
-const gain = audioCtx.createGain();
+const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
 osc.connect(gain); gain.connect(audioCtx.destination);
-osc.type = 'sine';
-osc.frequency.setValueAtTime(987.77, now);
-osc.frequency.setValueAtTime(1318.51, now + 0.08);
+osc.type='sine'; osc.frequency.setValueAtTime(987.77, now);
+osc.frequency.setValueAtTime(1318.51, now+0.08);
 gain.gain.setValueAtTime(0.35, now);
-gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-osc.start(); osc.stop(now + 0.25);
+gain.gain.exponentialRampToValueAtTime(0.001, now+0.25);
+osc.start(); osc.stop(now+0.25);
 } else if (type === 'buff') {
-const osc = audioCtx.createOscillator();
-const gain = audioCtx.createGain();
+const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
 osc.connect(gain); gain.connect(audioCtx.destination);
-osc.type = 'triangle';
-osc.frequency.setValueAtTime(523.25, now);
-osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
+osc.type='triangle'; osc.frequency.setValueAtTime(523.25, now);
+osc.frequency.exponentialRampToValueAtTime(1046.50, now+0.3);
 gain.gain.setValueAtTime(0.4, now);
-gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-osc.start(); osc.stop(now + 0.3);
+gain.gain.exponentialRampToValueAtTime(0.001, now+0.3);
+osc.start(); osc.stop(now+0.3);
 } else if (type === 'hit') {
-const osc = audioCtx.createOscillator();
-const gain = audioCtx.createGain();
+const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
 osc.connect(gain); gain.connect(audioCtx.destination);
-osc.type = 'sawtooth';
-osc.frequency.setValueAtTime(200, now);
-osc.frequency.linearRampToValueAtTime(40, now + 0.2);
+osc.type='sawtooth'; osc.frequency.setValueAtTime(200, now);
+osc.frequency.linearRampToValueAtTime(40, now+0.2);
 gain.gain.setValueAtTime(0.4, now);
-gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-osc.start(); osc.stop(now + 0.2);
+gain.gain.exponentialRampToValueAtTime(0.001, now+0.2);
+osc.start(); osc.stop(now+0.2);
+} else if (type === 'boss') {
+for(let i=0;i<3;i++){
+const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+osc.connect(gain); gain.connect(audioCtx.destination);
+osc.type='square'; osc.frequency.setValueAtTime(150+i*50, now+i*0.15);
+gain.gain.setValueAtTime(0.15, now+i*0.15);
+gain.gain.exponentialRampToValueAtTime(0.001, now+i*0.15+0.2);
+osc.start(now+i*0.15); osc.stop(now+i*0.15+0.2);
+}
 }
 } catch(e) {}
 }
 
 function startBGM() {
 stopBGM();
-const soundEnabled = document.getElementById('soundToggle')?.checked;
-if (!soundEnabled) return;
+if (!document.getElementById('soundToggle')?.checked) return;
 if (isUsingCustomMusic && customAudioBuffer) {
 customAudioSource = audioCtx.createBufferSource();
 customAudioSource.buffer = customAudioBuffer;
@@ -1062,16 +1027,12 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 try {
 let now = audioCtx.currentTime;
 let idx = bgmStep % pilotTheme.length;
-const leadOsc = audioCtx.createOscillator();
-const leadGain = audioCtx.createGain();
-leadOsc.type = 'sawtooth';
-leadOsc.frequency.setValueAtTime(pilotTheme[idx], now);
-leadGain.gain.setValueAtTime(0.18, now);
-leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-leadOsc.connect(leadGain);
-leadGain.connect(audioCtx.destination);
-leadOsc.start(now);
-leadOsc.stop(now + 0.16);
+const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+osc.type='sawtooth'; osc.frequency.setValueAtTime(pilotTheme[idx], now);
+gain.gain.setValueAtTime(0.18, now);
+gain.gain.exponentialRampToValueAtTime(0.001, now+0.16);
+osc.connect(gain); gain.connect(audioCtx.destination);
+osc.start(now); osc.stop(now+0.16);
 bgmStep++;
 } catch(e) {}
 }, 180);
@@ -1086,29 +1047,36 @@ customAudioSource = null;
 }
 }
 
-function toggleSoundSetting(enabled) {
-if (!enabled) stopBGM();
-else startBGM();
-}
+function toggleSoundSetting(enabled) { if (!enabled) stopBGM(); else startBGM(); }
 
+// ===== 視窗模式切換 =====
 function switchViewMode(mode) {
 const chartBox = document.querySelector('.chart-container');
 const gameBox = document.getElementById('gameContainer');
+const introBox = document.getElementById('introContainer');
+if (chartBox) chartBox.style.display = 'none';
+if (gameBox) gameBox.style.display = 'none';
+if (introBox) introBox.style.display = 'none';
 if (mode === 'both') {
-chartBox.style.display = 'block';
-gameBox.style.display = 'block';
-chartBox.style.marginBottom = '15px';
+if (chartBox) { chartBox.style.display = 'block'; chartBox.style.marginBottom = '15px'; }
+if (gameBox) gameBox.style.display = 'block';
+if (typeof stopGameEngine === 'function') stopGameEngine();
+setTimeout(() => {
+if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+if (typeof restartGameEngine === 'function' && !window.isGameRunning) restartGameEngine();
+}, 100);
 } else if (mode === 'game') {
-chartBox.style.display = 'none';
-gameBox.style.display = 'block';
-} else {
-chartBox.style.display = 'block';
-gameBox.style.display = 'none';
-}
-stopGameEngine();
-if (mode === 'game' || mode === 'both') {
-resizeGameCanvas();
-restartGameEngine();
+if (gameBox) gameBox.style.display = 'block';
+if (typeof stopGameEngine === 'function') stopGameEngine();
+setTimeout(() => {
+if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+if (typeof restartGameEngine === 'function' && !window.isGameRunning) restartGameEngine();
+}, 100);
+} else if (mode === 'chart') {
+if (chartBox) chartBox.style.display = 'block';
+} else if (mode === 'intro') {
+if (introBox) introBox.style.display = 'block';
+if (typeof stopGameEngine === 'function') stopGameEngine();
 }
 }
 setTimeout(() => { switchViewMode('both'); }, 100);
@@ -1122,70 +1090,141 @@ else stopBGM();
 function toggleFullscreen() {
 const gameBox = document.getElementById('gameContainer');
 if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
-if (gameBox.requestFullscreen) {
-gameBox.requestFullscreen();
+if (gameBox.requestFullscreen) gameBox.requestFullscreen();
+else gameBox.classList.add('fullscreen');
 } else {
-gameBox.classList.add('fullscreen');
-}
-} else {
-if (document.exitFullscreen && document.fullscreenElement) {
-document.exitFullscreen();
-}
+if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
 gameBox.classList.remove('fullscreen');
 }
 setTimeout(resizeGameCanvas, 150);
 }
 document.addEventListener('fullscreenchange', () => {
 const gameBox = document.getElementById('gameContainer');
-if (!document.fullscreenElement) {
-gameBox.classList.remove('fullscreen');
-} else {
-gameBox.classList.add('fullscreen');
-}
+if (!document.fullscreenElement) gameBox.classList.remove('fullscreen');
+else gameBox.classList.add('fullscreen');
 setTimeout(resizeGameCanvas, 150);
 });
 
-// =====================================================
-// 遊戲引擎
-// =====================================================
+// ===== 遊戲引擎 =====
 const gameCanvas = document.getElementById('gameCanvas');
 const gameCtx = gameCanvas.getContext('2d');
 let gameAnimationId = null;
-let isGameRunning = false;
-let isGamePaused = false;
-let isGameOver = false;
+let isGameRunning = false, isGamePaused = false, isGameOver = false;
 let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
-let stars = [];
-let particles = [];
-let collectibles = [];
-let obstacles = [];
-let gameScore = 0;
-let gameCombo = 0;
-let playerHP = 100;
-let hasShield = false;
-let feverTimer = 0;
-let magnetTimer = 0;
-let doubleScoreTimer = 0;
-let slowDebuffTimer = 0;
-let restTimer = null;
-let isResting = false;
-let sessionStartTime = 0;
+let stars = [], particles = [], collectibles = [], obstacles = [];
+let gameScore = 0, gameCombo = 0, playerHP = 100;
+let hasShield = false, feverTimer = 0, magnetTimer = 0, doubleScoreTimer = 0, slowDebuffTimer = 0;
+let restTimer = null, isResting = false, sessionStartTime = 0;
+let bossActive = false, currentBoss = null;
 
+// ===== 多種 Boss 定義 =====
+const BOSS_TYPES = [
+{ name: '🔥 火龍', emoji: '🐉', color: '#e74c3c', hp: 200, speed: 1.2, radius: 30,
+skills: ['火焰吐息', '烈焰護盾'] },
+{ name: '❄️ 冰霜巨人', emoji: '🧊', color: '#3498db', hp: 300, speed: 0.8, radius: 35,
+skills: ['冰凍光環', '寒冰之牆'] },
+{ name: '🌑 暗影刺客', emoji: '🗡️', color: '#8e44ad', hp: 150, speed: 2.0, radius: 22,
+skills: ['暗影突襲', '隱身'] },
+{ name: '⚡ 雷霆鳳凰', emoji: '🦅', color: '#f1c40f', hp: 180, speed: 1.5, radius: 28,
+skills: ['閃電風暴', '復活'] },
+{ name: '🪨 岩石泰坦', emoji: '🗿', color: '#7f8c8d', hp: 400, speed: 0.5, radius: 40,
+skills: ['地震', '岩石護甲'] },
+{ name: '🌪️ 風暴領主', emoji: '🌪️', color: '#1abc9c', hp: 220, speed: 1.8, radius: 26,
+skills: ['龍捲風', '風牆'] },
+{ name: '💀 死靈法師', emoji: '🧙', color: '#2c3e50', hp: 160, speed: 1.0, radius: 25,
+skills: ['召喚骷髏', '詛咒'] },
+{ name: '🕷️ 蜘蛛女王', emoji: '🕷️', color: '#6c3483', hp: 250, speed: 1.3, radius: 32,
+skills: ['蛛網', '毒素'] },
+];
+
+// ===== 多種道具 =====
+const ITEM_TYPES = [
+{ type: 'coin', emoji: '🪙', color: '#f1c40f', label: '金幣', score: 50 },
+{ type: 'heart', emoji: '❤️', color: '#2ecc71', label: '治癒之心', heal: 25 },
+{ type: 'shield', emoji: '🛡️', color: '#00d2d3', label: '護盾' },
+{ type: 'magnet', emoji: '🧲', color: '#f39c12', label: '磁鐵' },
+{ type: 'double', emoji: '💎', color: '#2ecc71', label: '雙倍積分' },
+{ type: 'fever', emoji: '⚡', color: '#a55eea', label: 'FEVER' },
+{ type: 'star', emoji: '⭐', color: '#f1c40f', label: '星星', score: 100 },
+{ type: 'wing', emoji: '🪶', color: '#3498db', label: '翅膀', speed: 1.5 },
+{ type: 'clock', emoji: '⏰', color: '#e67e22', label: '時鐘', extraTime: 30 },
+{ type: 'key', emoji: '🔑', color: '#f1c40f', label: '鑰匙', unlock: true },
+];
+
+// ===== 多種障礙物 =====
+const OBSTACLE_TYPES = [
+{ type: 'cloud', emoji: '⛈️', color: '#4a4a5a', label: '雷暴雲', damage: 25 },
+{ type: 'poison', emoji: '🟣', color: '#8e44ad', label: '毒霧', damage: 40 },
+{ type: 'mud', emoji: '🕸️', color: '#d35400', label: '黏液', damage: 0, slow: true },
+{ type: 'spike', emoji: '🔺', color: '#e74c3c', label: '尖刺', damage: 30 },
+{ type: 'fire', emoji: '🔥', color: '#e67e22', label: '火焰', damage: 35 },
+{ type: 'ice', emoji: '❄️', color: '#3498db', label: '冰塊', damage: 20, slow: true },
+{ type: 'thorn', emoji: '🌿', color: '#27ae60', label: '荊棘', damage: 15 },
+{ type: 'void', emoji: '🌌', color: '#2c3e50', label: '虛空', damage: 50 },
+{ type: 'mirror', emoji: '🪞', color: '#7f8c8d', label: '鏡像', damage: 10, mirror: true },
+{ type: 'chain', emoji: '⛓️', color: '#95a5a6', label: '鎖鏈', damage: 20, slow: true },
+];
+
+// ===== 畫質設定 =====
+const QUALITY_SETTINGS = {
+ultra: { scale: 1.0, particles: 80, effects: true, shadows: true, glow: true },
+high: { scale: 1.0, particles: 50, effects: true, shadows: true, glow: true },
+medium: { scale: 0.75, particles: 30, effects: true, shadows: false, glow: true },
+low: { scale: 0.5, particles: 15, effects: false, shadows: false, glow: false },
+potato: { scale: 0.3, particles: 5, effects: false, shadows: false, glow: false },
+};
+let currentQuality = 'high';
+let customQuality = null;
+
+function setQuality(val) {
+currentQuality = val;
+const settings = customQuality || QUALITY_SETTINGS[val] || QUALITY_SETTINGS.high;
+window.__qualitySettings = settings;
+if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+updateStatus(`🖥️ 畫質: ${val} (粒子:${settings.particles})`);
+}
+
+function openCustomQuality() {
+const current = customQuality || QUALITY_SETTINGS[currentQuality];
+const val = prompt(
+'自訂畫質參數 (JSON格式):\n' +
+'{"scale":1.0, "particles":50, "effects":true, "shadows":true, "glow":true}\n\n' +
+'當前值: ' + JSON.stringify(current),
+JSON.stringify(current, null, 2)
+);
+if (val) {
+try {
+const parsed = JSON.parse(val);
+customQuality = parsed;
+window.__qualitySettings = parsed;
+setQuality('custom');
+updateStatus('✅ 自訂畫質已套用');
+} catch(e) { alert('❌ JSON 格式錯誤'); }
+}
+}
+
+// ===== 初始化遊戲 =====
 function initStars() {
+const count = window.__qualitySettings?.particles || 50;
 stars = [];
-let w = gameCanvas.width || 800;
-let h = gameCanvas.height || 480;
-for(let i=0; i<50; i++) {
+let w = gameCanvas.width || 800, h = gameCanvas.height || 480;
+for(let i=0; i<count; i++) {
 stars.push({
 x: Math.random() * w, y: Math.random() * h,
 size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5
 });
 }
 }
+
 function resizeGameCanvas() {
+const settings = window.__qualitySettings || QUALITY_SETTINGS.high;
 if (gameCanvas && gameCanvas.parentElement) {
-gameCanvas.width = gameCanvas.parentElement.clientWidth || 800;
-gameCanvas.height = gameCanvas.parentElement.clientHeight || 480;
+const w = gameCanvas.parentElement.clientWidth || 800;
+const h = gameCanvas.parentElement.clientHeight || 480;
+gameCanvas.width = w * settings.scale;
+gameCanvas.height = h * settings.scale;
+gameCanvas.style.width = w + 'px';
+gameCanvas.style.height = h + 'px';
 if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = gameCanvas.height / 2;
 initStars();
 }
@@ -1194,12 +1233,11 @@ window.addEventListener('resize', resizeGameCanvas);
 
 function restartGameEngine() {
 stopGameEngine();
-isGameRunning = true;
-isGamePaused = false;
-isGameOver = false;
+isGameRunning = true; isGamePaused = false; isGameOver = false;
 playerHP = 100; gameScore = 0; gameCombo = 0;
 hasShield = false; feverTimer = 0; magnetTimer = 0; doubleScoreTimer = 0; slowDebuffTimer = 0;
 particles = []; collectibles = []; obstacles = []; bgmStep = 0;
+bossActive = false; currentBoss = null;
 let h = gameCanvas.height || 480;
 rocket.x = 120; rocket.y = h / 2; rocket.angle = 0;
 sessionStartTime = Date.now();
@@ -1213,6 +1251,7 @@ document.getElementById('shieldBadge').style.display = 'none';
 document.getElementById('magnetBadge').style.display = 'none';
 document.getElementById('doubleBadge').style.display = 'none';
 document.getElementById('slowBadge').style.display = 'none';
+document.getElementById('bossWarning').style.display = 'none';
 updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
 gameLoop();
 }
@@ -1229,9 +1268,7 @@ btn.innerText = "暫停"; btn.style.backgroundColor = "#27ae60"; startBGM();
 }
 
 function triggerGameOver() {
-isGameOver = true;
-stopBGM();
-playAudioEffect('hit');
+isGameOver = true; stopBGM(); playAudioEffect('hit');
 document.getElementById('finalScore').innerText = gameScore;
 document.getElementById('gameOverScreen').style.display = 'flex';
 stopGameEngine();
@@ -1239,75 +1276,35 @@ stopGameEngine();
 
 function stopGameEngine() {
 isGameRunning = false;
-if (gameAnimationId) {
-cancelAnimationFrame(gameAnimationId);
-gameAnimationId = null;
-}
+if (gameAnimationId) { cancelAnimationFrame(gameAnimationId); gameAnimationId = null; }
 }
 
-function drawRocket(x, y, angle, isExhale, flowMagnitude) {
-if (isNaN(x) || isNaN(y) || isNaN(angle)) {
-rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2; rocket.angle = 0; return;
-}
-gameCtx.save();
-gameCtx.globalAlpha = 1.0;
-gameCtx.translate(x, y);
-gameCtx.rotate(angle);
-if (hasShield) {
-gameCtx.beginPath(); gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
-gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3; gameCtx.stroke();
-}
-if (feverTimer > 0) {
-gameCtx.beginPath(); gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
-gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)'; gameCtx.fill();
-}
-if (magnetTimer > 0) {
-gameCtx.beginPath(); gameCtx.arc(0, 0, 100, 0, Math.PI * 2);
-gameCtx.strokeStyle = 'rgba(243, 156, 18, 0.25)'; gameCtx.lineWidth = 2; gameCtx.stroke();
-}
-if (slowDebuffTimer > 0) {
-gameCtx.beginPath(); gameCtx.arc(0, 0, 22, 0, Math.PI * 2);
-gameCtx.fillStyle = 'rgba(230, 126, 34, 0.35)'; gameCtx.fill();
-}
-gameCtx.fillStyle = '#ecf0f1';
-gameCtx.beginPath();
-gameCtx.moveTo(20, 0); gameCtx.lineTo(-12, -10); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-12, 10);
-gameCtx.closePath(); gameCtx.fill();
-gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
-gameCtx.beginPath();
-gameCtx.moveTo(-4, -6); gameCtx.lineTo(-14, -14); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 14); gameCtx.lineTo(-4, 6);
-gameCtx.closePath(); gameCtx.fill();
-gameCtx.restore();
-if (flowMagnitude > 5) {
-let pColor = isExhale ? '#f39c12' : '#00d2d3';
-if (feverTimer > 0) pColor = '#a55eea';
-particles.push({
-x: x - Math.cos(angle) * 15, y: y - Math.sin(angle) * 15,
-vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2, vy: (Math.random() - 0.5) * 2,
-size: Math.random() * 5 + 2, color: pColor, life: 1.0
-});
-}
-}
-
+// ===== 主遊戲循環 =====
 function gameLoop() {
 if (!isGameRunning || isGameOver) return;
+const settings = window.__qualitySettings || QUALITY_SETTINGS.high;
+
 gameCtx.globalAlpha = 1.0;
 gameCtx.fillStyle = '#0d1117';
 gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
 let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
 let speedMultByDiff = (diff === 'hard') ? 1.3 : (diff === 'easy' ? 0.85 : 1.0);
 let baseSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0') * speedMultByDiff;
 let userSpeedMult = (slowDebuffTimer > 0) ? (baseSpeedMult * 0.5) : baseSpeedMult;
+
+// 星星
 gameCtx.fillStyle = '#ffffff';
 stars.forEach(s => {
 s.x -= s.baseSpeed * userSpeedMult;
 if (s.x < 0) s.x = gameCanvas.width;
 gameCtx.fillRect(s.x, s.y, s.size, s.size);
 });
-let activeMeasuring = (typeof isMeasuring !== 'undefined') ? isMeasuring : false;
+
+let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
+
 if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
 let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-let mode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
 let flowMag = Math.abs(flow);
 let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard') ? 0.8 : 1.2;
 let targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
@@ -1318,51 +1315,165 @@ if (isNaN(dy)) dy = 0;
 let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
 rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
 rocket.angle = Math.atan2(dy, 25);
+
+// 計時器更新
 if (feverTimer > 0) { feverTimer--; if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none'; }
 if (magnetTimer > 0) { magnetTimer--; if (magnetTimer === 0) document.getElementById('magnetBadge').style.display = 'none'; }
 if (doubleScoreTimer > 0) { doubleScoreTimer--; if (doubleScoreTimer === 0) document.getElementById('doubleBadge').style.display = 'none'; }
 if (slowDebuffTimer > 0) { slowDebuffTimer--; if (slowDebuffTimer === 0) document.getElementById('slowBadge').style.display = 'none'; }
+
 let spawnY = Math.random() * (gameCanvas.height - 100) + 50;
 if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
 audioAnalyser.getByteFrequencyData(audioDataArray);
-let freqVal = audioDataArray[5];
-spawnY = gameCanvas.height - (freqVal / 255) * (gameCanvas.height - 80);
+spawnY = gameCanvas.height - (audioDataArray[5] / 255) * (gameCanvas.height - 80);
 }
-let buffMult = (diff === 'easy') ? 1.4 : (diff === 'hard') ? 0.8 : 1.0;
-if (Math.random() < 0.028 * userSpeedMult * buffMult) {
-collectibles.push({ type: 'coin', x: gameCanvas.width + 20, y: spawnY, radius: 8, baseSpeed: 3, collected: false });
+
+// Boss 出現（每5關出現，隨機Boss）
+const bossLevel = Math.floor(EXP?.currentLevel / 5) || 0;
+if (bossLevel > 0 && !bossActive && Math.random() < 0.003 * userSpeedMult) {
+const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
+currentBoss = {
+...BOSS_TYPES[bossIdx],
+x: gameCanvas.width + 50,
+y: spawnY,
+hp: BOSS_TYPES[bossIdx].hp + EXP?.currentLevel * 5 || 200,
+maxHp: BOSS_TYPES[bossIdx].hp + EXP?.currentLevel * 5 || 200,
+skills: BOSS_TYPES[bossIdx].skills || [],
+skillTimer: 0,
+active: true
+};
+bossActive = true;
+document.getElementById('bossWarning').style.display = 'inline';
+playAudioEffect('boss');
+showNotification(`👹 ${currentBoss.name} 出現！`);
 }
-if (Math.random() < 0.010 * userSpeedMult * buffMult) {
-collectibles.push({ type: 'heart', x: gameCanvas.width + 20, y: spawnY, radius: 12, baseSpeed: 2.5, collected: false });
+
+// Boss 行為
+if (bossActive && currentBoss) {
+currentBoss.x -= (currentBoss.speed || 1) * userSpeedMult;
+currentBoss.skillTimer++;
+// Boss 技能發動
+if (currentBoss.skillTimer > 120 && Math.random() < 0.02) {
+const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
+showNotification(`💥 ${currentBoss.name} 使用 ${skill}！`);
+if (skill === '火焰吐息' || skill === '閃電風暴') {
+// 主動攻擊：發射彈幕
+for (let i = 0; i < 8; i++) {
+const angle = (i / 8) * Math.PI * 2;
+obstacles.push({
+type: 'boss_shot',
+x: currentBoss.x, y: currentBoss.y,
+vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3,
+radius: 8, damage: 15, hit: false, baseSpeed: 3
+});
 }
-if (!hasShield && Math.random() < 0.007 * userSpeedMult * buffMult) {
-collectibles.push({ type: 'shield', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.5, collected: false });
+} else if (skill === '冰凍光環' || skill === '岩石護甲') {
+// 被動技能：減速周圍
+slowDebuffTimer = 120;
+document.getElementById('slowBadge').style.display = 'inline';
+} else if (skill === '暗影突襲') {
+playerHP = Math.max(0, playerHP - 20);
+playAudioEffect('hit');
+if (playerHP <= 0) { triggerGameOver(); return; }
 }
-if (magnetTimer === 0 && Math.random() < 0.007 * userSpeedMult * buffMult) {
-collectibles.push({ type: 'magnet', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
+currentBoss.skillTimer = 0;
 }
-if (doubleScoreTimer === 0 && Math.random() < 0.007 * userSpeedMult * buffMult) {
-collectibles.push({ type: 'double', x: gameCanvas.width + 20, y: spawnY, radius: 13, baseSpeed: 2.8, collected: false });
+// 繪製 Boss
+gameCtx.save();
+gameCtx.translate(currentBoss.x, currentBoss.y);
+const bossScale = 1 + Math.sin(Date.now() / 500) * 0.03;
+gameCtx.scale(bossScale, bossScale);
+// Boss 光環
+if (settings.glow) {
+const grad = gameCtx.createRadialGradient(0, 0, 10, 0, 0, currentBoss.radius * 1.5);
+grad.addColorStop(0, currentBoss.color + '40');
+grad.addColorStop(1, 'transparent');
+gameCtx.fillStyle = grad;
+gameCtx.beginPath();
+gameCtx.arc(0, 0, currentBoss.radius * 1.5, 0, Math.PI * 2);
+gameCtx.fill();
 }
-if (Math.random() < 0.005 * userSpeedMult * buffMult && feverTimer === 0) {
-collectibles.push({ type: 'fever', x: gameCanvas.width + 20, y: spawnY, radius: 14, baseSpeed: 3.5, collected: false });
+// Boss 身體
+gameCtx.shadowColor = currentBoss.color;
+gameCtx.shadowBlur = settings.shadows ? 30 : 0;
+gameCtx.fillStyle = currentBoss.color;
+gameCtx.beginPath();
+gameCtx.arc(0, 0, currentBoss.radius, 0, Math.PI * 2);
+gameCtx.fill();
+gameCtx.shadowBlur = 0;
+// Boss 表情
+gameCtx.font = `${currentBoss.radius}px sans-serif`;
+gameCtx.textAlign = 'center';
+gameCtx.textBaseline = 'middle';
+gameCtx.fillText(currentBoss.emoji, 0, 0);
+// Boss HP 條
+gameCtx.restore();
+const hpPct = currentBoss.hp / currentBoss.maxHp;
+gameCtx.fillStyle = 'rgba(0,0,0,0.7)';
+gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60, 6);
+gameCtx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
+gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60 * hpPct, 6);
+// Boss 名稱
+gameCtx.fillStyle = '#f0f6fc';
+gameCtx.font = '10px sans-serif';
+gameCtx.textAlign = 'center';
+gameCtx.fillText(currentBoss.name, currentBoss.x, currentBoss.y - currentBoss.radius - 18);
+
+// Boss 碰撞
+const bossDist = Math.hypot(currentBoss.x - rocket.x, currentBoss.y - rocket.y);
+if (bossDist < currentBoss.radius + rocket.radius) {
+if (hasShield) {
+hasShield = false;
+document.getElementById('shieldBadge').style.display = 'none';
+} else {
+playerHP = Math.max(0, playerHP - 15);
+playAudioEffect('hit');
+if (playerHP <= 0) { triggerGameOver(); return; }
 }
-if (diff !== 'easy' && Math.random() < (diff === 'hard' ? 0.012 : 0.006) * userSpeedMult) {
-collectibles.push({ type: 'curse', x: gameCanvas.width + 20, y: spawnY, radius: 11, baseSpeed: 3.2, collected: false });
 }
-let cloudDmg = (diff === 'easy') ? 10 : (diff === 'hard') ? 35 : 25;
-if (Math.random() < (diff === 'easy' ? 0.006 : diff === 'hard' ? 0.022 : 0.012) * userSpeedMult) {
-obstacles.push({ type: 'cloud', x: gameCanvas.width + 30, y: spawnY, radius: 14, baseSpeed: 4, damage: cloudDmg, hit: false });
-}
-if (diff !== 'easy') {
-let poisonDmg = (diff === 'hard') ? 50 : 40;
-if (Math.random() < (diff === 'hard' ? 0.015 : 0.006) * userSpeedMult) {
-obstacles.push({ type: 'poison', x: gameCanvas.width + 30, y: spawnY, radius: 22, baseSpeed: 2.8, damage: poisonDmg, hit: false });
+// Boss 死亡
+if (currentBoss.x < -50) {
+bossActive = false;
+currentBoss = null;
+document.getElementById('bossWarning').style.display = 'none';
 }
 }
-if (diff !== 'easy' && Math.random() < (diff === 'hard' ? 0.010 : 0.006) * userSpeedMult) {
-obstacles.push({ type: 'mud', x: gameCanvas.width + 30, y: spawnY, radius: 15, baseSpeed: 4.5, damage: 0, hit: false });
+
+// 生成道具（使用解鎖列表）
+const unlockedItems = EXP?.unlockedItems || ['coin', 'heart'];
+const itemPool = ITEM_TYPES.filter(i => unlockedItems.includes(i.type));
+if (itemPool.length > 0 && Math.random() < 0.025 * userSpeedMult) {
+const item = itemPool[Math.floor(Math.random() * itemPool.length)];
+collectibles.push({
+...item,
+x: gameCanvas.width + 20,
+y: spawnY,
+radius: 10,
+baseSpeed: 3,
+collected: false,
+scoreMult: 1
+});
 }
+
+// 生成障礙物（使用解鎖列表）
+const unlockedObstacles = EXP?.unlockedObstacles || ['cloud'];
+const obstaclePool = OBSTACLE_TYPES.filter(o => unlockedObstacles.includes(o.type));
+if (obstaclePool.length > 0 && Math.random() < 0.015 * userSpeedMult) {
+const obs = obstaclePool[Math.floor(Math.random() * obstaclePool.length)];
+const dmg = (diff === 'easy') ? Math.floor(obs.damage * 0.5) : (diff === 'hard') ? Math.floor(obs.damage * 1.5) : obs.damage;
+obstacles.push({
+...obs,
+x: gameCanvas.width + 30,
+y: spawnY,
+radius: obs.type === 'poison' ? 22 : obs.type === 'void' ? 20 : 14,
+baseSpeed: obs.type === 'mud' ? 4.5 : obs.type === 'ice' ? 3.5 : 4,
+damage: dmg,
+hit: false,
+slow: obs.slow || false
+});
+}
+
+// 更新道具
 collectibles.forEach((c) => {
 c.x -= c.baseSpeed * userSpeedMult;
 if (magnetTimer > 0) {
@@ -1373,43 +1484,43 @@ c.y += (rocket.y - c.y) * 0.12;
 }
 }
 gameCtx.beginPath();
-if (c.type === 'coin') {
 gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#f1c40f'; gameCtx.fill();
-} else if (c.type === 'heart') {
-gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
-gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-} else if (c.type === 'shield') {
-gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#00d2d3'; gameCtx.fill();
-gameCtx.strokeStyle = '#ffffff'; gameCtx.lineWidth = 2; gameCtx.stroke();
-} else if (c.type === 'magnet') {
-gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#e67e22'; gameCtx.fill();
-gameCtx.strokeStyle = '#f39c12'; gameCtx.lineWidth = 2; gameCtx.stroke();
-} else if (c.type === 'double') {
-gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#2ecc71'; gameCtx.fill();
-gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
-} else if (c.type === 'fever') {
-gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#a55eea'; gameCtx.fill();
-gameCtx.strokeStyle = '#f1c40f'; gameCtx.lineWidth = 2; gameCtx.stroke();
-} else if (c.type === 'curse') {
-gameCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-gameCtx.fillStyle = '#2c3e50'; gameCtx.fill();
-gameCtx.strokeStyle = '#e74c3c'; gameCtx.lineWidth = 2; gameCtx.stroke();
+if (c.type === 'coin') { gameCtx.fillStyle = '#f1c40f'; }
+else if (c.type === 'heart') { gameCtx.fillStyle = '#2ecc71'; }
+else if (c.type === 'shield') { gameCtx.fillStyle = '#00d2d3'; }
+else if (c.type === 'magnet') { gameCtx.fillStyle = '#f39c12'; }
+else if (c.type === 'double') { gameCtx.fillStyle = '#2ecc71'; }
+else if (c.type === 'fever') { gameCtx.fillStyle = '#a55eea'; }
+else if (c.type === 'star') { gameCtx.fillStyle = '#f1c40f'; }
+else if (c.type === 'wing') { gameCtx.fillStyle = '#3498db'; }
+else if (c.type === 'clock') { gameCtx.fillStyle = '#e67e22'; }
+else if (c.type === 'key') { gameCtx.fillStyle = '#f1c40f'; }
+else { gameCtx.fillStyle = '#8b949e'; }
+gameCtx.fill();
+if (settings.glow) {
+gameCtx.shadowColor = gameCtx.fillStyle;
+gameCtx.shadowBlur = 15;
+gameCtx.fill();
+gameCtx.shadowBlur = 0;
 }
+// 道具表情
+gameCtx.fillStyle = '#ffffff';
+gameCtx.font = '12px sans-serif';
+gameCtx.textAlign = 'center';
+gameCtx.textBaseline = 'middle';
+gameCtx.fillText(c.emoji || '?', c.x, c.y);
+
 let pickupRadius = (feverTimer > 0) ? (rocket.radius + 35) : rocket.radius;
 let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
 if (dist < c.radius + pickupRadius) {
 let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
-if (c.type === 'coin') {
-gameScore += 50 * scoreMult;
-gameCombo++; playAudioEffect('coin');
+if (c.type === 'coin' || c.type === 'star') {
+const pts = (c.score || 50) * scoreMult;
+gameScore += pts;
+gameCombo++;
+playAudioEffect('coin');
 } else if (c.type === 'heart') {
-playerHP = Math.min(100, playerHP + 25);
+playerHP = Math.min(100, playerHP + (c.heal || 25));
 playAudioEffect('buff');
 } else if (c.type === 'shield') {
 hasShield = true;
@@ -1427,29 +1538,53 @@ playAudioEffect('buff');
 feverTimer = 300;
 document.getElementById('feverBadge').style.display = 'inline';
 playAudioEffect('buff');
-} else if (c.type === 'curse') {
-let curseDmg = (diff === 'hard') ? 25 : 15;
-playerHP = Math.max(0, playerHP - curseDmg);
-gameScore = Math.max(0, gameScore - 100);
-if (diff !== 'easy') gameCombo = 0;
-playAudioEffect('hit');
-if (playerHP <= 0) { triggerGameOver(); return; }
+} else if (c.type === 'wing') {
+// 加速效果
+userSpeedMult *= 1.5;
+setTimeout(() => { userSpeedMult /= 1.5; }, 3000);
+playAudioEffect('buff');
+} else if (c.type === 'clock') {
+// 額外時間
+sessionStartTime -= 30000;
+playAudioEffect('buff');
+} else if (c.type === 'key') {
+// 解鎖特殊效果
+if (typeof window.advanceLevel === 'function') window.advanceLevel();
+playAudioEffect('buff');
 }
 c.collected = true;
 }
 });
+
+// 更新障礙物
 obstacles.forEach((o) => {
 o.x -= o.baseSpeed * userSpeedMult;
 gameCtx.beginPath();
 gameCtx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
-if (o.type === 'poison') {
-gameCtx.fillStyle = '#8e44ad';
-} else if (o.type === 'mud') {
-gameCtx.fillStyle = '#d35400';
-} else {
-gameCtx.fillStyle = '#e74c3c';
-}
+if (o.type === 'poison') { gameCtx.fillStyle = '#8e44ad'; }
+else if (o.type === 'mud') { gameCtx.fillStyle = '#d35400'; }
+else if (o.type === 'spike') { gameCtx.fillStyle = '#e74c3c'; }
+else if (o.type === 'fire') { gameCtx.fillStyle = '#e67e22'; }
+else if (o.type === 'ice') { gameCtx.fillStyle = '#3498db'; }
+else if (o.type === 'thorn') { gameCtx.fillStyle = '#27ae60'; }
+else if (o.type === 'void') { gameCtx.fillStyle = '#2c3e50'; }
+else if (o.type === 'mirror') { gameCtx.fillStyle = '#7f8c8d'; }
+else if (o.type === 'chain') { gameCtx.fillStyle = '#95a5a6'; }
+else { gameCtx.fillStyle = '#e74c3c'; }
 gameCtx.fill();
+if (settings.glow) {
+gameCtx.shadowColor = gameCtx.fillStyle;
+gameCtx.shadowBlur = 10;
+gameCtx.fill();
+gameCtx.shadowBlur = 0;
+}
+// 障礙物表情
+gameCtx.fillStyle = '#ffffff';
+gameCtx.font = '14px sans-serif';
+gameCtx.textAlign = 'center';
+gameCtx.textBaseline = 'middle';
+gameCtx.fillText(o.emoji || '💥', o.x, o.y);
+
 let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
 if (dist < o.radius + rocket.radius) {
 if (hasShield && o.type !== 'mud') {
@@ -1457,7 +1592,7 @@ hasShield = false;
 document.getElementById('shieldBadge').style.display = 'none';
 playAudioEffect('hit');
 } else {
-if (o.type === 'mud') {
+if (o.slow) {
 slowDebuffTimer = (diff === 'hard') ? 360 : 240;
 document.getElementById('slowBadge').style.display = 'inline';
 playAudioEffect('hit');
@@ -1468,24 +1603,29 @@ playAudioEffect('hit');
 }
 }
 o.hit = true;
-if (playerHP <= 0) {
-triggerGameOver(); return;
-}
+if (playerHP <= 0) { triggerGameOver(); return; }
 }
 });
+
 if (isGameOver) return;
+
 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
 obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
+
 let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1);
 if (flowMag > 10) gameScore += 1 * scoreMult;
+
 let elapsedSession = (Date.now() - sessionStartTime) / 1000;
 if (elapsedSession > 90) triggerRestStop();
+
 } else {
 let centerTarget = gameCanvas.height / 2;
 if (isNaN(rocket.y)) rocket.y = centerTarget;
 rocket.y += (centerTarget - rocket.y) * 0.05;
 rocket.angle = 0;
 }
+
+// 粒子更新
 particles.forEach((p) => {
 p.x += p.vx * userSpeedMult; p.y += p.vy; p.life -= 0.04;
 if (p.life > 0) {
@@ -1497,13 +1637,75 @@ gameCtx.fill();
 });
 particles = particles.filter(p => p.life > 0);
 gameCtx.globalAlpha = 1.0;
+
+// 繪製火箭
 let activeFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
 let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
 drawRocket(rocket.x, rocket.y, rocket.angle, activeMode === "exhalation", activeFlow);
+
 document.getElementById('gameScore').innerText = gameScore;
 document.getElementById('gameCombo').innerText = gameCombo;
 document.getElementById('hpFill').style.width = `${playerHP}%`;
+
 gameAnimationId = requestAnimationFrame(gameLoop);
+}
+
+function drawRocket(x, y, angle, isExhale, flowMagnitude) {
+if (isNaN(x) || isNaN(y) || isNaN(angle)) {
+rocket.x = 120; rocket.y = (gameCanvas.height || 480) / 2; rocket.angle = 0; return;
+}
+const settings = window.__qualitySettings || QUALITY_SETTINGS.high;
+gameCtx.save();
+gameCtx.globalAlpha = 1.0;
+gameCtx.translate(x, y);
+gameCtx.rotate(angle);
+
+if (hasShield && settings.glow) {
+gameCtx.beginPath(); gameCtx.arc(0, 0, 28, 0, Math.PI * 2);
+gameCtx.strokeStyle = '#00d2d3'; gameCtx.lineWidth = 3; gameCtx.stroke();
+gameCtx.shadowColor = '#00d2d3'; gameCtx.shadowBlur = 20;
+gameCtx.stroke(); gameCtx.shadowBlur = 0;
+}
+if (feverTimer > 0 && settings.glow) {
+gameCtx.beginPath(); gameCtx.arc(0, 0, 26, 0, Math.PI * 2);
+gameCtx.fillStyle = 'rgba(165, 94, 234, 0.4)'; gameCtx.fill();
+}
+if (magnetTimer > 0) {
+gameCtx.beginPath(); gameCtx.arc(0, 0, 100, 0, Math.PI * 2);
+gameCtx.strokeStyle = 'rgba(243, 156, 18, 0.25)'; gameCtx.lineWidth = 2; gameCtx.stroke();
+}
+if (slowDebuffTimer > 0) {
+gameCtx.beginPath(); gameCtx.arc(0, 0, 22, 0, Math.PI * 2);
+gameCtx.fillStyle = 'rgba(230, 126, 34, 0.35)'; gameCtx.fill();
+}
+
+gameCtx.fillStyle = '#ecf0f1';
+gameCtx.beginPath();
+gameCtx.moveTo(20, 0); gameCtx.lineTo(-12, -10); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-12, 10);
+gameCtx.closePath(); gameCtx.fill();
+
+gameCtx.fillStyle = isExhale ? '#e74c3c' : '#3498db';
+gameCtx.beginPath();
+gameCtx.moveTo(-4, -6); gameCtx.lineTo(-14, -14); gameCtx.lineTo(-8, 0); gameCtx.lineTo(-14, 14); gameCtx.lineTo(-4, 6);
+gameCtx.closePath(); gameCtx.fill();
+gameCtx.restore();
+
+if (flowMagnitude > 5) {
+let pColor = isExhale ? '#f39c12' : '#00d2d3';
+if (feverTimer > 0) pColor = '#a55eea';
+const count = Math.min(Math.floor(flowMagnitude / 10) + 1, 5);
+for (let i = 0; i < count; i++) {
+particles.push({
+x: x - Math.cos(angle) * 15 + (Math.random()-0.5)*10,
+y: y - Math.sin(angle) * 15 + (Math.random()-0.5)*10,
+vx: -Math.cos(angle) * (Math.random() * 4 + 2) - 2 + (Math.random()-0.5)*2,
+vy: (Math.random() - 0.5) * 3,
+size: Math.random() * 5 + 2,
+color: pColor,
+life: 1.0
+});
+}
+}
 }
 
 function triggerRestStop() {
@@ -1524,968 +1726,690 @@ startBGM();
 }
 }, 1000);
 }
+
+// ===== 擴充功能：關卡系統 =====
+const EXP = {
+currentLevel: 1,
+maxLevel: 100,
+bossSkills: [],
+unlockedItems: ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'],
+unlockedObstacles: ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'],
+isFinalBossActive: false,
+bossSequencePlaying: false,
+customLevelActive: false,
+customConfig: null,
+isRecordingPaused: false,
+currentSpawnRate: 0.015,
+currentSpeedBonus: 1.0,
+bossTypes: ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦']
+};
+window.__expansion = EXP;
+
+// ===== 關卡推進 =====
+function getRandomBossSkill() {
+const pool = [
+{ name: '🛡️ 護盾', type: 'passive', effect: '減少傷害 30%' },
+{ name: '⚡ 閃電鏈', type: 'active', effect: '隨機攻擊扣 20 HP' },
+{ name: '🌀 減速領域', type: 'passive', effect: '降低移動速度 20%' },
+{ name: '🔥 火焰風暴', type: 'active', effect: '生成大量火球障礙' },
+{ name: '💀 詛咒之觸', type: 'passive', effect: '額外扣 15 HP' },
+{ name: '🌪️ 颶風吸扯', type: 'active', effect: '將玩家拉向中心' },
+{ name: '❄️ 冰凍光環', type: 'passive', effect: '減速周圍障礙' },
+{ name: '🌑 暗影突襲', type: 'active', effect: '瞬間移動攻擊' },
+];
+return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function getRandomItemType() {
+const all = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'star', 'wing', 'clock', 'key'];
+const available = all.filter(item => !EXP.unlockedItems.includes(item));
+if (available.length === 0) return 'coin';
+return available[Math.floor(Math.random() * available.length)];
+}
+
+function getRandomObstacleType() {
+const all = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice', 'thorn', 'void', 'mirror', 'chain'];
+const available = all.filter(item => !EXP.unlockedObstacles.includes(item));
+if (available.length === 0) return 'cloud';
+return available[Math.floor(Math.random() * available.length)];
+}
+
+function getRandomBossType() {
+const all = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦', '風暴領主', '死靈法師', '蜘蛛女王'];
+const available = all.filter(item => !EXP.bossTypes.includes(item));
+if (available.length === 0) return all[Math.floor(Math.random() * all.length)];
+return available[Math.floor(Math.random() * available.length)];
+}
+
+function showNotification(msg) {
+const status = document.getElementById('status');
+if (status) {
+const orig = status.innerText;
+status.innerText = `🎯 ${msg}`;
+status.style.background = '#8e44ad';
+setTimeout(() => {
+status.innerText = orig;
+status.style.background = '#1f4e79';
+}, 3000);
+}
+}
+
+function updateLevelDisplay() {
+const display = document.getElementById('levelDisplay');
+const progress = document.getElementById('levelProgressFill');
+const skillDisplay = document.getElementById('bossSkillDisplay');
+if (display) display.innerText = EXP.currentLevel;
+if (progress) {
+const pct = (EXP.currentLevel / EXP.maxLevel) * 100;
+progress.style.width = Math.min(pct, 100) + '%';
+}
+if (skillDisplay) {
+if (EXP.bossSkills.length > 0) {
+const activeSkills = EXP.bossSkills.filter(s => s.type === 'active').length;
+const passiveSkills = EXP.bossSkills.filter(s => s.type === 'passive').length;
+skillDisplay.innerHTML = ` | 👹 主動:${activeSkills} 被動:${passiveSkills}`;
+} else {
+skillDisplay.innerHTML = '';
+}
+}
+}
+
+window.advanceLevel = function() {
+if (EXP.isFinalBossActive) return;
+EXP.currentLevel++;
+if (EXP.currentLevel > EXP.maxLevel) {
+triggerFinalBoss();
+return;
+}
+// 每5關新增Boss技能（輪流主動/被動）
+if (EXP.currentLevel % 5 === 0) {
+const skill = getRandomBossSkill();
+EXP.bossSkills.push(skill);
+showNotification(`👹 新 Boss 技能: ${skill.name} (${skill.type})`);
+}
+// 每3關新增道具
+if (EXP.currentLevel % 3 === 0) {
+const newItem = getRandomItemType();
+if (!EXP.unlockedItems.includes(newItem)) {
+EXP.unlockedItems.push(newItem);
+const itemInfo = ITEM_TYPES.find(i => i.type === newItem);
+showNotification(`🎁 新道具: ${itemInfo?.emoji || '🎁'} ${itemInfo?.label || newItem}`);
+}
+}
+// 每4關新增障礙物
+if (EXP.currentLevel % 4 === 0) {
+const newObstacle = getRandomObstacleType();
+if (!EXP.unlockedObstacles.includes(newObstacle)) {
+EXP.unlockedObstacles.push(newObstacle);
+const obsInfo = OBSTACLE_TYPES.find(o => o.type === newObstacle);
+showNotification(`⚠️ 新障礙物: ${obsInfo?.emoji || '⚠️'} ${obsInfo?.label || newObstacle}`);
+}
+}
+// 每7關新增Boss類型
+if (EXP.currentLevel % 7 === 0) {
+const newBoss = getRandomBossType();
+if (!EXP.bossTypes.includes(newBoss)) {
+EXP.bossTypes.push(newBoss);
+showNotification(`👾 新 Boss: ${newBoss}`);
+}
+}
+EXP.currentSpawnRate = Math.min(0.015 + EXP.currentLevel * 0.0008, 0.05);
+EXP.currentSpeedBonus = 1 + (EXP.currentLevel - 1) * 0.008;
+updateLevelDisplay();
+};
+
+// ===== 自動關卡推進（每100分） =====
+setInterval(() => {
+const scoreEl = document.getElementById('gameScore');
+if (!scoreEl) return;
+const score = parseInt(scoreEl.innerText) || 0;
+if (isMeasuring && isGameRunning && score > 0) {
+const targetLevel = Math.floor(score / 80) + 1;
+if (targetLevel > EXP.currentLevel && targetLevel <= EXP.maxLevel) {
+for (let i = 0; i < targetLevel - EXP.currentLevel; i++) {
+if (typeof window.advanceLevel === 'function') window.advanceLevel();
+}
+const status = document.getElementById('status');
+if (status) {
+const orig = status.innerText;
+status.innerHTML = `🎯 <span style="color:#f1c40f;font-weight:bold;">關卡提升！</span> 第 ${EXP.currentLevel} 關`;
+status.style.background = '#8e44ad';
+setTimeout(() => { status.innerText = orig; status.style.background = '#1f4e79'; }, 2500);
+}
+updateLevelDisplay();
+}
+}
+}, 3000);
+
+// ===== 最終Boss =====
+function triggerFinalBoss() {
+if (EXP.isFinalBossActive) return;
+EXP.isFinalBossActive = true;
+EXP.bossSequencePlaying = true;
+if (typeof window.isGameRunning !== 'undefined') window.isGameRunning = false;
+EXP.isRecordingPaused = true;
+if (typeof window.stopBGM === 'function') window.stopBGM();
+
+const overlay = document.getElementById('finalBossOverlay');
+const video = document.getElementById('bossVideo');
+const audio = document.getElementById('bossAudio');
+if (overlay) overlay.style.display = 'flex';
+if (video) video.play().catch(() => {});
+if (audio) audio.play().catch(() => {});
+
+const status = document.getElementById('status');
+if (status) {
+status.innerText = '👾 最終 Boss 戰 · 虛空領主降臨！';
+status.style.background = '#c0392b';
+}
+setTimeout(() => { skipBossSequence(); }, 8000);
+}
+
+window.skipBossSequence = function() {
+const overlay = document.getElementById('finalBossOverlay');
+const video = document.getElementById('bossVideo');
+const audio = document.getElementById('bossAudio');
+if (overlay) overlay.style.display = 'none';
+if (video) video.pause();
+if (audio) audio.pause();
+EXP.bossSequencePlaying = false;
+EXP.isRecordingPaused = false;
+if (typeof window.isGameRunning !== 'undefined') window.isGameRunning = true;
+if (typeof window.startBGM === 'function') window.startBGM();
+
+const status = document.getElementById('status');
+if (status) {
+status.innerText = '🏆 恭喜通關！擊敗虛空領主！';
+status.style.background = '#27ae60';
+}
+setTimeout(() => {
+EXP.currentLevel = 1;
+EXP.bossSkills = [];
+EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
+EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
+EXP.bossTypes = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦'];
+EXP.isFinalBossActive = false;
+updateLevelDisplay();
+if (status) {
+status.innerText = '🎮 進入無盡模式 · 繼續挑戰！';
+status.style.background = '#1f4e79';
+}
+}, 3000);
+};
+
+// ===== 自訂關卡 =====
+window.toggleLevelEditor = function() {
+const editor = document.getElementById('levelEditor');
+if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+};
+
+window.applyLevelConfig = function() {
+try {
+const config = JSON.parse(document.getElementById('levelConfig').value);
+EXP.customConfig = config;
+EXP.customLevelActive = true;
+EXP.currentLevel = config.level || 1;
+EXP.bossSkills = config.bossSkills || [];
+EXP.unlockedItems = config.items || ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
+EXP.unlockedObstacles = config.obstacles || ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
+EXP.bossTypes = config.bossTypes || ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦'];
+if (config.spawnRate) EXP.currentSpawnRate = config.spawnRate;
+if (config.enemySpeed) EXP.currentSpeedBonus = config.enemySpeed;
+updateLevelDisplay();
+if (typeof window.restartGameEngine === 'function') window.restartGameEngine();
+const status = document.getElementById('status');
+if (status) {
+status.innerText = `✅ 自訂關卡已套用！Lv.${EXP.currentLevel}`;
+status.style.background = '#27ae60';
+setTimeout(() => { status.style.background = '#1f4e79'; }, 2000);
+}
+document.getElementById('levelEditor').style.display = 'none';
+} catch(e) {
+alert('❌ JSON 格式錯誤！\n' + e.message);
+}
+};
+
+window.resetLevelProgress = function() {
+if (confirm('確定要重置所有關卡進度嗎？')) {
+EXP.currentLevel = 1;
+EXP.bossSkills = [];
+EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
+EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
+EXP.bossTypes = ['火龍', '冰霜巨人', '暗影刺客', '雷霆鳳凰', '岩石泰坦'];
+EXP.customLevelActive = false;
+EXP.customConfig = null;
+EXP.isFinalBossActive = false;
+EXP.bossSequencePlaying = false;
+EXP.isRecordingPaused = false;
+updateLevelDisplay();
+if (typeof window.restartGameEngine === 'function') window.restartGameEngine();
+const status = document.getElementById('status');
+if (status) {
+status.innerText = '🔄 關卡進度已重置';
+status.style.background = '#e67e22';
+setTimeout(() => { status.style.background = '#1f4e79'; }, 2000);
+}
+}
+};
+
+// ===== 圖鑑系統（點擊播放示範影片） =====
+const introData = [
+// 正面道具
+{ type: 'coin', label: '🪙 金幣', cat: 'positive', catLabel: '正面道具', desc: '+50分，FEVER/雙倍時加倍' },
+{ type: 'heart', label: '❤️ 治癒之心', cat: 'positive', catLabel: '正面道具', desc: '恢復 HP +25' },
+{ type: 'shield', label: '🛡️ 護盾', cat: 'positive', catLabel: '正面道具', desc: '抵擋一次障礙物傷害' },
+{ type: 'magnet', label: '🧲 磁鐵', cat: 'positive', catLabel: '正面道具', desc: '吸引 200px 內道具' },
+{ type: 'double', label: '💎 雙倍積分', cat: 'positive', catLabel: '正面道具', desc: '得分 ×2' },
+{ type: 'fever', label: '⚡ FEVER', cat: 'positive', catLabel: '正面道具', desc: '得分 ×2 + 超大吸取' },
+{ type: 'star', label: '⭐ 星星', cat: 'positive', catLabel: '正面道具', desc: '+100分' },
+{ type: 'wing', label: '🪶 翅膀', cat: 'positive', catLabel: '正面道具', desc: '加速 3 秒' },
+{ type: 'clock', label: '⏰ 時鐘', cat: 'positive', catLabel: '正面道具', desc: '增加 30 秒遊戲時間' },
+{ type: 'key', label: '🔑 鑰匙', cat: 'positive', catLabel: '正面道具', desc: '立即升一關' },
+// 負面道具
+{ type: 'curse', label: '💀 詛咒寶石', cat: 'negative', catLabel: '負面道具', desc: '扣 HP 15~25，扣分 -100' },
+// 障礙物
+{ type: 'cloud', label: '⛈️ 雷暴雲', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：10/25/35' },
+{ type: 'poison', label: '🟣 毒霧', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：40/50' },
+{ type: 'mud', label: '🕸️ 黏液', cat: 'obstacle', catLabel: '障礙物', desc: '減速 50%' },
+{ type: 'spike', label: '🔺 尖刺', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：30' },
+{ type: 'fire', label: '🔥 火焰', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：35' },
+{ type: 'ice', label: '❄️ 冰塊', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：20，減速' },
+{ type: 'thorn', label: '🌿 荊棘', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：15' },
+{ type: 'void', label: '🌌 虛空', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：50' },
+{ type: 'mirror', label: '🪞 鏡像', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：10，反彈' },
+{ type: 'chain', label: '⛓️ 鎖鏈', cat: 'obstacle', catLabel: '障礙物', desc: '傷害：20，減速' },
+// Boss
+{ type: 'boss', label: '👹 關卡 Boss', cat: 'boss', catLabel: 'Boss', desc: '多種Boss隨機出現，每5關新增技能' },
+{ type: 'finalboss', label: '🏆 最終 Boss', cat: 'final', catLabel: '最終 Boss', desc: '第100關觸發，專屬動畫' },
+];
+
+function buildIntroGrid() {
+const grid = document.getElementById('introGrid');
+if (!grid) return;
+introData.forEach((item, idx) => {
+const card = document.createElement('div');
+card.className = `intro-card ${item.cat}`;
+if (item.cat === 'boss') card.classList.add('boss-card');
+if (item.cat === 'final') card.classList.add('final-card');
+card.innerHTML = `
+<span class="category-tag ${item.cat}">${item.catLabel}</span>
+<span class="icon">${item.label.split(' ')[0]}</span>
+<h4>${item.label}</h4>
+<p>${item.desc}</p>
+<div class="demo-container">
+<canvas id="demo_${item.type}_${idx}" width="200" height="70"></canvas>
+<span class="demo-label">🎬 點擊播放示範</span>
+</div>
+<div class="click-hint">👆 點擊卡片觀看詳細示範</div>
+`;
+card.onclick = () => openDemoModal(item.type, item.label, item.desc);
+grid.appendChild(card);
+// 啟動小預覽動畫
+setTimeout(() => drawDemoPreview(`demo_${item.type}_${idx}`, item.type), 100);
+});
+}
+
+// 小預覽動畫
+function drawDemoPreview(canvasId, type) {
+const canvas = document.getElementById(canvasId);
+if (!canvas) return;
+const ctx = canvas.getContext('2d');
+const w = canvas.width, h = canvas.height;
+let frame = 0;
+function animate() {
+frame++;
+ctx.clearRect(0, 0, w, h);
+const grad = ctx.createLinearGradient(0, 0, w, h);
+grad.addColorStop(0, '#08080e');
+grad.addColorStop(1, '#12121e');
+ctx.fillStyle = grad;
+ctx.fillRect(0, 0, w, h);
+// 簡化版動畫
+const cx = w/2, cy = h/2;
+const t = frame/30;
+ctx.fillStyle = '#8b949e';
+ctx.font = '28px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+if (type === 'coin') {
+ctx.save(); ctx.translate(cx, cy); ctx.rotate(t);
+ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(0,0,16,0,Math.PI*2); ctx.fill();
+ctx.fillStyle = '#b7950b'; ctx.font = '16px sans-serif'; ctx.fillText('★',0,0);
+ctx.restore();
+} else if (type === 'heart') {
+const p=1+Math.sin(t*2.5)*0.08;
+ctx.save(); ctx.translate(cx, cy); ctx.scale(p,p);
+ctx.fillStyle='#2ecc71'; ctx.beginPath();
+ctx.moveTo(0,5); ctx.bezierCurveTo(-7,-2,-16,-7,-14,-14);
+ctx.bezierCurveTo(-12,-22,-5,-26,0,-18);
+ctx.bezierCurveTo(5,-26,12,-22,14,-14);
+ctx.bezierCurveTo(16,-7,7,-2,0,5);
+ctx.fill(); ctx.restore();
+} else if (type === 'shield') {
+ctx.save(); ctx.translate(cx, cy);
+ctx.strokeStyle='#00d2d3'; ctx.lineWidth=2;
+ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(0,-12); ctx.lineTo(10,-5); ctx.lineTo(10,4);
+ctx.lineTo(0,12); ctx.lineTo(-10,4); ctx.lineTo(-10,-5); ctx.closePath();
+ctx.fillStyle='rgba(0,210,211,0.2)'; ctx.fill();
+ctx.restore();
+} else if (type === 'curse') {
+ctx.save(); ctx.translate(cx, cy);
+ctx.fillStyle='#2c3e50'; ctx.beginPath();
+ctx.moveTo(0,-14); ctx.lineTo(10,-4); ctx.lineTo(8,10); ctx.lineTo(-8,10); ctx.lineTo(-10,-4); ctx.closePath();
+ctx.fill(); ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.5; ctx.stroke();
+ctx.fillStyle='#e74c3c'; ctx.font='14px sans-serif'; ctx.fillText('☠',0,0);
+ctx.restore();
+} else if (type === 'cloud') {
+ctx.fillStyle='#4a4a5a';
+ctx.beginPath(); ctx.arc(cx-12,cy-2,8,0,Math.PI*2);
+ctx.arc(cx,cy-6,10,0,Math.PI*2);
+ctx.arc(cx+12,cy-2,8,0,Math.PI*2);
+ctx.arc(cx-6,cy+4,6,0,Math.PI*2);
+ctx.arc(cx+6,cy+4,6,0,Math.PI*2);
+ctx.fill();
+if(Math.sin(t*1.8)>0.3){ctx.strokeStyle='#f1c40f';ctx.lineWidth=2;
+ctx.beginPath();ctx.moveTo(cx-4,cy-12);ctx.lineTo(cx,cy-6);ctx.lineTo(cx-2,cy-2);ctx.lineTo(cx+4,cy+4);ctx.stroke();}
+} else if (type === 'boss') {
+ctx.save(); ctx.translate(cx, cy);
+ctx.fillStyle='#f1c40f';
+ctx.beginPath(); ctx.moveTo(-14,-8); ctx.lineTo(-10,-16); ctx.lineTo(-6,-10); ctx.lineTo(0,-18); ctx.lineTo(6,-10); ctx.lineTo(10,-16); ctx.lineTo(14,-8); ctx.closePath(); ctx.fill();
+ctx.fillStyle='#8e44ad'; ctx.beginPath(); ctx.arc(0,3,13,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(-5,0,3,0,Math.PI*2); ctx.arc(5,0,3,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(-5,2,1.5,0,Math.PI*2); ctx.arc(5,2,1.5,0,Math.PI*2); ctx.fill();
+ctx.restore();
+} else if (type === 'finalboss') {
+ctx.save(); ctx.translate(cx, cy);
+for(let i=3;i>0;i--){ctx.beginPath();ctx.arc(0,0,6+i*5+Math.sin(t*0.5+i)*2,0,Math.PI*2);
+ctx.strokeStyle=`rgba(231,76,60,${0.05+i*0.04})`;ctx.lineWidth=1;ctx.stroke();}
+ctx.fillStyle='#e74c3c'; ctx.shadowColor='#e74c3c'; ctx.shadowBlur=15;
+ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill();
+ctx.shadowBlur=0; ctx.fillStyle='#f1c40f';
+ctx.beginPath(); ctx.moveTo(-14,-8); ctx.lineTo(-10,-16); ctx.lineTo(-6,-10); ctx.lineTo(0,-18); ctx.lineTo(6,-10); ctx.lineTo(10,-16); ctx.lineTo(14,-8); ctx.closePath(); ctx.fill();
+ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(-5,0,3,0,Math.PI*2); ctx.arc(5,0,3,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(-4,-1,1.2,0,Math.PI*2); ctx.arc(4,-1,1.2,0,Math.PI*2); ctx.fill();
+ctx.restore();
+} else {
+ctx.fillStyle = '#8b949e';
+ctx.font = '20px sans-serif';
+ctx.fillText('🎬', cx, cy);
+}
+ctx.fillStyle = 'rgba(139,148,158,0.3)';
+ctx.font = '7px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('點擊播放', w/2, h-2);
+requestAnimationFrame(animate);
+}
+animate();
+}
+
+// 示範影片 Modal（點擊後放大播放）
+let demoAnimId = null;
+
+function openDemoModal(type, label, desc) {
+const modal = document.getElementById('demoModal');
+const canvas = document.getElementById('demoCanvas');
+const title = document.getElementById('demoTitle');
+const info = document.getElementById('demoInfo');
+if (!modal || !canvas) return;
+
+title.textContent = `🎬 ${label} 示範影片`;
+info.textContent = desc || '點擊關閉按鈕或點擊外部關閉';
+modal.style.display = 'flex';
+
+// 停止舊動畫
+if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
+
+// 啟動完整版動畫
+const ctx = canvas.getContext('2d');
+const w = canvas.width, h = canvas.height;
+let frame = 0;
+
+function animateDemo() {
+frame++;
+ctx.clearRect(0, 0, w, h);
+const grad = ctx.createLinearGradient(0, 0, w, h);
+grad.addColorStop(0, '#08080e');
+grad.addColorStop(1, '#12121e');
+ctx.fillStyle = grad;
+ctx.fillRect(0, 0, w, h);
+const cx = w/2, cy = h/2, t = frame/30;
+
+// 完整版動畫 - 使用與圖鑑相同的繪製邏輯
+ctx.save();
+ctx.translate(cx, cy);
+// 根據類型繪製
+if (type === 'coin') {
+ctx.rotate(t);
+ctx.shadowColor = '#f1c40f'; ctx.shadowBlur = 30;
+ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2);
+ctx.fillStyle = '#f1c40f'; ctx.fill();
+ctx.strokeStyle = '#d4a800'; ctx.lineWidth = 2; ctx.stroke();
+ctx.shadowBlur = 0;
+ctx.fillStyle = '#b7950b'; ctx.font = '28px sans-serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText('★', 0, 0);
+ctx.restore();
+for (let i=0;i<12;i++) {
+const a=t*0.5+i*Math.PI/6, r=36+Math.sin(t*2+i)*6;
+ctx.beginPath();
+ctx.moveTo(cx+Math.cos(a)*30, cy+Math.sin(a)*30);
+ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+ctx.strokeStyle = `rgba(241,196,15,${0.15+Math.sin(t+i)*0.1})`;
+ctx.lineWidth=2; ctx.stroke();
+}
+} else if (type === 'heart') {
+const p=1+Math.sin(t*2.5)*0.12;
+ctx.save(); ctx.translate(cx, cy); ctx.scale(p,p);
+ctx.shadowColor = '#2ecc71'; ctx.shadowBlur = 40;
+ctx.beginPath();
+ctx.moveTo(0,10); ctx.bezierCurveTo(-12,-2,-28,-10,-24,-22);
+ctx.bezierCurveTo(-20,-36,-8,-42,0,-30);
+ctx.bezierCurveTo(8,-42,20,-36,24,-22);
+ctx.bezierCurveTo(28,-10,12,-2,0,10);
+ctx.fillStyle = '#2ecc71'; ctx.fill();
+ctx.restore();
+for (let i=0;i<12;i++) {
+const a=t*1.2+i*0.523, d=28+Math.sin(t*1.5+i)*8;
+const px=cx+Math.cos(a)*d, py=cy+Math.sin(a*0.7+t)*d*0.6-6;
+ctx.beginPath();
+ctx.arc(px, py, 3+Math.sin(t*1.8+i)*1, 0, Math.PI*2);
+ctx.fillStyle = `rgba(46,204,113,${0.12+Math.sin(t*0.7+i)*0.08})`;
+ctx.fill();
+}
+} else if (type === 'shield') {
+ctx.save(); ctx.translate(cx, cy);
+const sp=1+Math.sin(t*1.8)*0.08; ctx.scale(sp,sp);
+ctx.shadowColor = '#00d2d3'; ctx.shadowBlur = 40;
+ctx.beginPath(); ctx.arc(0,0,36,0,Math.PI*2);
+ctx.strokeStyle = '#00d2d3'; ctx.lineWidth=3; ctx.stroke();
+ctx.beginPath(); ctx.arc(0,0,28,0,Math.PI*2);
+ctx.strokeStyle = 'rgba(0,210,211,0.3)'; ctx.lineWidth=2; ctx.setLineDash([4,6]); ctx.stroke(); ctx.setLineDash([]);
+ctx.shadowBlur = 20;
+ctx.beginPath(); ctx.moveTo(0,-20); ctx.lineTo(16,-8); ctx.lineTo(16,6);
+ctx.lineTo(0,20); ctx.lineTo(-16,6); ctx.lineTo(-16,-8); ctx.closePath();
+ctx.fillStyle = 'rgba(0,210,211,0.25)'; ctx.fill();
+ctx.strokeStyle = '#00d2d3'; ctx.lineWidth=2; ctx.stroke();
+ctx.restore();
+for (let i=0;i<20;i++) {
+const a=t*0.4+i*0.314, r1=38+Math.sin(t*1.5+i)*4, r2=r1+6;
+ctx.beginPath();
+ctx.moveTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1);
+ctx.lineTo(cx+Math.cos(a)*r2, cy+Math.sin(a)*r2);
+ctx.strokeStyle = `rgba(0,210,211,${0.08+Math.sin(t*0.6+i)*0.06})`;
+ctx.lineWidth=2; ctx.stroke();
+}
+} else if (type === 'curse') {
+ctx.save(); ctx.translate(cx, cy);
+for (let i=0;i<8;i++) {
+const a=t*0.3+i*0.785, r=24+Math.sin(t*1.5+i)*6;
+ctx.beginPath();
+ctx.arc(Math.cos(a)*r, Math.sin(a*0.6+t*0.2)*r*0.7, 3+Math.sin(t+i)*1, 0, Math.PI*2);
+ctx.fillStyle = `rgba(44,62,80,${0.2+Math.sin(t*0.4+i)*0.12})`;
+ctx.fill();
+}
+ctx.shadowColor = '#2c3e50'; ctx.shadowBlur = 35;
+ctx.beginPath(); ctx.moveTo(0,-26); ctx.lineTo(18,-6); ctx.lineTo(14,16); ctx.lineTo(-14,16); ctx.lineTo(-18,-6); ctx.closePath();
+const g=ctx.createLinearGradient(-18,-26,18,16);
+g.addColorStop(0,'#34495e'); g.addColorStop(0.5,'#1a1a2e'); g.addColorStop(1,'#0d1117');
+ctx.fillStyle = g; ctx.fill();
+ctx.strokeStyle = '#e74c3c'; ctx.lineWidth=2; ctx.stroke();
+ctx.shadowBlur=0; ctx.fillStyle='#e74c3c'; ctx.font='24px sans-serif';
+ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('☠',0,0);
+ctx.restore();
+for (let i=0;i<8;i++) {
+const a=t*0.5+i*0.785, r=32+Math.sin(t*0.6+i)*5;
+const px=cx+Math.cos(a)*r, py=cy+Math.sin(a*0.5+t*0.2)*r*0.5;
+ctx.beginPath(); ctx.arc(px, py, 2+Math.sin(t+i)*0.5, 0, Math.PI*2);
+ctx.fillStyle = `rgba(231,76,60,${0.1+Math.sin(t*0.4+i)*0.06})`;
+ctx.fill();
+}
+} else if (type === 'cloud') {
+ctx.save(); ctx.translate(cx, cy);
+ctx.shadowColor = '#4a4a5a'; ctx.shadowBlur = 15;
+ctx.beginPath(); ctx.arc(-20,0,14,0,Math.PI*2);
+ctx.arc(0,-8,16,0,Math.PI*2);
+ctx.arc(20,0,14,0,Math.PI*2);
+ctx.arc(-10,8,12,0,Math.PI*2);
+ctx.arc(10,8,12,0,Math.PI*2);
+ctx.fillStyle = '#4a4a5a'; ctx.fill();
+if (Math.sin(t*1.8)>0.3) {
+ctx.shadowColor = '#f1c40f'; ctx.shadowBlur = 40;
+ctx.strokeStyle = '#f1c40f'; ctx.lineWidth=3;
+ctx.beginPath(); ctx.moveTo(-8,-22); ctx.lineTo(0,-12); ctx.lineTo(-4,-6); ctx.lineTo(8,4); ctx.lineTo(0,12);
+ctx.stroke();
+}
+ctx.restore();
+for (let i=0;i<14;i++) {
+const x=cx+(Math.sin(t*0.5+i*2.1)*45);
+const y=cy+12+((i*5+frame*3)%40)-20;
+ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+6);
+ctx.strokeStyle = `rgba(100,150,255,${0.12+Math.sin(t*0.3+i)*0.06})`;
+ctx.lineWidth=1; ctx.stroke();
+}
+} else if (type === 'boss') {
+ctx.save(); ctx.translate(cx, cy);
+const bp=1+Math.sin(t*1.2)*0.05; ctx.scale(bp,bp);
+ctx.shadowColor='#f1c40f'; ctx.shadowBlur=30;
+ctx.fillStyle='#f1c40f';
+ctx.beginPath(); ctx.moveTo(-24,-14); ctx.lineTo(-18,-26); ctx.lineTo(-10,-18); ctx.lineTo(0,-28); ctx.lineTo(10,-18); ctx.lineTo(18,-26); ctx.lineTo(24,-14); ctx.closePath(); ctx.fill();
+ctx.shadowColor='#8e44ad'; ctx.shadowBlur=20;
+ctx.fillStyle='#8e44ad'; ctx.beginPath(); ctx.arc(0,6,22,0,Math.PI*2); ctx.fill();
+ctx.shadowColor='#f1c40f'; ctx.shadowBlur=25;
+ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(-10,2,6,0,Math.PI*2); ctx.arc(10,2,6,0,Math.PI*2); ctx.fill();
+ctx.shadowBlur=0; ctx.fillStyle='#e74c3c';
+ctx.beginPath(); ctx.arc(-10+Math.sin(t*0.5)*0.5,5,3,0,Math.PI*2); ctx.arc(10+Math.sin(t*0.5+1)*0.5,5,3,0,Math.PI*2); ctx.fill();
+ctx.strokeStyle='#2c3e50'; ctx.lineWidth=2;
+ctx.beginPath(); ctx.arc(0,12,10,0.1,Math.PI-0.1); ctx.stroke();
+ctx.restore();
+for (let i=0;i<18;i++) {
+const a=t*0.2+i*0.349, r=32+Math.sin(t*1.2+i)*5;
+ctx.beginPath(); ctx.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 3+Math.sin(t*0.6+i)*0.5, 0, Math.PI*2);
+ctx.fillStyle = `rgba(142,68,173,${0.1+Math.sin(t*0.4+i)*0.06})`;
+ctx.fill();
+}
+} else if (type === 'finalboss') {
+ctx.save(); ctx.translate(cx, cy);
+const fb=1+Math.sin(t*0.8)*0.04; ctx.scale(fb,fb);
+for (let i=6;i>0;i--) {
+const r=10+i*8+Math.sin(t*0.5+i)*4;
+ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+ctx.strokeStyle = `rgba(231,76,60,${0.04+i*0.035+Math.sin(t*0.3+i)*0.02})`;
+ctx.lineWidth=1; ctx.stroke();
+}
+ctx.shadowColor='#e74c3c'; ctx.shadowBlur=50;
+const g7=ctx.createRadialGradient(-4,-4,0,0,0,28);
+g7.addColorStop(0,'#c0392b'); g7.addColorStop(0.3,'#e74c3c'); g7.addColorStop(0.7,'#a93226'); g7.addColorStop(1,'#7a1a1a');
+ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fillStyle=g7; ctx.fill();
+ctx.shadowColor='#f1c40f'; ctx.shadowBlur=40;
+ctx.fillStyle='#f1c40f';
+ctx.beginPath(); ctx.moveTo(-28,-16); ctx.lineTo(-22,-30); ctx.lineTo(-14,-22); ctx.lineTo(0,-32); ctx.lineTo(14,-22); ctx.lineTo(22,-30); ctx.lineTo(28,-16); ctx.closePath(); ctx.fill();
+ctx.shadowColor='#e74c3c'; ctx.shadowBlur=35;
+ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(-12,0,7,0,Math.PI*2); ctx.arc(12,0,7,0,Math.PI*2); ctx.fill();
+ctx.shadowBlur=0; ctx.fillStyle='white';
+ctx.beginPath(); ctx.arc(-10+Math.sin(t*2)*1.5,-1,3,0,Math.PI*2); ctx.arc(10+Math.sin(t*2+0.5)*1.5,-1,3,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#2c3e50';
+ctx.beginPath(); ctx.moveTo(-10,14); ctx.lineTo(-7,22); ctx.lineTo(-4,14); ctx.fill();
+ctx.beginPath(); ctx.moveTo(4,14); ctx.lineTo(7,22); ctx.lineTo(10,14); ctx.fill();
+ctx.restore();
+for (let i=0;i<24;i++) {
+const a=t*0.12+i*0.262, r=30+Math.sin(t*1.2+i)*7, len=5+Math.sin(t*0.6+i)*2;
+ctx.beginPath();
+ctx.moveTo(cx+Math.cos(a)*(r-len), cy+Math.sin(a)*(r-len));
+ctx.lineTo(cx+Math.cos(a)*(r+len), cy+Math.sin(a)*(r+len));
+ctx.strokeStyle = `rgba(231,76,60,${0.06+Math.sin(t*0.3+i)*0.04})`;
+ctx.lineWidth=2; ctx.stroke();
+}
+} else {
+ctx.fillStyle='#8b949e'; ctx.font='40px sans-serif';
+ctx.textAlign='center'; ctx.textBaseline='middle';
+ctx.fillText('🎬', 0, 0);
+ctx.restore();
+}
+
+ctx.fillStyle = 'rgba(139,148,158,0.4)';
+ctx.font = '11px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('🎬 示範影片', w/2, h-5);
+
+demoAnimId = requestAnimationFrame(animateDemo);
+}
+animateDemo();
+
+// 點擊外部關閉
+modal.onclick = function(e) {
+if (e.target === modal) closeDemoModal();
+};
+}
+
+function closeDemoModal() {
+const modal = document.getElementById('demoModal');
+modal.style.display = 'none';
+if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
+}
+
+// ===== 初始化 =====
+function initExpansion() {
+// 設定畫質
+setQuality('high');
+// 建立圖鑑
+buildIntroGrid();
+// 更新關卡顯示
+updateLevelDisplay();
+// 加入介紹圖鑑選項
+const select = document.getElementById('viewModeSelect');
+if (select && !Array.from(select.options).some(o => o.value === 'intro')) {
+const opt = document.createElement('option');
+opt.value = 'intro';
+opt.text = '📖 介紹圖鑑';
+select.appendChild(opt);
+}
+console.log('✅ 完整擴充功能已載入！');
+console.log('📖 點擊圖鑑卡片觀看示範影片');
+console.log('🔁 每80分自動升一關');
+console.log('👹 多種Boss隨機出現，每5關新增技能');
+console.log('🖥️ 可調整畫質與自訂參數');
+}
+
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', initExpansion);
+} else {
+initExpansion();
+}
+
+// 暴露全域函式
+window.restartGameEngine = restartGameEngine;
+window.toggleGamePause = toggleGamePause;
+window.toggleFullscreen = toggleFullscreen;
+window.setQuality = setQuality;
+window.openCustomQuality = openCustomQuality;
+window.closeDemoModal = closeDemoModal;
+window.toggleLevelEditor = toggleLevelEditor;
+window.applyLevelConfig = applyLevelConfig;
+window.resetLevelProgress = resetLevelProgress;
+window.skipBossSequence = skipBossSequence;
 </script>
-
-<!-- ============================================================ -->
-<!-- 🧩 擴充功能（完整獨立，不影響原有邏輯） -->
-<!-- ============================================================ -->
-<script>
-// ============================================================
-// 擴充功能模組 - 關卡系統 + 介紹圖鑑 + 示範影片 + 自訂功能
-// ============================================================
-(function() {
-    'use strict';
-
-    // ===== 擴充狀態 =====
-    const EXP = {
-        currentLevel: 1,
-        maxLevel: 100,
-        bossSkills: [],
-        unlockedItems: ['coin', 'heart'],
-        unlockedObstacles: ['cloud'],
-        isFinalBossActive: false,
-        bossSequencePlaying: false,
-        qualityScale: 1,
-        customLevelActive: false,
-        customConfig: null,
-        isRecordingPaused: false,
-        currentSpawnRate: 0.015,
-        currentSpeedBonus: 1.0
-    };
-    window.__expansion = EXP;
-
-    // ===== 控制面板擴充 =====
-    function insertExpansionControls() {
-        const panel = document.querySelector('.control-panel');
-        if (!panel || document.getElementById('expansionControls')) return;
-
-        const html = `
-            <span id="expansionControls">
-                <span id="levelInfo">
-                    🏁 Lv.<span id="levelDisplay">1</span>
-                    <span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span>
-                    <span id="bossSkillDisplay"></span>
-                </span>
-                <label>
-                    🖥️ 畫質:
-                    <select id="qualitySelect" onchange="setQuality(this.value)">
-                        <option value="1">高 (原始)</option>
-                        <option value="0.75">中</option>
-                        <option value="0.5">低</option>
-                        <option value="0.3">極低</option>
-                    </select>
-                </label>
-                <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px; font-size:12px;">🧩 自訂關卡</button>
-                <button class="btn" onclick="resetLevelProgress()" style="padding:4px 12px; font-size:12px; background:#e67e22; color:white;">🔄 重置進度</button>
-            </span>
-        `;
-        panel.insertAdjacentHTML('beforeend', html);
-    }
-
-    // ===== 擴充視窗模式 =====
-    const originalSwitch = window.switchViewMode;
-    window.switchViewMode = function(mode) {
-        const chartBox = document.querySelector('.chart-container');
-        const gameBox = document.getElementById('gameContainer');
-        const introBox = document.getElementById('introContainer');
-
-        if (chartBox) chartBox.style.display = 'none';
-        if (gameBox) gameBox.style.display = 'none';
-        if (introBox) introBox.style.display = 'none';
-
-        if (mode === 'both') {
-            if (chartBox) { chartBox.style.display = 'block'; chartBox.style.marginBottom = '15px'; }
-            if (gameBox) gameBox.style.display = 'block';
-            if (typeof window.stopGameEngine === 'function') window.stopGameEngine();
-            setTimeout(() => {
-                if (typeof window.resizeGameCanvas === 'function') window.resizeGameCanvas();
-                if (typeof window.restartGameEngine === 'function' && !window.isGameRunning) window.restartGameEngine();
-            }, 100);
-        } else if (mode === 'game') {
-            if (gameBox) gameBox.style.display = 'block';
-            if (typeof window.stopGameEngine === 'function') window.stopGameEngine();
-            setTimeout(() => {
-                if (typeof window.resizeGameCanvas === 'function') window.resizeGameCanvas();
-                if (typeof window.restartGameEngine === 'function' && !window.isGameRunning) window.restartGameEngine();
-            }, 100);
-        } else if (mode === 'chart') {
-            if (chartBox) chartBox.style.display = 'block';
-        } else if (mode === 'intro') {
-            if (introBox) introBox.style.display = 'block';
-            if (typeof window.stopGameEngine === 'function') window.stopGameEngine();
-        }
-    };
-
-    // ===== 加入介紹圖鑑選項 =====
-    function addIntroOption() {
-        const select = document.getElementById('viewModeSelect');
-        if (!select) return;
-        if (!Array.from(select.options).some(o => o.value === 'intro')) {
-            const opt = document.createElement('option');
-            opt.value = 'intro';
-            opt.text = '📖 介紹圖鑑';
-            select.appendChild(opt);
-        }
-        select.value = 'both';
-        select.dispatchEvent(new Event('change'));
-    }
-
-    // ===== 關卡系統 =====
-    function getRandomBossSkill() {
-        const pool = [
-            { name: '🛡️ 護盾', type: 'passive', effect: '減少傷害 30%' },
-            { name: '⚡ 閃電鏈', type: 'active', effect: '隨機攻擊扣 20 HP' },
-            { name: '🌀 減速領域', type: 'passive', effect: '降低移動速度 20%' },
-            { name: '🔥 火焰風暴', type: 'active', effect: '生成大量火球障礙' },
-            { name: '💀 詛咒之觸', type: 'passive', effect: '額外扣 15 HP' }
-        ];
-        return pool[Math.floor(Math.random() * pool.length)];
-    }
-
-    function getRandomItemType() {
-        const pool = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever'];
-        const available = pool.filter(item => !EXP.unlockedItems.includes(item));
-        if (available.length === 0) return 'coin';
-        return available[Math.floor(Math.random() * available.length)];
-    }
-
-    function getRandomObstacleType() {
-        const pool = ['cloud', 'poison', 'mud'];
-        const available = pool.filter(item => !EXP.unlockedObstacles.includes(item));
-        if (available.length === 0) return 'cloud';
-        return available[Math.floor(Math.random() * available.length)];
-    }
-
-    function showNotification(msg) {
-        const status = document.getElementById('status');
-        if (status) {
-            const orig = status.innerText;
-            status.innerText = `🎯 ${msg}`;
-            status.style.background = '#8e44ad';
-            setTimeout(() => {
-                status.innerText = orig;
-                status.style.background = '#1f4e79';
-            }, 3000);
-        }
-    }
-
-    function updateLevelDisplay() {
-        const display = document.getElementById('levelDisplay');
-        const progress = document.getElementById('levelProgressFill');
-        const skillDisplay = document.getElementById('bossSkillDisplay');
-        if (display) display.innerText = EXP.currentLevel;
-        if (progress) {
-            const pct = (EXP.currentLevel / EXP.maxLevel) * 100;
-            progress.style.width = Math.min(pct, 100) + '%';
-        }
-        if (skillDisplay) {
-            if (EXP.bossSkills.length > 0) {
-                skillDisplay.innerHTML = ` | 👹 ${EXP.bossSkills.map(s => s.name).join(' ')}`;
-            } else {
-                skillDisplay.innerHTML = '';
-            }
-        }
-    }
-
-    window.advanceLevel = function() {
-        if (EXP.isFinalBossActive) return;
-        EXP.currentLevel++;
-        if (EXP.currentLevel > EXP.maxLevel) {
-            triggerFinalBoss();
-            return;
-        }
-        if (EXP.currentLevel % 5 === 0) {
-            const skill = getRandomBossSkill();
-            EXP.bossSkills.push(skill);
-            showNotification(`👹 新 Boss 技能: ${skill.name}`);
-        }
-        if (EXP.currentLevel % 3 === 0) {
-            const newItem = getRandomItemType();
-            if (!EXP.unlockedItems.includes(newItem)) {
-                EXP.unlockedItems.push(newItem);
-                showNotification(`🎁 新道具解鎖`);
-            }
-        }
-        if (EXP.currentLevel % 4 === 0) {
-            const newObstacle = getRandomObstacleType();
-            if (!EXP.unlockedObstacles.includes(newObstacle)) {
-                EXP.unlockedObstacles.push(newObstacle);
-                showNotification(`⚠️ 新障礙物解鎖`);
-            }
-        }
-        EXP.currentSpawnRate = Math.min(0.015 + EXP.currentLevel * 0.0005, 0.045);
-        EXP.currentSpeedBonus = 1 + (EXP.currentLevel - 1) * 0.005;
-        updateLevelDisplay();
-    };
-
-    // ===== 關卡自動推進（每100分升一關） =====
-    let lastScore = 0;
-    setInterval(() => {
-        const scoreEl = document.getElementById('gameScore');
-        if (!scoreEl) return;
-        const currentScore = parseInt(scoreEl.innerText) || 0;
-        const isMeasuring = typeof window.isMeasuring !== 'undefined' ? window.isMeasuring : false;
-        const isGameRunning = typeof window.isGameRunning !== 'undefined' ? window.isGameRunning : false;
-        
-        if (isMeasuring && isGameRunning && currentScore > 0) {
-            const targetLevel = Math.floor(currentScore / 100) + 1;
-            if (targetLevel > EXP.currentLevel && targetLevel <= EXP.maxLevel) {
-                for (let i = 0; i < targetLevel - EXP.currentLevel; i++) {
-                    if (typeof window.advanceLevel === 'function') window.advanceLevel();
-                }
-                const status = document.getElementById('status');
-                if (status) {
-                    const orig = status.innerText;
-                    status.innerHTML = `🎯 <span style="color:#f1c40f;font-weight:bold;">關卡提升！</span> 第 ${EXP.currentLevel} 關`;
-                    status.style.background = '#8e44ad';
-                    setTimeout(() => { status.innerText = orig; status.style.background = '#1f4e79'; }, 2500);
-                }
-                updateLevelDisplay();
-            }
-        }
-        lastScore = currentScore;
-    }, 3000);
-
-    // ===== 最終 Boss =====
-    function triggerFinalBoss() {
-        if (EXP.isFinalBossActive) return;
-        EXP.isFinalBossActive = true;
-        EXP.bossSequencePlaying = true;
-        if (typeof window.isGameRunning !== 'undefined') window.isGameRunning = false;
-        EXP.isRecordingPaused = true;
-        if (typeof window.stopBGM === 'function') window.stopBGM();
-
-        const overlay = document.getElementById('finalBossOverlay');
-        const video = document.getElementById('bossVideo');
-        const audio = document.getElementById('bossAudio');
-        if (overlay) overlay.style.display = 'flex';
-        if (video) video.play().catch(() => {});
-        if (audio) audio.play().catch(() => {});
-
-        const status = document.getElementById('status');
-        if (status) {
-            status.innerText = '👾 最終 Boss 戰 · 虛空領主降臨！';
-            status.style.background = '#c0392b';
-        }
-        setTimeout(() => { skipBossSequence(); }, 8000);
-    }
-
-    window.skipBossSequence = function() {
-        const overlay = document.getElementById('finalBossOverlay');
-        const video = document.getElementById('bossVideo');
-        const audio = document.getElementById('bossAudio');
-        if (overlay) overlay.style.display = 'none';
-        if (video) video.pause();
-        if (audio) audio.pause();
-        EXP.bossSequencePlaying = false;
-        EXP.isRecordingPaused = false;
-        if (typeof window.isGameRunning !== 'undefined') window.isGameRunning = true;
-        if (typeof window.startBGM === 'function') window.startBGM();
-
-        const status = document.getElementById('status');
-        if (status) {
-            status.innerText = '🏆 恭喜通關！擊敗虛空領主！';
-            status.style.background = '#27ae60';
-        }
-        setTimeout(() => {
-            EXP.currentLevel = 1;
-            updateLevelDisplay();
-            if (status) {
-                status.innerText = '🎮 進入無盡模式 · 繼續挑戰！';
-                status.style.background = '#1f4e79';
-            }
-        }, 3000);
-    };
-
-    // ===== 畫質切換 =====
-    window.setQuality = function(val) {
-        EXP.qualityScale = parseFloat(val);
-        const canvas = document.getElementById('gameCanvas');
-        if (canvas && canvas.parentElement) {
-            const w = canvas.parentElement.clientWidth * EXP.qualityScale;
-            const h = canvas.parentElement.clientHeight * EXP.qualityScale;
-            canvas.width = Math.max(1, w);
-            canvas.height = Math.max(1, h);
-            canvas.style.width = canvas.parentElement.clientWidth + 'px';
-            canvas.style.height = canvas.parentElement.clientHeight + 'px';
-            if (typeof window.initStars === 'function') window.initStars();
-        }
-    };
-
-    // ===== 自訂關卡 =====
-    window.toggleLevelEditor = function() {
-        const editor = document.getElementById('levelEditor');
-        if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-    };
-
-    window.applyLevelConfig = function() {
-        try {
-            const config = JSON.parse(document.getElementById('levelConfig').value);
-            EXP.customConfig = config;
-            EXP.customLevelActive = true;
-            EXP.currentLevel = config.level || 1;
-            EXP.bossSkills = config.bossSkills || [];
-            EXP.unlockedItems = config.items || ['coin', 'heart'];
-            EXP.unlockedObstacles = config.obstacles || ['cloud'];
-            if (config.spawnRate) EXP.currentSpawnRate = config.spawnRate;
-            if (config.enemySpeed) EXP.currentSpeedBonus = config.enemySpeed;
-            updateLevelDisplay();
-            if (typeof window.restartGameEngine === 'function') window.restartGameEngine();
-            const status = document.getElementById('status');
-            if (status) {
-                status.innerText = `✅ 自訂關卡已套用！Lv.${EXP.currentLevel}`;
-                status.style.background = '#27ae60';
-                setTimeout(() => { status.style.background = '#1f4e79'; }, 2000);
-            }
-            document.getElementById('levelEditor').style.display = 'none';
-        } catch(e) {
-            alert('❌ JSON 格式錯誤！\n' + e.message);
-        }
-    };
-
-    window.resetLevelProgress = function() {
-        if (confirm('確定要重置所有關卡進度嗎？')) {
-            EXP.currentLevel = 1;
-            EXP.bossSkills = [];
-            EXP.unlockedItems = ['coin', 'heart'];
-            EXP.unlockedObstacles = ['cloud'];
-            EXP.customLevelActive = false;
-            EXP.customConfig = null;
-            EXP.isFinalBossActive = false;
-            EXP.bossSequencePlaying = false;
-            EXP.isRecordingPaused = false;
-            updateLevelDisplay();
-            if (typeof window.restartGameEngine === 'function') window.restartGameEngine();
-            const status = document.getElementById('status');
-            if (status) {
-                status.innerText = '🔄 關卡進度已重置';
-                status.style.background = '#e67e22';
-                setTimeout(() => { status.style.background = '#1f4e79'; }, 2000);
-            }
-        }
-    };
-
-    // ===== 圖鑑示範影片（每個道具專屬動畫） =====
-    function drawDemo(canvasId, demoType, label) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width || 200, h = canvas.height || 80;
-        canvas.width = w; canvas.height = h;
-        let animId = null, frame = 0;
-
-        function animate() {
-            frame++;
-            ctx.clearRect(0, 0, w, h);
-            const grad = ctx.createLinearGradient(0, 0, w, h);
-            grad.addColorStop(0, '#08080e');
-            grad.addColorStop(1, '#12121e');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
-            const cx = w/2, cy = h/2, t = frame/30;
-
-            // 各道具專屬動畫
-            switch(demoType) {
-                case 'coin':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.rotate(t);
-                    ctx.shadowColor = '#f1c40f';
-                    ctx.shadowBlur = 25;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                    ctx.fillStyle = '#f1c40f';
-                    ctx.fill();
-                    ctx.strokeStyle = '#d4a800';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 14, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(180, 160, 0, 0.5)';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.fillStyle = '#b7950b';
-                    ctx.font = '18px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('★', 0, 1);
-                    ctx.restore();
-                    for (let i = 0; i < 8; i++) {
-                        const angle = t * 0.5 + i * Math.PI / 4;
-                        const r = 24 + Math.sin(t * 2 + i) * 4;
-                        ctx.beginPath();
-                        ctx.moveTo(cx + Math.cos(angle) * 20, cy + Math.sin(angle) * 20);
-                        ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
-                        ctx.strokeStyle = `rgba(241, 196, 15, ${0.2 + Math.sin(t + i) * 0.15})`;
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                    }
-                    break;
-                case 'heart':
-                    const pulse = 1 + Math.sin(t * 2.5) * 0.1;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.scale(pulse, pulse);
-                    ctx.shadowColor = '#2ecc71';
-                    ctx.shadowBlur = 30;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 6);
-                    ctx.bezierCurveTo(-8, -2, -20, -8, -18, -16);
-                    ctx.bezierCurveTo(-16, -26, -6, -30, 0, -22);
-                    ctx.bezierCurveTo(6, -30, 16, -26, 18, -16);
-                    ctx.bezierCurveTo(20, -8, 8, -2, 0, 6);
-                    ctx.fillStyle = '#2ecc71';
-                    ctx.fill();
-                    ctx.restore();
-                    for (let i = 0; i < 8; i++) {
-                        const angle = t * 1.2 + i * 0.785;
-                        const dist = 18 + Math.sin(t * 1.5 + i) * 6;
-                        const px = cx + Math.cos(angle) * dist;
-                        const py = cy + Math.sin(angle * 0.7 + t) * dist * 0.6 - 4;
-                        const size = 2 + Math.sin(t * 1.8 + i) * 0.8;
-                        ctx.beginPath();
-                        ctx.arc(px, py, Math.max(0.5, size), 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(46, 204, 113, ${0.15 + Math.sin(t * 0.7 + i) * 0.1})`;
-                        ctx.fill();
-                    }
-                    break;
-                case 'shield':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const shieldPulse = 1 + Math.sin(t * 1.8) * 0.06;
-                    ctx.scale(shieldPulse, shieldPulse);
-                    ctx.shadowColor = '#00d2d3';
-                    ctx.shadowBlur = 30;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 24, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#00d2d3';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 18, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(0, 210, 211, 0.3)';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([3, 5]);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    ctx.shadowBlur = 15;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -14);
-                    ctx.lineTo(12, -6);
-                    ctx.lineTo(12, 4);
-                    ctx.lineTo(0, 14);
-                    ctx.lineTo(-12, 4);
-                    ctx.lineTo(-12, -6);
-                    ctx.closePath();
-                    ctx.fillStyle = 'rgba(0, 210, 211, 0.25)';
-                    ctx.fill();
-                    ctx.strokeStyle = '#00d2d3';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                    ctx.restore();
-                    for (let i = 0; i < 16; i++) {
-                        const angle = t * 0.4 + i * 0.392;
-                        const r1 = 26 + Math.sin(t * 1.5 + i) * 3;
-                        const r2 = r1 + 5;
-                        ctx.beginPath();
-                        ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
-                        ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-                        ctx.strokeStyle = `rgba(0, 210, 211, ${0.1 + Math.sin(t * 0.6 + i) * 0.08})`;
-                        ctx.lineWidth = 2;
-                        ctx.stroke();
-                    }
-                    break;
-                case 'magnet':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    for (let i = 0; i < 4; i++) {
-                        const r = 8 + i * 7 + Math.sin(t * 1.2 + i * 0.5) * 2;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, r, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(243, 156, 18, ${0.15 - i * 0.03})`;
-                        ctx.lineWidth = 1;
-                        ctx.setLineDash([4, 6]);
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-                    }
-                    ctx.shadowColor = '#f39c12';
-                    ctx.shadowBlur = 20;
-                    ctx.fillStyle = '#e67e22';
-                    ctx.fillRect(-12, -14, 6, 20);
-                    ctx.fillRect(6, -14, 6, 20);
-                    ctx.fillRect(-12, -14, 24, 6);
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = 'white';
-                    ctx.font = '7px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('N', -9, -2);
-                    ctx.fillText('S', 9, -2);
-                    ctx.restore();
-                    for (let i = 0; i < 8; i++) {
-                        const angle = t * 0.5 + i * 0.785;
-                        const dist = 22 + Math.sin(t * 1.3 + i) * 6;
-                        const px = cx + Math.cos(angle) * dist;
-                        const py = cy + Math.sin(angle * 0.6 + t * 0.3) * dist * 0.5;
-                        const size = 1.5 + Math.sin(t * 1.5 + i) * 0.5;
-                        ctx.beginPath();
-                        ctx.arc(px, py, Math.max(0.5, size), 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(243, 156, 18, ${0.2 + Math.sin(t * 0.5 + i) * 0.12})`;
-                        ctx.fill();
-                    }
-                    break;
-                case 'double':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.rotate(t * 0.2);
-                    ctx.shadowColor = '#2ecc71';
-                    ctx.shadowBlur = 30;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -20);
-                    ctx.lineTo(16, -4);
-                    ctx.lineTo(12, 12);
-                    ctx.lineTo(-12, 12);
-                    ctx.lineTo(-16, -4);
-                    ctx.closePath();
-                    const g2 = ctx.createLinearGradient(-16, -20, 16, 12);
-                    g2.addColorStop(0, '#58d68d');
-                    g2.addColorStop(0.4, '#2ecc71');
-                    g2.addColorStop(0.7, '#27ae60');
-                    g2.addColorStop(1, '#1a7a3a');
-                    ctx.fillStyle = g2;
-                    ctx.fill();
-                    ctx.strokeStyle = '#7ddfa0';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = `rgba(255,255,255,${0.15 + Math.sin(t * 2.5) * 0.1})`;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -12);
-                    ctx.lineTo(8, -2);
-                    ctx.lineTo(0, 8);
-                    ctx.lineTo(-8, -2);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.restore();
-                    ctx.fillStyle = `rgba(46, 204, 113, ${0.3 + Math.sin(t * 1.5) * 0.2})`;
-                    ctx.font = 'bold 14px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('2x', cx, cy + 30);
-                    break;
-                case 'fever':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const fp = 1 + Math.sin(t * 3) * 0.08;
-                    ctx.scale(fp, fp);
-                    for (let i = 0; i < 12; i++) {
-                        const angle = t * 0.3 + i * 0.523;
-                        const r = 14 + Math.sin(t * 2 + i * 0.7) * 6;
-                        const size = 3 + Math.sin(t * 1.5 + i) * 1.5;
-                        ctx.beginPath();
-                        ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r * 0.7, Math.max(0.5, size), 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(165, 94, 234, ${0.2 + Math.sin(t * 0.5 + i) * 0.15})`;
-                        ctx.fill();
-                    }
-                    ctx.shadowColor = '#a55eea';
-                    ctx.shadowBlur = 40;
-                    const g3 = ctx.createRadialGradient(0, -2, 0, 0, 0, 18);
-                    g3.addColorStop(0, '#e8d5f5');
-                    g3.addColorStop(0.2, '#c084fc');
-                    g3.addColorStop(0.6, '#a55eea');
-                    g3.addColorStop(1, '#7c3aed');
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 16, 0, Math.PI * 2);
-                    ctx.fillStyle = g3;
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = 'white';
-                    ctx.font = '18px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('⚡', 0, 0);
-                    ctx.restore();
-                    break;
-                case 'curse':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const cp = 1 + Math.sin(t * 1.2) * 0.05;
-                    ctx.scale(cp, cp);
-                    for (let i = 0; i < 6; i++) {
-                        const angle = t * 0.3 + i * 1.047;
-                        const r = 18 + Math.sin(t * 1.5 + i) * 5;
-                        ctx.beginPath();
-                        ctx.arc(Math.cos(angle) * r, Math.sin(angle * 0.6 + t * 0.2) * r * 0.7, 2 + Math.sin(t + i) * 0.8, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(44, 62, 80, ${0.25 + Math.sin(t * 0.4 + i) * 0.15})`;
-                        ctx.fill();
-                    }
-                    ctx.shadowColor = '#2c3e50';
-                    ctx.shadowBlur = 25;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -18);
-                    ctx.lineTo(14, -4);
-                    ctx.lineTo(10, 12);
-                    ctx.lineTo(-10, 12);
-                    ctx.lineTo(-14, -4);
-                    ctx.closePath();
-                    const g4 = ctx.createLinearGradient(-14, -18, 14, 12);
-                    g4.addColorStop(0, '#34495e');
-                    g4.addColorStop(0.5, '#1a1a2e');
-                    g4.addColorStop(1, '#0d1117');
-                    ctx.fillStyle = g4;
-                    ctx.fill();
-                    ctx.strokeStyle = '#e74c3c';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#e74c3c';
-                    ctx.font = '16px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('☠', 0, 1);
-                    ctx.restore();
-                    for (let i = 0; i < 6; i++) {
-                        const angle = t * 0.5 + i * 1.047;
-                        const r = 24 + Math.sin(t * 0.6 + i) * 4;
-                        const px = cx + Math.cos(angle) * r;
-                        const py = cy + Math.sin(angle * 0.5 + t * 0.2) * r * 0.5;
-                        ctx.beginPath();
-                        ctx.arc(px, py, 1.5 + Math.sin(t + i) * 0.5, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(231, 76, 60, ${0.12 + Math.sin(t * 0.4 + i) * 0.08})`;
-                        ctx.fill();
-                    }
-                    break;
-                case 'cloud':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.shadowColor = '#4a4a5a';
-                    ctx.shadowBlur = 10;
-                    ctx.beginPath();
-                    ctx.arc(-14, 0, 10, 0, Math.PI * 2);
-                    ctx.arc(0, -6, 12, 0, Math.PI * 2);
-                    ctx.arc(14, 0, 10, 0, Math.PI * 2);
-                    ctx.arc(-8, 6, 8, 0, Math.PI * 2);
-                    ctx.arc(8, 6, 8, 0, Math.PI * 2);
-                    ctx.fillStyle = '#4a4a5a';
-                    ctx.fill();
-                    if (Math.sin(t * 1.8) > 0.3) {
-                        ctx.shadowColor = '#f1c40f';
-                        ctx.shadowBlur = 30;
-                        ctx.strokeStyle = '#f1c40f';
-                        ctx.lineWidth = 2.5;
-                        ctx.beginPath();
-                        ctx.moveTo(-6, -16);
-                        ctx.lineTo(0, -8);
-                        ctx.lineTo(-3, -4);
-                        ctx.lineTo(6, 2);
-                        ctx.lineTo(0, 8);
-                        ctx.stroke();
-                    }
-                    ctx.restore();
-                    for (let i = 0; i < 10; i++) {
-                        const x = cx + (Math.sin(t * 0.5 + i * 2.1) * 35);
-                        const y = cy + 8 + ((i * 5 + frame * 3) % 35) - 18;
-                        ctx.beginPath();
-                        ctx.moveTo(x, y);
-                        ctx.lineTo(x, y + 5);
-                        ctx.strokeStyle = `rgba(100, 150, 255, ${0.15 + Math.sin(t * 0.3 + i) * 0.08})`;
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                    }
-                    break;
-                case 'poison':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const pp = 1 + Math.sin(t * 0.8) * 0.08;
-                    ctx.scale(pp, pp);
-                    for (let i = 4; i > 0; i--) {
-                        const r = 4 + i * 6 + Math.sin(t * 1.2 + i * 0.5) * 3;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, r, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(142, 68, 173, ${0.06 + i * 0.06 + Math.sin(t * 0.4 + i) * 0.03})`;
-                        ctx.fill();
-                    }
-                    ctx.shadowColor = '#8e44ad';
-                    ctx.shadowBlur = 30;
-                    const g5 = ctx.createRadialGradient(0, 0, 0, 0, 0, 12);
-                    g5.addColorStop(0, '#c084d8');
-                    g5.addColorStop(0.3, '#a55eea');
-                    g5.addColorStop(0.7, '#8e44ad');
-                    g5.addColorStop(1, '#6c3483');
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 12, 0, Math.PI * 2);
-                    ctx.fillStyle = g5;
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                    ctx.font = '12px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('☠', 0, 0);
-                    ctx.restore();
-                    for (let i = 0; i < 8; i++) {
-                        const angle = t * 0.3 + i * 0.785;
-                        const r = 16 + Math.sin(t * 0.7 + i) * 8;
-                        const px = cx + Math.cos(angle) * r;
-                        const py = cy + Math.sin(angle * 0.6 + t * 0.4) * r * 0.6;
-                        const size = 2 + Math.sin(t * 1.2 + i) * 0.8;
-                        ctx.beginPath();
-                        ctx.arc(px, py, Math.max(0.5, size), 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(142, 68, 173, ${0.12 + Math.sin(t * 0.4 + i) * 0.08})`;
-                        ctx.fill();
-                    }
-                    break;
-                case 'mud':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const mp = 1 + Math.sin(t * 0.6) * 0.05;
-                    ctx.scale(mp, mp);
-                    ctx.shadowColor = '#d35400';
-                    ctx.shadowBlur = 20;
-                    ctx.beginPath();
-                    ctx.ellipse(0, 2, 22, 16 + Math.sin(t * 0.8) * 2, 0, 0, Math.PI * 2);
-                    const g6 = ctx.createRadialGradient(-4, -4, 0, 0, 0, 22);
-                    g6.addColorStop(0, '#e67e22');
-                    g6.addColorStop(0.5, '#d35400');
-                    g6.addColorStop(1, '#a04000');
-                    ctx.fillStyle = g6;
-                    ctx.fill();
-                    for (let i = 0; i < 6; i++) {
-                        const angle = t * 0.4 + i * 1.047;
-                        const r = 14 + Math.sin(t * 0.8 + i) * 4;
-                        const px = Math.cos(angle) * r;
-                        const py = Math.sin(angle * 0.6 + t * 0.3) * r * 0.5 + 2;
-                        ctx.shadowBlur = 5;
-                        ctx.beginPath();
-                        ctx.arc(px, py, 3 + Math.sin(t * 0.6 + i) * 1, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(211, 84, 0, ${0.3 + Math.sin(t * 0.3 + i) * 0.15})`;
-                        ctx.fill();
-                    }
-                    ctx.restore();
-                    for (let i = 0; i < 8; i++) {
-                        const angle = t * 0.2 + i * 0.785;
-                        const r1 = 22, r2 = 26 + Math.sin(t * 0.5 + i) * 3;
-                        ctx.beginPath();
-                        ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
-                        ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-                        ctx.strokeStyle = `rgba(211, 84, 0, ${0.08 + Math.sin(t * 0.3 + i) * 0.05})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                    break;
-                case 'boss':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const bp = 1 + Math.sin(t * 1.2) * 0.04;
-                    ctx.scale(bp, bp);
-                    ctx.shadowColor = '#f1c40f';
-                    ctx.shadowBlur = 25;
-                    ctx.fillStyle = '#f1c40f';
-                    ctx.beginPath();
-                    ctx.moveTo(-18, -10);
-                    ctx.lineTo(-14, -20);
-                    ctx.lineTo(-8, -14);
-                    ctx.lineTo(0, -22);
-                    ctx.lineTo(8, -14);
-                    ctx.lineTo(14, -20);
-                    ctx.lineTo(18, -10);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.shadowColor = '#8e44ad';
-                    ctx.shadowBlur = 15;
-                    ctx.fillStyle = '#8e44ad';
-                    ctx.beginPath();
-                    ctx.arc(0, 4, 16, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowColor = '#f1c40f';
-                    ctx.shadowBlur = 20;
-                    ctx.fillStyle = '#f1c40f';
-                    ctx.beginPath();
-                    ctx.arc(-7, 1, 4, 0, Math.PI * 2);
-                    ctx.arc(7, 1, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#e74c3c';
-                    ctx.beginPath();
-                    ctx.arc(-7 + Math.sin(t * 0.5) * 0.5, 3, 2, 0, Math.PI * 2);
-                    ctx.arc(7 + Math.sin(t * 0.5 + 1) * 0.5, 3, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = '#2c3e50';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.arc(0, 8, 7, 0.1, Math.PI - 0.1);
-                    ctx.stroke();
-                    ctx.restore();
-                    for (let i = 0; i < 14; i++) {
-                        const angle = t * 0.2 + i * 0.448;
-                        const r = 24 + Math.sin(t * 1.2 + i) * 4;
-                        ctx.beginPath();
-                        ctx.arc(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 2 + Math.sin(t * 0.6 + i) * 0.5, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(142, 68, 173, ${0.12 + Math.sin(t * 0.4 + i) * 0.08})`;
-                        ctx.fill();
-                    }
-                    break;
-                case 'finalboss':
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    const fb = 1 + Math.sin(t * 0.8) * 0.03;
-                    ctx.scale(fb, fb);
-                    for (let i = 6; i > 0; i--) {
-                        const r = 8 + i * 6 + Math.sin(t * 0.5 + i) * 3;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, r, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(231, 76, 60, ${0.04 + i * 0.035 + Math.sin(t * 0.3 + i) * 0.02})`;
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                    }
-                    ctx.shadowColor = '#e74c3c';
-                    ctx.shadowBlur = 35;
-                    const g7 = ctx.createRadialGradient(-4, -4, 0, 0, 0, 20);
-                    g7.addColorStop(0, '#c0392b');
-                    g7.addColorStop(0.3, '#e74c3c');
-                    g7.addColorStop(0.7, '#a93226');
-                    g7.addColorStop(1, '#7a1a1a');
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 18, 0, Math.PI * 2);
-                    ctx.fillStyle = g7;
-                    ctx.fill();
-                    ctx.shadowColor = '#f1c40f';
-                    ctx.shadowBlur = 30;
-                    ctx.fillStyle = '#f1c40f';
-                    ctx.beginPath();
-                    ctx.moveTo(-20, -12);
-                    ctx.lineTo(-16, -22);
-                    ctx.lineTo(-10, -16);
-                    ctx.lineTo(0, -24);
-                    ctx.lineTo(10, -16);
-                    ctx.lineTo(16, -22);
-                    ctx.lineTo(20, -12);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.shadowColor = '#e74c3c';
-                    ctx.shadowBlur = 25;
-                    ctx.fillStyle = '#e74c3c';
-                    ctx.beginPath();
-                    ctx.arc(-8, 0, 5, 0, Math.PI * 2);
-                    ctx.arc(8, 0, 5, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath();
-                    ctx.arc(-7 + Math.sin(t * 2) * 1, -1, 2, 0, Math.PI * 2);
-                    ctx.arc(7 + Math.sin(t * 2 + 0.5) * 1, -1, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#2c3e50';
-                    ctx.beginPath();
-                    ctx.moveTo(-7, 10);
-                    ctx.lineTo(-5, 16);
-                    ctx.lineTo(-3, 10);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.moveTo(3, 10);
-                    ctx.lineTo(5, 16);
-                    ctx.lineTo(7, 10);
-                    ctx.fill();
-                    ctx.restore();
-                    for (let i = 0; i < 20; i++) {
-                        const angle = t * 0.12 + i * 0.314;
-                        const r = 22 + Math.sin(t * 1.2 + i) * 6;
-                        const len = 4 + Math.sin(t * 0.6 + i) * 2;
-                        ctx.beginPath();
-                        ctx.moveTo(cx + Math.cos(angle) * (r - len), cy + Math.sin(angle) * (r - len));
-                        ctx.lineTo(cx + Math.cos(angle) * (r + len), cy + Math.sin(angle) * (r + len));
-                        ctx.strokeStyle = `rgba(231, 76, 60, ${0.08 + Math.sin(t * 0.3 + i) * 0.06})`;
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                    }
-                    break;
-                default:
-                    ctx.fillStyle = '#8b949e';
-                    ctx.font = '14px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('🎬', cx, cy);
-            }
-            ctx.fillStyle = 'rgba(139, 148, 158, 0.5)';
-            ctx.font = '8px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(label || '', w/2, h - 2);
-            animId = requestAnimationFrame(animate);
-        }
-        animate();
-        return () => { if (animId) cancelAnimationFrame(animId); };
-    }
-
-    // ===== 設定圖鑑分類標籤和示範影片 =====
-    function setupIntro() {
-        const check = setInterval(() => {
-            const container = document.getElementById('introContainer');
-            if (!container) return;
-            const cards = container.querySelectorAll('.intro-card');
-            const configs = [
-                { type: 'coin', label: '🪙 金幣', cat: 'positive', catLabel: '正面道具' },
-                { type: 'heart', label: '❤️ 治癒之心', cat: 'positive', catLabel: '正面道具' },
-                { type: 'shield', label: '🛡️ 護盾', cat: 'positive', catLabel: '正面道具' },
-                { type: 'magnet', label: '🧲 磁鐵', cat: 'positive', catLabel: '正面道具' },
-                { type: 'double', label: '💎 雙倍積分', cat: 'positive', catLabel: '正面道具' },
-                { type: 'fever', label: '⚡ FEVER', cat: 'positive', catLabel: '正面道具' },
-                { type: 'curse', label: '💀 詛咒寶石', cat: 'negative', catLabel: '負面道具' },
-                { type: 'cloud', label: '⛈️ 雷暴雲', cat: 'obstacle', catLabel: '障礙物' },
-                { type: 'poison', label: '🟣 毒霧', cat: 'obstacle', catLabel: '障礙物' },
-                { type: 'mud', label: '🕸️ 黏液怪', cat: 'obstacle', catLabel: '障礙物' },
-                { type: 'boss', label: '👹 關卡 Boss', cat: 'boss', catLabel: 'Boss' },
-                { type: 'finalboss', label: '🏆 最終 Boss', cat: 'final', catLabel: '最終 Boss' }
-            ];
-            cards.forEach((card, idx) => {
-                if (card.querySelector('.category-tag')) return;
-                const cfg = configs[idx] || configs[0];
-                const tag = document.createElement('span');
-                tag.className = `category-tag ${cfg.cat}`;
-                tag.textContent = cfg.catLabel;
-                card.appendChild(tag);
-                card.classList.add(cfg.cat);
-                if (cfg.cat === 'boss') card.classList.add('boss-card');
-                if (cfg.cat === 'final') card.classList.add('final-card');
-
-                const demo = document.createElement('div');
-                demo.className = 'demo-container';
-                const canvas = document.createElement('canvas');
-                canvas.width = 200;
-                canvas.height = 80;
-                canvas.id = `demo_${cfg.type}_${idx}`;
-                demo.appendChild(canvas);
-                const lbl = document.createElement('span');
-                lbl.className = 'demo-label';
-                lbl.textContent = `🎬 ${cfg.label} 示範`;
-                demo.appendChild(lbl);
-                card.appendChild(demo);
-                setTimeout(() => drawDemo(canvas.id, cfg.type, `${cfg.label} 示範`), 150);
-            });
-            clearInterval(check);
-        }, 500);
-    }
-
-    // ===== 初始化 =====
-    function init() {
-        insertExpansionControls();
-        addIntroOption();
-        updateLevelDisplay();
-        window.setQuality('1');
-        setupIntro();
-        console.log('✅ 擴充功能已載入！');
-        console.log('📖 在「視窗」下拉選單中選擇「介紹圖鑑」');
-        console.log('🔁 每100分自動升一關');
-        console.log('🏆 第100關觸發最終Boss');
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
-</script>
-
 </body>
 </html>
