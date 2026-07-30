@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整自訂版 v4.2</title>
+<title>呼吸訓練器 - 完整版 v4.4</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -149,7 +149,6 @@ background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; font-s
 }
 .music-upload-btn:hover { background: #9b59b6; }
 
-/* 操控方式標示 */
 .control-hint {
 position: absolute;
 bottom: 20px;
@@ -166,6 +165,104 @@ padding: 4px 12px;
 border-radius: 12px;
 }
 .control-hint .active { color: #f1c40f; }
+
+/* ===== 操控說明面板 ===== */
+.control-guide {
+position: absolute;
+bottom: 60px;
+right: 20px;
+z-index: 15;
+background: rgba(13, 17, 23, 0.92);
+border: 1px solid #30363d;
+border-radius: 12px;
+padding: 12px 16px;
+min-width: 200px;
+backdrop-filter: blur(10px);
+display: none;
+}
+.control-guide.show { display: block; }
+.control-guide h4 {
+color: #f0f6fc;
+margin: 0 0 8px 0;
+font-size: 13px;
+border-bottom: 1px solid #30363d;
+padding-bottom: 6px;
+}
+.control-guide .key-row {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 3px 0;
+color: #8b949e;
+font-size: 12px;
+}
+.control-guide .key-row .key {
+display: inline-block;
+background: #161b22;
+border: 1px solid #30363d;
+border-radius: 4px;
+padding: 1px 8px;
+font-family: monospace;
+font-size: 12px;
+color: #f0f6fc;
+min-width: 28px;
+text-align: center;
+}
+.control-guide .key-row .key.primary { border-color: #2ecc71; color: #2ecc71; }
+.control-guide .key-row .key.secondary { border-color: #f1c40f; color: #f1c40f; }
+.control-guide .key-row .key.special { border-color: #3498db; color: #3498db; }
+.control-guide .key-row .action { color: #b0b8c0; }
+.control-guide .key-row .action .highlight { color: #2ecc71; }
+.control-guide .divider {
+border-top: 1px solid #1a1a2e;
+margin: 4px 0;
+}
+.control-guide .mouse-row {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 3px 0;
+color: #8b949e;
+font-size: 12px;
+}
+.control-guide .mouse-row .icon {
+font-size: 16px;
+width: 28px;
+text-align: center;
+}
+.control-guide .priority-note {
+color: #5a6a7a;
+font-size: 10px;
+padding-top: 4px;
+text-align: center;
+border-top: 1px solid #1a1a2e;
+margin-top: 4px;
+}
+
+.help-btn {
+position: absolute;
+bottom: 60px;
+right: 20px;
+z-index: 16;
+background: rgba(31, 78, 121, 0.8);
+color: white;
+border: none;
+border-radius: 50%;
+width: 36px;
+height: 36px;
+font-size: 18px;
+cursor: pointer;
+transition: all 0.3s;
+backdrop-filter: blur(4px);
+border: 1px solid rgba(255,255,255,0.1);
+}
+.help-btn:hover {
+background: rgba(31, 78, 121, 1);
+transform: scale(1.1);
+}
+.help-btn.active {
+background: rgba(231, 76, 60, 0.8);
+}
 
 /* ===== 擴充功能樣式 ===== */
 #introContainer {
@@ -234,7 +331,6 @@ position: relative;
 .demo-container canvas { width: 100%; border-radius: 4px; background: #0a0a12; display: block; }
 .demo-label { color: #5a6a7a; font-size: 9px; text-align: center; margin-top: 3px; display: block; }
 
-/* 示範影片 Modal */
 #demoModal {
 display: none;
 position: fixed;
@@ -291,10 +387,8 @@ margin: 0 6px;
 }
 .level-progress-fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #e74c3c); transition: width 0.3s; width: 1%; }
 #bossSkillDisplay { font-size: 11px; color: #8e44ad; }
-
 #qualitySelect { padding: 4px 8px; border-radius: 4px; border: 1px solid #bcc6cf; background: white; font-size: 13px; }
 
-/* ===== 開發模式 ===== */
 .dev-mode-indicator {
 display: inline-block;
 padding: 2px 10px;
@@ -306,7 +400,6 @@ font-weight: bold;
 .dev-mode-indicator.off { background: #2c3e50; color: #8b949e; }
 .dev-hidden { display: none !important; }
 
-/* ===== 自訂關卡編輯器 ===== */
 #levelEditor {
 display: none;
 background: #161b22;
@@ -370,7 +463,6 @@ font-size: 13px;
 .editor-btn.export { background: #3498db; color: white; }
 .editor-btn.export:hover { background: #2980b9; }
 
-/* ===== 自訂外觀編輯器 ===== */
 #skinEditor {
 display: none;
 background: #161b22;
@@ -470,7 +562,6 @@ border-radius: 8px;
 .boss-skip-btn { background: #1f4e79; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; margin-top: 12px; font-weight: bold; }
 .boss-skip-btn:hover { background: #163d5e; }
 
-/* 操控方式開關 */
 .control-toggle {
 display: inline-flex;
 align-items: center;
@@ -497,6 +588,8 @@ cursor: pointer;
 #finalBossOverlay video { max-width: 95%; }
 #expansionControls { border-left: none; padding-left: 0; }
 #demoModal .modal-content { padding: 15px; }
+.control-guide { right: 10px; bottom: 70px; min-width: 170px; padding: 10px 12px; }
+.help-btn { right: 10px; bottom: 70px; width: 32px; height: 32px; font-size: 16px; }
 }
 </style>
 </head>
@@ -585,11 +678,55 @@ cursor: pointer;
 <button class="boss-skip-btn" onclick="skipBossSequence()">⏭️ 跳過動畫</button>
 </div>
 
-<!-- ===== 操控提示 ===== -->
 <div class="control-hint" id="controlHint">
-⌨️ 鍵盤: <span class="active" id="hintKeyboard">↑↓</span> ｜ 
-🖱️ 滑鼠: <span id="hintMouse">移動</span> ｜ 
-🌬️ 呼吸裝置: <span id="hintBreath">等待啟動</span>
+🌬️ 呼吸: <span class="active" id="hintBreath">等待啟動</span> ｜ 
+⌨️ 鍵盤: <span id="hintKeyboard">↑↓ / W S</span> ｜ 
+🖱️ 滑鼠: <span id="hintMouse">移動</span>
+</div>
+
+<!-- ===== 操控說明開關按鈕 ===== -->
+<button class="help-btn" id="helpBtn" onclick="toggleControlGuide()" title="操控說明">❓</button>
+
+<!-- ===== 操控說明面板 ===== -->
+<div class="control-guide" id="controlGuide">
+    <h4>🎮 操控說明</h4>
+    
+    <div class="key-row">
+        <span class="key primary">🌬️</span>
+        <span class="action">呼吸裝置 → 飛船隨呼吸升降 <span class="highlight">(最優先)</span></span>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="key-row">
+        <span class="key secondary">↑</span>
+        <span class="key secondary">W</span>
+        <span class="action">飛船 <span class="highlight">向上</span></span>
+    </div>
+    <div class="key-row">
+        <span class="key secondary">↓</span>
+        <span class="key secondary">S</span>
+        <span class="action">飛船 <span class="highlight">向下</span></span>
+    </div>
+    <div class="key-row">
+        <span class="key special">Space</span>
+        <span class="action">暫停 / 繼續遊戲</span>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="mouse-row">
+        <span class="icon">🖱️</span>
+        <span class="action">移動滑鼠 → 飛船跟隨</span>
+    </div>
+    <div class="mouse-row">
+        <span class="icon">👆</span>
+        <span class="action">觸控滑動 → 飛船跟隨</span>
+    </div>
+    
+    <div class="priority-note">
+        ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
+    </div>
 </div>
 </div>
 
@@ -772,7 +909,7 @@ cursor: pointer;
 <!-- ============================================================ -->
 <script>
 // =====================================================
-// 完整 36 段教育引導線計畫表
+// 教育引導線
 // =====================================================
 const EDUCATION_PROGRAM = [
 ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
@@ -821,16 +958,19 @@ let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
 
 // =====================================================
-// 🆕 鍵盤與滑鼠操控
+// 鍵盤與滑鼠操控（備用）
 // =====================================================
 let keyboardControlEnabled = true;
 let mouseControlEnabled = true;
-let keyboardY = null; // 鍵盤控制的目標 Y 位置
-let mouseY = null;    // 滑鼠控制的目標 Y 位置
+let keyboardY = null;
+let mouseY = null;
 let useKeyboardControl = false;
 let useMouseControl = false;
+let keyboardTimeout = null;
 
-// 鍵盤事件
+// 呼吸裝置控制狀態
+let breathControlActive = false;
+
 document.addEventListener('keydown', function(e) {
     if (!keyboardControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
     const step = 15;
@@ -840,34 +980,48 @@ document.addEventListener('keydown', function(e) {
         if (keyboardY === null) keyboardY = rocket.y;
         keyboardY = Math.max(30, keyboardY - step);
         useKeyboardControl = true;
-        document.getElementById('hintKeyboard').style.color = '#f1c40f';
-        document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+        // 只有在呼吸裝置沒有數據時才顯示鍵盤使用中
+        if (!breathControlActive) {
+            document.getElementById('hintKeyboard').style.color = '#f1c40f';
+            document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+        }
+        if (keyboardTimeout) clearTimeout(keyboardTimeout);
+        keyboardTimeout = setTimeout(() => {
+            if (useKeyboardControl) {
+                useKeyboardControl = false;
+                keyboardY = null;
+                if (!breathControlActive) {
+                    document.getElementById('hintKeyboard').style.color = '';
+                    document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+                }
+            }
+        }, 5000);
     } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
         e.preventDefault();
         if (keyboardY === null) keyboardY = rocket.y;
         keyboardY = Math.min(gameHeight - 30, keyboardY + step);
         useKeyboardControl = true;
-        document.getElementById('hintKeyboard').style.color = '#f1c40f';
-        document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+        if (!breathControlActive) {
+            document.getElementById('hintKeyboard').style.color = '#f1c40f';
+            document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+        }
+        if (keyboardTimeout) clearTimeout(keyboardTimeout);
+        keyboardTimeout = setTimeout(() => {
+            if (useKeyboardControl) {
+                useKeyboardControl = false;
+                keyboardY = null;
+                if (!breathControlActive) {
+                    document.getElementById('hintKeyboard').style.color = '';
+                    document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+                }
+            }
+        }, 5000);
     } else if (e.key === ' ' || e.key === 'Space') {
         e.preventDefault();
-        // 空白鍵可以當作暫停或特殊功能
         if (isGameRunning && !isGameOver) toggleGamePause();
     }
 });
 
-// 鍵盤釋放時重置
-document.addEventListener('keyup', function(e) {
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
-        // 不立即重置，讓飛船慢慢回到呼吸控制
-        setTimeout(() => {
-            if (!useKeyboardControl) return;
-            // 5秒後如果沒有按鍵，回到呼吸控制
-        }, 3000);
-    }
-});
-
-// 滑鼠事件 - 在 gameCanvas 上
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('gameCanvas');
     if (canvas) {
@@ -878,28 +1032,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const mouseRelativeY = (e.clientY - rect.top) * scaleY;
             mouseY = Math.max(30, Math.min(canvas.height - 30, mouseRelativeY));
             useMouseControl = true;
-            document.getElementById('hintMouse').style.color = '#f1c40f';
-            document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+            if (!breathControlActive) {
+                document.getElementById('hintMouse').style.color = '#f1c40f';
+                document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+            }
         });
-        
         canvas.addEventListener('mouseleave', function() {
-            // 滑鼠離開時，慢慢回到呼吸控制
             setTimeout(() => {
                 if (useMouseControl) {
-                    // 2秒後如果滑鼠沒有回來，回到呼吸控制
-                    setTimeout(() => {
-                        if (useMouseControl) {
-                            mouseY = null;
-                            useMouseControl = false;
-                            document.getElementById('hintMouse').style.color = '';
-                            document.getElementById('hintMouse').textContent = '移動';
-                        }
-                    }, 3000);
+                    useMouseControl = false;
+                    mouseY = null;
+                    if (!breathControlActive) {
+                        document.getElementById('hintMouse').style.color = '';
+                        document.getElementById('hintMouse').textContent = '移動';
+                    }
                 }
-            }, 100);
+            }, 2000);
         });
-        
-        // 觸控支援（手機）
         canvas.addEventListener('touchmove', function(e) {
             e.preventDefault();
             if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
@@ -909,35 +1058,64 @@ document.addEventListener('DOMContentLoaded', function() {
             const touchRelativeY = (touch.clientY - rect.top) * scaleY;
             mouseY = Math.max(30, Math.min(canvas.height - 30, touchRelativeY));
             useMouseControl = true;
-            document.getElementById('hintMouse').style.color = '#f1c40f';
-            document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+            if (!breathControlActive) {
+                document.getElementById('hintMouse').style.color = '#f1c40f';
+                document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+            }
         }, { passive: false });
+        canvas.addEventListener('touchend', function() {
+            setTimeout(() => {
+                if (useMouseControl) {
+                    useMouseControl = false;
+                    mouseY = null;
+                    if (!breathControlActive) {
+                        document.getElementById('hintMouse').style.color = '';
+                        document.getElementById('hintMouse').textContent = '移動';
+                    }
+                }
+            }, 2000);
+        });
     }
 });
 
-// 操控方式切換
+function toggleControlGuide() {
+    const guide = document.getElementById('controlGuide');
+    const btn = document.getElementById('helpBtn');
+    if (guide) {
+        guide.classList.toggle('show');
+        btn.classList.toggle('active');
+        btn.textContent = guide.classList.contains('show') ? '✕' : '❓';
+    }
+}
+
 function toggleKeyboardControl() {
     keyboardControlEnabled = !keyboardControlEnabled;
     if (!keyboardControlEnabled) {
         keyboardY = null;
         useKeyboardControl = false;
-        document.getElementById('hintKeyboard').style.color = '';
-        document.getElementById('hintKeyboard').textContent = '↑↓';
+        if (!breathControlActive) {
+            document.getElementById('hintKeyboard').style.color = '';
+            document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+        }
     }
     updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
 }
-
 function toggleMouseControl() {
     mouseControlEnabled = !mouseControlEnabled;
     if (!mouseControlEnabled) {
         mouseY = null;
         useMouseControl = false;
-        document.getElementById('hintMouse').style.color = '';
-        document.getElementById('hintMouse').textContent = '移動';
+        if (!breathControlActive) {
+            document.getElementById('hintMouse').style.color = '';
+            document.getElementById('hintMouse').textContent = '移動';
+        }
     }
     updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
 }
 
+// =====================================================
+// 原有函式（精簡）
+// =====================================================
 async function loadPKLModel(){
 try{onnxSession=await ort.InferenceSession.create('./rf_model.onnx');updateStatus('✅ PKL 模型載入成功！');}catch(err){console.warn("未檢測到 rf_model.onnx",err);}
 }
@@ -1067,9 +1245,16 @@ function toggleMeasuring(){
 isMeasuring=!isMeasuring;
 if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Start';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
 if(typeof updateGameMeasurementState==='function'){updateGameMeasurementState(isMeasuring);}
-// 更新呼吸裝置狀態提示
-document.getElementById('hintBreath').textContent = isMeasuring ? '🌬️ 使用中' : '等待啟動';
-document.getElementById('hintBreath').style.color = isMeasuring ? '#2ecc71' : '';
+// 更新呼吸狀態
+if (isMeasuring) {
+    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+    document.getElementById('hintBreath').style.color = '#2ecc71';
+    breathControlActive = true;
+} else {
+    document.getElementById('hintBreath').textContent = '等待啟動';
+    document.getElementById('hintBreath').style.color = '';
+    breathControlActive = false;
+}
 }
 
 function clearPlot(){
@@ -1332,6 +1517,7 @@ hasShield=false;feverTimer=0;magnetTimer=0;doubleScoreTimer=0;slowDebuffTimer=0;
 particles=[];collectibles=[];obstacles=[];bgmStep=0;
 bossActive=false;currentBoss=null;
 keyboardY=null;mouseY=null;useKeyboardControl=false;useMouseControl=false;
+breathControlActive = isMeasuring;
 let h=gameCanvas.height||480;
 rocket.x=120;rocket.y=h/2;rocket.angle=0;
 sessionStartTime=Date.now();
@@ -1346,13 +1532,21 @@ document.getElementById('magnetBadge').style.display='none';
 document.getElementById('doubleBadge').style.display='none';
 document.getElementById('slowBadge').style.display='none';
 document.getElementById('bossWarning').style.display='none';
-// 重置操控提示
+// 重置提示
+if (isMeasuring) {
+    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+    document.getElementById('hintBreath').style.color = '#2ecc71';
+} else {
+    document.getElementById('hintBreath').textContent = '等待啟動';
+    document.getElementById('hintBreath').style.color = '';
+}
 document.getElementById('hintKeyboard').style.color='';
-document.getElementById('hintKeyboard').textContent='↑↓';
+document.getElementById('hintKeyboard').textContent='↑↓ / W S';
 document.getElementById('hintMouse').style.color='';
 document.getElementById('hintMouse').textContent='移動';
-document.getElementById('hintBreath').textContent='等待啟動';
-document.getElementById('hintBreath').style.color='';
+document.getElementById('controlGuide').classList.remove('show');
+document.getElementById('helpBtn').textContent='❓';
+document.getElementById('helpBtn').classList.remove('active');
 updateGameMeasurementState(typeof isMeasuring!=='undefined'?isMeasuring:false);
 gameLoop();
 }
@@ -1427,49 +1621,76 @@ if(activeMeasuring&&!isGamePaused&&!isResting&&!isGameOver){
 let flow=(typeof smoothedEst!=='undefined'&&!isNaN(smoothedEst))?smoothedEst:0;
 let flowMag=Math.abs(flow);
 
-// ===== 🆕 操控優先級：鍵盤 > 滑鼠 > 呼吸裝置 =====
 let targetY = null;
+let controlSource = 'none';
 
-// 1. 鍵盤控制（優先）
-if (keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
-    targetY = keyboardY;
-    // 如果5秒沒按鍵，慢慢回到呼吸控制
-    // 這裡透過計時器處理，在外部 keyup 事件中處理
+// ===== 🆕 操控優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠 =====
+
+// 1. 呼吸裝置控制（最優先）
+const hasBreathData = activeMeasuring && Math.abs(flow) > 0.5;
+if (hasBreathData) {
+    let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard' ? 0.8 : 1.2);
+    targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
+    controlSource = 'breath';
+    breathControlActive = true;
+    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+    document.getElementById('hintBreath').style.color = '#2ecc71';
+    // 呼吸控制時，鍵盤和滑鼠提示變暗
+    document.getElementById('hintKeyboard').style.color = '';
+    document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+    document.getElementById('hintMouse').style.color = '';
+    document.getElementById('hintMouse').textContent = '移動';
+    // 重置鍵盤/滑鼠控制狀態
+    useKeyboardControl = false;
+    useMouseControl = false;
+    keyboardY = null;
+    mouseY = null;
 }
 
-// 2. 滑鼠控制（第二優先）
+// 2. 鍵盤控制（第二優先，僅在呼吸無數據時使用）
+if (targetY === null && keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
+    targetY = keyboardY;
+    controlSource = 'keyboard';
+    breathControlActive = false;
+    document.getElementById('hintKeyboard').style.color = '#f1c40f';
+    document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+    document.getElementById('hintBreath').textContent = '等待呼吸';
+    document.getElementById('hintBreath').style.color = '';
+}
+
+// 3. 滑鼠控制（第三優先，僅在呼吸和鍵盤無輸入時使用）
 if (targetY === null && mouseControlEnabled && useMouseControl && mouseY !== null) {
     targetY = mouseY;
+    controlSource = 'mouse';
+    breathControlActive = false;
+    document.getElementById('hintMouse').style.color = '#f1c40f';
+    document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+    document.getElementById('hintBreath').textContent = '等待呼吸';
+    document.getElementById('hintBreath').style.color = '';
 }
 
-// 3. 呼吸裝置控制（預設）
+// 4. 無任何輸入時，停留在中間
 if (targetY === null) {
-    // 如果呼吸裝置有數據，使用呼吸控制
-    if (Math.abs(flow) > 0.5) {
-        let sensitivity = (diff==='easy')?1.8:(diff==='hard'?0.8:1.2);
-        targetY = gameCanvas.height/2 - (flow * 2.2 * sensitivity);
-        // 如果使用呼吸控制，更新提示
-        document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-        document.getElementById('hintBreath').style.color = '#2ecc71';
+    targetY = gameCanvas.height / 2;
+    if (!activeMeasuring) {
+        document.getElementById('hintBreath').textContent = '等待啟動';
     } else {
-        // 沒有呼吸數據時，停留在中間
-        targetY = gameCanvas.height / 2;
         document.getElementById('hintBreath').textContent = '等待呼吸';
-        document.getElementById('hintBreath').style.color = '';
     }
+    document.getElementById('hintBreath').style.color = '';
+    breathControlActive = false;
 }
 
 // 限制範圍
 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
 
-// 平滑移動到目標位置
+// 平滑移動
 let dy = targetY - rocket.y;
 if (isNaN(dy)) dy = 0;
 let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
 rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
 rocket.angle = Math.atan2(dy, 25);
 
-// 計時器更新
 if(feverTimer>0){feverTimer--;if(feverTimer===0)document.getElementById('feverBadge').style.display='none';}
 if(magnetTimer>0){magnetTimer--;if(magnetTimer===0)document.getElementById('magnetBadge').style.display='none';}
 if(doubleScoreTimer>0){doubleScoreTimer--;if(doubleScoreTimer===0)document.getElementById('doubleBadge').style.display='none';}
@@ -1478,7 +1699,6 @@ if(slowDebuffTimer>0){slowDebuffTimer--;if(slowDebuffTimer===0)document.getEleme
 let spawnY=Math.random()*(gameCanvas.height-100)+50;
 if(isUsingCustomMusic&&audioAnalyser&&audioDataArray){audioAnalyser.getByteFrequencyData(audioDataArray);spawnY=gameCanvas.height-(audioDataArray[5]/255)*(gameCanvas.height-80);}
 
-// Boss 出現
 const bossRate=parseFloat(document.getElementById('customBossRate')?.value||'0.003');
 const bossLevel=Math.floor((EXP?.currentLevel||1)/5);
 if(bossLevel>0&&!bossActive&&Math.random()<bossRate*userSpeedMult){
@@ -1515,7 +1735,6 @@ else{playerHP=Math.max(0,playerHP-15);playAudioEffect('hit');if(playerHP<=0){tri
 if(currentBoss.x<-50){bossActive=false;currentBoss=null;document.getElementById('bossWarning').style.display='none';}
 }
 
-// 生成道具
 const itemRate=parseFloat(document.getElementById('customItemRate')?.value||'0.025');
 const unlockedItems=EXP?.unlockedItems||['coin','heart','shield','magnet','double','fever'];
 const itemPool=ITEM_TYPES.filter(i=>unlockedItems.includes(i.type));
@@ -1524,7 +1743,6 @@ const item=itemPool[Math.floor(Math.random()*itemPool.length)];
 collectibles.push({...item,x:gameCanvas.width+20,y:spawnY,radius:12,baseSpeed:3,collected:false});
 }
 
-// 生成障礙物
 const obstacleRate=parseFloat(document.getElementById('customObstacleRate')?.value||'0.015');
 const unlockedObstacles=EXP?.unlockedObstacles||['cloud','poison','mud','spike','fire','ice'];
 const obstaclePool=OBSTACLE_TYPES.filter(o=>unlockedObstacles.includes(o.type));
@@ -1535,7 +1753,6 @@ const dmg=(diff==='easy')?Math.floor(obs.damage*0.5*dmgMult):(diff==='hard')?Mat
 obstacles.push({...obs,x:gameCanvas.width+30,y:spawnY,radius:obs.type==='poison'?22:obs.type==='void'?20:14,baseSpeed:obs.type==='mud'?4.5:obs.type==='ice'?3.5:4,damage:dmg,hit:false,slow:obs.slow||false});
 }
 
-// 更新道具
 collectibles.forEach(c=>{
 c.x-=c.baseSpeed*userSpeedMult;
 if(magnetTimer>0){let d=Math.hypot(rocket.x-c.x,rocket.y-c.y);if(d<200){c.x+=(rocket.x-c.x)*0.12;c.y+=(rocket.y-c.y)*0.12;}}
@@ -1558,7 +1775,6 @@ c.collected=true;
 }
 });
 
-// 更新障礙物
 obstacles.forEach(o=>{
 o.x-=o.baseSpeed*userSpeedMult;
 drawObstacle(gameCtx,o.x,o.y,o.type,o.radius);
@@ -1673,7 +1889,6 @@ EXP.currentSpeedBonus=1+(EXP.currentLevel-1)*0.008;
 updateLevelDisplay();
 };
 
-// 自動關卡推進
 setInterval(()=>{
 const scoreEl=document.getElementById('gameScore');
 if(!scoreEl)return;
@@ -1690,7 +1905,6 @@ updateLevelDisplay();
 }
 },3000);
 
-// 最終Boss
 function triggerFinalBoss(){
 if(EXP.isFinalBossActive)return;
 EXP.isFinalBossActive=true;EXP.bossSequencePlaying=true;
@@ -1885,30 +2099,14 @@ if(editor.style.display==='block'){buildAllCheckboxes();}
 let devModeEnabled = false;
 function toggleDevMode() {
 devModeEnabled = !devModeEnabled;
-const btn = document.getElementById('devModeToggle');
-const indicator = document.getElementById('devIndicator');
-if (btn) {
-btn.textContent = devModeEnabled ? '🔧 開發模式 ON' : '🔧 開發模式 OFF';
-btn.classList.toggle('active', devModeEnabled);
-}
-if (indicator) {
-indicator.textContent = devModeEnabled ? '🔧 開發中' : '🎮 一般模式';
-indicator.className = 'dev-mode-indicator ' + (devModeEnabled ? 'on' : 'off');
-}
-document.querySelectorAll('.dev-hidden').forEach(el => {
-el.style.display = devModeEnabled ? '' : 'none';
-});
-document.querySelectorAll('.dev-btn').forEach(el => {
-el.style.display = devModeEnabled ? '' : 'none';
-});
-if (!devModeEnabled) {
-const editors = ['levelEditor', 'skinEditor'];
-editors.forEach(id => {
-const el = document.getElementById(id);
-if (el) el.style.display = 'none';
-});
-}
-updateStatus(devModeEnabled ? '🔧 開發模式已開啟' : '🎮 開發模式已關閉');
+const btn=document.getElementById('devModeToggle');
+const indicator=document.getElementById('devIndicator');
+if(btn){btn.textContent=devModeEnabled?'🔧 開發模式 ON':'🔧 開發模式 OFF';btn.classList.toggle('active',devModeEnabled);}
+if(indicator){indicator.textContent=devModeEnabled?'🔧 開發中':'🎮 一般模式';indicator.className='dev-mode-indicator '+(devModeEnabled?'on':'off');}
+document.querySelectorAll('.dev-hidden').forEach(el=>{el.style.display=devModeEnabled?'':'none';});
+document.querySelectorAll('.dev-btn').forEach(el=>{el.style.display=devModeEnabled?'':'none';});
+if(!devModeEnabled){['levelEditor','skinEditor'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
+updateStatus(devModeEnabled?'🔧 開發模式已開啟':'🎮 開發模式已關閉');
 }
 
 // ============================================================
@@ -2067,14 +2265,14 @@ const opt=document.createElement('option');opt.value='intro';opt.text='📖 介�
 }
 document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
 console.log('✅ 完整擴充功能已載入！');
-console.log('⌨️ 鍵盤 ↑↓ / W S 操控飛船');
-console.log('🖱️ 滑鼠移動操控飛船');
-console.log('🔧 點擊「開發模式」開啟進階功能');
+console.log('🌬️ 呼吸裝置為最優先操控方式');
+console.log('⌨️ 鍵盤 ↑↓ / W S 為備用操控');
+console.log('🖱️ 滑鼠移動為第三順位操控');
+console.log('❓ 點擊遊戲畫面右下角 ❓ 查看操控說明');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
 
-// 暴露全域函式
 window.restartGameEngine=restartGameEngine;
 window.toggleGamePause=toggleGamePause;
 window.toggleFullscreen=toggleFullscreen;
@@ -2101,23 +2299,7 @@ window.resetAllSkins=resetAllSkins;
 window.toggleDevMode=toggleDevMode;
 window.toggleKeyboardControl=toggleKeyboardControl;
 window.toggleMouseControl=toggleMouseControl;
-
-// ===== 鍵盤計時器：自動切換回呼吸控制 =====
-let keyboardTimeout = null;
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
-        if (keyboardTimeout) clearTimeout(keyboardTimeout);
-        // 5秒後如果沒有按鍵，釋放鍵盤控制
-        keyboardTimeout = setTimeout(() => {
-            if (useKeyboardControl) {
-                useKeyboardControl = false;
-                keyboardY = null;
-                document.getElementById('hintKeyboard').style.color = '';
-                document.getElementById('hintKeyboard').textContent = '↑↓';
-            }
-        }, 5000);
-    }
-});
+window.toggleControlGuide=toggleControlGuide;
 </script>
 </body>
 </html>
