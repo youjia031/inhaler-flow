@@ -396,10 +396,13 @@ font-weight: bold;
 }
 .dev-mode-indicator.on { background: #8e44ad; color: white; }
 .dev-mode-indicator.off { background: #2c3e50; color: #8b949e; }
-.dev-hidden { display: none !important; }
+
+/* 開發功能預設顯示 */
+.dev-hidden { display: block !important; }
+.dev-btn { display: flex !important; }
 
 #levelEditor {
-display: none;
+display: block;
 background: #161b22;
 padding: 15px;
 border-radius: 8px;
@@ -462,7 +465,7 @@ font-size: 13px;
 .editor-btn.export:hover { background: #2980b9; }
 
 #skinEditor {
-display: none;
+display: block;
 background: #161b22;
 padding: 15px;
 border-radius: 8px;
@@ -607,6 +610,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 #demoModal .modal-content { padding: 15px; }
 .control-guide { right: 10px; bottom: 70px; min-width: 170px; padding: 10px 12px; }
 .help-btn { right: 10px; bottom: 70px; width: 32px; height: 32px; font-size: 16px; }
+#levelEditor, #skinEditor { max-height: 300px; }
 }
 </style>
 </head>
@@ -702,7 +706,6 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 🖱️ 滑鼠: <span id="hintMouse">移動</span>
 </div>
 
-<!-- ===== Boss 技能預警文字 ===== -->
 <div class="boss-warning-text" id="bossWarningText">⚠️ 技能來襲！</div>
 
 <button class="help-btn" id="helpBtn" onclick="toggleControlGuide()" title="操控說明">❓</button>
@@ -764,7 +767,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 自訂關卡編輯器 ===== -->
-<div id="levelEditor" class="dev-hidden">
+<div id="levelEditor">
 <h4>🎮 自訂關卡設計師</h4>
 <p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">點擊按鈕切換開關，所有設定即時生效</p>
 <div class="setting-group">
@@ -844,7 +847,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 自訂外觀編輯器 ===== -->
-<div id="skinEditor" class="dev-hidden">
+<div id="skinEditor">
 <h4>🎨 自訂外觀</h4>
 <p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">上傳圖片替換遊戲元素，支援 PNG / JPG</p>
 <div class="skin-group">
@@ -1301,10 +1304,10 @@ const html=`
 <label for="mouseToggle">🖱️ 滑鼠</label>
 </span>
 <span id="devControls" style="display:flex;gap:6px;align-items:center;">
-<button id="devModeToggle" class="btn dev-toggle" onclick="toggleDevMode()">🔧 開發模式 OFF</button>
-<span id="devIndicator" class="dev-mode-indicator off">🎮 一般模式</span>
+<button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
+<span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
 </span>
-<span class="dev-hidden dev-btn" style="display:none;gap:6px;align-items:center;">
+<span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
 <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
 <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
 <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
@@ -1313,7 +1316,6 @@ const html=`
 </span>
 `;
 controlPanel.insertAdjacentHTML('beforeend',html);
-document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
 }
 
 // ===== 音效系統 =====
@@ -1387,10 +1389,8 @@ let gameScore=0,gameCombo=0,playerHP=100;
 let hasShield=false,feverTimer=0,magnetTimer=0,doubleScoreTimer=0,slowDebuffTimer=0;
 let restTimer=null,isResting=false,sessionStartTime=0;
 let bossActive=false,currentBoss=null;
-
-// ===== 🆕 Boss 技能預警系統 =====
-let bossSkillWarning = null;  // 預警剩餘幀數 (60幀 = 2秒)
-let bossSkillType = null;     // 預警中的技能名稱
+let bossSkillWarning = null;
+let bossSkillType = null;
 let bossWarningActive = false;
 
 // ===== 8種 Boss 定義 =====
@@ -1434,7 +1434,7 @@ const OBSTACLE_TYPES=[
 ];
 
 // ============================================================
-// 道具繪製函式（10種不同形狀）
+// 道具繪製函式
 // ============================================================
 function drawItem(ctx, x, y, type, radius) {
     ctx.save();
@@ -1644,7 +1644,7 @@ function drawItem(ctx, x, y, type, radius) {
     ctx.restore();
 }
 
-// ===== 障礙物繪製函式（10種不同形狀） =====
+// ===== 障礙物繪製函式 =====
 function drawObstacle(ctx, x, y, type, radius) {
     ctx.save();
     ctx.translate(x, y);
@@ -1863,7 +1863,7 @@ function drawObstacle(ctx, x, y, type, radius) {
 }
 
 // ============================================================
-// 🆕 Boss 繪製函式（含技能預警特效）
+// Boss 繪製函式（含技能預警特效）
 // ============================================================
 function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     ctx.save();
@@ -1871,11 +1871,10 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     const r = boss.radius || 30;
     const color = boss.color || '#8e44ad';
     
-    // ===== 預警特效 =====
+    // 預警特效
     if (warning !== null && warning > 0) {
-        const progress = 1 - (warning / 60); // 0~1 蓄力進度
+        const progress = 1 - (warning / 60);
         
-        // 1. 脈衝光環（越來越強）
         const pulseRadius = r * 1.3 + progress * r * 0.8;
         ctx.shadowColor = '#ff4444';
         ctx.shadowBlur = 30 + progress * 40;
@@ -1885,7 +1884,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
         ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
         ctx.stroke();
         
-        // 2. 閃爍警告圈
         if (Math.floor(warning / 5) % 2 === 0) {
             ctx.shadowBlur = 0;
             ctx.strokeStyle = `rgba(255, 255, 0, ${0.4 + progress * 0.3})`;
@@ -1897,7 +1895,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
             ctx.setLineDash([]);
         }
         
-        // 3. 警告文字
         ctx.shadowBlur = 0;
         const countdown = Math.ceil(warning / 30);
         ctx.fillStyle = '#ff4444';
@@ -1906,13 +1903,11 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
         ctx.textBaseline = 'bottom';
         ctx.fillText(`⚠️ ${countdown}`, 0, -r * 1.5 - 10);
         
-        // 4. 技能名稱
         ctx.fillStyle = '#ffcc00';
         ctx.font = 'bold 14px sans-serif';
         ctx.textBaseline = 'top';
         ctx.fillText(skillType || '???', 0, -r * 1.5 + 4);
         
-        // 5. 地面範圍警告
         if (skillType === '火焰吐息' || skillType === '閃電風暴' || skillType === '龍捲風') {
             for (let i = 0; i < 12; i++) {
                 const angle = (i / 12) * Math.PI * 2 + Date.now() / 200;
@@ -1923,7 +1918,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
                 ctx.fill();
             }
         } else if (skillType === '暗影突襲') {
-            // 箭頭指示
             for (let i = 0; i < 4; i++) {
                 const angle = i * Math.PI / 2 + Date.now() / 500;
                 const dist = r * 1.8 + progress * r * 0.5;
@@ -1937,7 +1931,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
                 ctx.fill();
             }
         } else if (skillType === '冰凍光環' || skillType === '寒冰之牆' || skillType === '蛛網') {
-            // 冰晶擴散
             for (let i = 0; i < 6; i++) {
                 const angle = i * Math.PI / 3 + Date.now() / 400;
                 const dist = r * 1.2 + progress * r * 0.8;
@@ -1949,11 +1942,9 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
             }
         }
         
-        // 6. Boss 震動
         const shake = progress * 4;
         ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
         
-        // 7. 紅色閃光
         if (progress > 0.8) {
             ctx.fillStyle = `rgba(255, 0, 0, ${(progress - 0.8) * 0.3})`;
             ctx.beginPath();
@@ -1962,7 +1953,7 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
         }
     }
     
-    // ===== Boss 本體繪製 =====
+    // Boss 本體繪製
     ctx.shadowColor = color;
     ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 40;
     
@@ -2087,7 +2078,7 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
 }
 
 // ============================================================
-// 🆕 執行 Boss 技能
+// 執行 Boss 技能
 // ============================================================
 function executeBossSkill(boss, skill) {
     if (!boss || !skill) return;
@@ -2096,9 +2087,7 @@ function executeBossSkill(boss, skill) {
     playAudioEffect('boss_attack');
     document.getElementById('skillWarning').style.display = 'none';
     
-    // 根據技能類型執行不同效果
     if (skill === '火焰吐息' || skill === '閃電風暴' || skill === '龍捲風') {
-        // 範圍攻擊：從 Boss 位置發射彈幕
         const count = 12 + Math.floor(Math.random() * 6);
         for (let i = 0; i < count; i++) {
             const angle = (i / count) * Math.PI * 2 + Math.random() * 0.2;
@@ -2117,7 +2106,6 @@ function executeBossSkill(boss, skill) {
             });
         }
     } else if (skill === '暗影突襲') {
-        // 瞬間移動攻擊
         const attackX = rocket.x + (Math.random() - 0.5) * 60;
         const attackY = rocket.y + (Math.random() - 0.5) * 60;
         for (let i = 0; i < 20; i++) {
@@ -2408,7 +2396,7 @@ if(slowDebuffTimer>0){slowDebuffTimer--;if(slowDebuffTimer===0)document.getEleme
 let spawnY=Math.random()*(gameCanvas.height-100)+50;
 if(isUsingCustomMusic&&audioAnalyser&&audioDataArray){audioAnalyser.getByteFrequencyData(audioDataArray);spawnY=gameCanvas.height-(audioDataArray[5]/255)*(gameCanvas.height-80);}
 
-// ===== Boss 出現 =====
+// Boss 出現
 const bossRate=parseFloat(document.getElementById('customBossRate')?.value||'0.003');
 const bossLevel=Math.floor((EXP?.currentLevel||1)/5);
 if(bossLevel>0&&!bossActive&&Math.random()<bossRate*userSpeedMult){
@@ -2418,16 +2406,15 @@ currentBoss={...boss,x:gameCanvas.width+50,y:spawnY,hp:boss.hp+(EXP?.currentLeve
 bossActive=true;document.getElementById('bossWarning').style.display='inline';playAudioEffect('boss');showNotification(`👹 ${boss.name} 出現！`);
 }
 
-// ===== Boss 行為（含技能預警） =====
+// Boss 行為（含技能預警）
 if(bossActive&&currentBoss){
 currentBoss.x-=(currentBoss.speed||1)*userSpeedMult;
 currentBoss.skillTimer++;
 
-// 🆕 檢查是否要發動技能（增加預警機制）
 if (currentBoss.skillTimer > 120 && Math.random() < 0.015 && bossSkillWarning === null) {
     const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
     bossSkillType = skill;
-    bossSkillWarning = 60; // 60幀預警（約2秒）
+    bossSkillWarning = 60;
     currentBoss.skillTimer = 0;
     playAudioEffect('warning');
     document.getElementById('skillWarning').style.display = 'inline';
@@ -2436,14 +2423,11 @@ if (currentBoss.skillTimer > 120 && Math.random() < 0.015 && bossSkillWarning ==
     showNotification(`⚠️ ${currentBoss.name} 準備使用 ${skill}！`);
 }
 
-// 處理預警計時
 if (bossSkillWarning !== null) {
     bossSkillWarning--;
-    // 更新預警文字
     const countdown = Math.ceil(bossSkillWarning / 30);
     document.getElementById('bossWarningText').textContent = `⚠️ ${bossSkillType} ${countdown}s`;
     
-    // 預警結束，發動技能
     if (bossSkillWarning <= 0) {
         executeBossSkill(currentBoss, bossSkillType);
         bossSkillWarning = null;
@@ -2452,10 +2436,8 @@ if (bossSkillWarning !== null) {
     }
 }
 
-// 繪製 Boss（含預警特效）
 drawBossWithWarning(gameCtx, currentBoss.x, currentBoss.y, currentBoss, bossSkillWarning, bossSkillType);
 
-// Boss HP 條
 const hpPct = currentBoss.hp / currentBoss.maxHp;
 gameCtx.fillStyle='rgba(0,0,0,0.7)';
 gameCtx.fillRect(currentBoss.x-30,currentBoss.y-currentBoss.radius-12,60,6);
@@ -2466,7 +2448,6 @@ gameCtx.font='10px sans-serif';
 gameCtx.textAlign='center';
 gameCtx.fillText(currentBoss.name,currentBoss.x,currentBoss.y-currentBoss.radius-18);
 
-// Boss 碰撞
 const bossDist=Math.hypot(currentBoss.x-rocket.x,currentBoss.y-rocket.y);
 if(bossDist<currentBoss.radius+rocket.radius){
 if(hasShield){hasShield=false;document.getElementById('shieldBadge').style.display='none';}
@@ -2475,7 +2456,7 @@ else{playerHP=Math.max(0,playerHP-15);playAudioEffect('hit');if(playerHP<=0){tri
 if(currentBoss.x<-50){bossActive=false;currentBoss=null;document.getElementById('bossWarning').style.display='none';}
 }
 
-// ===== 生成道具 =====
+// 生成道具
 const itemRate=parseFloat(document.getElementById('customItemRate')?.value||'0.025');
 const unlockedItems=EXP?.unlockedItems||['coin','heart','shield','magnet','double','fever'];
 const itemPool=ITEM_TYPES.filter(i=>unlockedItems.includes(i.type));
@@ -2484,7 +2465,7 @@ const item=itemPool[Math.floor(Math.random()*itemPool.length)];
 collectibles.push({...item,x:gameCanvas.width+20,y:spawnY,radius:12,baseSpeed:3,collected:false});
 }
 
-// ===== 生成障礙物 =====
+// 生成障礙物
 const obstacleRate=parseFloat(document.getElementById('customObstacleRate')?.value||'0.015');
 const unlockedObstacles=EXP?.unlockedObstacles||['cloud','poison','mud','spike','fire','ice'];
 const obstaclePool=OBSTACLE_TYPES.filter(o=>unlockedObstacles.includes(o.type));
@@ -2495,7 +2476,7 @@ const dmg=(diff==='easy')?Math.floor(obs.damage*0.5*dmgMult):(diff==='hard')?Mat
 obstacles.push({...obs,x:gameCanvas.width+30,y:spawnY,radius:obs.type==='poison'?22:obs.type==='void'?20:14,baseSpeed:obs.type==='mud'?4.5:obs.type==='ice'?3.5:4,damage:dmg,hit:false,slow:obs.slow||false});
 }
 
-// ===== 更新道具 =====
+// 更新道具
 collectibles.forEach(c=>{
 c.x-=c.baseSpeed*userSpeedMult;
 if(magnetTimer>0){let d=Math.hypot(rocket.x-c.x,rocket.y-c.y);if(d<200){c.x+=(rocket.x-c.x)*0.12;c.y+=(rocket.y-c.y)*0.12;}}
@@ -2518,7 +2499,7 @@ c.collected=true;
 }
 });
 
-// ===== 更新障礙物 =====
+// 更新障礙物
 obstacles.forEach(o=>{
 o.x-=o.baseSpeed*userSpeedMult;
 drawObstacle(gameCtx,o.x,o.y,o.type,o.radius);
@@ -2840,16 +2821,32 @@ if(editor.style.display==='block'){buildAllCheckboxes();}
 // ============================================================
 // 開發模式
 // ============================================================
-let devModeEnabled = false;
+let devModeEnabled = true;
+
 function toggleDevMode() {
 devModeEnabled = !devModeEnabled;
 const btn=document.getElementById('devModeToggle');
 const indicator=document.getElementById('devIndicator');
-if(btn){btn.textContent=devModeEnabled?'🔧 開發模式 ON':'🔧 開發模式 OFF';btn.classList.toggle('active',devModeEnabled);}
-if(indicator){indicator.textContent=devModeEnabled?'🔧 開發中':'🎮 一般模式';indicator.className='dev-mode-indicator '+(devModeEnabled?'on':'off');}
-document.querySelectorAll('.dev-hidden').forEach(el=>{el.style.display=devModeEnabled?'':'none';});
-document.querySelectorAll('.dev-btn').forEach(el=>{el.style.display=devModeEnabled?'':'none';});
-if(!devModeEnabled){['levelEditor','skinEditor'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
+if(btn){
+btn.textContent=devModeEnabled?'🔧 開發模式 ON':'🔧 開發模式 OFF';
+btn.classList.toggle('active',devModeEnabled);
+}
+if(indicator){
+indicator.textContent=devModeEnabled?'🔧 開發中':'🎮 一般模式';
+indicator.className='dev-mode-indicator '+(devModeEnabled?'on':'off');
+}
+document.querySelectorAll('.dev-hidden').forEach(el=>{
+el.style.display=devModeEnabled?'':'none';
+});
+document.querySelectorAll('.dev-btn').forEach(el=>{
+el.style.display=devModeEnabled?'flex':'none';
+});
+if(!devModeEnabled){
+['levelEditor','skinEditor'].forEach(id=>{
+const el=document.getElementById(id);
+if(el)el.style.display='none';
+});
+}
 updateStatus(devModeEnabled?'🔧 開發模式已開啟':'🎮 開發模式已關閉');
 }
 
@@ -2999,20 +2996,55 @@ function closeDemoModal(){const modal=document.getElementById('demoModal');modal
 // 初始化
 // ============================================================
 function initExpansion(){
-setQuality('high');
-buildIntroGrid();
-updateLevelDisplay();
-loadSkins();
-const select=document.getElementById('viewModeSelect');
-if(select&&!Array.from(select.options).some(o=>o.value==='intro')){
-const opt=document.createElement('option');opt.value='intro';opt.text='📖 介紹圖鑑';select.appendChild(opt);
-}
-document.querySelectorAll('.dev-hidden').forEach(el=>el.style.display='none');
-console.log('✅ 完整擴充功能已載入！');
-console.log('🌬️ 呼吸裝置為最優先操控方式');
-console.log('⌨️ 鍵盤 ↑↓ / W S 為備用操控');
-console.log('🖱️ 滑鼠移動為第三順位操控');
-console.log('⚠️ Boss 技能有 2 秒預警，請注意躲避！');
+    setQuality('high');
+    buildIntroGrid();
+    updateLevelDisplay();
+    loadSkins();
+    const select=document.getElementById('viewModeSelect');
+    if(select&&!Array.from(select.options).some(o=>o.value==='intro')){
+        const opt=document.createElement('option');
+        opt.value='intro';
+        opt.text='📖 介紹圖鑑';
+        select.appendChild(opt);
+    }
+    
+    // 所有開發功能預設開啟
+    document.querySelectorAll('.dev-hidden').forEach(el => {
+        el.style.display = '';
+        el.style.visibility = 'visible';
+        el.style.opacity = '1';
+    });
+    document.querySelectorAll('.dev-btn').forEach(el => {
+        el.style.display = 'flex';
+        el.style.visibility = 'visible';
+    });
+    
+    const levelEditor = document.getElementById('levelEditor');
+    const skinEditor = document.getElementById('skinEditor');
+    if (levelEditor) levelEditor.style.display = 'block';
+    if (skinEditor) skinEditor.style.display = 'block';
+    
+    const toggleBtn = document.getElementById('devModeToggle');
+    const indicator = document.getElementById('devIndicator');
+    if (toggleBtn) {
+        toggleBtn.textContent = '🔧 開發模式 ON';
+        toggleBtn.classList.add('active');
+    }
+    if (indicator) {
+        indicator.textContent = '🔧 開發中';
+        indicator.className = 'dev-mode-indicator on';
+    }
+    window.devModeEnabled = true;
+    
+    if (typeof buildAllCheckboxes === 'function') {
+        try { buildAllCheckboxes(); } catch(e) {}
+    }
+    
+    console.log('✅ 完整擴充功能已載入！（開發模式已開啟）');
+    console.log('📖 點擊圖鑑卡片觀看示範影片');
+    console.log('👹 8 種 Boss 隨機出現');
+    console.log('🎁 10 種道具 + 10 種障礙物');
+    console.log('⚠️ Boss 技能有 2 秒預警！');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
