@@ -1360,7 +1360,7 @@ let hasShield=false,feverTimer=0,magnetTimer=0,doubleScoreTimer=0,slowDebuffTime
 let restTimer=null,isResting=false,sessionStartTime=0;
 let bossActive=false,currentBoss=null;
 
-// ===== Boss、道具、障礙物定義 =====
+// ===== 8種 Boss 定義 =====
 const BOSS_TYPES=[
 {type:'boss_fire',name:'🔥 火龍',emoji:'🐉',color:'#e74c3c',hp:200,speed:1.2,radius:30,skills:['火焰吐息','烈焰護盾']},
 {type:'boss_ice',name:'❄️ 冰霜巨人',emoji:'🧊',color:'#3498db',hp:300,speed:0.8,radius:35,skills:['冰凍光環','寒冰之牆']},
@@ -1372,21 +1372,23 @@ const BOSS_TYPES=[
 {type:'boss_spider',name:'🕷️ 蜘蛛女王',emoji:'🕷️',color:'#6c3483',hp:250,speed:1.3,radius:32,skills:['蛛網','毒素']},
 ];
 
+// ===== 10種道具定義 =====
 const ITEM_TYPES=[
 {type:'coin',emoji:'🪙',color:'#f1c40f',label:'金幣',score:50},
-{type:'heart',emoji:'❤️',color:'#2ecc71',label:'治癒之心',heal:25},
-{type:'shield',emoji:'🛡️',color:'#00d2d3',label:'護盾'},
-{type:'magnet',emoji:'🧲',color:'#f39c12',label:'磁鐵'},
-{type:'double',emoji:'💎',color:'#2ecc71',label:'雙倍積分'},
-{type:'fever',emoji:'⚡',color:'#a55eea',label:'FEVER'},
+{type:'heart',emoji:'❤️',color:'#e74c3c',label:'治癒之心',heal:25},
+{type:'shield',emoji:'🛡️',color:'#3498db',label:'護盾'},
+{type:'magnet',emoji:'🧲',color:'#e74c3c',label:'磁鐵'},
+{type:'double',emoji:'💎',color:'#9b59b6',label:'雙倍積分'},
+{type:'fever',emoji:'⚡',color:'#e67e22',label:'FEVER'},
 {type:'star',emoji:'⭐',color:'#f1c40f',label:'星星',score:100},
-{type:'wing',emoji:'🪶',color:'#3498db',label:'翅膀',speed:1.5},
-{type:'clock',emoji:'⏰',color:'#e67e22',label:'時鐘',extraTime:30},
+{type:'wing',emoji:'🪶',color:'#1abc9c',label:'翅膀',speed:1.5},
+{type:'clock',emoji:'⏰',color:'#95a5a6',label:'時鐘',extraTime:30},
 {type:'key',emoji:'🔑',color:'#f1c40f',label:'鑰匙',unlock:true},
 ];
 
+// ===== 10種障礙物定義 =====
 const OBSTACLE_TYPES=[
-{type:'cloud',emoji:'⛈️',color:'#4a4a5a',label:'雷暴雲',damage:25},
+{type:'cloud',emoji:'⛈️',color:'#34495e',label:'雷暴雲',damage:25},
 {type:'poison',emoji:'🟣',color:'#8e44ad',label:'毒霧',damage:40},
 {type:'mud',emoji:'🕸️',color:'#d35400',label:'黏液',damage:0,slow:true},
 {type:'spike',emoji:'🔺',color:'#e74c3c',label:'尖刺',damage:30},
@@ -1394,9 +1396,626 @@ const OBSTACLE_TYPES=[
 {type:'ice',emoji:'❄️',color:'#3498db',label:'冰塊',damage:20,slow:true},
 {type:'thorn',emoji:'🌿',color:'#27ae60',label:'荊棘',damage:15},
 {type:'void',emoji:'🌌',color:'#2c3e50',label:'虛空',damage:50},
-{type:'mirror',emoji:'🪞',color:'#7f8c8d',label:'鏡像',damage:10, mirror:true},
+{type:'mirror',emoji:'🪞',color:'#95a5a6',label:'鏡像',damage:10, mirror:true},
 {type:'chain',emoji:'⛓️',color:'#95a5a6',label:'鎖鏈',damage:20,slow:true},
 ];
+
+// ============================================================
+// 🆕 重新設計：每個道具的專屬繪製（形狀 + 顏色 + 標記都不同）
+// ============================================================
+
+// ===== 10種道具繪製 =====
+function drawItem(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 12;
+    
+    switch(type) {
+        case 'coin':
+            // 🪙 金幣 - 金色圓形 + 星號
+            ctx.shadowColor = '#f1c40f';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#f1c40f';
+            ctx.fill();
+            ctx.strokeStyle = '#d4a800';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#b7950b';
+            ctx.font = `${r}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', 0, 1);
+            break;
+            
+        case 'heart':
+            // ❤️ 治癒之心 - 紅色心形 + 十字
+            ctx.shadowColor = '#e74c3c';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.moveTo(0, r * 0.4);
+            ctx.bezierCurveTo(-r * 0.5, -r * 0.2, -r * 1.1, -r * 0.5, -r * 1.0, -r * 0.9);
+            ctx.bezierCurveTo(-r * 0.9, -r * 1.4, -r * 0.4, -r * 1.6, 0, -r * 1.1);
+            ctx.bezierCurveTo(r * 0.4, -r * 1.6, r * 0.9, -r * 1.4, r * 1.0, -r * 0.9);
+            ctx.bezierCurveTo(r * 1.1, -r * 0.5, r * 0.5, -r * 0.2, 0, r * 0.4);
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.4);
+            ctx.lineTo(0, r * 0.4);
+            ctx.moveTo(-r * 0.4, 0);
+            ctx.lineTo(r * 0.4, 0);
+            ctx.stroke();
+            break;
+            
+        case 'shield':
+            // 🛡️ 護盾 - 藍色盾牌形
+            ctx.shadowColor = '#3498db';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.2);
+            ctx.lineTo(r * 0.9, -r * 0.5);
+            ctx.lineTo(r * 0.9, r * 0.3);
+            ctx.lineTo(0, r * 1.2);
+            ctx.lineTo(-r * 0.9, r * 0.3);
+            ctx.lineTo(-r * 0.9, -r * 0.5);
+            ctx.closePath();
+            ctx.fillStyle = '#3498db';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+        case 'magnet':
+            // 🧲 磁鐵 - 紅色U形 + N/S
+            ctx.shadowColor = '#e74c3c';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(-r * 0.7, -r * 0.9, r * 0.35, r * 1.6);
+            ctx.fillRect(r * 0.35, -r * 0.9, r * 0.35, r * 1.6);
+            ctx.fillRect(-r * 0.7, -r * 0.9, r * 1.4, r * 0.35);
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = `${r * 0.5}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('N', -r * 0.5, -r * 0.2);
+            ctx.fillText('S', r * 0.5, -r * 0.2);
+            break;
+            
+        case 'double':
+            // 💎 雙倍積分 - 紫色鑽石 + 2x
+            ctx.shadowColor = '#9b59b6';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.2);
+            ctx.lineTo(r * 1.0, -r * 0.2);
+            ctx.lineTo(r * 0.7, r * 1.0);
+            ctx.lineTo(-r * 0.7, r * 1.0);
+            ctx.lineTo(-r * 1.0, -r * 0.2);
+            ctx.closePath();
+            const g = ctx.createLinearGradient(-r, -r * 1.2, r, r * 1.0);
+            g.addColorStop(0, '#d7bde2');
+            g.addColorStop(0.5, '#9b59b6');
+            g.addColorStop(1, '#6c3483');
+            ctx.fillStyle = g;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${r * 0.7}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('2x', 0, 0);
+            break;
+            
+        case 'fever':
+            // ⚡ FEVER - 橘色火焰 + 閃電
+            ctx.shadowColor = '#e67e22';
+            ctx.shadowBlur = 30;
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                const dist = r * 0.7 + Math.sin(Date.now() / 200 + i) * r * 0.2;
+                ctx.beginPath();
+                ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist * 0.7, r * 0.25, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(230, 126, 34, ${0.3 + Math.sin(Date.now() / 300 + i) * 0.15})`;
+                ctx.fill();
+            }
+            ctx.shadowBlur = 35;
+            const g2 = ctx.createRadialGradient(0, -r * 0.15, 0, 0, 0, r * 0.85);
+            g2.addColorStop(0, '#f9e79f');
+            g2.addColorStop(0.3, '#f39c12');
+            g2.addColorStop(0.7, '#e67e22');
+            g2.addColorStop(1, '#d35400');
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
+            ctx.fillStyle = g2;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = `${r * 0.6}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚡', 0, 0);
+            break;
+            
+        case 'star':
+            // ⭐ 星星 - 金色五角星
+            ctx.shadowColor = '#f1c40f';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+                const d = (i === 0) ? r : r * 0.5;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                else ctx.lineTo(Math.cos(angle) * (i % 2 === 0 ? r : r * 0.5), Math.sin(angle) * (i % 2 === 0 ? r : r * 0.5));
+            }
+            ctx.closePath();
+            ctx.fillStyle = '#f1c40f';
+            ctx.fill();
+            break;
+            
+        case 'wing':
+            // 🪶 翅膀 - 青色翅膀形
+            ctx.shadowColor = '#1abc9c';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.2, -r * 0.9);
+            ctx.quadraticCurveTo(-r * 1.1, -r * 0.6, -r * 0.9, 0);
+            ctx.quadraticCurveTo(-r * 1.1, r * 0.4, -r * 0.5, r * 0.8);
+            ctx.quadraticCurveTo(-r * 0.2, r * 0.9, 0, r * 0.5);
+            ctx.quadraticCurveTo(r * 0.2, r * 0.9, r * 0.5, r * 0.8);
+            ctx.quadraticCurveTo(r * 1.1, r * 0.4, r * 0.9, 0);
+            ctx.quadraticCurveTo(r * 1.1, -r * 0.6, r * 0.2, -r * 0.9);
+            ctx.closePath();
+            ctx.fillStyle = '#1abc9c';
+            ctx.fill();
+            break;
+            
+        case 'clock':
+            // ⏰ 時鐘 - 灰色圓形時鐘
+            ctx.shadowColor = '#95a5a6';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#95a5a6';
+            ctx.fill();
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -r * 0.5);
+            ctx.stroke();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(r * 0.4, -r * 0.3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            break;
+            
+        case 'key':
+            // 🔑 鑰匙 - 金色鑰匙
+            ctx.shadowColor = '#f1c40f';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(-r * 0.4, 0, r * 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#f1c40f';
+            ctx.fill();
+            ctx.strokeStyle = '#d4a800';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillRect(r * 0.1, -r * 0.15, r * 0.8, r * 0.3);
+            ctx.fillRect(r * 0.7, -r * 0.5, r * 0.15, r * 0.35);
+            ctx.fillRect(r * 0.85, -r * 0.35, r * 0.15, r * 0.2);
+            break;
+            
+        default:
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#8b949e';
+            ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ===== 10種障礙物繪製 =====
+function drawObstacle(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 14;
+    
+    switch(type) {
+        case 'cloud':
+            // ⛈️ 雷暴雲 - 深灰色雲朵 + 黃色閃電
+            ctx.shadowColor = '#2c3e50';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(-r * 0.7, -r * 0.1, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(0, -r * 0.5, r * 0.7, 0, Math.PI * 2);
+            ctx.arc(r * 0.7, -r * 0.1, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(-r * 0.4, r * 0.4, r * 0.5, 0, Math.PI * 2);
+            ctx.arc(r * 0.4, r * 0.4, r * 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#34495e';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#f1c40f';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.3, -r * 1.0);
+            ctx.lineTo(0, -r * 0.5);
+            ctx.lineTo(-r * 0.15, -r * 0.2);
+            ctx.lineTo(r * 0.3, r * 0.3);
+            ctx.lineTo(0, r * 0.5);
+            ctx.stroke();
+            break;
+            
+        case 'poison':
+            // 🟣 毒霧 - 紫色骷髏
+            ctx.shadowColor = '#8e44ad';
+            ctx.shadowBlur = 25;
+            for (let i = 3; i > 0; i--) {
+                const d = r * 0.3 + i * r * 0.3;
+                ctx.beginPath();
+                ctx.arc(0, 0, d, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(142, 68, 173, ${0.05 + i * 0.06})`;
+                ctx.fill();
+            }
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+            const g3 = ctx.createRadialGradient(0, -r * 0.2, 0, 0, 0, r * 0.7);
+            g3.addColorStop(0, '#d7bde2');
+            g3.addColorStop(0.5, '#8e44ad');
+            g3.addColorStop(1, '#6c3483');
+            ctx.fillStyle = g3;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = `${r * 0.5}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('☠', 0, 0);
+            break;
+            
+        case 'mud':
+            // 🕸️ 黏液 - 棕色橢圓 + 蜘蛛網
+            ctx.shadowColor = '#a04000';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.1, r * 0.8, 0, 0, Math.PI * 2);
+            const g4 = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
+            g4.addColorStop(0, '#e67e22');
+            g4.addColorStop(0.6, '#d35400');
+            g4.addColorStop(1, '#a04000');
+            ctx.fillStyle = g4;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * r * 1.2, Math.sin(angle) * r * 1.2);
+                ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+            
+        case 'spike':
+            // 🔺 尖刺 - 紅色三角形
+            ctx.shadowColor = '#c0392b';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.1);
+            ctx.lineTo(r * 0.9, r * 0.7);
+            ctx.lineTo(-r * 0.9, r * 0.7);
+            ctx.closePath();
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+            break;
+            
+        case 'fire':
+            // 🔥 火焰 - 紅黃火焰
+            ctx.shadowColor = '#e67e22';
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.0);
+            ctx.quadraticCurveTo(-r * 1.0, -r * 0.5, -r * 0.8, 0);
+            ctx.quadraticCurveTo(-r * 1.0, r * 0.5, -r * 0.4, r * 0.8);
+            ctx.quadraticCurveTo(0, r * 0.9, r * 0.4, r * 0.8);
+            ctx.quadraticCurveTo(r * 1.0, r * 0.5, r * 0.8, 0);
+            ctx.quadraticCurveTo(r * 1.0, -r * 0.5, 0, -r * 1.0);
+            ctx.closePath();
+            const g5 = ctx.createRadialGradient(0, -r * 0.3, 0, 0, 0, r);
+            g5.addColorStop(0, '#f1c40f');
+            g5.addColorStop(0.4, '#e67e22');
+            g5.addColorStop(0.8, '#d35400');
+            g5.addColorStop(1, '#c0392b');
+            ctx.fillStyle = g5;
+            ctx.fill();
+            break;
+            
+        case 'ice':
+            // ❄️ 冰塊 - 淺藍六角形
+            ctx.shadowColor = '#2980b9';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3 - Math.PI / 6;
+                const d = (i % 2 === 0) ? r : r * 0.7;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            const g6 = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
+            g6.addColorStop(0, '#aed6f1');
+            g6.addColorStop(0.5, '#3498db');
+            g6.addColorStop(1, '#1a5276');
+            ctx.fillStyle = g6;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.4);
+            ctx.lineTo(0, r * 0.4);
+            ctx.moveTo(-r * 0.4, 0);
+            ctx.lineTo(r * 0.4, 0);
+            ctx.stroke();
+            break;
+            
+        case 'thorn':
+            // 🌿 荊棘 - 綠色星形
+            ctx.shadowColor = '#1a7a3a';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = i * 2 * Math.PI / 5 - Math.PI / 2;
+                const d = (i % 2 === 0) ? r : r * 0.6;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = '#27ae60';
+            ctx.fill();
+            break;
+            
+        case 'void':
+            // 🌌 虛空 - 黑色黑洞
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 30;
+            for (let i = 3; i > 0; i--) {
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.3 + i * r * 0.25, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(44, 62, 80, ${0.05 + i * 0.08})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            ctx.shadowBlur = 25;
+            const g7 = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.7);
+            g7.addColorStop(0, '#2c3e50');
+            g7.addColorStop(0.5, '#1a1a2e');
+            g7.addColorStop(1, '#000000');
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = g7;
+            ctx.fill();
+            break;
+            
+        case 'mirror':
+            // 🪞 鏡像 - 銀色菱形
+            ctx.shadowColor = '#7f8c8d';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.moveTo(0, -r);
+            ctx.lineTo(r, 0);
+            ctx.lineTo(0, r);
+            ctx.lineTo(-r, 0);
+            ctx.closePath();
+            const g8 = ctx.createLinearGradient(-r, -r, r, r);
+            g8.addColorStop(0, '#ecf0f1');
+            g8.addColorStop(0.5, '#95a5a6');
+            g8.addColorStop(1, '#5d6d7e');
+            ctx.fillStyle = g8;
+            ctx.fill();
+            break;
+            
+        case 'chain':
+            // ⛓️ 鎖鏈 - 銀色圓環
+            ctx.shadowColor = '#7f8c8d';
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = '#95a5a6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(-r * 0.35, 0, r * 0.45, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(r * 0.35, 0, r * 0.45, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.1, -r * 0.45);
+            ctx.lineTo(r * 0.1, -r * 0.45);
+            ctx.moveTo(-r * 0.1, r * 0.45);
+            ctx.lineTo(r * 0.1, r * 0.45);
+            ctx.stroke();
+            break;
+            
+        default:
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ===== 8種 Boss 繪製 =====
+function drawBoss(ctx, x, y, boss) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = boss.radius || 30;
+    const color = boss.color || '#8e44ad';
+    
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 40;
+    
+    switch(boss.type) {
+        case 'boss_fire':
+            // 🔥 火龍 - 火焰形
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                const d = r * (0.7 + Math.sin(Date.now() / 300 + i * 0.5) * 0.2);
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            break;
+            
+        case 'boss_ice':
+            // ❄️ 冰霜巨人 - 六角形
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3 - Math.PI / 6;
+                const d = r * 0.9;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            break;
+            
+        case 'boss_shadow':
+            // 🌑 暗影刺客 - 星形
+            ctx.shadowBlur = 35;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = i * 4 * Math.PI / 5 - Math.PI / 2;
+                const d = (i % 2 === 0) ? r : r * 0.5;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            break;
+            
+        case 'boss_thunder':
+            // ⚡ 雷霆鳳凰 - 菱形
+            ctx.shadowBlur = 35;
+            ctx.beginPath();
+            ctx.moveTo(0, -r);
+            ctx.lineTo(r * 0.8, 0);
+            ctx.lineTo(0, r);
+            ctx.lineTo(-r * 0.8, 0);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            break;
+            
+        case 'boss_rock':
+            // 🪨 岩石泰坦 - 圓形 + 裂痕
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.5, -r * 0.4);
+            ctx.lineTo(-r * 0.2, -r * 0.1);
+            ctx.lineTo(r * 0.3, -r * 0.5);
+            ctx.moveTo(-r * 0.3, r * 0.3);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(r * 0.4, r * 0.4);
+            ctx.stroke();
+            break;
+            
+        case 'boss_storm':
+            // 🌪️ 風暴領主 - 螺旋形
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const angle = i * Math.PI / 6;
+                const d = r * (0.3 + i / 12 * 0.7);
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            break;
+            
+        case 'boss_necromancer':
+            // 💀 死靈法師 - 骷髏形
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            break;
+            
+        case 'boss_spider':
+            // 🕷️ 蜘蛛女王 - 蜘蛛形
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * r * 0.5, Math.sin(angle) * r * 0.5);
+                ctx.lineTo(Math.cos(angle) * r * 1.1, Math.sin(angle) * r * 1.1);
+                ctx.stroke();
+            }
+            break;
+            
+        default:
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(boss.emoji || '👹', 0, 0);
+    ctx.restore();
+}
 
 // ===== 自訂外觀系統 =====
 let customSkins = {bg:null,rocket:null,coin:null,heart:null,shield:null,cloud:null,boss:null};
@@ -1515,44 +2134,6 @@ else{btn.innerText="暫停";btn.style.backgroundColor="#27ae60";startBGM();}
 function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');document.getElementById('finalScore').innerText=gameScore;document.getElementById('gameOverScreen').style.display='flex';stopGameEngine();}
 function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
 
-// ===== 繪製函式 =====
-function drawItem(ctx,x,y,type,radius){
-ctx.save();ctx.translate(x,y);const r=radius||12;
-if(customSkins[type]){
-try{const img=new Image();img.src=customSkins[type];if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
-}
-ctx.fillStyle='#f1c40f';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
-ctx.fillStyle='white';ctx.font=`${r*0.6}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-ctx.fillText(type==='coin'?'$':type==='heart'?'❤':type==='shield'?'◈':type==='magnet'?'N':type==='double'?'2x':type==='fever'?'⚡':type==='star'?'★':type==='wing'?'W':type==='clock'?'⏰':'?',0,0);
-ctx.restore();
-}
-
-function drawObstacle(ctx,x,y,type,radius){
-ctx.save();ctx.translate(x,y);const r=radius||14;
-if(customSkins[type]||customSkins.cloud){
-const key=type==='cloud'?'cloud':type;
-if(customSkins[key]){
-try{const img=new Image();img.src=customSkins[key];if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
-}
-}
-ctx.fillStyle='#e74c3c';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
-ctx.fillStyle='white';ctx.font=`${r*0.5}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-ctx.fillText(type==='cloud'?'☁':type==='poison'?'☠':type==='mud'?'~':type==='spike'?'▲':type==='fire'?'🔥':type==='ice'?'❄':type==='thorn'?'✦':type==='void'?'⬤':type==='mirror'?'◇':'⛓',0,0);
-ctx.restore();
-}
-
-function drawBoss(ctx,x,y,boss){
-ctx.save();ctx.translate(x,y);const r=boss.radius||30,color=boss.color||'#8e44ad';
-if(customSkins.boss){
-try{const img=new Image();img.src=customSkins.boss;if(img.complete&&img.naturalWidth>0){ctx.drawImage(img,-r,-r,r*2,r*2);ctx.restore();return;}}catch(e){}
-}
-ctx.shadowColor=color;ctx.shadowBlur=40;
-ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
-ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font=`${r*0.6}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-ctx.fillText(boss.emoji||'👹',0,0);
-ctx.restore();
-}
-
 // ===== 主遊戲循環 =====
 function gameLoop(){
 if(!isGameRunning||isGameOver)return;
@@ -1586,12 +2167,10 @@ if (hasBreathData) {
     targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
     document.getElementById('hintBreath').textContent = '🌬️ 使用中';
     document.getElementById('hintBreath').style.color = '#2ecc71';
-    // 呼吸使用中，鍵盤滑鼠提示變暗
     document.getElementById('hintKeyboard').style.color = '';
     document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
     document.getElementById('hintMouse').style.color = '';
     document.getElementById('hintMouse').textContent = '移動';
-    // 重置鍵盤/滑鼠狀態
     useKeyboardControl = false;
     useMouseControl = false;
     keyboardY = null;
@@ -1627,10 +2206,7 @@ if (targetY === null) {
     document.getElementById('hintBreath').style.color = '';
 }
 
-// 限制範圍
 targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
-
-// 平滑移動
 let dy = targetY - rocket.y;
 if (isNaN(dy)) dy = 0;
 let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
@@ -2056,7 +2632,7 @@ updateStatus(devModeEnabled?'🔧 開發模式已開啟':'🎮 開發模式已�
 }
 
 // ============================================================
-// 圖鑑系統
+// 圖鑑系統（精簡）
 // ============================================================
 const INTRO_DATA=[
 {type:'coin',emoji:'🪙',label:'金幣',cat:'positive',catLabel:'正面道具',desc:'+50分，FEVER/雙倍時加倍'},
