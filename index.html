@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整版 v5.2</title>
+<title>呼吸訓練器 - 完整版 v5.3</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -281,7 +281,7 @@ overflow: hidden;
 cursor: pointer;
 }
 .intro-card:hover { transform: scale(1.03); border-color: #1f4e79; }
-.intro-card .icon { font-size: 42px; display: block; text-align: center; margin-bottom: 4px; }
+.intro-card .icon { font-size: 48px; display: block; text-align: center; margin-bottom: 4px; }
 .intro-card h4 { color: #f0f6fc; margin: 6px 0 3px 0; text-align: center; font-size: 14px; }
 .intro-card p { color: #8b949e; font-size: 11px; margin: 2px 0; text-align: center; }
 .intro-card .click-hint { color: #5a6a7a; font-size: 9px; text-align: center; margin-top: 4px; }
@@ -1374,7 +1374,7 @@ setTimeout(resizeGameCanvas,150);
 document.addEventListener('fullscreenchange',()=>{const gameBox=document.getElementById('gameContainer');if(!document.fullscreenElement)gameBox.classList.remove('fullscreen');else gameBox.classList.add('fullscreen');setTimeout(resizeGameCanvas,150);});
 
 // ============================================================
-// 🆕 遊戲引擎（道具、障礙物、Boss 全部與圖鑑同步）
+// 遊戲引擎
 // ============================================================
 const gameCanvas=document.getElementById('gameCanvas');
 const gameCtx=gameCanvas.getContext('2d');
@@ -1395,7 +1395,7 @@ let freezeTimer = 0;
 let attackCooldown = 0;
 
 // ============================================================
-// 🆕 Boss 技能詳細說明（與圖鑑同步）
+// Boss 技能詳細說明
 // ============================================================
 const BOSS_SKILL_INFO = {
     '火焰吐息': { type: '主動', damage: 15, desc: '噴射火焰彈幕，對玩家造成傷害', visual: '🔥' },
@@ -1417,7 +1417,7 @@ const BOSS_SKILL_INFO = {
 };
 
 // ============================================================
-// 🆕 8種 Boss 定義（與圖鑑同步）
+// 8種 Boss 定義
 // ============================================================
 const BOSS_TYPES = [
     { 
@@ -1511,10 +1511,10 @@ const BOSS_TYPES = [
 ];
 
 // ============================================================
-// 🆕 道具定義（與圖鑑同步）
+// 道具定義（無外圈設計）
 // ============================================================
 const ITEM_TYPES = [
-    // 正面道具
+    // 正面道具（純表情符號）
     {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
     {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
     {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
@@ -1525,7 +1525,7 @@ const ITEM_TYPES = [
     {type:'wing', emoji:'🪶', color:'#1abc9c', label:'翅膀', speed:1.5, category:'positive'},
     {type:'clock', emoji:'⏰', color:'#95a5a6', label:'時鐘', extraTime:30, category:'positive'},
     {type:'key', emoji:'🔑', color:'#f1c40f', label:'鑰匙', unlock:true, category:'positive'},
-    // 攻擊道具
+    // 攻擊道具（脈動紅光）
     {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', desc:'對 Boss 造成 30 傷害', category:'attack'},
     {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', desc:'對 Boss 造成 50 傷害', category:'attack'},
     {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', desc:'對 Boss 造成 25 傷害', category:'attack'},
@@ -1538,7 +1538,7 @@ const ITEM_TYPES = [
 ];
 
 // ============================================================
-// 障礙物定義（與圖鑑同步）
+// 障礙物定義
 // ============================================================
 const OBSTACLE_TYPES=[
     {type:'cloud', emoji:'⛈️', color:'#34495e', label:'雷暴雲', damage:25, category:'obstacle'},
@@ -1677,117 +1677,106 @@ function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');docu
 function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
 
 // ============================================================
-// 🆕 繪製道具（與圖鑑同步）
+// 🆕 繪製道具（無外圈，純表情符號）
 // ============================================================
 function drawItem(ctx, x, y, type, radius) {
     ctx.save();
     ctx.translate(x, y);
-    const r = radius || 12;
+    const r = radius || 14;
     const item = ITEM_TYPES.find(i => i.type === type);
-    
-    // 使用與圖鑑相同的顏色和樣式
-    const color = item?.color || '#8b949e';
     const emoji = item?.emoji || '?';
     const category = item?.category || '';
-
-    // 攻擊道具特殊發光
-    if (category === 'attack') {
-        ctx.shadowColor = '#ff4444';
-        ctx.shadowBlur = 25;
-    }
+    const color = item?.color || '#8b949e';
     
-    // 基礎圓形背景
-    if (category === 'positive') {
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 20;
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-    } else if (category === 'attack') {
+    // 攻擊道具：脈動紅色光暈
+    if (category === 'attack') {
+        const pulse = 1 + Math.sin(Date.now() / 250) * 0.06;
+        ctx.scale(pulse, pulse);
         ctx.shadowColor = '#ff4444';
-        ctx.shadowBlur = 25;
-        // 攻擊道具用特殊外框
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fill();
-        ctx.strokeStyle = '#ff4444';
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.shadowBlur = 0;
-        // 內部發光
-        ctx.shadowColor = '#ff4444';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 35;
         ctx.beginPath();
         ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 68, 68, 0.15)';
+        ctx.fillStyle = 'rgba(255, 68, 68, 0.1)';
         ctx.fill();
         ctx.shadowBlur = 0;
-    } else if (category === 'negative') {
-        ctx.shadowColor = '#2c3e50';
-        ctx.shadowBlur = 25;
+        // ⚔標記
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('⚔', 0, -r * 0.5);
+    }
+    
+    // 正面道具：微弱光暈
+    if (category === 'positive') {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15;
         ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fillStyle = color;
+        ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
         ctx.fill();
-        ctx.strokeStyle = '#e74c3c';
-        ctx.lineWidth = 2;
-        ctx.stroke();
         ctx.shadowBlur = 0;
     }
     
-    // 繪製表情符號（與圖鑑一致）
+    // 負面道具：暗色光暈
+    if (category === 'negative') {
+        ctx.shadowColor = '#2c3e50';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(44, 62, 80, 0.15)';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+    
+    // 大表情符號（主要辨識方式）
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 6;
     ctx.fillStyle = 'white';
-    ctx.font = `${r * 1.0}px sans-serif`;
+    ctx.font = `${r * 1.5}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(emoji, 0, 1);
+    ctx.shadowBlur = 0;
     
     ctx.restore();
 }
 
 // ============================================================
-// 🆕 繪製障礙物（與圖鑑同步）
+// 繪製障礙物（無外圈）
 // ============================================================
 function drawObstacle(ctx, x, y, type, radius) {
     ctx.save();
     ctx.translate(x, y);
     const r = radius || 14;
     const obs = OBSTACLE_TYPES.find(o => o.type === type);
-    const color = obs?.color || '#e74c3c';
     const emoji = obs?.emoji || '💥';
+    const color = obs?.color || '#e74c3c';
     
-    // 障礙物使用與圖鑑相同的樣式
+    // 障礙物背景光暈
     ctx.shadowColor = color;
     ctx.shadowBlur = 15;
     ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
     ctx.shadowBlur = 0;
     
-    // 障礙物表情
+    // 大表情符號
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 6;
     ctx.fillStyle = 'white';
-    ctx.font = `${r * 0.7}px sans-serif`;
+    ctx.font = `${r * 1.2}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(emoji, 0, 0);
+    ctx.fillText(emoji, 0, 1);
+    ctx.shadowBlur = 0;
     
     ctx.restore();
 }
 
 // ============================================================
-// 🆕 Boss 繪製（與圖鑑同步，含技能詳情）
+// Boss 繪製（含技能詳情）
 // ============================================================
 function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     ctx.save();
@@ -2032,7 +2021,7 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     ctx.textBaseline = 'middle';
     ctx.fillText(boss.emoji || '👹', 0, 0);
     
-    // 🆕 顯示技能詳情（在 Boss 下方）
+    // 技能詳情（Boss 下方）
     if (boss.skillInfo) {
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
         ctx.font = '8px sans-serif';
@@ -2048,7 +2037,7 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
 }
 
 // ============================================================
-// 🆕 執行 Boss 技能（含詳細效果）
+// 執行 Boss 技能
 // ============================================================
 function executeBossSkill(boss, skill) {
     if (!boss || !skill) return;
@@ -2174,7 +2163,7 @@ function executeBossSkill(boss, skill) {
 }
 
 // ============================================================
-// 🆕 執行攻擊道具
+// 執行攻擊道具
 // ============================================================
 function executeAttackItem(itemType, boss) {
     if (!boss) {
@@ -3161,6 +3150,7 @@ function initExpansion(){
     console.log('⚠️ Boss 技能有 2 秒預警！');
     console.log('🗡️ 攻擊道具吃到自動發動！');
     console.log('📋 Boss 技能詳細說明顯示在 Boss 下方');
+    console.log('🎨 道具無外圈設計，純靠表情符號辨識');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
