@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整版 v5.3</title>
+<title>呼吸訓練器 - 完整版 v5.4</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -1338,6 +1338,13 @@ else if(type==='boss'){for(let i=0;i<3;i++){const osc=audioCtx.createOscillator(
 else if(type==='warning'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(880,now);osc.frequency.setValueAtTime(660,now+0.1);osc.frequency.setValueAtTime(440,now+0.2);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
 else if(type==='boss_attack'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(100,now);osc.frequency.exponentialRampToValueAtTime(50,now+0.4);gain.gain.setValueAtTime(0.3,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.4);osc.start(now);osc.stop(now+0.4);}
 else if(type==='attack'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(600,now);osc.frequency.setValueAtTime(800,now+0.05);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.15);osc.start(now);osc.stop(now+0.15);}
+else if(type==='missile'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(800,now);osc.frequency.exponentialRampToValueAtTime(1200,now+0.1);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.12);osc.start(now);osc.stop(now+0.12);}
+else if(type==='bomb'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(80,now);gain.gain.setValueAtTime(0.3,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
+else if(type==='laser'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sine';osc.frequency.setValueAtTime(1000,now);gain.gain.setValueAtTime(0.1,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.08);osc.start(now);osc.stop(now+0.08);}
+else if(type==='freeze'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='triangle';osc.frequency.setValueAtTime(400,now);osc.frequency.exponentialRampToValueAtTime(200,now+0.15);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.15);osc.start(now);osc.stop(now+0.15);}
+else if(type==='poison'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(200,now);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.2);osc.start(now);osc.stop(now+0.2);}
+else if(type==='thunder'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(150,now);osc.frequency.setValueAtTime(300,now+0.05);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.1);osc.start(now);osc.stop(now+0.1);}
+else if(type==='dart'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sine';osc.frequency.setValueAtTime(1200,now);gain.gain.setValueAtTime(0.1,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.06);osc.start(now);osc.stop(now+0.06);}
 }catch(e){}
 }
 
@@ -1511,10 +1518,10 @@ const BOSS_TYPES = [
 ];
 
 // ============================================================
-// 道具定義（無外圈設計）
+// 道具定義
 // ============================================================
 const ITEM_TYPES = [
-    // 正面道具（純表情符號）
+    // 正面道具
     {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
     {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
     {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
@@ -1525,7 +1532,7 @@ const ITEM_TYPES = [
     {type:'wing', emoji:'🪶', color:'#1abc9c', label:'翅膀', speed:1.5, category:'positive'},
     {type:'clock', emoji:'⏰', color:'#95a5a6', label:'時鐘', extraTime:30, category:'positive'},
     {type:'key', emoji:'🔑', color:'#f1c40f', label:'鑰匙', unlock:true, category:'positive'},
-    // 攻擊道具（脈動紅光）
+    // 攻擊道具
     {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', desc:'對 Boss 造成 30 傷害', category:'attack'},
     {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', desc:'對 Boss 造成 50 傷害', category:'attack'},
     {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', desc:'對 Boss 造成 25 傷害', category:'attack'},
@@ -1541,16 +1548,16 @@ const ITEM_TYPES = [
 // 障礙物定義
 // ============================================================
 const OBSTACLE_TYPES=[
-    {type:'cloud', emoji:'⛈️', color:'#34495e', label:'雷暴雲', damage:25, category:'obstacle'},
-    {type:'poison', emoji:'🟣', color:'#8e44ad', label:'毒霧', damage:40, category:'obstacle'},
-    {type:'mud', emoji:'🕸️', color:'#d35400', label:'黏液', damage:0, slow:true, category:'obstacle'},
-    {type:'spike', emoji:'🔺', color:'#e74c3c', label:'尖刺', damage:30, category:'obstacle'},
-    {type:'fire', emoji:'🔥', color:'#e67e22', label:'火焰', damage:35, category:'obstacle'},
-    {type:'ice', emoji:'❄️', color:'#3498db', label:'冰塊', damage:20, slow:true, category:'obstacle'},
-    {type:'thorn', emoji:'🌿', color:'#27ae60', label:'荊棘', damage:15, category:'obstacle'},
-    {type:'void', emoji:'🌌', color:'#2c3e50', label:'虛空', damage:50, category:'obstacle'},
-    {type:'mirror', emoji:'🪞', color:'#95a5a6', label:'鏡像', damage:10, mirror:true, category:'obstacle'},
-    {type:'chain', emoji:'⛓️', color:'#95a5a6', label:'鎖鏈', damage:20, slow:true, category:'obstacle'},
+    {type:'cloud', emoji:'⛈️', color:'#34495e', label:'雷暴雲', damage:25},
+    {type:'poison', emoji:'🟣', color:'#8e44ad', label:'毒霧', damage:40},
+    {type:'mud', emoji:'🕸️', color:'#d35400', label:'黏液', damage:0, slow:true},
+    {type:'spike', emoji:'🔺', color:'#e74c3c', label:'尖刺', damage:30},
+    {type:'fire', emoji:'🔥', color:'#e67e22', label:'火焰', damage:35},
+    {type:'ice', emoji:'❄️', color:'#3498db', label:'冰塊', damage:20, slow:true},
+    {type:'thorn', emoji:'🌿', color:'#27ae60', label:'荊棘', damage:15},
+    {type:'void', emoji:'🌌', color:'#2c3e50', label:'虛空', damage:50},
+    {type:'mirror', emoji:'🪞', color:'#95a5a6', label:'鏡像', damage:10, mirror:true},
+    {type:'chain', emoji:'⛓️', color:'#95a5a6', label:'鎖鏈', damage:20, slow:true},
 ];
 
 // ============================================================
@@ -1677,7 +1684,7 @@ function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');docu
 function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
 
 // ============================================================
-// 🆕 繪製道具（無外圈，純表情符號）
+// 繪製道具（無外圈）
 // ============================================================
 function drawItem(ctx, x, y, type, radius) {
     ctx.save();
@@ -1688,7 +1695,6 @@ function drawItem(ctx, x, y, type, radius) {
     const category = item?.category || '';
     const color = item?.color || '#8b949e';
     
-    // 攻擊道具：脈動紅色光暈
     if (category === 'attack') {
         const pulse = 1 + Math.sin(Date.now() / 250) * 0.06;
         ctx.scale(pulse, pulse);
@@ -1699,15 +1705,12 @@ function drawItem(ctx, x, y, type, radius) {
         ctx.fillStyle = 'rgba(255, 68, 68, 0.1)';
         ctx.fill();
         ctx.shadowBlur = 0;
-        // ⚔標記
         ctx.fillStyle = '#ff6b6b';
         ctx.font = '8px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText('⚔', 0, -r * 0.5);
     }
-    
-    // 正面道具：微弱光暈
     if (category === 'positive') {
         ctx.shadowColor = color;
         ctx.shadowBlur = 15;
@@ -1717,8 +1720,6 @@ function drawItem(ctx, x, y, type, radius) {
         ctx.fill();
         ctx.shadowBlur = 0;
     }
-    
-    // 負面道具：暗色光暈
     if (category === 'negative') {
         ctx.shadowColor = '#2c3e50';
         ctx.shadowBlur = 20;
@@ -1728,8 +1729,6 @@ function drawItem(ctx, x, y, type, radius) {
         ctx.fill();
         ctx.shadowBlur = 0;
     }
-    
-    // 大表情符號（主要辨識方式）
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 6;
     ctx.fillStyle = 'white';
@@ -1738,12 +1737,11 @@ function drawItem(ctx, x, y, type, radius) {
     ctx.textBaseline = 'middle';
     ctx.fillText(emoji, 0, 1);
     ctx.shadowBlur = 0;
-    
     ctx.restore();
 }
 
 // ============================================================
-// 繪製障礙物（無外圈）
+// 繪製障礙物
 // ============================================================
 function drawObstacle(ctx, x, y, type, radius) {
     ctx.save();
@@ -1752,8 +1750,6 @@ function drawObstacle(ctx, x, y, type, radius) {
     const obs = OBSTACLE_TYPES.find(o => o.type === type);
     const emoji = obs?.emoji || '💥';
     const color = obs?.color || '#e74c3c';
-    
-    // 障礙物背景光暈
     ctx.shadowColor = color;
     ctx.shadowBlur = 15;
     ctx.beginPath();
@@ -1761,8 +1757,6 @@ function drawObstacle(ctx, x, y, type, radius) {
     ctx.fillStyle = 'rgba(255,255,255,0.03)';
     ctx.fill();
     ctx.shadowBlur = 0;
-    
-    // 大表情符號
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 6;
     ctx.fillStyle = 'white';
@@ -1771,12 +1765,11 @@ function drawObstacle(ctx, x, y, type, radius) {
     ctx.textBaseline = 'middle';
     ctx.fillText(emoji, 0, 1);
     ctx.shadowBlur = 0;
-    
     ctx.restore();
 }
 
 // ============================================================
-// Boss 繪製（含技能詳情）
+// Boss 繪製
 // ============================================================
 function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     ctx.save();
@@ -1784,7 +1777,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     const r = boss.radius || 30;
     const color = boss.color || '#8e44ad';
     
-    // 冰凍特效
     if (freezeTimer > 0) {
         ctx.shadowColor = '#3498db';
         ctx.shadowBlur = 50;
@@ -1811,7 +1803,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
         ctx.fillText('🧊', 0, -r * 1.3);
     }
     
-    // 中毒特效
     if (poisonTimer > 0) {
         for (let i = 0; i < 6; i++) {
             const angle = Date.now() / 400 + i * 1.047;
@@ -1823,7 +1814,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
         }
     }
     
-    // 技能預警
     if (warning !== null && warning > 0) {
         const progress = 1 - (warning / 60);
         const pulseRadius = r * 1.3 + progress * r * 0.8;
@@ -1898,7 +1888,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
         }
     }
     
-    // Boss 本體繪製
     ctx.shadowColor = freezeTimer > 0 ? '#3498db' : color;
     ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 40;
     const bodyColor = freezeTimer > 0 ? '#85c1e9' : color;
@@ -2021,7 +2010,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
     ctx.textBaseline = 'middle';
     ctx.fillText(boss.emoji || '👹', 0, 0);
     
-    // 技能詳情（Boss 下方）
     if (boss.skillInfo) {
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
         ctx.font = '8px sans-serif';
@@ -2032,7 +2020,6 @@ function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
             ctx.fillText(line, 0, r + 8 + idx * 12);
         });
     }
-    
     ctx.restore();
 }
 
@@ -2045,7 +2032,6 @@ function executeBossSkill(boss, skill) {
         showNotification(`🧊 Boss 被冰凍，無法發動技能！`);
         return;
     }
-    
     const skillInfo = BOSS_SKILL_INFO[skill] || { type: '未知', damage: 0, desc: '未知技能' };
     showNotification(`💥 ${boss.name} 發動 ${skill}！${skillInfo.desc}`);
     playAudioEffect('boss_attack');
@@ -2163,145 +2149,208 @@ function executeBossSkill(boss, skill) {
 }
 
 // ============================================================
-// 執行攻擊道具
+// 🆕 執行攻擊道具（修正：即使沒有 Boss 也有特效）
 // ============================================================
 function executeAttackItem(itemType, boss) {
-    if (!boss) {
-        showNotification('⚠️ 沒有 Boss 可以攻擊！');
-        return;
-    }
     const item = ITEM_TYPES.find(i => i.type === itemType);
     if (!item) return;
-    playAudioEffect('attack');
     
+    // 播放對應音效
+    if (itemType === 'missile') playAudioEffect('missile');
+    else if (itemType === 'bomb') playAudioEffect('bomb');
+    else if (itemType === 'laser') playAudioEffect('laser');
+    else if (itemType === 'freeze') playAudioEffect('freeze');
+    else if (itemType === 'poison') playAudioEffect('poison');
+    else if (itemType === 'thunder') playAudioEffect('thunder');
+    else if (itemType === 'dart') playAudioEffect('dart');
+    else playAudioEffect('attack');
+    
+    // 特效位置（有 Boss 時打在 Boss 上，否則打在畫面中央）
+    const targetX = boss ? boss.x : gameCanvas.width / 2;
+    const targetY = boss ? boss.y : gameCanvas.height / 2;
+    
+    // 各種特效
     switch(itemType) {
         case 'missile':
-            const missileDmg = 30;
-            boss.hp = Math.max(0, boss.hp - missileDmg);
-            for (let i = 0; i < 20; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 4;
+            // 飛彈軌跡特效
+            for (let i = 0; i < 15; i++) {
+                const progress = i / 15;
+                const x = rocket.x + (targetX - rocket.x) * progress + (Math.random() - 0.5) * 10;
+                const y = rocket.y + (targetY - rocket.y) * progress + (Math.random() - 0.5) * 10;
                 particles.push({
-                    x: boss.x, y: boss.y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: 3 + Math.random() * 4,
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5 - 0.3,
+                    size: 3 + Math.random() * 3,
                     color: '#ff6b35',
                     life: 1.0
                 });
             }
-            showNotification(`🚀 飛彈命中！造成 ${missileDmg} 傷害！`);
-            break;
-        case 'bomb':
-            const bombDmg = 50;
-            boss.hp = Math.max(0, boss.hp - bombDmg);
-            for (let i = 0; i < 40; i++) {
+            // 爆炸
+            for (let i = 0; i < 20; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = 1 + Math.random() * 6;
-                const colors = ['#ff6b35', '#f1c40f', '#e74c3c', '#ff9ff3'];
+                const speed = 2 + Math.random() * 4;
                 particles.push({
-                    x: boss.x + (Math.random() - 0.5) * 30,
-                    y: boss.y + (Math.random() - 0.5) * 30,
+                    x: targetX + (Math.random() - 0.5) * 20,
+                    y: targetY + (Math.random() - 0.5) * 20,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 4,
+                    color: '#ff6b35',
+                    life: 0.8 + Math.random() * 0.2
+                });
+            }
+            if (boss) {
+                boss.hp = Math.max(0, boss.hp - 30);
+                showNotification(`🚀 飛彈命中！造成 30 傷害！`);
+            } else {
+                showNotification(`🚀 飛彈發射！`);
+            }
+            break;
+            
+        case 'bomb':
+            // 大爆炸
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 8;
+                const colors = ['#ff6b35', '#f1c40f', '#e74c3c', '#ff9ff3', '#ff9f43'];
+                particles.push({
+                    x: targetX + (Math.random() - 0.5) * 40,
+                    y: targetY + (Math.random() - 0.5) * 40,
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed - 1,
-                    size: 4 + Math.random() * 6,
+                    size: 4 + Math.random() * 8,
                     color: colors[Math.floor(Math.random() * colors.length)],
                     life: 1.0
                 });
             }
-            showNotification(`💣 炸彈爆炸！造成 ${bombDmg} 傷害！`);
+            if (boss) {
+                boss.hp = Math.max(0, boss.hp - 50);
+                showNotification(`💣 炸彈爆炸！造成 50 傷害！`);
+            } else {
+                showNotification(`💣 炸彈爆炸！`);
+            }
             break;
+            
         case 'laser':
-            const laserDmg = 25;
-            boss.hp = Math.max(0, boss.hp - laserDmg);
-            for (let i = 0; i < 30; i++) {
-                const progress = i / 30;
-                const x = rocket.x + (boss.x - rocket.x) * progress + (Math.random() - 0.5) * 8;
-                const y = rocket.y + (boss.y - rocket.y) * progress + (Math.random() - 0.5) * 8;
+            // 雷射光束
+            for (let i = 0; i < 40; i++) {
+                const progress = i / 40;
+                const x = rocket.x + (targetX - rocket.x) * progress + (Math.random() - 0.5) * 6;
+                const y = rocket.y + (targetY - rocket.y) * progress + (Math.random() - 0.5) * 6;
+                const size = 2 + Math.random() * 4;
                 particles.push({
                     x: x, y: y,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5,
-                    size: 2 + Math.random() * 3,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    size: size,
                     color: '#3498db',
-                    life: 0.8 + Math.random() * 0.2
+                    life: 0.6 + Math.random() * 0.4
                 });
             }
-            showNotification(`🔫 雷射命中！造成 ${laserDmg} 傷害！`);
+            if (boss) {
+                boss.hp = Math.max(0, boss.hp - 25);
+                showNotification(`🔫 雷射命中！造成 25 傷害！`);
+            } else {
+                showNotification(`🔫 雷射發射！`);
+            }
             break;
+            
         case 'freeze':
-            freezeTimer = 120;
-            for (let i = 0; i < 25; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 10 + Math.random() * 40;
-                particles.push({
-                    x: boss.x + Math.cos(angle) * dist,
-                    y: boss.y + Math.sin(angle) * dist,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    size: 3 + Math.random() * 5,
-                    color: '#aed6f1',
-                    life: 1.0
-                });
-            }
-            showNotification(`🧊 Boss 被冰凍 2 秒！`);
-            break;
-        case 'poison':
-            poisonTimer = 150;
-            poisonDamage = 25;
-            for (let i = 0; i < 20; i++) {
+            // 冰凍特效
+            for (let i = 0; i < 30; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const dist = 10 + Math.random() * 50;
                 particles.push({
-                    x: boss.x + Math.cos(angle) * dist,
-                    y: boss.y + Math.sin(angle) * dist,
+                    x: targetX + Math.cos(angle) * dist,
+                    y: targetY + Math.sin(angle) * dist,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    size: 3 + Math.random() * 6,
+                    color: '#aed6f1',
+                    life: 0.8 + Math.random() * 0.2
+                });
+            }
+            if (boss) {
+                freezeTimer = 120;
+                showNotification(`🧊 Boss 被冰凍 2 秒！`);
+            } else {
+                showNotification(`🧊 冰凍彈發射！`);
+            }
+            break;
+            
+        case 'poison':
+            // 毒霧特效
+            for (let i = 0; i < 25; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 10 + Math.random() * 60;
+                particles.push({
+                    x: targetX + Math.cos(angle) * dist,
+                    y: targetY + Math.sin(angle) * dist,
                     vx: (Math.random() - 0.5) * 0.2,
                     vy: (Math.random() - 0.5) * 0.2 - 0.3,
                     size: 4 + Math.random() * 6,
                     color: '#2ecc71',
-                    life: 1.0
-                });
-            }
-            showNotification(`🧪 Boss 中毒！持續受到傷害！`);
-            break;
-        case 'thunder':
-            const thunderDmg = 40;
-            boss.hp = Math.max(0, boss.hp - thunderDmg);
-            for (let i = 0; i < 30; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 5;
-                particles.push({
-                    x: boss.x + (Math.random() - 0.5) * 40,
-                    y: boss.y + (Math.random() - 0.5) * 40,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: 2 + Math.random() * 4,
-                    color: '#f1c40f',
                     life: 0.8 + Math.random() * 0.2
                 });
             }
-            showNotification(`⚡ 閃電擊中！造成 ${thunderDmg} 傷害！`);
+            if (boss) {
+                poisonTimer = 150;
+                poisonDamage = 25;
+                showNotification(`🧪 Boss 中毒！持續受到傷害！`);
+            } else {
+                showNotification(`🧪 毒藥釋放！`);
+            }
             break;
-        case 'dart':
-            const dartDmg = 15;
-            boss.hp = Math.max(0, boss.hp - dartDmg);
-            for (let i = 0; i < 10; i++) {
+            
+        case 'thunder':
+            // 閃電特效
+            for (let i = 0; i < 35; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = 1 + Math.random() * 3;
+                const speed = 2 + Math.random() * 6;
                 particles.push({
-                    x: boss.x + (Math.random() - 0.5) * 20,
-                    y: boss.y + (Math.random() - 0.5) * 20,
+                    x: targetX + (Math.random() - 0.5) * 50,
+                    y: targetY + (Math.random() - 0.5) * 50,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 2 + Math.random() * 5,
+                    color: '#f1c40f',
+                    life: 0.6 + Math.random() * 0.4
+                });
+            }
+            if (boss) {
+                boss.hp = Math.max(0, boss.hp - 40);
+                showNotification(`⚡ 閃電擊中！造成 40 傷害！`);
+            } else {
+                showNotification(`⚡ 閃電落下！`);
+            }
+            break;
+            
+        case 'dart':
+            // 飛鏢特效
+            for (let i = 0; i < 12; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 4;
+                particles.push({
+                    x: targetX + (Math.random() - 0.5) * 15,
+                    y: targetY + (Math.random() - 0.5) * 15,
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed,
                     size: 2 + Math.random() * 3,
                     color: '#e74c3c',
-                    life: 0.8 + Math.random() * 0.2
+                    life: 0.7 + Math.random() * 0.3
                 });
             }
-            showNotification(`🎯 飛鏢命中！造成 ${dartDmg} 傷害！`);
+            if (boss) {
+                boss.hp = Math.max(0, boss.hp - 15);
+                showNotification(`🎯 飛鏢命中！造成 15 傷害！`);
+            } else {
+                showNotification(`🎯 飛鏢射出！`);
+            }
             break;
     }
-    if (boss.hp <= 0) {
+    
+    if (boss && boss.hp <= 0) {
         boss.hp = 0;
         for (let i = 0; i < 50; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -2445,14 +2494,26 @@ if (attackCooldown > 0) attackCooldown--;
 let spawnY=Math.random()*(gameCanvas.height-100)+50;
 if(isUsingCustomMusic&&audioAnalyser&&audioDataArray){audioAnalyser.getByteFrequencyData(audioDataArray);spawnY=gameCanvas.height-(audioDataArray[5]/255)*(gameCanvas.height-80);}
 
-// Boss 出現
-const bossRate=parseFloat(document.getElementById('customBossRate')?.value||'0.003');
-const bossLevel=Math.floor((EXP?.currentLevel||1)/5);
-if(bossLevel>0&&!bossActive&&Math.random()<bossRate*userSpeedMult){
-const bossIdx=Math.floor(Math.random()*BOSS_TYPES.length);
-const boss=BOSS_TYPES[bossIdx];
-currentBoss={...boss,x:gameCanvas.width+50,y:spawnY,hp:boss.hp+(EXP?.currentLevel||1)*5*parseFloat(document.getElementById('customBossHP')?.value||1),maxHp:boss.hp+(EXP?.currentLevel||1)*5*parseFloat(document.getElementById('customBossHP')?.value||1),skillTimer:0,active:true};
-bossActive=true;document.getElementById('bossWarning').style.display='inline';playAudioEffect('boss');showNotification(`👹 ${boss.name} 出現！`);
+// ===== 🆕 Boss 出現（修正：提高出現率，降低門檻） =====
+const bossRate = parseFloat(document.getElementById('customBossRate')?.value || '0.008');
+const bossLevel = Math.floor((EXP?.currentLevel || 1) / 3) + 1;
+
+if (!bossActive && Math.random() < bossRate * userSpeedMult) {
+    const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
+    const boss = BOSS_TYPES[bossIdx];
+    currentBoss = {
+        ...boss,
+        x: gameCanvas.width + 50,
+        y: spawnY,
+        hp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
+        maxHp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
+        skillTimer: 0,
+        active: true
+    };
+    bossActive = true;
+    document.getElementById('bossWarning').style.display = 'inline';
+    playAudioEffect('boss');
+    showNotification(`👹 ${boss.name} 出現！`);
 }
 
 // Boss 行為
@@ -2460,7 +2521,7 @@ if(bossActive&&currentBoss){
 currentBoss.x-=(currentBoss.speed||1)*userSpeedMult;
 currentBoss.skillTimer++;
 
-if (freezeTimer <= 0 && currentBoss.skillTimer > 120 && Math.random() < 0.015 && bossSkillWarning === null) {
+if (freezeTimer <= 0 && currentBoss.skillTimer > 100 && Math.random() < 0.02 && bossSkillWarning === null) {
     const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
     bossSkillType = skill;
     bossSkillWarning = 60;
@@ -2539,12 +2600,9 @@ const coinScore=parseInt(document.getElementById('customCoinScore')?.value||50);
 
 const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
 if (attackItem) {
-    if (bossActive && currentBoss) {
-        executeAttackItem(c.type, currentBoss);
-    } else {
-        showNotification(`⚠️ 沒有 Boss 可以攻擊！`);
-        c.collected = true;
-    }
+    // 攻擊道具：有 Boss 就打 Boss，沒有 Boss 也有特效
+    executeAttackItem(c.type, currentBoss);
+    c.collected = true;
 } else if (c.type==='coin'||c.type==='star'){
     const pts=(c.score||coinScore)*scoreMult;
     gameScore+=pts;gameCombo++;playAudioEffect('coin');
@@ -3148,7 +3206,7 @@ function initExpansion(){
     console.log('👹 8 種 Boss 隨機出現，每種 Boss 有 2 個專屬技能');
     console.log('🎁 10 種道具 + 7 種攻擊道具（吃到自動發動）');
     console.log('⚠️ Boss 技能有 2 秒預警！');
-    console.log('🗡️ 攻擊道具吃到自動發動！');
+    console.log('🗡️ 攻擊道具即使沒有 Boss 也有特效！');
     console.log('📋 Boss 技能詳細說明顯示在 Boss 下方');
     console.log('🎨 道具無外圈設計，純靠表情符號辨識');
 }
