@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整版 v5.0</title>
+<title>呼吸訓練器 - 完整版 v5.2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -175,7 +175,7 @@ background: rgba(13, 17, 23, 0.92);
 border: 1px solid #30363d;
 border-radius: 12px;
 padding: 12px 16px;
-min-width: 200px;
+min-width: 220px;
 backdrop-filter: blur(10px);
 display: none;
 }
@@ -212,10 +212,7 @@ text-align: center;
 .control-guide .key-row .key.special { border-color: #3498db; color: #3498db; }
 .control-guide .key-row .action { color: #b0b8c0; }
 .control-guide .key-row .action .highlight { color: #2ecc71; }
-.control-guide .divider {
-border-top: 1px solid #1a1a2e;
-margin: 4px 0;
-}
+.control-guide .divider { border-top: 1px solid #1a1a2e; margin: 4px 0; }
 .control-guide .mouse-row {
 display: flex;
 align-items: center;
@@ -224,11 +221,7 @@ padding: 3px 0;
 color: #8b949e;
 font-size: 12px;
 }
-.control-guide .mouse-row .icon {
-font-size: 16px;
-width: 28px;
-text-align: center;
-}
+.control-guide .mouse-row .icon { font-size: 16px; width: 28px; text-align: center; }
 .control-guide .priority-note {
 color: #5a6a7a;
 font-size: 10px;
@@ -237,6 +230,7 @@ text-align: center;
 border-top: 1px solid #1a1a2e;
 margin-top: 4px;
 }
+.control-guide .priority-note.warning { border-top-color: #e74c3c; color: #e74c3c; }
 
 .help-btn {
 position: absolute;
@@ -259,9 +253,7 @@ border: 1px solid rgba(255,255,255,0.1);
 background: rgba(31, 78, 121, 1);
 transform: scale(1.1);
 }
-.help-btn.active {
-background: rgba(231, 76, 60, 0.8);
-}
+.help-btn.active { background: rgba(231, 76, 60, 0.8); }
 
 #introContainer {
 display: none;
@@ -311,12 +303,14 @@ text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 .category-tag.obstacle { background: #7a5a1a; color: #dfc07d; border: 1px solid #f39c12; }
 .category-tag.boss { background: #4a1a6a; color: #d4a0df; border: 1px solid #8e44ad; }
 .category-tag.final { background: #6a1a1a; color: #f0a0a0; border: 1px solid #e74c3c; }
+.category-tag.attack { background: #c0392b; color: #f5b7b1; border: 1px solid #e74c3c; }
 
 .intro-card.positive { border-left: 4px solid #2ecc71; }
 .intro-card.negative { border-left: 4px solid #e74c3c; }
 .intro-card.obstacle { border-left: 4px solid #f39c12; }
 .intro-card.boss-card { border-left: 4px solid #8e44ad; }
 .intro-card.final-card { border-left: 4px solid #e74c3c; border-color: #e74c3c; }
+.intro-card.attack-card { border-left: 4px solid #e74c3c; }
 
 .demo-container {
 background: #0a0a12;
@@ -397,7 +391,6 @@ font-weight: bold;
 .dev-mode-indicator.on { background: #8e44ad; color: white; }
 .dev-mode-indicator.off { background: #2c3e50; color: #8b949e; }
 
-/* 開發功能預設顯示 */
 .dev-hidden { display: block !important; }
 .dev-btn { display: flex !important; }
 
@@ -743,8 +736,11 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
     <div class="priority-note">
         ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
     </div>
-    <div class="priority-note" style="border-top-color:#e74c3c; color:#e74c3c;">
+    <div class="priority-note warning">
         ⚠️ Boss 技能有 2 秒預警！看到 ⚠️ 標記請立即躲避！
+    </div>
+    <div class="priority-note" style="border-top-color:#e74c3c; color:#e74c3c;">
+        🗡️ 攻擊道具（🚀💣🔫🧊🧪⚡🎯）吃到自動發動！
     </div>
 </div>
 </div>
@@ -1341,6 +1337,7 @@ else if(type==='hit'){const osc=audioCtx.createOscillator(),gain=audioCtx.create
 else if(type==='boss'){for(let i=0;i<3;i++){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(150+i*50,now+i*0.15);gain.gain.setValueAtTime(0.15,now+i*0.15);gain.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.2);osc.start(now+i*0.15);osc.stop(now+i*0.15+0.2);}}
 else if(type==='warning'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(880,now);osc.frequency.setValueAtTime(660,now+0.1);osc.frequency.setValueAtTime(440,now+0.2);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
 else if(type==='boss_attack'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(100,now);osc.frequency.exponentialRampToValueAtTime(50,now+0.4);gain.gain.setValueAtTime(0.3,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.4);osc.start(now);osc.stop(now+0.4);}
+else if(type==='attack'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(600,now);osc.frequency.setValueAtTime(800,now+0.05);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.15);osc.start(now);osc.stop(now+0.15);}
 }catch(e){}
 }
 
@@ -1377,7 +1374,7 @@ setTimeout(resizeGameCanvas,150);
 document.addEventListener('fullscreenchange',()=>{const gameBox=document.getElementById('gameContainer');if(!document.fullscreenElement)gameBox.classList.remove('fullscreen');else gameBox.classList.add('fullscreen');setTimeout(resizeGameCanvas,150);});
 
 // ============================================================
-// 遊戲引擎
+// 🆕 遊戲引擎（道具、障礙物、Boss 全部與圖鑑同步）
 // ============================================================
 const gameCanvas=document.getElementById('gameCanvas');
 const gameCtx=gameCanvas.getContext('2d');
@@ -1392,813 +1389,173 @@ let bossActive=false,currentBoss=null;
 let bossSkillWarning = null;
 let bossSkillType = null;
 let bossWarningActive = false;
+let poisonTimer = 0;
+let poisonDamage = 0;
+let freezeTimer = 0;
+let attackCooldown = 0;
 
-// ===== 8種 Boss 定義 =====
-const BOSS_TYPES=[
-{type:'boss_fire',name:'🔥 火龍',emoji:'🐉',color:'#e74c3c',hp:200,speed:1.2,radius:30,skills:['火焰吐息','烈焰護盾']},
-{type:'boss_ice',name:'❄️ 冰霜巨人',emoji:'🧊',color:'#3498db',hp:300,speed:0.8,radius:35,skills:['冰凍光環','寒冰之牆']},
-{type:'boss_shadow',name:'🌑 暗影刺客',emoji:'🗡️',color:'#8e44ad',hp:150,speed:2.0,radius:22,skills:['暗影突襲','隱身']},
-{type:'boss_thunder',name:'⚡ 雷霆鳳凰',emoji:'🦅',color:'#f1c40f',hp:180,speed:1.5,radius:28,skills:['閃電風暴','復活']},
-{type:'boss_rock',name:'🪨 岩石泰坦',emoji:'🗿',color:'#7f8c8d',hp:400,speed:0.5,radius:40,skills:['地震','岩石護甲']},
-{type:'boss_storm',name:'🌪️ 風暴領主',emoji:'🌪️',color:'#1abc9c',hp:220,speed:1.8,radius:26,skills:['龍捲風','風牆']},
-{type:'boss_necromancer',name:'💀 死靈法師',emoji:'🧙',color:'#2c3e50',hp:160,speed:1.0,radius:25,skills:['召喚骷髏','詛咒']},
-{type:'boss_spider',name:'🕷️ 蜘蛛女王',emoji:'🕷️',color:'#6c3483',hp:250,speed:1.3,radius:32,skills:['蛛網','毒素']},
+// ============================================================
+// 🆕 Boss 技能詳細說明（與圖鑑同步）
+// ============================================================
+const BOSS_SKILL_INFO = {
+    '火焰吐息': { type: '主動', damage: 15, desc: '噴射火焰彈幕，對玩家造成傷害', visual: '🔥' },
+    '烈焰護盾': { type: '被動', damage: 0, desc: '減少受到的傷害 30%', visual: '🛡️' },
+    '冰凍光環': { type: '主動', damage: 0, desc: '冰凍周圍，使玩家減速 50% 持續 3 秒', visual: '🧊' },
+    '寒冰之牆': { type: '被動', damage: 0, desc: '召喚冰牆抵擋攻擊，並減速靠近的敵人', visual: '❄️' },
+    '暗影突襲': { type: '主動', damage: 20, desc: '瞬間移動到玩家附近發動突襲', visual: '🌑' },
+    '隱身': { type: '被動', damage: 0, desc: '短暫隱身，躲避攻擊', visual: '👻' },
+    '閃電風暴': { type: '主動', damage: 12, desc: '召喚閃電彈幕攻擊', visual: '⚡' },
+    '復活': { type: '被動', damage: 0, desc: '死亡時復活並恢復 15% HP', visual: '💚' },
+    '地震': { type: '主動', damage: 10, desc: '引發地震，造成全畫面震動和落石', visual: '🌍' },
+    '岩石護甲': { type: '被動', damage: 0, desc: '增加護甲，減少受到的傷害', visual: '🪨' },
+    '龍捲風': { type: '主動', damage: 12, desc: '召喚龍捲風彈幕攻擊', visual: '🌪️' },
+    '風牆': { type: '被動', damage: 0, desc: '召喚風牆抵擋正面攻擊', visual: '💨' },
+    '召喚骷髏': { type: '主動', damage: 8, desc: '召喚骷髏兵攻擊玩家', visual: '💀' },
+    '詛咒': { type: '主動', damage: 25, desc: '對玩家施加詛咒，直接造成傷害', visual: '🔮' },
+    '蛛網': { type: '主動', damage: 0, desc: '噴射蛛網，使玩家減速 50% 持續 3 秒', visual: '🕸️' },
+    '毒素': { type: '主動', damage: 25, desc: '釋放毒素，直接造成傷害', visual: '🧪' }
+};
+
+// ============================================================
+// 🆕 8種 Boss 定義（與圖鑑同步）
+// ============================================================
+const BOSS_TYPES = [
+    { 
+        type: 'boss_fire', 
+        name: '🔥 火龍', 
+        emoji: '🐉', 
+        color: '#e74c3c', 
+        hp: 200, 
+        speed: 1.2, 
+        radius: 30, 
+        skills: ['火焰吐息', '烈焰護盾'],
+        skillInfo: '🔥 火焰吐息：噴射火焰彈幕 | 🛡️ 烈焰護盾：減少傷害 30%'
+    },
+    { 
+        type: 'boss_ice', 
+        name: '❄️ 冰霜巨人', 
+        emoji: '🧊', 
+        color: '#3498db', 
+        hp: 300, 
+        speed: 0.8, 
+        radius: 35, 
+        skills: ['冰凍光環', '寒冰之牆'],
+        skillInfo: '🧊 冰凍光環：減速 50% 持續 3 秒 | ❄️ 寒冰之牆：抵擋攻擊並減速'
+    },
+    { 
+        type: 'boss_shadow', 
+        name: '🌑 暗影刺客', 
+        emoji: '🗡️', 
+        color: '#8e44ad', 
+        hp: 150, 
+        speed: 2.0, 
+        radius: 22, 
+        skills: ['暗影突襲', '隱身'],
+        skillInfo: '🌑 暗影突襲：瞬間移動攻擊扣 20 HP | 👻 隱身：短暫躲避攻擊'
+    },
+    { 
+        type: 'boss_thunder', 
+        name: '⚡ 雷霆鳳凰', 
+        emoji: '🦅', 
+        color: '#f1c40f', 
+        hp: 180, 
+        speed: 1.5, 
+        radius: 28, 
+        skills: ['閃電風暴', '復活'],
+        skillInfo: '⚡ 閃電風暴：閃電彈幕攻擊 | 💚 復活：死亡時恢復 15% HP'
+    },
+    { 
+        type: 'boss_rock', 
+        name: '🪨 岩石泰坦', 
+        emoji: '🗿', 
+        color: '#7f8c8d', 
+        hp: 400, 
+        speed: 0.5, 
+        radius: 40, 
+        skills: ['地震', '岩石護甲'],
+        skillInfo: '🌍 地震：全畫面震動和落石 | 🪨 岩石護甲：減少受到的傷害'
+    },
+    { 
+        type: 'boss_storm', 
+        name: '🌪️ 風暴領主', 
+        emoji: '🌪️', 
+        color: '#1abc9c', 
+        hp: 220, 
+        speed: 1.8, 
+        radius: 26, 
+        skills: ['龍捲風', '風牆'],
+        skillInfo: '🌪️ 龍捲風：龍捲風彈幕攻擊 | 💨 風牆：抵擋正面攻擊'
+    },
+    { 
+        type: 'boss_necromancer', 
+        name: '💀 死靈法師', 
+        emoji: '🧙', 
+        color: '#2c3e50', 
+        hp: 160, 
+        speed: 1.0, 
+        radius: 25, 
+        skills: ['召喚骷髏', '詛咒'],
+        skillInfo: '💀 召喚骷髏：召喚骷髏兵攻擊 | 🔮 詛咒：直接造成 25 傷害'
+    },
+    { 
+        type: 'boss_spider', 
+        name: '🕷️ 蜘蛛女王', 
+        emoji: '🕷️', 
+        color: '#6c3483', 
+        hp: 250, 
+        speed: 1.3, 
+        radius: 32, 
+        skills: ['蛛網', '毒素'],
+        skillInfo: '🕸️ 蛛網：減速 50% 持續 3 秒 | 🧪 毒素：直接造成 25 傷害'
+    }
 ];
 
-// ===== 10種道具定義 =====
-const ITEM_TYPES=[
-{type:'coin',emoji:'🪙',color:'#f1c40f',label:'金幣',score:50},
-{type:'heart',emoji:'❤️',color:'#e74c3c',label:'治癒之心',heal:25},
-{type:'shield',emoji:'🛡️',color:'#3498db',label:'護盾'},
-{type:'magnet',emoji:'🧲',color:'#e74c3c',label:'磁鐵'},
-{type:'double',emoji:'💎',color:'#9b59b6',label:'雙倍積分'},
-{type:'fever',emoji:'⚡',color:'#e67e22',label:'FEVER'},
-{type:'star',emoji:'⭐',color:'#f1c40f',label:'星星',score:100},
-{type:'wing',emoji:'🪶',color:'#1abc9c',label:'翅膀',speed:1.5},
-{type:'clock',emoji:'⏰',color:'#95a5a6',label:'時鐘',extraTime:30},
-{type:'key',emoji:'🔑',color:'#f1c40f',label:'鑰匙',unlock:true},
+// ============================================================
+// 🆕 道具定義（與圖鑑同步）
+// ============================================================
+const ITEM_TYPES = [
+    // 正面道具
+    {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
+    {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
+    {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
+    {type:'magnet', emoji:'🧲', color:'#e74c3c', label:'磁鐵', category:'positive'},
+    {type:'double', emoji:'💎', color:'#9b59b6', label:'雙倍積分', category:'positive'},
+    {type:'fever', emoji:'⚡', color:'#e67e22', label:'FEVER', category:'positive'},
+    {type:'star', emoji:'⭐', color:'#f1c40f', label:'星星', score:100, category:'positive'},
+    {type:'wing', emoji:'🪶', color:'#1abc9c', label:'翅膀', speed:1.5, category:'positive'},
+    {type:'clock', emoji:'⏰', color:'#95a5a6', label:'時鐘', extraTime:30, category:'positive'},
+    {type:'key', emoji:'🔑', color:'#f1c40f', label:'鑰匙', unlock:true, category:'positive'},
+    // 攻擊道具
+    {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', desc:'對 Boss 造成 30 傷害', category:'attack'},
+    {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', desc:'對 Boss 造成 50 傷害', category:'attack'},
+    {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', desc:'對 Boss 造成 25 傷害', category:'attack'},
+    {type:'freeze', emoji:'🧊', color:'#3498db', label:'冰凍彈', attack:0, attackType:'freeze', desc:'冰凍 Boss 2 秒', category:'attack'},
+    {type:'poison', emoji:'🧪', color:'#2ecc71', label:'毒藥', attack:5, attackType:'poison', desc:'持續傷害 5 秒', category:'attack'},
+    {type:'thunder', emoji:'⚡', color:'#f1c40f', label:'閃電', attack:40, attackType:'thunder', desc:'對 Boss 造成 40 傷害', category:'attack'},
+    {type:'dart', emoji:'🎯', color:'#e74c3c', label:'飛鏢', attack:15, attackType:'dart', desc:'對 Boss 造成 15 傷害', category:'attack'},
+    // 負面道具
+    {type:'curse', emoji:'💀', color:'#2c3e50', label:'詛咒寶石', category:'negative'},
 ];
 
-// ===== 10種障礙物定義 =====
+// ============================================================
+// 障礙物定義（與圖鑑同步）
+// ============================================================
 const OBSTACLE_TYPES=[
-{type:'cloud',emoji:'⛈️',color:'#34495e',label:'雷暴雲',damage:25},
-{type:'poison',emoji:'🟣',color:'#8e44ad',label:'毒霧',damage:40},
-{type:'mud',emoji:'🕸️',color:'#d35400',label:'黏液',damage:0,slow:true},
-{type:'spike',emoji:'🔺',color:'#e74c3c',label:'尖刺',damage:30},
-{type:'fire',emoji:'🔥',color:'#e67e22',label:'火焰',damage:35},
-{type:'ice',emoji:'❄️',color:'#3498db',label:'冰塊',damage:20,slow:true},
-{type:'thorn',emoji:'🌿',color:'#27ae60',label:'荊棘',damage:15},
-{type:'void',emoji:'🌌',color:'#2c3e50',label:'虛空',damage:50},
-{type:'mirror',emoji:'🪞',color:'#95a5a6',label:'鏡像',damage:10, mirror:true},
-{type:'chain',emoji:'⛓️',color:'#95a5a6',label:'鎖鏈',damage:20,slow:true},
+    {type:'cloud', emoji:'⛈️', color:'#34495e', label:'雷暴雲', damage:25, category:'obstacle'},
+    {type:'poison', emoji:'🟣', color:'#8e44ad', label:'毒霧', damage:40, category:'obstacle'},
+    {type:'mud', emoji:'🕸️', color:'#d35400', label:'黏液', damage:0, slow:true, category:'obstacle'},
+    {type:'spike', emoji:'🔺', color:'#e74c3c', label:'尖刺', damage:30, category:'obstacle'},
+    {type:'fire', emoji:'🔥', color:'#e67e22', label:'火焰', damage:35, category:'obstacle'},
+    {type:'ice', emoji:'❄️', color:'#3498db', label:'冰塊', damage:20, slow:true, category:'obstacle'},
+    {type:'thorn', emoji:'🌿', color:'#27ae60', label:'荊棘', damage:15, category:'obstacle'},
+    {type:'void', emoji:'🌌', color:'#2c3e50', label:'虛空', damage:50, category:'obstacle'},
+    {type:'mirror', emoji:'🪞', color:'#95a5a6', label:'鏡像', damage:10, mirror:true, category:'obstacle'},
+    {type:'chain', emoji:'⛓️', color:'#95a5a6', label:'鎖鏈', damage:20, slow:true, category:'obstacle'},
 ];
 
 // ============================================================
-// 道具繪製函式
+// 自訂外觀系統
 // ============================================================
-function drawItem(ctx, x, y, type, radius) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = radius || 12;
-    
-    switch(type) {
-        case 'coin':
-            ctx.shadowColor = '#f1c40f';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = '#f1c40f';
-            ctx.fill();
-            ctx.strokeStyle = '#d4a800';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#b7950b';
-            ctx.font = `${r}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('$', 0, 1);
-            break;
-        case 'heart':
-            ctx.shadowColor = '#e74c3c';
-            ctx.shadowBlur = 25;
-            ctx.beginPath();
-            ctx.moveTo(0, r * 0.4);
-            ctx.bezierCurveTo(-r * 0.5, -r * 0.2, -r * 1.1, -r * 0.5, -r * 1.0, -r * 0.9);
-            ctx.bezierCurveTo(-r * 0.9, -r * 1.4, -r * 0.4, -r * 1.6, 0, -r * 1.1);
-            ctx.bezierCurveTo(r * 0.4, -r * 1.6, r * 0.9, -r * 1.4, r * 1.0, -r * 0.9);
-            ctx.bezierCurveTo(r * 1.1, -r * 0.5, r * 0.5, -r * 0.2, 0, r * 0.4);
-            ctx.fillStyle = '#e74c3c';
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -r * 0.4);
-            ctx.lineTo(0, r * 0.4);
-            ctx.moveTo(-r * 0.4, 0);
-            ctx.lineTo(r * 0.4, 0);
-            ctx.stroke();
-            break;
-        case 'shield':
-            ctx.shadowColor = '#3498db';
-            ctx.shadowBlur = 25;
-            ctx.beginPath();
-            ctx.moveTo(0, -r * 1.2);
-            ctx.lineTo(r * 0.9, -r * 0.5);
-            ctx.lineTo(r * 0.9, r * 0.3);
-            ctx.lineTo(0, r * 1.2);
-            ctx.lineTo(-r * 0.9, r * 0.3);
-            ctx.lineTo(-r * 0.9, -r * 0.5);
-            ctx.closePath();
-            ctx.fillStyle = '#3498db';
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
-            ctx.fill();
-            break;
-        case 'magnet':
-            ctx.shadowColor = '#e74c3c';
-            ctx.shadowBlur = 20;
-            ctx.fillStyle = '#e74c3c';
-            ctx.fillRect(-r * 0.7, -r * 0.9, r * 0.35, r * 1.6);
-            ctx.fillRect(r * 0.35, -r * 0.9, r * 0.35, r * 1.6);
-            ctx.fillRect(-r * 0.7, -r * 0.9, r * 1.4, r * 0.35);
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = 'white';
-            ctx.font = `${r * 0.5}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('N', -r * 0.5, -r * 0.2);
-            ctx.fillText('S', r * 0.5, -r * 0.2);
-            break;
-        case 'double':
-            ctx.shadowColor = '#9b59b6';
-            ctx.shadowBlur = 25;
-            ctx.beginPath();
-            ctx.moveTo(0, -r * 1.2);
-            ctx.lineTo(r * 1.0, -r * 0.2);
-            ctx.lineTo(r * 0.7, r * 1.0);
-            ctx.lineTo(-r * 0.7, r * 1.0);
-            ctx.lineTo(-r * 1.0, -r * 0.2);
-            ctx.closePath();
-            const g = ctx.createLinearGradient(-r, -r * 1.2, r, r * 1.0);
-            g.addColorStop(0, '#d7bde2');
-            g.addColorStop(0.5, '#9b59b6');
-            g.addColorStop(1, '#6c3483');
-            ctx.fillStyle = g;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = 'white';
-            ctx.font = `bold ${r * 0.7}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('2x', 0, 0);
-            break;
-        case 'fever':
-            ctx.shadowColor = '#e67e22';
-            ctx.shadowBlur = 30;
-            for (let i = 0; i < 8; i++) {
-                const angle = i * Math.PI / 4;
-                const dist = r * 0.7 + Math.sin(Date.now() / 200 + i) * r * 0.2;
-                ctx.beginPath();
-                ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist * 0.7, r * 0.25, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(230, 126, 34, ${0.3 + Math.sin(Date.now() / 300 + i) * 0.15})`;
-                ctx.fill();
-            }
-            ctx.shadowBlur = 35;
-            const g2 = ctx.createRadialGradient(0, -r * 0.15, 0, 0, 0, r * 0.85);
-            g2.addColorStop(0, '#f9e79f');
-            g2.addColorStop(0.3, '#f39c12');
-            g2.addColorStop(0.7, '#e67e22');
-            g2.addColorStop(1, '#d35400');
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
-            ctx.fillStyle = g2;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = 'white';
-            ctx.font = `${r * 0.6}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('⚡', 0, 0);
-            break;
-        case 'star':
-            ctx.shadowColor = '#f1c40f';
-            ctx.shadowBlur = 25;
-            ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
-                const d = (i === 0) ? r : r * 0.5;
-                if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                else ctx.lineTo(Math.cos(angle) * (i % 2 === 0 ? r : r * 0.5), Math.sin(angle) * (i % 2 === 0 ? r : r * 0.5));
-            }
-            ctx.closePath();
-            ctx.fillStyle = '#f1c40f';
-            ctx.fill();
-            break;
-        case 'wing':
-            ctx.shadowColor = '#1abc9c';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.moveTo(-r * 0.2, -r * 0.9);
-            ctx.quadraticCurveTo(-r * 1.1, -r * 0.6, -r * 0.9, 0);
-            ctx.quadraticCurveTo(-r * 1.1, r * 0.4, -r * 0.5, r * 0.8);
-            ctx.quadraticCurveTo(-r * 0.2, r * 0.9, 0, r * 0.5);
-            ctx.quadraticCurveTo(r * 0.2, r * 0.9, r * 0.5, r * 0.8);
-            ctx.quadraticCurveTo(r * 1.1, r * 0.4, r * 0.9, 0);
-            ctx.quadraticCurveTo(r * 1.1, -r * 0.6, r * 0.2, -r * 0.9);
-            ctx.closePath();
-            ctx.fillStyle = '#1abc9c';
-            ctx.fill();
-            break;
-        case 'clock':
-            ctx.shadowColor = '#95a5a6';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = '#95a5a6';
-            ctx.fill();
-            ctx.strokeStyle = '#7f8c8d';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -r * 0.5);
-            ctx.stroke();
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(r * 0.4, -r * 0.3);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(0, 0, 2, 0, Math.PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-            break;
-        case 'key':
-            ctx.shadowColor = '#f1c40f';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(-r * 0.4, 0, r * 0.5, 0, Math.PI * 2);
-            ctx.fillStyle = '#f1c40f';
-            ctx.fill();
-            ctx.strokeStyle = '#d4a800';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.fillRect(r * 0.1, -r * 0.15, r * 0.8, r * 0.3);
-            ctx.fillRect(r * 0.7, -r * 0.5, r * 0.15, r * 0.35);
-            ctx.fillRect(r * 0.85, -r * 0.35, r * 0.15, r * 0.2);
-            break;
-        default:
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = '#8b949e';
-            ctx.fill();
-    }
-    ctx.restore();
-}
-
-// ===== 障礙物繪製函式 =====
-function drawObstacle(ctx, x, y, type, radius) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = radius || 14;
-    
-    switch(type) {
-        case 'cloud':
-            ctx.shadowColor = '#2c3e50';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.arc(-r * 0.7, -r * 0.1, r * 0.6, 0, Math.PI * 2);
-            ctx.arc(0, -r * 0.5, r * 0.7, 0, Math.PI * 2);
-            ctx.arc(r * 0.7, -r * 0.1, r * 0.6, 0, Math.PI * 2);
-            ctx.arc(-r * 0.4, r * 0.4, r * 0.5, 0, Math.PI * 2);
-            ctx.arc(r * 0.4, r * 0.4, r * 0.5, 0, Math.PI * 2);
-            ctx.fillStyle = '#34495e';
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = '#f1c40f';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-r * 0.3, -r * 1.0);
-            ctx.lineTo(0, -r * 0.5);
-            ctx.lineTo(-r * 0.15, -r * 0.2);
-            ctx.lineTo(r * 0.3, r * 0.3);
-            ctx.lineTo(0, r * 0.5);
-            ctx.stroke();
-            break;
-        case 'poison':
-            ctx.shadowColor = '#8e44ad';
-            ctx.shadowBlur = 25;
-            for (let i = 3; i > 0; i--) {
-                const d = r * 0.3 + i * r * 0.3;
-                ctx.beginPath();
-                ctx.arc(0, 0, d, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(142, 68, 173, ${0.05 + i * 0.06})`;
-                ctx.fill();
-            }
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
-            const g3 = ctx.createRadialGradient(0, -r * 0.2, 0, 0, 0, r * 0.7);
-            g3.addColorStop(0, '#d7bde2');
-            g3.addColorStop(0.5, '#8e44ad');
-            g3.addColorStop(1, '#6c3483');
-            ctx.fillStyle = g3;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = 'rgba(255,255,255,0.8)';
-            ctx.font = `${r * 0.5}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('☠', 0, 0);
-            break;
-        case 'mud':
-            ctx.shadowColor = '#a04000';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, r * 1.1, r * 0.8, 0, 0, Math.PI * 2);
-            const g4 = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
-            g4.addColorStop(0, '#e67e22');
-            g4.addColorStop(0.6, '#d35400');
-            g4.addColorStop(1, '#a04000');
-            ctx.fillStyle = g4;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-            ctx.lineWidth = 0.5;
-            for (let i = 0; i < 6; i++) {
-                const angle = i * Math.PI / 3;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(angle) * r * 1.2, Math.sin(angle) * r * 1.2);
-                ctx.stroke();
-            }
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
-            ctx.stroke();
-            break;
-        case 'spike':
-            ctx.shadowColor = '#c0392b';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.moveTo(0, -r * 1.1);
-            ctx.lineTo(r * 0.9, r * 0.7);
-            ctx.lineTo(-r * 0.9, r * 0.7);
-            ctx.closePath();
-            ctx.fillStyle = '#e74c3c';
-            ctx.fill();
-            break;
-        case 'fire':
-            ctx.shadowColor = '#e67e22';
-            ctx.shadowBlur = 30;
-            ctx.beginPath();
-            ctx.moveTo(0, -r * 1.0);
-            ctx.quadraticCurveTo(-r * 1.0, -r * 0.5, -r * 0.8, 0);
-            ctx.quadraticCurveTo(-r * 1.0, r * 0.5, -r * 0.4, r * 0.8);
-            ctx.quadraticCurveTo(0, r * 0.9, r * 0.4, r * 0.8);
-            ctx.quadraticCurveTo(r * 1.0, r * 0.5, r * 0.8, 0);
-            ctx.quadraticCurveTo(r * 1.0, -r * 0.5, 0, -r * 1.0);
-            ctx.closePath();
-            const g5 = ctx.createRadialGradient(0, -r * 0.3, 0, 0, 0, r);
-            g5.addColorStop(0, '#f1c40f');
-            g5.addColorStop(0.4, '#e67e22');
-            g5.addColorStop(0.8, '#d35400');
-            g5.addColorStop(1, '#c0392b');
-            ctx.fillStyle = g5;
-            ctx.fill();
-            break;
-        case 'ice':
-            ctx.shadowColor = '#2980b9';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle = i * Math.PI / 3 - Math.PI / 6;
-                const d = (i % 2 === 0) ? r : r * 0.7;
-                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
-                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
-            }
-            ctx.closePath();
-            const g6 = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
-            g6.addColorStop(0, '#aed6f1');
-            g6.addColorStop(0.5, '#3498db');
-            g6.addColorStop(1, '#1a5276');
-            ctx.fillStyle = g6;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, -r * 0.4);
-            ctx.lineTo(0, r * 0.4);
-            ctx.moveTo(-r * 0.4, 0);
-            ctx.lineTo(r * 0.4, 0);
-            ctx.stroke();
-            break;
-        case 'thorn':
-            ctx.shadowColor = '#1a7a3a';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                const angle = i * 2 * Math.PI / 5 - Math.PI / 2;
-                const d = (i % 2 === 0) ? r : r * 0.6;
-                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
-                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
-            }
-            ctx.closePath();
-            ctx.fillStyle = '#27ae60';
-            ctx.fill();
-            break;
-        case 'void':
-            ctx.shadowColor = '#000000';
-            ctx.shadowBlur = 30;
-            for (let i = 3; i > 0; i--) {
-                ctx.beginPath();
-                ctx.arc(0, 0, r * 0.3 + i * r * 0.25, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(44, 62, 80, ${0.05 + i * 0.08})`;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-            ctx.shadowBlur = 25;
-            const g7 = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.7);
-            g7.addColorStop(0, '#2c3e50');
-            g7.addColorStop(0.5, '#1a1a2e');
-            g7.addColorStop(1, '#000000');
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
-            ctx.fillStyle = g7;
-            ctx.fill();
-            break;
-        case 'mirror':
-            ctx.shadowColor = '#7f8c8d';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.moveTo(0, -r);
-            ctx.lineTo(r, 0);
-            ctx.lineTo(0, r);
-            ctx.lineTo(-r, 0);
-            ctx.closePath();
-            const g8 = ctx.createLinearGradient(-r, -r, r, r);
-            g8.addColorStop(0, '#ecf0f1');
-            g8.addColorStop(0.5, '#95a5a6');
-            g8.addColorStop(1, '#5d6d7e');
-            ctx.fillStyle = g8;
-            ctx.fill();
-            break;
-        case 'chain':
-            ctx.shadowColor = '#7f8c8d';
-            ctx.shadowBlur = 15;
-            ctx.strokeStyle = '#95a5a6';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(-r * 0.35, 0, r * 0.45, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(r * 0.35, 0, r * 0.45, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-r * 0.1, -r * 0.45);
-            ctx.lineTo(r * 0.1, -r * 0.45);
-            ctx.moveTo(-r * 0.1, r * 0.45);
-            ctx.lineTo(r * 0.1, r * 0.45);
-            ctx.stroke();
-            break;
-        default:
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = '#e74c3c';
-            ctx.fill();
-    }
-    ctx.restore();
-}
-
-// ============================================================
-// Boss 繪製函式（含技能預警特效）
-// ============================================================
-function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = boss.radius || 30;
-    const color = boss.color || '#8e44ad';
-    
-    // 預警特效
-    if (warning !== null && warning > 0) {
-        const progress = 1 - (warning / 60);
-        
-        const pulseRadius = r * 1.3 + progress * r * 0.8;
-        ctx.shadowColor = '#ff4444';
-        ctx.shadowBlur = 30 + progress * 40;
-        ctx.strokeStyle = `rgba(255, 68, 68, ${0.3 + progress * 0.5})`;
-        ctx.lineWidth = 2 + progress * 4;
-        ctx.beginPath();
-        ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        if (Math.floor(warning / 5) % 2 === 0) {
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = `rgba(255, 255, 0, ${0.4 + progress * 0.3})`;
-            ctx.lineWidth = 3;
-            ctx.setLineDash([6, 6]);
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 1.15 + progress * r * 0.15, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-        
-        ctx.shadowBlur = 0;
-        const countdown = Math.ceil(warning / 30);
-        ctx.fillStyle = '#ff4444';
-        ctx.font = `bold ${16 + progress * 8}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`⚠️ ${countdown}`, 0, -r * 1.5 - 10);
-        
-        ctx.fillStyle = '#ffcc00';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textBaseline = 'top';
-        ctx.fillText(skillType || '???', 0, -r * 1.5 + 4);
-        
-        if (skillType === '火焰吐息' || skillType === '閃電風暴' || skillType === '龍捲風') {
-            for (let i = 0; i < 12; i++) {
-                const angle = (i / 12) * Math.PI * 2 + Date.now() / 200;
-                const dist = r * 1.6 + progress * r * 0.6;
-                ctx.fillStyle = `rgba(255, 0, 0, ${0.08 + progress * 0.15})`;
-                ctx.beginPath();
-                ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 5 + progress * 6, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        } else if (skillType === '暗影突襲') {
-            for (let i = 0; i < 4; i++) {
-                const angle = i * Math.PI / 2 + Date.now() / 500;
-                const dist = r * 1.8 + progress * r * 0.5;
-                const arrowSize = 8 + progress * 6;
-                ctx.fillStyle = `rgba(100, 0, 200, ${0.2 + progress * 0.2})`;
-                ctx.beginPath();
-                ctx.moveTo(Math.cos(angle) * dist, Math.sin(angle) * dist);
-                ctx.lineTo(Math.cos(angle + 0.3) * (dist - arrowSize), Math.sin(angle + 0.3) * (dist - arrowSize));
-                ctx.lineTo(Math.cos(angle - 0.3) * (dist - arrowSize), Math.sin(angle - 0.3) * (dist - arrowSize));
-                ctx.closePath();
-                ctx.fill();
-            }
-        } else if (skillType === '冰凍光環' || skillType === '寒冰之牆' || skillType === '蛛網') {
-            for (let i = 0; i < 6; i++) {
-                const angle = i * Math.PI / 3 + Date.now() / 400;
-                const dist = r * 1.2 + progress * r * 0.8;
-                const size = 3 + progress * 5;
-                ctx.fillStyle = `rgba(52, 152, 219, ${0.1 + progress * 0.15})`;
-                ctx.beginPath();
-                ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        
-        const shake = progress * 4;
-        ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-        
-        if (progress > 0.8) {
-            ctx.fillStyle = `rgba(255, 0, 0, ${(progress - 0.8) * 0.3})`;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    
-    // Boss 本體繪製
-    ctx.shadowColor = color;
-    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 40;
-    
-    switch(boss.type) {
-        case 'boss_fire':
-            ctx.beginPath();
-            for (let i = 0; i < 8; i++) {
-                const angle = i * Math.PI / 4;
-                const d = r * (0.7 + Math.sin(Date.now() / 300 + i * 0.5) * 0.2);
-                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
-                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
-            }
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            break;
-        case 'boss_ice':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle = i * Math.PI / 3 - Math.PI / 6;
-                const d = r * 0.9;
-                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
-                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
-            }
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            break;
-        case 'boss_shadow':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 35;
-            ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                const angle = i * 4 * Math.PI / 5 - Math.PI / 2;
-                const d = (i % 2 === 0) ? r : r * 0.5;
-                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
-                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
-            }
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            break;
-        case 'boss_thunder':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 35;
-            ctx.beginPath();
-            ctx.moveTo(0, -r);
-            ctx.lineTo(r * 0.8, 0);
-            ctx.lineTo(0, r);
-            ctx.lineTo(-r * 0.8, 0);
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            break;
-        case 'boss_rock':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 25;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-r * 0.5, -r * 0.4);
-            ctx.lineTo(-r * 0.2, -r * 0.1);
-            ctx.lineTo(r * 0.3, -r * 0.5);
-            ctx.moveTo(-r * 0.3, r * 0.3);
-            ctx.lineTo(0, 0);
-            ctx.lineTo(r * 0.4, r * 0.4);
-            ctx.stroke();
-            break;
-        case 'boss_storm':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
-            ctx.beginPath();
-            for (let i = 0; i < 12; i++) {
-                const angle = i * Math.PI / 6;
-                const d = r * (0.3 + i / 12 * 0.7);
-                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
-                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
-            }
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            break;
-        case 'boss_necromancer':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
-            ctx.beginPath();
-            ctx.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            break;
-        case 'boss_spider':
-            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 25;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            for (let i = 0; i < 8; i++) {
-                const angle = i * Math.PI / 4;
-                ctx.beginPath();
-                ctx.moveTo(Math.cos(angle) * r * 0.5, Math.sin(angle) * r * 0.5);
-                ctx.lineTo(Math.cos(angle) * r * 1.1, Math.sin(angle) * r * 1.1);
-                ctx.stroke();
-            }
-            break;
-        default:
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'white';
-    ctx.font = `${r * 0.7}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(boss.emoji || '👹', 0, 0);
-    ctx.restore();
-}
-
-// ============================================================
-// 執行 Boss 技能
-// ============================================================
-function executeBossSkill(boss, skill) {
-    if (!boss || !skill) return;
-    
-    showNotification(`💥 ${boss.name} 發動 ${skill}！`);
-    playAudioEffect('boss_attack');
-    document.getElementById('skillWarning').style.display = 'none';
-    
-    if (skill === '火焰吐息' || skill === '閃電風暴' || skill === '龍捲風') {
-        const count = 12 + Math.floor(Math.random() * 6);
-        for (let i = 0; i < count; i++) {
-            const angle = (i / count) * Math.PI * 2 + Math.random() * 0.2;
-            const speed = 2 + Math.random() * 2;
-            obstacles.push({
-                type: 'boss_shot',
-                x: boss.x,
-                y: boss.y,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                radius: 6 + Math.random() * 4,
-                damage: 12 + Math.floor(Math.random() * 8),
-                hit: false,
-                baseSpeed: speed,
-                color: skill === '火焰吐息' ? '#ff6b35' : '#ffdd00'
-            });
-        }
-    } else if (skill === '暗影突襲') {
-        const attackX = rocket.x + (Math.random() - 0.5) * 60;
-        const attackY = rocket.y + (Math.random() - 0.5) * 60;
-        for (let i = 0; i < 20; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 1 + Math.random() * 3;
-            particles.push({
-                x: attackX,
-                y: attackY,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                size: 3 + Math.random() * 4,
-                color: '#8e44ad',
-                life: 1.0
-            });
-        }
-        const dist = Math.hypot(attackX - rocket.x, attackY - rocket.y);
-        if (dist < 50) {
-            playerHP = Math.max(0, playerHP - 20);
-            playAudioEffect('hit');
-            if (playerHP <= 0) { triggerGameOver(); return; }
-        }
-    } else if (skill === '冰凍光環' || skill === '寒冰之牆' || skill === '蛛網') {
-        slowDebuffTimer = 180;
-        document.getElementById('slowBadge').style.display = 'inline';
-        for (let i = 0; i < 15; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 30 + Math.random() * 60;
-            particles.push({
-                x: boss.x + Math.cos(angle) * dist,
-                y: boss.y + Math.sin(angle) * dist,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5,
-                size: 4 + Math.random() * 4,
-                color: skill === '冰凍光環' ? '#3498db' : '#2ecc71',
-                life: 1.0
-            });
-        }
-    } else if (skill === '詛咒' || skill === '毒素') {
-        playerHP = Math.max(0, playerHP - 25);
-        playAudioEffect('hit');
-        for (let i = 0; i < 25; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 10 + Math.random() * 40;
-            particles.push({
-                x: rocket.x + Math.cos(angle) * dist,
-                y: rocket.y + Math.sin(angle) * dist,
-                vx: (Math.random() - 0.5) * 0.3,
-                vy: (Math.random() - 0.5) * 0.3 - 0.5,
-                size: 5 + Math.random() * 5,
-                color: skill === '詛咒' ? '#2c3e50' : '#8e44ad',
-                life: 1.0
-            });
-        }
-        if (playerHP <= 0) { triggerGameOver(); return; }
-    } else if (skill === '岩石護甲') {
-        boss.armor = (boss.armor || 0) + 1;
-        showNotification(`🛡️ ${boss.name} 岩石護甲 +1！`);
-    } else if (skill === '復活') {
-        const heal = boss.maxHp * 0.15;
-        boss.hp = Math.min(boss.maxHp, boss.hp + heal);
-        showNotification(`💚 ${boss.name} 復活！回復 ${Math.floor(heal)} HP`);
-    } else if (skill === '隱身') {
-        boss.invisible = 60;
-        showNotification(`🌑 ${boss.name} 隱身！`);
-    } else if (skill === '地震') {
-        for (let i = 0; i < 30; i++) {
-            particles.push({
-                x: Math.random() * gameCanvas.width,
-                y: Math.random() * gameCanvas.height,
-                vx: (Math.random() - 0.5) * 2,
-                vy: -Math.random() * 3 - 1,
-                size: 2 + Math.random() * 4,
-                color: '#7f8c8d',
-                life: 0.8 + Math.random() * 0.2
-            });
-        }
-        for (let i = 0; i < 5; i++) {
-            obstacles.push({
-                type: 'rock_fall',
-                x: Math.random() * gameCanvas.width,
-                y: -20,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: 2 + Math.random() * 2,
-                radius: 8 + Math.random() * 6,
-                damage: 10,
-                hit: false,
-                baseSpeed: 0
-            });
-        }
-    }
-}
-
-// ===== 自訂外觀系統 =====
 let customSkins = {bg:null,rocket:null,coin:null,heart:null,shield:null,cloud:null,boss:null};
 
 function loadSkins(){
@@ -2270,6 +1627,7 @@ stopGameEngine();
 isGameRunning=true;isGamePaused=false;isGameOver=false;
 playerHP=100;gameScore=0;gameCombo=0;
 hasShield=false;feverTimer=0;magnetTimer=0;doubleScoreTimer=0;slowDebuffTimer=0;
+poisonTimer=0;freezeTimer=0;
 particles=[];collectibles=[];obstacles=[];bgmStep=0;
 bossActive=false;currentBoss=null;
 bossSkillWarning=null;bossSkillType=null;
@@ -2317,6 +1675,663 @@ else{btn.innerText="暫停";btn.style.backgroundColor="#27ae60";startBGM();}
 }
 function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');document.getElementById('finalScore').innerText=gameScore;document.getElementById('gameOverScreen').style.display='flex';stopGameEngine();}
 function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
+
+// ============================================================
+// 🆕 繪製道具（與圖鑑同步）
+// ============================================================
+function drawItem(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 12;
+    const item = ITEM_TYPES.find(i => i.type === type);
+    
+    // 使用與圖鑑相同的顏色和樣式
+    const color = item?.color || '#8b949e';
+    const emoji = item?.emoji || '?';
+    const category = item?.category || '';
+
+    // 攻擊道具特殊發光
+    if (category === 'attack') {
+        ctx.shadowColor = '#ff4444';
+        ctx.shadowBlur = 25;
+    }
+    
+    // 基礎圓形背景
+    if (category === 'positive') {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    } else if (category === 'attack') {
+        ctx.shadowColor = '#ff4444';
+        ctx.shadowBlur = 25;
+        // 攻擊道具用特殊外框
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fill();
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+        // 內部發光
+        ctx.shadowColor = '#ff4444';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 68, 68, 0.15)';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    } else if (category === 'negative') {
+        ctx.shadowColor = '#2c3e50';
+        ctx.shadowBlur = 25;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    }
+    
+    // 繪製表情符號（與圖鑑一致）
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 1.0}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 1);
+    
+    ctx.restore();
+}
+
+// ============================================================
+// 🆕 繪製障礙物（與圖鑑同步）
+// ============================================================
+function drawObstacle(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 14;
+    const obs = OBSTACLE_TYPES.find(o => o.type === type);
+    const color = obs?.color || '#e74c3c';
+    const emoji = obs?.emoji || '💥';
+    
+    // 障礙物使用與圖鑑相同的樣式
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // 障礙物表情
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 0);
+    
+    ctx.restore();
+}
+
+// ============================================================
+// 🆕 Boss 繪製（與圖鑑同步，含技能詳情）
+// ============================================================
+function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = boss.radius || 30;
+    const color = boss.color || '#8e44ad';
+    
+    // 冰凍特效
+    if (freezeTimer > 0) {
+        ctx.shadowColor = '#3498db';
+        ctx.shadowBlur = 50;
+        ctx.strokeStyle = 'rgba(52, 152, 219, 0.5)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        for (let i = 0; i < 5; i++) {
+            const angle = Date.now() / 500 + i * 1.256;
+            const dist = r * 0.8 + Math.sin(Date.now() / 300 + i) * r * 0.2;
+            ctx.fillStyle = 'rgba(174, 214, 241, 0.6)';
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#aed6f1';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('🧊', 0, -r * 1.3);
+    }
+    
+    // 中毒特效
+    if (poisonTimer > 0) {
+        for (let i = 0; i < 6; i++) {
+            const angle = Date.now() / 400 + i * 1.047;
+            const dist = r * 0.9 + Math.sin(Date.now() / 300 + i) * r * 0.2;
+            ctx.fillStyle = `rgba(46, 204, 113, ${0.15 + Math.sin(Date.now() / 500 + i) * 0.1})`;
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 6 + Math.sin(Date.now() / 400 + i) * 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // 技能預警
+    if (warning !== null && warning > 0) {
+        const progress = 1 - (warning / 60);
+        const pulseRadius = r * 1.3 + progress * r * 0.8;
+        ctx.shadowColor = '#ff4444';
+        ctx.shadowBlur = 30 + progress * 40;
+        ctx.strokeStyle = `rgba(255, 68, 68, ${0.3 + progress * 0.5})`;
+        ctx.lineWidth = 2 + progress * 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        if (Math.floor(warning / 5) % 2 === 0) {
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = `rgba(255, 255, 0, ${0.4 + progress * 0.3})`;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.15 + progress * r * 0.15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        ctx.shadowBlur = 0;
+        const countdown = Math.ceil(warning / 30);
+        ctx.fillStyle = '#ff4444';
+        ctx.font = `bold ${16 + progress * 8}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`⚠️ ${countdown}`, 0, -r * 1.5 - 10);
+        ctx.fillStyle = '#ffcc00';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textBaseline = 'top';
+        ctx.fillText(skillType || '???', 0, -r * 1.5 + 4);
+        if (skillType === '火焰吐息' || skillType === '閃電風暴' || skillType === '龍捲風') {
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2 + Date.now() / 200;
+                const dist = r * 1.6 + progress * r * 0.6;
+                ctx.fillStyle = `rgba(255, 0, 0, ${0.08 + progress * 0.15})`;
+                ctx.beginPath();
+                ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 5 + progress * 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (skillType === '暗影突襲') {
+            for (let i = 0; i < 4; i++) {
+                const angle = i * Math.PI / 2 + Date.now() / 500;
+                const dist = r * 1.8 + progress * r * 0.5;
+                const arrowSize = 8 + progress * 6;
+                ctx.fillStyle = `rgba(100, 0, 200, ${0.2 + progress * 0.2})`;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * dist, Math.sin(angle) * dist);
+                ctx.lineTo(Math.cos(angle + 0.3) * (dist - arrowSize), Math.sin(angle + 0.3) * (dist - arrowSize));
+                ctx.lineTo(Math.cos(angle - 0.3) * (dist - arrowSize), Math.sin(angle - 0.3) * (dist - arrowSize));
+                ctx.closePath();
+                ctx.fill();
+            }
+        } else if (skillType === '冰凍光環' || skillType === '寒冰之牆' || skillType === '蛛網') {
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3 + Date.now() / 400;
+                const dist = r * 1.2 + progress * r * 0.8;
+                const size = 3 + progress * 5;
+                ctx.fillStyle = `rgba(52, 152, 219, ${0.1 + progress * 0.15})`;
+                ctx.beginPath();
+                ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        const shake = progress * 4;
+        ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+        if (progress > 0.8) {
+            ctx.fillStyle = `rgba(255, 0, 0, ${(progress - 0.8) * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // Boss 本體繪製
+    ctx.shadowColor = freezeTimer > 0 ? '#3498db' : color;
+    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 40;
+    const bodyColor = freezeTimer > 0 ? '#85c1e9' : color;
+    
+    switch(boss.type) {
+        case 'boss_fire':
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                const d = r * (0.7 + Math.sin(Date.now() / 300 + i * 0.5) * 0.2);
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            break;
+        case 'boss_ice':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3 - Math.PI / 6;
+                const d = r * 0.9;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            break;
+        case 'boss_shadow':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 35;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = i * 4 * Math.PI / 5 - Math.PI / 2;
+                const d = (i % 2 === 0) ? r : r * 0.5;
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            break;
+        case 'boss_thunder':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 35;
+            ctx.beginPath();
+            ctx.moveTo(0, -r);
+            ctx.lineTo(r * 0.8, 0);
+            ctx.lineTo(0, r);
+            ctx.lineTo(-r * 0.8, 0);
+            ctx.closePath();
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            break;
+        case 'boss_rock':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.5, -r * 0.4);
+            ctx.lineTo(-r * 0.2, -r * 0.1);
+            ctx.lineTo(r * 0.3, -r * 0.5);
+            ctx.moveTo(-r * 0.3, r * 0.3);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(r * 0.4, r * 0.4);
+            ctx.stroke();
+            break;
+        case 'boss_storm':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const angle = i * Math.PI / 6;
+                const d = r * (0.3 + i / 12 * 0.7);
+                if (i === 0) ctx.moveTo(Math.cos(angle) * d, Math.sin(angle) * d);
+                else ctx.lineTo(Math.cos(angle) * d, Math.sin(angle) * d);
+            }
+            ctx.closePath();
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            break;
+        case 'boss_necromancer':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
+            ctx.beginPath();
+            ctx.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            break;
+        case 'boss_spider':
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * r * 0.5, Math.sin(angle) * r * 0.5);
+                ctx.lineTo(Math.cos(angle) * r * 1.1, Math.sin(angle) * r * 1.1);
+                ctx.stroke();
+            }
+            break;
+        default:
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = bodyColor;
+            ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(boss.emoji || '👹', 0, 0);
+    
+    // 🆕 顯示技能詳情（在 Boss 下方）
+    if (boss.skillInfo) {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const lines = boss.skillInfo.split(' | ');
+        lines.forEach((line, idx) => {
+            ctx.fillText(line, 0, r + 8 + idx * 12);
+        });
+    }
+    
+    ctx.restore();
+}
+
+// ============================================================
+// 🆕 執行 Boss 技能（含詳細效果）
+// ============================================================
+function executeBossSkill(boss, skill) {
+    if (!boss || !skill) return;
+    if (freezeTimer > 0) {
+        showNotification(`🧊 Boss 被冰凍，無法發動技能！`);
+        return;
+    }
+    
+    const skillInfo = BOSS_SKILL_INFO[skill] || { type: '未知', damage: 0, desc: '未知技能' };
+    showNotification(`💥 ${boss.name} 發動 ${skill}！${skillInfo.desc}`);
+    playAudioEffect('boss_attack');
+    document.getElementById('skillWarning').style.display = 'none';
+    
+    if (skill === '火焰吐息' || skill === '閃電風暴' || skill === '龍捲風') {
+        const count = 12 + Math.floor(Math.random() * 6);
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2 + Math.random() * 0.2;
+            const speed = 2 + Math.random() * 2;
+            obstacles.push({
+                type: 'boss_shot',
+                x: boss.x,
+                y: boss.y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                radius: 6 + Math.random() * 4,
+                damage: skillInfo.damage || 12,
+                hit: false,
+                baseSpeed: speed,
+                color: skill === '火焰吐息' ? '#ff6b35' : '#ffdd00'
+            });
+        }
+    } else if (skill === '暗影突襲') {
+        const attackX = rocket.x + (Math.random() - 0.5) * 60;
+        const attackY = rocket.y + (Math.random() - 0.5) * 60;
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 3;
+            particles.push({
+                x: attackX,
+                y: attackY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 3 + Math.random() * 4,
+                color: '#8e44ad',
+                life: 1.0
+            });
+        }
+        const dist = Math.hypot(attackX - rocket.x, attackY - rocket.y);
+        if (dist < 50) {
+            playerHP = Math.max(0, playerHP - (skillInfo.damage || 20));
+            playAudioEffect('hit');
+            if (playerHP <= 0) { triggerGameOver(); return; }
+        }
+    } else if (skill === '冰凍光環' || skill === '寒冰之牆' || skill === '蛛網') {
+        slowDebuffTimer = 180;
+        document.getElementById('slowBadge').style.display = 'inline';
+        for (let i = 0; i < 15; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 30 + Math.random() * 60;
+            particles.push({
+                x: boss.x + Math.cos(angle) * dist,
+                y: boss.y + Math.sin(angle) * dist,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                size: 4 + Math.random() * 4,
+                color: skill === '冰凍光環' ? '#3498db' : '#2ecc71',
+                life: 1.0
+            });
+        }
+    } else if (skill === '詛咒' || skill === '毒素') {
+        playerHP = Math.max(0, playerHP - (skillInfo.damage || 25));
+        playAudioEffect('hit');
+        for (let i = 0; i < 25; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 10 + Math.random() * 40;
+            particles.push({
+                x: rocket.x + Math.cos(angle) * dist,
+                y: rocket.y + Math.sin(angle) * dist,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3 - 0.5,
+                size: 5 + Math.random() * 5,
+                color: skill === '詛咒' ? '#2c3e50' : '#8e44ad',
+                life: 1.0
+            });
+        }
+        if (playerHP <= 0) { triggerGameOver(); return; }
+    } else if (skill === '岩石護甲') {
+        boss.armor = (boss.armor || 0) + 1;
+        showNotification(`🛡️ ${boss.name} 岩石護甲 +1！`);
+    } else if (skill === '復活') {
+        const heal = boss.maxHp * 0.15;
+        boss.hp = Math.min(boss.maxHp, boss.hp + heal);
+        showNotification(`💚 ${boss.name} 復活！回復 ${Math.floor(heal)} HP`);
+    } else if (skill === '隱身') {
+        boss.invisible = 60;
+        showNotification(`🌑 ${boss.name} 隱身！`);
+    } else if (skill === '地震') {
+        for (let i = 0; i < 30; i++) {
+            particles.push({
+                x: Math.random() * gameCanvas.width,
+                y: Math.random() * gameCanvas.height,
+                vx: (Math.random() - 0.5) * 2,
+                vy: -Math.random() * 3 - 1,
+                size: 2 + Math.random() * 4,
+                color: '#7f8c8d',
+                life: 0.8 + Math.random() * 0.2
+            });
+        }
+        for (let i = 0; i < 5; i++) {
+            obstacles.push({
+                type: 'rock_fall',
+                x: Math.random() * gameCanvas.width,
+                y: -20,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: 2 + Math.random() * 2,
+                radius: 8 + Math.random() * 6,
+                damage: skillInfo.damage || 10,
+                hit: false,
+                baseSpeed: 0
+            });
+        }
+    }
+}
+
+// ============================================================
+// 🆕 執行攻擊道具
+// ============================================================
+function executeAttackItem(itemType, boss) {
+    if (!boss) {
+        showNotification('⚠️ 沒有 Boss 可以攻擊！');
+        return;
+    }
+    const item = ITEM_TYPES.find(i => i.type === itemType);
+    if (!item) return;
+    playAudioEffect('attack');
+    
+    switch(itemType) {
+        case 'missile':
+            const missileDmg = 30;
+            boss.hp = Math.max(0, boss.hp - missileDmg);
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 4;
+                particles.push({
+                    x: boss.x, y: boss.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 4,
+                    color: '#ff6b35',
+                    life: 1.0
+                });
+            }
+            showNotification(`🚀 飛彈命中！造成 ${missileDmg} 傷害！`);
+            break;
+        case 'bomb':
+            const bombDmg = 50;
+            boss.hp = Math.max(0, boss.hp - bombDmg);
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 6;
+                const colors = ['#ff6b35', '#f1c40f', '#e74c3c', '#ff9ff3'];
+                particles.push({
+                    x: boss.x + (Math.random() - 0.5) * 30,
+                    y: boss.y + (Math.random() - 0.5) * 30,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1,
+                    size: 4 + Math.random() * 6,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 1.0
+                });
+            }
+            showNotification(`💣 炸彈爆炸！造成 ${bombDmg} 傷害！`);
+            break;
+        case 'laser':
+            const laserDmg = 25;
+            boss.hp = Math.max(0, boss.hp - laserDmg);
+            for (let i = 0; i < 30; i++) {
+                const progress = i / 30;
+                const x = rocket.x + (boss.x - rocket.x) * progress + (Math.random() - 0.5) * 8;
+                const y = rocket.y + (boss.y - rocket.y) * progress + (Math.random() - 0.5) * 8;
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    size: 2 + Math.random() * 3,
+                    color: '#3498db',
+                    life: 0.8 + Math.random() * 0.2
+                });
+            }
+            showNotification(`🔫 雷射命中！造成 ${laserDmg} 傷害！`);
+            break;
+        case 'freeze':
+            freezeTimer = 120;
+            for (let i = 0; i < 25; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 10 + Math.random() * 40;
+                particles.push({
+                    x: boss.x + Math.cos(angle) * dist,
+                    y: boss.y + Math.sin(angle) * dist,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: 3 + Math.random() * 5,
+                    color: '#aed6f1',
+                    life: 1.0
+                });
+            }
+            showNotification(`🧊 Boss 被冰凍 2 秒！`);
+            break;
+        case 'poison':
+            poisonTimer = 150;
+            poisonDamage = 25;
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 10 + Math.random() * 50;
+                particles.push({
+                    x: boss.x + Math.cos(angle) * dist,
+                    y: boss.y + Math.sin(angle) * dist,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2 - 0.3,
+                    size: 4 + Math.random() * 6,
+                    color: '#2ecc71',
+                    life: 1.0
+                });
+            }
+            showNotification(`🧪 Boss 中毒！持續受到傷害！`);
+            break;
+        case 'thunder':
+            const thunderDmg = 40;
+            boss.hp = Math.max(0, boss.hp - thunderDmg);
+            for (let i = 0; i < 30; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 5;
+                particles.push({
+                    x: boss.x + (Math.random() - 0.5) * 40,
+                    y: boss.y + (Math.random() - 0.5) * 40,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 2 + Math.random() * 4,
+                    color: '#f1c40f',
+                    life: 0.8 + Math.random() * 0.2
+                });
+            }
+            showNotification(`⚡ 閃電擊中！造成 ${thunderDmg} 傷害！`);
+            break;
+        case 'dart':
+            const dartDmg = 15;
+            boss.hp = Math.max(0, boss.hp - dartDmg);
+            for (let i = 0; i < 10; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 3;
+                particles.push({
+                    x: boss.x + (Math.random() - 0.5) * 20,
+                    y: boss.y + (Math.random() - 0.5) * 20,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 2 + Math.random() * 3,
+                    color: '#e74c3c',
+                    life: 0.8 + Math.random() * 0.2
+                });
+            }
+            showNotification(`🎯 飛鏢命中！造成 ${dartDmg} 傷害！`);
+            break;
+    }
+    if (boss.hp <= 0) {
+        boss.hp = 0;
+        for (let i = 0; i < 50; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 6;
+            particles.push({
+                x: boss.x, y: boss.y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1,
+                size: 3 + Math.random() * 6,
+                color: boss.color || '#8e44ad',
+                life: 1.0
+            });
+        }
+        bossActive = false;
+        document.getElementById('bossWarning').style.display = 'none';
+        showNotification(`💥 ${boss.name} 已被擊敗！`);
+        gameScore += 200;
+    }
+}
 
 // ===== 主遊戲循環 =====
 function gameLoop(){
@@ -2393,6 +2408,51 @@ if(magnetTimer>0){magnetTimer--;if(magnetTimer===0)document.getElementById('magn
 if(doubleScoreTimer>0){doubleScoreTimer--;if(doubleScoreTimer===0)document.getElementById('doubleBadge').style.display='none';}
 if(slowDebuffTimer>0){slowDebuffTimer--;if(slowDebuffTimer===0)document.getElementById('slowBadge').style.display='none';}
 
+if (poisonTimer > 0 && bossActive && currentBoss) {
+    poisonTimer--;
+    if (poisonTimer % 30 === 0) {
+        const poisonDmg = Math.floor(poisonDamage / 5);
+        currentBoss.hp = Math.max(0, currentBoss.hp - poisonDmg);
+        for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 10 + Math.random() * 30;
+            particles.push({
+                x: currentBoss.x + Math.cos(angle) * dist,
+                y: currentBoss.y + Math.sin(angle) * dist,
+                vx: (Math.random() - 0.5) * 0.2,
+                vy: (Math.random() - 0.5) * 0.2 - 0.3,
+                size: 3 + Math.random() * 4,
+                color: '#2ecc71',
+                life: 0.6 + Math.random() * 0.4
+            });
+        }
+        showNotification(`🧪 毒藥傷害！-${poisonDmg} HP`);
+        if (currentBoss.hp <= 0) {
+            currentBoss.hp = 0;
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 5;
+                particles.push({
+                    x: currentBoss.x, y: currentBoss.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1,
+                    size: 3 + Math.random() * 5,
+                    color: '#2ecc71',
+                    life: 1.0
+                });
+            }
+            bossActive = false;
+            document.getElementById('bossWarning').style.display = 'none';
+            gameScore += 200;
+            showNotification(`💥 ${currentBoss.name} 被毒死！`);
+        }
+    }
+    if (poisonTimer === 0) { showNotification(`🧪 毒藥效果結束`); }
+}
+
+if (freezeTimer > 0) { freezeTimer--; }
+if (attackCooldown > 0) attackCooldown--;
+
 let spawnY=Math.random()*(gameCanvas.height-100)+50;
 if(isUsingCustomMusic&&audioAnalyser&&audioDataArray){audioAnalyser.getByteFrequencyData(audioDataArray);spawnY=gameCanvas.height-(audioDataArray[5]/255)*(gameCanvas.height-80);}
 
@@ -2406,12 +2466,12 @@ currentBoss={...boss,x:gameCanvas.width+50,y:spawnY,hp:boss.hp+(EXP?.currentLeve
 bossActive=true;document.getElementById('bossWarning').style.display='inline';playAudioEffect('boss');showNotification(`👹 ${boss.name} 出現！`);
 }
 
-// Boss 行為（含技能預警）
+// Boss 行為
 if(bossActive&&currentBoss){
 currentBoss.x-=(currentBoss.speed||1)*userSpeedMult;
 currentBoss.skillTimer++;
 
-if (currentBoss.skillTimer > 120 && Math.random() < 0.015 && bossSkillWarning === null) {
+if (freezeTimer <= 0 && currentBoss.skillTimer > 120 && Math.random() < 0.015 && bossSkillWarning === null) {
     const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
     bossSkillType = skill;
     bossSkillWarning = 60;
@@ -2419,15 +2479,16 @@ if (currentBoss.skillTimer > 120 && Math.random() < 0.015 && bossSkillWarning ==
     playAudioEffect('warning');
     document.getElementById('skillWarning').style.display = 'inline';
     document.getElementById('bossWarningText').style.display = 'block';
-    document.getElementById('bossWarningText').textContent = `⚠️ ${skill} 即將來襲！`;
+    const skillInfo = BOSS_SKILL_INFO[skill] || { desc: '未知技能' };
+    document.getElementById('bossWarningText').textContent = `⚠️ ${skill}（${skillInfo.desc}）`;
     showNotification(`⚠️ ${currentBoss.name} 準備使用 ${skill}！`);
 }
 
 if (bossSkillWarning !== null) {
     bossSkillWarning--;
     const countdown = Math.ceil(bossSkillWarning / 30);
-    document.getElementById('bossWarningText').textContent = `⚠️ ${bossSkillType} ${countdown}s`;
-    
+    const skillInfo = BOSS_SKILL_INFO[bossSkillType] || { desc: '' };
+    document.getElementById('bossWarningText').textContent = `⚠️ ${bossSkillType} ${countdown}s ${skillInfo.desc ? '| '+skillInfo.desc : ''}`;
     if (bossSkillWarning <= 0) {
         executeBossSkill(currentBoss, bossSkillType);
         bossSkillWarning = null;
@@ -2458,7 +2519,7 @@ if(currentBoss.x<-50){bossActive=false;currentBoss=null;document.getElementById(
 
 // 生成道具
 const itemRate=parseFloat(document.getElementById('customItemRate')?.value||'0.025');
-const unlockedItems=EXP?.unlockedItems||['coin','heart','shield','magnet','double','fever'];
+const unlockedItems=EXP?.unlockedItems||['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];
 const itemPool=ITEM_TYPES.filter(i=>unlockedItems.includes(i.type));
 if(itemPool.length>0&&Math.random()<itemRate*userSpeedMult){
 const item=itemPool[Math.floor(Math.random()*itemPool.length)];
@@ -2486,15 +2547,53 @@ let dist=Math.hypot(c.x-rocket.x,c.y-rocket.y);
 if(dist<c.radius+pickupRadius){
 let scoreMult=(feverTimer>0?2:1)*(doubleScoreTimer>0?2:1);
 const coinScore=parseInt(document.getElementById('customCoinScore')?.value||50);
-if(c.type==='coin'||c.type==='star'){const pts=(c.score||coinScore)*scoreMult;gameScore+=pts;gameCombo++;playAudioEffect('coin');}
-else if(c.type==='heart'){playerHP=Math.min(100,playerHP+(c.heal||25));playAudioEffect('buff');}
-else if(c.type==='shield'){hasShield=true;document.getElementById('shieldBadge').style.display='inline';playAudioEffect('buff');}
-else if(c.type==='magnet'){magnetTimer=350;document.getElementById('magnetBadge').style.display='inline';playAudioEffect('buff');}
-else if(c.type==='double'){doubleScoreTimer=350;document.getElementById('doubleBadge').style.display='inline';playAudioEffect('buff');}
-else if(c.type==='fever'){feverTimer=300;document.getElementById('feverBadge').style.display='inline';playAudioEffect('buff');}
-else if(c.type==='wing'){userSpeedMult*=1.5;setTimeout(()=>{userSpeedMult/=1.5;},3000);playAudioEffect('buff');}
-else if(c.type==='clock'){sessionStartTime-=30000;playAudioEffect('buff');}
-else if(c.type==='key'){if(typeof window.advanceLevel==='function')window.advanceLevel();playAudioEffect('buff');}
+
+const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
+if (attackItem) {
+    if (bossActive && currentBoss) {
+        executeAttackItem(c.type, currentBoss);
+    } else {
+        showNotification(`⚠️ 沒有 Boss 可以攻擊！`);
+        c.collected = true;
+    }
+} else if (c.type==='coin'||c.type==='star'){
+    const pts=(c.score||coinScore)*scoreMult;
+    gameScore+=pts;gameCombo++;playAudioEffect('coin');
+} else if (c.type==='heart'){
+    playerHP=Math.min(100,playerHP+(c.heal||25));
+    playAudioEffect('buff');
+} else if (c.type==='shield'){
+    hasShield=true;
+    document.getElementById('shieldBadge').style.display='inline';
+    playAudioEffect('buff');
+} else if (c.type==='magnet'){
+    magnetTimer=350;
+    document.getElementById('magnetBadge').style.display='inline';
+    playAudioEffect('buff');
+} else if (c.type==='double'){
+    doubleScoreTimer=350;
+    document.getElementById('doubleBadge').style.display='inline';
+    playAudioEffect('buff');
+} else if (c.type==='fever'){
+    feverTimer=300;
+    document.getElementById('feverBadge').style.display='inline';
+    playAudioEffect('buff');
+} else if (c.type==='wing'){
+    userSpeedMult*=1.5;
+    setTimeout(()=>{userSpeedMult/=1.5;},3000);
+    playAudioEffect('buff');
+} else if (c.type==='clock'){
+    sessionStartTime-=30000;
+    playAudioEffect('buff');
+} else if (c.type==='key'){
+    if(typeof window.advanceLevel==='function')window.advanceLevel();
+    playAudioEffect('buff');
+} else if (c.type==='curse'){
+    playerHP=Math.max(0,playerHP-20);
+    gameScore=Math.max(0,gameScore-100);
+    playAudioEffect('hit');
+    if(playerHP<=0){triggerGameOver();return;}
+}
 c.collected=true;
 }
 });
@@ -2574,7 +2673,7 @@ restTimer=setInterval(()=>{countdown--;countdownEl.innerText=countdown;if(countd
 // ============================================================
 const EXP={
 currentLevel:1,maxLevel:100,bossSkills:[],
-unlockedItems:['coin','heart','shield','magnet','double','fever'],
+unlockedItems:['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'],
 unlockedObstacles:['cloud','poison','mud','spike','fire','ice'],
 isFinalBossActive:false,bossSequencePlaying:false,
 customLevelActive:false,customConfig:null,isRecordingPaused:false,
@@ -2591,7 +2690,7 @@ const pool=[
 ];
 return pool[Math.floor(Math.random()*pool.length)];
 }
-function getRandomItemType(){const all=['coin','heart','shield','magnet','double','fever','star','wing','clock','key'];const available=all.filter(item=>!EXP.unlockedItems.includes(item));return available.length===0?'coin':available[Math.floor(Math.random()*available.length)];}
+function getRandomItemType(){const all=['coin','heart','shield','magnet','double','fever','star','wing','clock','key','missile','bomb','laser','freeze','poison','thunder','dart'];const available=all.filter(item=>!EXP.unlockedItems.includes(item));return available.length===0?'coin':available[Math.floor(Math.random()*available.length)];}
 function getRandomObstacleType(){const all=['cloud','poison','mud','spike','fire','ice','thorn','void','mirror','chain'];const available=all.filter(item=>!EXP.unlockedObstacles.includes(item));return available.length===0?'cloud':available[Math.floor(Math.random()*available.length)];}
 function showNotification(msg){const status=document.getElementById('status');if(status){const orig=status.innerText;status.innerText=`🎯 ${msg}`;status.style.background='#8e44ad';setTimeout(()=>{status.innerText=orig;status.style.background='#1f4e79';},3000);}}
 function updateLevelDisplay(){
@@ -2658,7 +2757,7 @@ if(typeof window.isGameRunning!=='undefined')window.isGameRunning=true;
 if(typeof window.startBGM==='function')window.startBGM();
 const status=document.getElementById('status');
 if(status){status.innerText='🏆 恭喜通關！擊敗虛空領主！';status.style.background='#27ae60';}
-setTimeout(()=>{EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','heart','shield','magnet','double','fever'];EXP.unlockedObstacles=['cloud','poison','mud','spike','fire','ice'];EXP.isFinalBossActive=false;updateLevelDisplay();if(status){status.innerText='🎮 進入無盡模式 · 繼續挑戰！';status.style.background='#1f4e79';}},3000);
+setTimeout(()=>{EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];EXP.unlockedObstacles=['cloud','poison','mud','spike','fire','ice'];EXP.isFinalBossActive=false;updateLevelDisplay();if(status){status.innerText='🎮 進入無盡模式 · 繼續挑戰！';status.style.background='#1f4e79';}},3000);
 };
 
 // ============================================================
@@ -2674,6 +2773,8 @@ const ALL_ITEMS=[
 {id:'coin',label:'🪙 金幣'},{id:'heart',label:'❤️ 治癒之心'},{id:'shield',label:'🛡️ 護盾'},
 {id:'magnet',label:'🧲 磁鐵'},{id:'double',label:'💎 雙倍積分'},{id:'fever',label:'⚡ FEVER'},
 {id:'star',label:'⭐ 星星'},{id:'wing',label:'🪶 翅膀'},{id:'clock',label:'⏰ 時鐘'},{id:'key',label:'🔑 鑰匙'},
+{id:'missile',label:'🚀 飛彈'},{id:'bomb',label:'💣 炸彈'},{id:'laser',label:'🔫 雷射'},
+{id:'freeze',label:'🧊 冰凍彈'},{id:'poison',label:'🧪 毒藥'},{id:'thunder',label:'⚡ 閃電'},{id:'dart',label:'🎯 飛鏢'},
 ];
 const ALL_OBSTACLES=[
 {id:'cloud',label:'⛈️ 雷暴雲'},{id:'poison',label:'🟣 毒霧'},{id:'mud',label:'🕸️ 黏液'},
@@ -2687,7 +2788,7 @@ const ALL_BOSSES=[
 ];
 
 let selectedSkills=['shield','lightning','fire'];
-let selectedItems=['coin','heart','shield','magnet','double','fever'];
+let selectedItems=['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];
 let selectedObstacles=['cloud','poison','mud','spike','fire','ice'];
 let selectedBosses=['火龍','冰霜巨人','暗影刺客','雷霆鳳凰','岩石泰坦','風暴領主','死靈法師','蜘蛛女王'];
 
@@ -2739,7 +2840,7 @@ document.getElementById('levelEditor').style.display='none';
 function resetToDefault(){
 if(!confirm('確定要恢復所有預設設定嗎？'))return;
 selectedSkills=['shield','lightning','fire'];
-selectedItems=['coin','heart','shield','magnet','double','fever'];
+selectedItems=['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];
 selectedObstacles=['cloud','poison','mud','spike','fire','ice'];
 selectedBosses=['火龍','冰霜巨人','暗影刺客','雷霆鳳凰','岩石泰坦','風暴領主','死靈法師','蜘蛛女王'];
 document.getElementById('customLevel').value=1;
@@ -2854,44 +2955,57 @@ updateStatus(devModeEnabled?'🔧 開發模式已開啟':'🎮 開發模式已�
 // 圖鑑系統
 // ============================================================
 const INTRO_DATA=[
-{type:'coin',emoji:'🪙',label:'金幣',cat:'positive',catLabel:'正面道具',desc:'+50分，FEVER/雙倍時加倍'},
-{type:'heart',emoji:'❤️',label:'治癒之心',cat:'positive',catLabel:'正面道具',desc:'恢復 HP +25'},
-{type:'shield',emoji:'🛡️',label:'護盾',cat:'positive',catLabel:'正面道具',desc:'抵擋一次障礙物傷害'},
-{type:'magnet',emoji:'🧲',label:'磁鐵',cat:'positive',catLabel:'正面道具',desc:'吸引 200px 內道具'},
-{type:'double',emoji:'💎',label:'雙倍積分',cat:'positive',catLabel:'正面道具',desc:'得分 ×2'},
-{type:'fever',emoji:'⚡',label:'FEVER',cat:'positive',catLabel:'正面道具',desc:'得分 ×2 + 超大吸取'},
-{type:'star',emoji:'⭐',label:'星星',cat:'positive',catLabel:'正面道具',desc:'+100分'},
-{type:'wing',emoji:'🪶',label:'翅膀',cat:'positive',catLabel:'正面道具',desc:'加速 3 秒'},
-{type:'clock',emoji:'⏰',label:'時鐘',cat:'positive',catLabel:'正面道具',desc:'增加 30 秒遊戲時間'},
-{type:'key',emoji:'🔑',label:'鑰匙',cat:'positive',catLabel:'正面道具',desc:'立即升一關'},
-{type:'curse',emoji:'💀',label:'詛咒寶石',cat:'negative',catLabel:'負面道具',desc:'扣 HP 15~25，扣分 -100'},
-{type:'cloud',emoji:'⛈️',label:'雷暴雲',cat:'obstacle',catLabel:'障礙物',desc:'傷害：10/25/35'},
-{type:'poison',emoji:'🟣',label:'毒霧',cat:'obstacle',catLabel:'障礙物',desc:'傷害：40/50'},
-{type:'mud',emoji:'🕸️',label:'黏液',cat:'obstacle',catLabel:'障礙物',desc:'減速 50%'},
-{type:'spike',emoji:'🔺',label:'尖刺',cat:'obstacle',catLabel:'障礙物',desc:'傷害：30'},
-{type:'fire',emoji:'🔥',label:'火焰',cat:'obstacle',catLabel:'障礙物',desc:'傷害：35'},
-{type:'ice',emoji:'❄️',label:'冰塊',cat:'obstacle',catLabel:'障礙物',desc:'傷害：20，減速'},
-{type:'thorn',emoji:'🌿',label:'荊棘',cat:'obstacle',catLabel:'障礙物',desc:'傷害：15'},
-{type:'void',emoji:'🌌',label:'虛空',cat:'obstacle',catLabel:'障礙物',desc:'傷害：50'},
-{type:'mirror',emoji:'🪞',label:'鏡像',cat:'obstacle',catLabel:'障礙物',desc:'傷害：10，反彈'},
-{type:'chain',emoji:'⛓️',label:'鎖鏈',cat:'obstacle',catLabel:'障礙物',desc:'傷害：20，減速'},
-{type:'boss_fire',emoji:'🐉',label:'🔥 火龍',cat:'boss',catLabel:'Boss',desc:'火焰吐息 · 烈焰護盾',color:'#e74c3c'},
-{type:'boss_ice',emoji:'🧊',label:'❄️ 冰霜巨人',cat:'boss',catLabel:'Boss',desc:'冰凍光環 · 寒冰之牆',color:'#3498db'},
-{type:'boss_shadow',emoji:'🗡️',label:'🌑 暗影刺客',cat:'boss',catLabel:'Boss',desc:'暗影突襲 · 隱身',color:'#8e44ad'},
-{type:'boss_thunder',emoji:'🦅',label:'⚡ 雷霆鳳凰',cat:'boss',catLabel:'Boss',desc:'閃電風暴 · 復活',color:'#f1c40f'},
-{type:'boss_rock',emoji:'🗿',label:'🪨 岩石泰坦',cat:'boss',catLabel:'Boss',desc:'地震 · 岩石護甲',color:'#7f8c8d'},
-{type:'boss_storm',emoji:'🌪️',label:'🌪️ 風暴領主',cat:'boss',catLabel:'Boss',desc:'龍捲風 · 風牆',color:'#1abc9c'},
-{type:'boss_necromancer',emoji:'🧙',label:'💀 死靈法師',cat:'boss',catLabel:'Boss',desc:'召喚骷髏 · 詛咒',color:'#2c3e50'},
-{type:'boss_spider',emoji:'🕷️',label:'🕷️ 蜘蛛女王',cat:'boss',catLabel:'Boss',desc:'蛛網 · 毒素',color:'#6c3483'},
-{type:'finalboss',emoji:'👾',label:'🏆 最終 Boss - 虛空領主',cat:'final',catLabel:'最終 Boss',desc:'第100關觸發 · 專屬動畫與配樂'},
+// 正面道具
+{type:'coin', emoji:'🪙', label:'金幣', cat:'positive', catLabel:'正面道具', desc:'+50分，FEVER/雙倍時加倍'},
+{type:'heart', emoji:'❤️', label:'治癒之心', cat:'positive', catLabel:'正面道具', desc:'恢復 HP +25'},
+{type:'shield', emoji:'🛡️', label:'護盾', cat:'positive', catLabel:'正面道具', desc:'抵擋一次障礙物傷害'},
+{type:'magnet', emoji:'🧲', label:'磁鐵', cat:'positive', catLabel:'正面道具', desc:'吸引 200px 內道具'},
+{type:'double', emoji:'💎', label:'雙倍積分', cat:'positive', catLabel:'正面道具', desc:'得分 ×2'},
+{type:'fever', emoji:'⚡', label:'FEVER', cat:'positive', catLabel:'正面道具', desc:'得分 ×2 + 超大吸取'},
+{type:'star', emoji:'⭐', label:'星星', cat:'positive', catLabel:'正面道具', desc:'+100分'},
+{type:'wing', emoji:'🪶', label:'翅膀', cat:'positive', catLabel:'正面道具', desc:'加速 3 秒'},
+{type:'clock', emoji:'⏰', label:'時鐘', cat:'positive', catLabel:'正面道具', desc:'增加 30 秒遊戲時間'},
+{type:'key', emoji:'🔑', label:'鑰匙', cat:'positive', catLabel:'正面道具', desc:'立即升一關'},
+// 攻擊道具
+{type:'missile', emoji:'🚀', label:'飛彈', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 30 傷害'},
+{type:'bomb', emoji:'💣', label:'炸彈', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 50 傷害'},
+{type:'laser', emoji:'🔫', label:'雷射', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 25 傷害'},
+{type:'freeze', emoji:'🧊', label:'冰凍彈', cat:'attack', catLabel:'攻擊道具', desc:'冰凍 Boss 2 秒'},
+{type:'poison', emoji:'🧪', label:'毒藥', cat:'attack', catLabel:'攻擊道具', desc:'持續傷害 5 秒'},
+{type:'thunder', emoji:'⚡', label:'閃電', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 40 傷害'},
+{type:'dart', emoji:'🎯', label:'飛鏢', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 15 傷害'},
+// 負面道具
+{type:'curse', emoji:'💀', label:'詛咒寶石', cat:'negative', catLabel:'負面道具', desc:'扣 HP 15~25，扣分 -100'},
+// 障礙物
+{type:'cloud', emoji:'⛈️', label:'雷暴雲', cat:'obstacle', catLabel:'障礙物', desc:'傷害：10/25/35'},
+{type:'poison', emoji:'🟣', label:'毒霧', cat:'obstacle', catLabel:'障礙物', desc:'傷害：40/50'},
+{type:'mud', emoji:'🕸️', label:'黏液', cat:'obstacle', catLabel:'障礙物', desc:'減速 50%'},
+{type:'spike', emoji:'🔺', label:'尖刺', cat:'obstacle', catLabel:'障礙物', desc:'傷害：30'},
+{type:'fire', emoji:'🔥', label:'火焰', cat:'obstacle', catLabel:'障礙物', desc:'傷害：35'},
+{type:'ice', emoji:'❄️', label:'冰塊', cat:'obstacle', catLabel:'障礙物', desc:'傷害：20，減速'},
+{type:'thorn', emoji:'🌿', label:'荊棘', cat:'obstacle', catLabel:'障礙物', desc:'傷害：15'},
+{type:'void', emoji:'🌌', label:'虛空', cat:'obstacle', catLabel:'障礙物', desc:'傷害：50'},
+{type:'mirror', emoji:'🪞', label:'鏡像', cat:'obstacle', catLabel:'障礙物', desc:'傷害：10，反彈'},
+{type:'chain', emoji:'⛓️', label:'鎖鏈', cat:'obstacle', catLabel:'障礙物', desc:'傷害：20，減速'},
+// Boss
+{type:'boss_fire', emoji:'🐉', label:'🔥 火龍', cat:'boss', catLabel:'Boss', desc:'🔥 火焰吐息：噴射火焰彈幕 | 🛡️ 烈焰護盾：減少傷害 30%', color:'#e74c3c'},
+{type:'boss_ice', emoji:'🧊', label:'❄️ 冰霜巨人', cat:'boss', catLabel:'Boss', desc:'🧊 冰凍光環：減速 50% 持續 3 秒 | ❄️ 寒冰之牆：抵擋攻擊並減速', color:'#3498db'},
+{type:'boss_shadow', emoji:'🗡️', label:'🌑 暗影刺客', cat:'boss', catLabel:'Boss', desc:'🌑 暗影突襲：瞬間移動攻擊扣 20 HP | 👻 隱身：短暫躲避攻擊', color:'#8e44ad'},
+{type:'boss_thunder', emoji:'🦅', label:'⚡ 雷霆鳳凰', cat:'boss', catLabel:'Boss', desc:'⚡ 閃電風暴：閃電彈幕攻擊 | 💚 復活：死亡時恢復 15% HP', color:'#f1c40f'},
+{type:'boss_rock', emoji:'🗿', label:'🪨 岩石泰坦', cat:'boss', catLabel:'Boss', desc:'🌍 地震：全畫面震動和落石 | 🪨 岩石護甲：減少受到的傷害', color:'#7f8c8d'},
+{type:'boss_storm', emoji:'🌪️', label:'🌪️ 風暴領主', cat:'boss', catLabel:'Boss', desc:'🌪️ 龍捲風：龍捲風彈幕攻擊 | 💨 風牆：抵擋正面攻擊', color:'#1abc9c'},
+{type:'boss_necromancer', emoji:'🧙', label:'💀 死靈法師', cat:'boss', catLabel:'Boss', desc:'💀 召喚骷髏：召喚骷髏兵攻擊 | 🔮 詛咒：直接造成 25 傷害', color:'#2c3e50'},
+{type:'boss_spider', emoji:'🕷️', label:'🕷️ 蜘蛛女王', cat:'boss', catLabel:'Boss', desc:'🕸️ 蛛網：減速 50% 持續 3 秒 | 🧪 毒素：直接造成 25 傷害', color:'#6c3483'},
+// 最終 Boss
+{type:'finalboss', emoji:'👾', label:'🏆 最終 Boss - 虛空領主', cat:'final', catLabel:'最終 Boss', desc:'第100關觸發 · 專屬動畫與配樂 · 擁有全部 Boss 技能'},
 ];
 
 function buildIntroGrid(){
 const grid=document.getElementById('introGrid');if(!grid)return;grid.innerHTML='';
 const cats=[
-{key:'positive',label:'🎁 正面道具'},{key:'negative',label:'⚠️ 負面道具'},
-{key:'obstacle',label:'🚧 障礙物'},{key:'boss',label:'👹 Boss 類型（共8種）'},
-{key:'final',label:'🏆 最終 Boss'}
+{key:'positive',label:'🎁 正面道具'},{key:'attack',label:'🗡️ 攻擊道具'},
+{key:'negative',label:'⚠️ 負面道具'},{key:'obstacle',label:'🚧 障礙物'},
+{key:'boss',label:'👹 Boss 類型（共8種）'},{key:'final',label:'🏆 最終 Boss'}
 ];
 cats.forEach(cat=>{
 const header=document.createElement('div');
@@ -2904,6 +3018,7 @@ const card=document.createElement('div');
 card.className=`intro-card ${item.cat}`;
 if(item.cat==='boss')card.classList.add('boss-card');
 if(item.cat==='final')card.classList.add('final-card');
+if(item.cat==='attack')card.classList.add('attack-card');
 if(item.color){card.style.borderLeftColor=item.color;card.style.borderLeftWidth='4px';}
 card.innerHTML=`
 <span class="category-tag ${item.cat}">${item.catLabel}</span>
@@ -2941,7 +3056,7 @@ const nm={boss_fire:'火龍',boss_ice:'冰霜巨人',boss_shadow:'暗影刺客',
 ctx.fillStyle=color||'#8e44ad';ctx.font='7px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(nm[type]||'Boss',w/2,h-2);
 }else{
 ctx.fillStyle='#8b949e';ctx.font='28px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️'};
+const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',missile:'🚀',bomb:'💣',laser:'🔫',freeze:'🧊',poison:'🧪',thunder:'⚡',dart:'🎯',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️'};
 ctx.fillText(em[type]||'🎬',cx,cy);
 }
 ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='7px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('點擊播放',w/2,h-2);
@@ -2981,7 +3096,7 @@ const sm={boss_fire:'火焰吐息 · 烈焰護盾',boss_ice:'冰凍光環 · 寒
 ctx.fillStyle='#8b949e';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('技能: '+(sm[type]||''),cx,cy+40);
 }else{
 ctx.fillStyle='#8b949e';ctx.font='60px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️'};
+const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',missile:'🚀',bomb:'💣',laser:'🔫',freeze:'🧊',poison:'🧪',thunder:'⚡',dart:'🎯',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️'};
 ctx.fillText(em[type]||'🎬',cx,cy);ctx.fillStyle='#5a6a7a';ctx.font='14px sans-serif';ctx.textBaseline='bottom';ctx.fillText(label||'',cx,cy-50);
 }
 ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('🎬 示範影片',w/2,h-5);
@@ -3008,7 +3123,6 @@ function initExpansion(){
         select.appendChild(opt);
     }
     
-    // 所有開發功能預設開啟
     document.querySelectorAll('.dev-hidden').forEach(el => {
         el.style.display = '';
         el.style.visibility = 'visible';
@@ -3042,9 +3156,11 @@ function initExpansion(){
     
     console.log('✅ 完整擴充功能已載入！（開發模式已開啟）');
     console.log('📖 點擊圖鑑卡片觀看示範影片');
-    console.log('👹 8 種 Boss 隨機出現');
-    console.log('🎁 10 種道具 + 10 種障礙物');
+    console.log('👹 8 種 Boss 隨機出現，每種 Boss 有 2 個專屬技能');
+    console.log('🎁 10 種道具 + 7 種攻擊道具（吃到自動發動）');
     console.log('⚠️ Boss 技能有 2 秒預警！');
+    console.log('🗡️ 攻擊道具吃到自動發動！');
+    console.log('📋 Boss 技能詳細說明顯示在 Boss 下方');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
@@ -3064,7 +3180,7 @@ window.importLevelConfig=importLevelConfig;
 window.handleLevelImport=handleLevelImport;
 window.resetLevelProgress=function(){
 if(confirm('確定要重置所有關卡進度嗎？')){
-EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','heart','shield','magnet','double','fever'];EXP.unlockedObstacles=['cloud','poison','mud','spike','fire','ice'];EXP.customLevelActive=false;EXP.customConfig=null;EXP.isFinalBossActive=false;EXP.bossSequencePlaying=false;EXP.isRecordingPaused=false;updateLevelDisplay();if(typeof restartGameEngine==='function')restartGameEngine();const status=document.getElementById('status');if(status){status.innerText='🔄 關卡進度已重置';status.style.background='#e67e22';setTimeout(()=>{status.style.background='#1f4e79';},2000);}
+EXP.currentLevel=1;EXP.bossSkills=[];EXP.unlockedItems=['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];EXP.unlockedObstacles=['cloud','poison','mud','spike','fire','ice'];EXP.customLevelActive=false;EXP.customConfig=null;EXP.isFinalBossActive=false;EXP.bossSequencePlaying=false;EXP.isRecordingPaused=false;updateLevelDisplay();if(typeof restartGameEngine==='function')restartGameEngine();const status=document.getElementById('status');if(status){status.innerText='🔄 關卡進度已重置';status.style.background='#e67e22';setTimeout(()=>{status.style.background='#1f4e79';},2000);}
 }
 };
 window.skipBossSequence=skipBossSequence;
