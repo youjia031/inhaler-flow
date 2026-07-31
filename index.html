@@ -1,21 +1,10 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inhaler Flow Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-    <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
-
-    <!-- 引入 Chart.js 繪圖庫 -->
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         /* =====================================================
            Academic color scheme (from Python)
@@ -32,21 +21,11 @@
         }
         
         * { box-sizing: border-box; }
-
         body {
             font-family: var(--FONT_FAMILY), sans-serif;
             background: var(--COL_BG);
-
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-
-            background-color: #f4f6f8;
-
-            color: #2c3e50;
-
             margin: 0;
-
             padding: 20px;
-
         }
         
         .container {
@@ -71,9 +50,6 @@
         }
         
         /* Header */
-
-        /* 標題區域排版 */
-
         .header {
             display: flex;
             align-items: baseline;
@@ -81,33 +57,12 @@
             padding: 4px 16px 16px 16px;
             border-bottom: 1px solid var(--COL_GRID);
             margin-bottom: 16px;
-
-            margin-bottom: 20px;
-
-            border-left: 6px solid #1f4e79;
-
-            padding-left: 15px;
-
         }
         .header h1 {
             color: var(--COL_ACCENT);
             font-size: 24px;
             font-weight: 600;
-
-        /* 新增的大型中文主標題樣式 */
-
-        .header .main-title {
-
             margin: 0;
-
-            color: #1f4e79;
-
-            font-size: 36px;
-
-            font-weight: 800;
-
-            letter-spacing: 2px;
-
         }
         .header .subtitle {
             color: #7f8c8d;
@@ -122,37 +77,14 @@
             padding: 16px;
             background: var(--COL_PANEL);
             border: 1px solid var(--COL_GRID);
-
-        /* 原本的英文標題改為副標題 */
-
-        .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
-
-        .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
-
-        .control-panel {
-
-            background: #ffffff;
-
-            padding: 15px;
-
             border-radius: 8px;
             margin-bottom: 16px;
         }
         .control-group {
-
-            margin-bottom: 15px;
-
             display: flex;
-
-            gap: 15px;
-
             align-items: center;
             gap: 8px;
-
             flex-wrap: wrap;
-
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-
         }
         .control-group label {
             color: var(--COL_TEXT);
@@ -215,31 +147,9 @@
         }
         .stats strong {
             color: var(--COL_ACCENT);
-
-        .btn {
-
-            padding: 8px 16px; border: none; border-radius: 4px;
-
-            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
-
         }
         
         /* Chart */
-
-        .btn.accent { background-color: #1f4e79; color: white; }
-
-        .btn.accent:hover { background-color: #163d5e; }
-
-        .btn:hover { background-color: #e1e8ee; }
-
-        .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
-
-        label { font-size: 14px; font-weight: 500; }
-
-        input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
-
-        .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
-
         .chart-container {
             background: var(--COL_PANEL);
             border: 1px solid var(--COL_GRID);
@@ -269,38 +179,18 @@
         }
         .status-bar .peak {
             font-weight: 600;
-
-            background: #ffffff; padding: 15px; border-radius: 8px;
-
-            height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
-
         }
-
-        .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
-
     </style>
-
 </head>
-
 <body>
 <div class="container">
     <!-- 標題 -->
     <div class="page-title">🧪 吸入器流量監測器</div>
 
     <!-- Header -->
-
-
-    <!-- 頂部大標題區域 -->
-
     <div class="header">
-
-        <div class="main-title">呼吸訓練器</div>
-
         <h1>Inhaler Flow Monitor</h1>
         <span class="subtitle">Acoustic inhaler flow visualization</span>
-
-        <p>Acoustic inhaler flow visualization</p>
-
     </div>
 
     <!-- Controls -->
@@ -316,62 +206,21 @@
             <label>Patient ID</label>
             <input id="patientInput" placeholder="e.g. P001" value="Demo" style="width:120px;">
         </div>
-
-
-    <div class="control-panel">
-
-        <button id="connectBtn" class="btn accent">Connect</button>
-
-        <button id="startBtn" class="btn" disabled>Start</button>
-
-        <button id="clearBtn" class="btn">Clear</button>
-
-        <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
-
-
+        
         <div class="control-group">
             <button id="measureBtn">Start</button>
             <button id="clearBtn">Clear</button>
             <button id="saveBtn" class="primary">Save CSV</button>
         </div>
-
-        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
-
-
+        
         <div class="stats">
             <span>Records: <strong id="recordCount">0</strong></span>
             <span>Peak: <strong id="peakValue">—</strong> L/min</span>
         </div>
-
-        <label>Mode: 
-
-            <select id="modeSelect">
-
-                <option value="auto">auto</option>
-
-                <option value="inhalation">inhalation</option>
-
-                <option value="exhalation">exhalation</option>
-
-            </select>
-
-        </label>
-
-
-
-        <span id="recordCount" class="info-text">Records: 0</span>
-
-        <span id="peakFlow" class="info-text">Peak: — L/min</span>
-
-        <span id="detectedMode" class="info-text">Detected: —</span>
-
     </div>
 
     <!-- Chart -->
-
-
     <div class="chart-container">
-
         <canvas id="flowChart"></canvas>
     </div>
 
@@ -539,133 +388,7 @@ class FlowMonitorApp {
                         min: 0,
                         max: 70,
                         grid: { color: '#d9e1e8' }
-
-
-
-    <div class="statusbar" id="status">Not connected</div>
-
-
-
-    <script>
-
-        // =====================================================
-
-        //  100% 完整對應原版 Python 的教育引導線計畫表 (共 27 階段)
-
-        // =====================================================
-
-        const EDUCATION_PROGRAM = [
-
-            // === 暖身 ===
-
-            ["inhalation", 0,   3],   // 0. 預備靜止
-
-            // === 階段一：節奏訓練 ===
-
-            ["inhalation", 60,  2],   // 1. 中強吸氣 60
-
-            ["inhalation", 0,   1],   // 2. 屏息 ⚡挑戰
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 60,  3],   // 3. 長吐氣 60
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["inhalation", 60,  2],   // 4. 中強吸氣 60
-
-            ["inhalation", 0,   1],   // 5. 屏息 ⚡挑戰
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 60,  3],   // 6. 長吐氣 60
-
-            ["inhalation", 0,   2],   // 休息
-
-            // === 階段二：力道挑戰 ===
-
-            ["inhalation", 0,   1],   // 7. 預備
-
-            ["inhalation", 0,   1],   // 休息
-
-            ["inhalation", 90, 1.5],  // 8. 💥爆發吸 90
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 50,  6],   // 9. 持久吐氣 50 🌬️耐力
-
-            ["inhalation", 0,   1],   // 10. 喘息
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["inhalation", 90, 1.5],  // 11. 💥爆發吸 90
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 50,  6],   // 12. 持久吐氣 50
-
-            ["inhalation", 0,   2],   // 休息
-
-            // === 階段三：高峰衝刺 ===
-
-            ["inhalation", 0,   2],   // 13. 深呼吸預備
-
-            ["inhalation", 120, 1],   // 14. 🔥極限吸氣 120 ⭐BOSS
-
-            ["inhalation", 0,   1],   // 15. 屏息撐住 ⚡⚡
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 100, 2],   // 16. 🔥強吐 100 ⭐BOSS
-
-            ["inhalation", 0,   2],   // 17. 喘息
-
-            // === 緩和 ===
-
-            ["inhalation", 40,  3],   // 18. 慢吸氣 40
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 40,  4],   // 19. 慢吐氣 40
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["inhalation", 30,  3],   // 20. 輕吸氣 30
-
-            ["inhalation", 0,   2],   // 休息
-
-            ["exhalation", 30,  4],   // 21. 輕吐氣 30
-
-            ["inhalation", 0,   3]    // 22. 結束靜止
-
-        ];
-
-
-
-        function makeEducationCurves(dt = 0.05, ramp = 0.4) {
-
-            let times = [], inh = [], exh = [];
-
-            let t = 0.0;
-
-            for (let [mode, flow, dur] of EDUCATION_PROGRAM) {
-
-                if (flow === 0) {
-
-                    let steps = Math.max(1, Math.round(dur / dt));
-
-                    for (let i = 0; i < steps; i++) {
-
-                        times.push(Number(t.toFixed(3)));
-
-                        inh.push(0.0); exh.push(0.0);
-
-                        t += dt;
-
                     }
-
-                    continue;
-
                 }
             }
         });
@@ -782,64 +505,13 @@ class FlowMonitorApp {
                 buffer += chunk;
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
-
-                let target = (mode === "inhalation") ? flow : -flow;
-
-                let ramp_dur = Math.min(ramp, dur * 0.3);
-
-                let hold_dur = dur - 2 * ramp_dur;
-
-                if (hold_dur < 0) { ramp_dur = dur / 2; hold_dur = 0; }
-
-
+                
                 for (const line of lines) {
                     const trimmed = line.trim();
                     if (trimmed) {
                         this.handleLine(trimmed);
                     }
-
-                let steps_up = Math.max(1, Math.round(ramp_dur / dt));
-
-                let steps_hold = Math.round(hold_dur / dt);
-
-                let steps_down = Math.max(1, Math.round(ramp_dur / dt));
-
-
-
-                for (let i = 0; i < steps_up; i++) {
-
-                    let v = target * ((i + 1) / steps_up);
-
-                    times.push(Number(t.toFixed(3)));
-
-                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
-
-                    t += dt;
-
                 }
-
-                for (let i = 0; i < steps_hold; i++) {
-
-                    times.push(Number(t.toFixed(3)));
-
-                    if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); exh.push(target); }
-
-                    t += dt;
-
-                }
-
-                for (let i = 0; i < steps_down; i++) {
-
-                    let v = target * (1 - (i + 1) / steps_down);
-
-                    times.push(Number(t.toFixed(3)));
-
-                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
-
-                    t += dt;
-
-                }
-
             }
         } catch (e) {
             if (e.name !== 'AbortError') {
@@ -876,9 +548,6 @@ class FlowMonitorApp {
             if ((this.last_fft[1] || 0) > 800000 && (this.last_fft[8] || 0) < 50000) {
                 is_candidate = false;
             }
-
-            return { times, inh, exh };
-
         }
         
         // -------------------------------------------------
@@ -892,87 +561,6 @@ class FlowMonitorApp {
             flow_yes = true;
             if (est === 0.0 && low_e > 1000000) {
                 est = 15.0;
-
-
-
-        const guideData = makeEducationCurves();
-
-
-
-        // =====================================================
-
-        //  應用程式狀態與圖表初始化
-
-        // =====================================================
-
-        let port, reader, isMeasuring = false;
-
-        let records = [], flowHistory = [], windowHistory = [false, false, false];
-
-        let lastFFT = {}, startTime = null, currentMode = "inhalation";
-
-        let lastAchievementSegment = -1;
-
-        let achievementMarkers = []; // 儲存成就點坐標 {x, y}
-
-
-
-        // 生成標準引導線繪圖數據點
-
-        const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
-
-        const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
-
-
-
-        // 自訂繪圖插件：完美還原 Python 的圓圈金幣與 😊 貼圖效果
-
-        const achievementPlugin = {
-
-            id: 'achievementPlugin',
-
-            afterDatasetsDraw(chart) {
-
-                const { ctx, scales: { x, y } } = chart;
-
-                ctx.save();
-
-                achievementMarkers.forEach(marker => {
-
-                    const canvasX = x.getPixelForValue(marker.x);
-
-                    const canvasY = y.getPixelForValue(marker.y);
-
-                    
-
-                    // 1. 畫金色圓圈
-
-                    ctx.beginPath();
-
-                    ctx.arc(canvasX, canvasY, 15, 0, 2 * Math.PI);
-
-                    ctx.strokeStyle = 'gold';
-
-                    ctx.lineWidth = 3;
-
-                    ctx.stroke();
-
-                    
-
-                    // 2. 畫 😊 貼圖
-
-                    ctx.font = '30px sans-serif';
-
-                    ctx.textAlign = 'center';
-
-                    ctx.textBaseline = 'middle';
-
-                    ctx.fillText('😊', canvasX, canvasY - 40); // 往上飄移顯示
-
-                });
-
-                ctx.restore();
-
             }
         } else {
             flow_yes = false;
@@ -993,55 +581,6 @@ class FlowMonitorApp {
             est: est,
             low_energy: low_e,
             fft: this.last_fft || {}
-
-        };
-
-
-
-        const ctx = document.getElementById('flowChart').getContext('2d');
-
-        const flowChart = new Chart(ctx, {
-
-            type: 'line',
-
-            data: {
-
-                datasets: [
-
-                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-
-                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-
-                    { label: 'Patient', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
-
-                ]
-
-            },
-
-            options: {
-
-                responsive: true,
-
-                maintainAspectRatio: false,
-
-                plugins: {
-
-                    title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
-
-                },
-
-                scales: {
-
-                    x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
-
-                    y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
-
-                }
-
-            },
-
-            plugins: [achievementPlugin]
-
         });
         this.updateRecordCount();
         
@@ -1063,67 +602,14 @@ class FlowMonitorApp {
                 } else {
                     this.times = [0];
                     this.flows = [est];
-
-
-
-        // =====================================================
-
-        //  100% 翻譯自原版 Python 的核心判定演算法
-
-        // =====================================================
-
-        function getEducationMode(elapsedTime) {
-
-            let t = 0.0;
-
-            let prevMode = null;
-
-            for (let i = 0; i < EDUCATION_PROGRAM.length; i++) {
-
-                let [mode, flow, dur] = EDUCATION_PROGRAM[i];
-
-                if (t <= elapsedTime && elapsedTime < t + dur) {
-
-                    if (flow > 0) return mode;
-
-                    let progress = dur > 0 ? (elapsedTime - t) / dur : 0;
-
-                    if (prevMode === null) {
-
-                        for (let j = i - 1; j >= 0; j--) {
-
-                            if (EDUCATION_PROGRAM[j][1] > 0) { prevMode = EDUCATION_PROGRAM[j][0]; break; }
-
-                        }
-
-                    }
-
-                    let nextMode = null;
-
-                    for (let j = i + 1; j < EDUCATION_PROGRAM.length; j++) {
-
-                        if (EDUCATION_PROGRAM[j][1] > 0) { nextMode = EDUCATION_PROGRAM[j][0]; break; }
-
-                    }
-
-                    return (progress < 0.5) ? prevMode : nextMode;
-
                 }
                 this.statusMsg.textContent = 'Inhalation detected.';
                 this.prev_flow_yes = flow_yes;
                 this.redraw();
                 return;
-
-                if (flow > 0) prevMode = mode;
-
-                t += dur;
-
             }
             this.prev_flow_yes = flow_yes;
             return;
-
-            return null;
-
         }
         
         this.prev_flow_yes = flow_yes;
@@ -1144,33 +630,7 @@ class FlowMonitorApp {
             const v = parseFloat(m[2]);
             if (k >= 1 && k <= 20) {
                 bands[k] = v;
-
-
-
-        function checkAchievement(elapsedTime) {
-
-            let t = 0.0;
-
-            for (let i = 0; i < EDUCATION_PROGRAM.length; i++) {
-
-                let [mode, flow, dur] = EDUCATION_PROGRAM[i];
-
-                if (t <= elapsedTime && elapsedTime < t + dur) {
-
-                    let progress = dur > 0 ? (elapsedTime - t) / dur : 0;
-
-                    if (flow === 0) return { isActive: false, progress, index: i };
-
-                    return { isActive: true, progress, index: i };
-
-                }
-
-                t += dur;
-
             }
-
-            return { isActive: false, progress: 0, index: -1 };
-
         }
         return Object.keys(bands).length > 0 ? bands : null;
     }
@@ -1216,36 +676,12 @@ class FlowMonitorApp {
         if (this.times.length > 0) {
             const xmax = Math.max(10, this.times[this.times.length - 1] + 1);
             this.chart.options.scales.x.max = xmax;
-
-
-
-        function detectBreathMode(fft) {
-
-            if (!fft) return null;
-
-            let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0;
-
-            if (e1 + e2 + e3 < 500000) return null;
-
-            let ratio_3to1 = e1 > 0 ? e3 / e1 : 10;
-
-            return (ratio_3to1 > 0.8) ? "exhalation" : "inhalation";
-
         }
         if (this.flows.length > 0) {
             const ymax = Math.max(70, Math.max(...this.flows) * 1.2);
             this.chart.options.scales.y.max = ymax;
             const peak = Math.max(...this.flows);
             this.peakValue.textContent = peak.toFixed(1) + ' L/min';
-
-
-
-        function detectFlowRate(mode, estFlow) {
-
-            let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
-
-            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - curr) ? curr : prev);
-
         }
         this.chart.update('none');
     }
@@ -1261,59 +697,6 @@ class FlowMonitorApp {
             this.measureBtn.textContent = 'Start';
             this.measureBtn.className = '';
             this.statusMsg.textContent = 'Measurement stopped (waveform frozen).';
-
-
-
-        // =====================================================
-
-        //  資料流解析與 UI 互動控制
-
-        // =====================================================
-
-        document.getElementById('connectBtn').addEventListener('click', toggleConnection);
-
-        document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
-
-        document.getElementById('clearBtn').addEventListener('click', clearPlot);
-
-        document.getElementById('saveBtn').addEventListener('click', saveCSV);
-
-
-
-        async function toggleConnection() {
-
-            if (!port) {
-
-                try {
-
-                    port = await navigator.serial.requestPort();
-
-                    await port.open({ baudRate: 115200 });
-
-                    document.getElementById('connectBtn').innerText = 'Disconnect';
-
-                    document.getElementById('startBtn').disabled = false;
-
-                    updateStatus('Connected. Press Start to begin.');
-
-                    readLoop();
-
-                } catch (err) { updateStatus('Connection failed: ' + err); }
-
-            } else {
-
-                if (reader) await reader.cancel();
-
-                await port.close(); port = null;
-
-                document.getElementById('connectBtn').innerText = 'Connect';
-
-                document.getElementById('startBtn').disabled = true;
-
-                updateStatus('Disconnected');
-
-            }
-
         }
     }
     
@@ -1332,45 +715,6 @@ class FlowMonitorApp {
             this.chart.options.scales.x.max = 10;
             this.chart.options.scales.y.max = 70;
             this.chart.update('none');
-
-
-
-        async function readLoop() {
-
-            const textDecoder = new TextDecoderStream();
-
-            port.readable.pipeTo(textDecoder.writable);
-
-            reader = textDecoder.readable.getReader();
-
-            let buffer = '';
-
-            try {
-
-                while (true) {
-
-                    const { value, done } = await reader.read();
-
-                    if (done) break;
-
-                    buffer += value;
-
-                    let lines = buffer.split('\n');
-
-                    buffer = lines.pop();
-
-                    for (let line of lines) {
-
-                        line = line.trim();
-
-                        if (isMeasuring) parseLine(line);
-
-                    }
-
-                }
-
-            } catch (err) { console.error(err); } finally { reader.releaseLock(); }
-
         }
         this.updateRecordCount();
         this.peakValue.textContent = '—';
@@ -1381,201 +725,6 @@ class FlowMonitorApp {
         if (this.records.length === 0) {
             alert('No data to save.\nPlease connect and collect data first.');
             return;
-
-
-
-        function parseLine(line) {
-
-            if (line.includes('[FFT]')) {
-
-                const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
-
-                for (const match of matches) { lastFFT[match[1]] = parseFloat(match[2]); }
-
-                return;
-
-            }
-
-            
-
-            if (line.includes('[DETECT]')) {
-
-                const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
-
-                const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
-
-                const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
-
-                if (!flowMatch) return;
-
-
-
-                let flowYes = flowMatch[1].toUpperCase() === 'YES';
-
-                let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
-
-                let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
-
-
-
-                // 噪聲過濾
-
-                let isCandidate = false;
-
-                if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
-
-                if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
-
-
-
-                // 滑動視窗多數決
-
-                windowHistory.shift();
-
-                windowHistory.push(isCandidate);
-
-                let trueCount = windowHistory.filter(x => x === true).length;
-
-                if (trueCount >= 2) {
-
-                    flowYes = true;
-
-                    if (est === 0.0 && lowE > 1000000) est = 15.0;
-
-                } else {
-
-                    flowYes = false; est = 0.0;
-
-                }
-
-
-
-                if (startTime === null) startTime = Date.now();
-
-                let elapsed = (Date.now() - startTime) / 1000;
-
-
-
-                // 根據教育引導線與進度條判定吸吐與成就笑臉
-
-                let manualMode = document.getElementById('modeSelect').value;
-
-                if (manualMode !== "auto") {
-
-                    currentMode = manualMode;
-
-                } else {
-
-                    let edMode = getEducationMode(elapsed);
-
-                    if (edMode) {
-
-                        currentMode = edMode;
-
-                        let ach = checkAchievement(elapsed);
-
-                        // 100% 還原 Python 的成就判斷：正在活動區、流速不為零、此段進度超過 80%
-
-                        if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
-
-                            if (ach.index !== lastAchievementSegment) {
-
-                                lastAchievementSegment = ach.index;
-
-                                achievementMarkers.push({ x: elapsed, y: 0 }); // 完美還原 Python 的圓圈打點坐標
-
-                                updateStatus("😊 達到 80% 貼合度！成就解鎖！");
-
-                            }
-
-                        }
-
-                    } else {
-
-                        achievementMarkers = [];
-
-                    }
-
-                    
-
-                    if (est > 5) {
-
-                        let dMode = detectBreathMode(lastFFT);
-
-                        if (dMode) {
-
-                            let dFlow = detectFlowRate(dMode, est);
-
-                            document.getElementById('detectedMode').innerText = `Detected: ${dMode} @ ${dFlow} L/min`;
-
-                        }
-
-                    }
-
-                }
-
-
-
-                if (currentMode === "exhalation") {
-
-                    if (est === 0.0 && lowE > 800000) est = 30.0;
-
-                    if (est > 0) est = -Math.abs(est);
-
-                } else if (currentMode === "inhalation" && est < 0) {
-
-                    est = Math.abs(est);
-
-                }
-
-
-
-                // 5點 Moving Average 移動平均平滑
-
-                flowHistory.push(est);
-
-                if (flowHistory.length > 5) flowHistory.shift();
-
-                let smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
-
-
-
-                // 儲存記錄
-
-                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
-
-                document.getElementById('recordCount').innerText = `Records: ${records.length}`;
-
-                document.getElementById('saveBtn').disabled = false;
-
-
-
-                // 更新圖表與跳格視窗 (每 20 秒跳一格)
-
-                flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
-
-                let windowStart = Math.floor(elapsed / 20) * 20;
-
-                flowChart.options.scales.x.min = windowStart;
-
-                flowChart.options.scales.x.max = windowStart + 20;
-
-
-
-                // 計算 Peak 流速
-
-                let allFlows = records.map(r => Math.abs(r.est));
-
-                let maxPeak = Math.max(...allFlows, 0);
-
-                document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
-
-
-
-                flowChart.update('none'); // 最大化即時渲染效能
-
-            }
-
         }
         
         const patient = this.patientInput.value.trim() || 'unknown';
@@ -1597,30 +746,8 @@ class FlowMonitorApp {
             ];
             for (let k = 1; k <= 20; k++) {
                 row.push(r.fft[k] !== undefined ? r.fft[k] : '');
-
-
-
-        function toggleMeasuring() {
-
-            isMeasuring = !isMeasuring;
-
-            if (isMeasuring) {
-
-                if (startTime === null) startTime = Date.now();
-
-                document.getElementById('startBtn').innerText = 'Stop';
-
-                updateStatus('Measuring...');
-
-            } else {
-
-                document.getElementById('startBtn').innerText = 'Start';
-
-                updateStatus('Measurement stopped (waveform frozen).');
-
             }
             csv += row.join(',') + '\n';
-
         }
         
         // Download
@@ -1650,88 +777,5 @@ document.addEventListener('DOMContentLoaded', () => {
     new FlowMonitorApp();
 });
 </script>
-
-
-
-        function clearPlot() {
-
-            startTime = null;
-
-            records = [];
-
-            flowHistory = [];
-
-            lastAchievementSegment = -1;
-
-            achievementMarkers = [];
-
-            flowChart.data.datasets[2].data = [];
-
-            flowChart.options.scales.x.min = 0;
-
-            flowChart.options.scales.x.max = 20;
-
-            flowChart.update();
-
-            document.getElementById('recordCount').innerText = 'Records: 0';
-
-            document.getElementById('peakFlow').innerText = 'Peak: — L/min';
-
-            document.getElementById('detectedMode').innerText = 'Detected: —';
-
-            document.getElementById('saveBtn').disabled = true;
-
-        }
-
-
-
-        function saveCSV() {
-
-            let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
-
-            let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
-
-            for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
-
-            csvContent += "\n";
-
-            
-
-            records.forEach(r => {
-
-                let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
-
-                for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
-
-                csvContent += row + "\n";
-
-            });
-
-            
-
-            const encodedUri = encodeURI(csvContent);
-
-            const link = document.createElement("a");
-
-            link.setAttribute("href", encodedUri);
-
-            link.setAttribute("download", `inhaler_data_${patientId}.csv`);
-
-            document.body.appendChild(link);
-
-            link.click();
-
-            document.body.removeChild(link);
-
-        }
-
-
-
-        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
-
-    </script>
-
 </body>
 </html>
-
-</html> 
