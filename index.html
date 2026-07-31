@@ -1,79 +1,115 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - Inhaler Flow Monitor</title>
-    <!-- 引入外部圖表庫 Chart.js -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>呼吸訓練器 - Inhaler Flow Monitor (Web)</title>
     <!-- 引入 Chart.js 繪圖庫 -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-@@ -14,12 +14,13 @@
-margin: 0;
-padding: 20px;
-}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f4f6f8;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+        }
         /* 標題區域排版 */
-.header {
-margin-bottom: 20px;
-border-left: 6px solid #1f4e79;
-padding-left: 15px;
-}
-        /* 大型中文主標題樣式 */
+        .header {
+            margin-bottom: 20px;
+            border-left: 6px solid #1f4e79;
+            padding-left: 15px;
+        }
         /* 新增的大型中文主標題樣式 */
-.header .main-title {
-margin: 0;
-color: #1f4e79;
-@@ -28,17 +29,8 @@
-letter-spacing: 2px;
-}
-/* 原本的英文標題改為副標題 */
-        .header .sub-title {
-            margin: 5px 0 0 0;
-            color: #34495e;
-            font-size: 18px;
-            font-weight: 600;
+        .header .main-title {
+            margin: 0;
+            color: #1f4e79;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 2px;
         }
-        .header p {
-            margin: 3px 0 0 0;
-            color: #7f8c8d;
-            font-size: 14px;
-        }
+        /* 原本的英文標題改為副標題 */
         .header h1 { margin: 5px 0 0 0; color: #34495e; font-size: 18px; font-weight: 600; }
         .header p { margin: 3px 0 0 0; color: #7f8c8d; font-size: 14px; }
-.control-panel {
-background: #ffffff;
-padding: 15px;
-@@ -73,7 +65,7 @@
-<!-- 頂部大標題區域 -->
-<div class="header">
-<div class="main-title">呼吸訓練器</div>
-        <div class="sub-title">Inhaler Flow Monitor</div>
+
+
+
+
+
+
+
+
+
+        .control-panel {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .btn {
+            padding: 8px 16px; border: none; border-radius: 4px;
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
+        }
+        .btn.accent { background-color: #1f4e79; color: white; }
+        .btn.accent:hover { background-color: #163d5e; }
+        .btn:hover { background-color: #e1e8ee; }
+        .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
+        label { font-size: 14px; font-weight: 500; }
+        input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
+        .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
+        .chart-container {
+            background: #ffffff; padding: 15px; border-radius: 8px;
+            height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
+        }
+        .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <!-- 頂部大標題區域 -->
+    <div class="header">
+        <div class="main-title">呼吸訓練器</div>
         <h1>Inhaler Flow Monitor</h1>
-<p>Acoustic inhaler flow visualization</p>
-</div>
+        <p>Acoustic inhaler flow visualization</p>
+    </div>
 
-@@ -106,21 +98,50 @@
+    <div class="control-panel">
+        <button id="connectBtn" class="btn accent">Connect</button>
+        <button id="startBtn" class="btn" disabled>Start</button>
+        <button id="clearBtn" class="btn">Clear</button>
+        <button id="saveBtn" class="btn accent" disabled>Save CSV</button>
 
-<script>
-// =====================================================
-        //  呼吸教育標準線計畫表 (由 Python 翻譯過來)
+        <label>Patient ID: <input type="text" id="patientId" placeholder="輸入ID..."></label>
+
+        <label>Mode: 
+            <select id="modeSelect">
+                <option value="auto">auto</option>
+                <option value="inhalation">inhalation</option>
+                <option value="exhalation">exhalation</option>
+            </select>
+        </label>
+
+        <span id="recordCount" class="info-text">Records: 0</span>
+        <span id="peakFlow" class="info-text">Peak: — L/min</span>
+        <span id="detectedMode" class="info-text">Detected: —</span>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="flowChart"></canvas>
+    </div>
+
+    <div class="statusbar" id="status">Not connected</div>
+
+    <script>
+        // =====================================================
         //  100% 完整對應原版 Python 的教育引導線計畫表 (共 27 階段)
-// =====================================================
-const EDUCATION_PROGRAM = [
-            ["inhalation", 0,   3],   ["inhalation", 60,  2],   ["inhalation", 0,   1],
-            ["inhalation", 0,   2],   ["exhalation", 60,  3],   ["inhalation", 0,   2],
-            ["inhalation", 60,  2],   ["inhalation", 0,   1],   ["inhalation", 0,   2],
-            ["exhalation", 60,  3],   ["inhalation", 0,   2],   ["inhalation", 0,   1],
-            ["inhalation", 0,   1],   ["inhalation", 90, 1.5],  ["inhalation", 0,   2],
-            ["exhalation", 50,  6],   ["inhalation", 0,   1],   ["inhalation", 0,   2],
-            ["inhalation", 90, 1.5],  ["inhalation", 0,   2],   ["exhalation", 50,  6],
-            ["inhalation", 0,   2],   ["inhalation", 0,   2],   ["inhalation", 120, 1],
-            ["inhalation", 0,   1],   ["inhalation", 0,   2],   ["exhalation", 100, 2],
-            ["inhalation", 0,   2],   ["inhalation", 40,  3],   ["inhalation", 0,   2],
-            ["exhalation", 40,  4],   ["inhalation", 0,   2],   ["inhalation", 30,  3],
-            ["inhalation", 0,   2],   ["exhalation", 30,  4],   ["inhalation", 0,   3]
+        // =====================================================
+        const EDUCATION_PROGRAM = [
             // === 暖身 ===
             ["inhalation", 0,   3],   // 0. 預備靜止
             // === 階段一：節奏訓練 ===
@@ -115,27 +151,65 @@ const EDUCATION_PROGRAM = [
             ["inhalation", 0,   2],   // 休息
             ["exhalation", 30,  4],   // 21. 輕吐氣 30
             ["inhalation", 0,   3]    // 22. 結束靜止
-];
+        ];
 
-function makeEducationCurves(dt = 0.05, ramp = 0.4) {
-@@ -153,7 +174,7 @@
-}
-for (let i = 0; i < steps_hold; i++) {
-times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); inh.push(target); }
+        function makeEducationCurves(dt = 0.05, ramp = 0.4) {
+            let times = [], inh = [], exh = [];
+            let t = 0.0;
+            for (let [mode, flow, dur] of EDUCATION_PROGRAM) {
+                if (flow === 0) {
+                    let steps = Math.max(1, Math.round(dur / dt));
+                    for (let i = 0; i < steps; i++) {
+                        times.push(Number(t.toFixed(3)));
+                        inh.push(0.0); exh.push(0.0);
+                        t += dt;
+                    }
+                    continue;
+                }
+                let target = (mode === "inhalation") ? flow : -flow;
+                let ramp_dur = Math.min(ramp, dur * 0.3);
+                let hold_dur = dur - 2 * ramp_dur;
+                if (hold_dur < 0) { ramp_dur = dur / 2; hold_dur = 0; }
+
+                let steps_up = Math.max(1, Math.round(ramp_dur / dt));
+                let steps_hold = Math.round(hold_dur / dt);
+                let steps_down = Math.max(1, Math.round(ramp_dur / dt));
+
+                for (let i = 0; i < steps_up; i++) {
+                    let v = target * ((i + 1) / steps_up);
+                    times.push(Number(t.toFixed(3)));
+                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
+                    t += dt;
+                }
+                for (let i = 0; i < steps_hold; i++) {
+                    times.push(Number(t.toFixed(3)));
                     if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); exh.push(target); }
-t += dt;
-}
-for (let i = 0; i < steps_down; i++) {
-@@ -175,11 +196,39 @@
-let records = [], flowHistory = [], windowHistory = [false, false, false];
-let lastFFT = {}, startTime = null, currentMode = "inhalation";
-let lastAchievementSegment = -1;
+                    t += dt;
+                }
+                for (let i = 0; i < steps_down; i++) {
+                    let v = target * (1 - (i + 1) / steps_down);
+                    times.push(Number(t.toFixed(3)));
+                    if (mode === "inhalation") { inh.push(v); exh.push(0.0); } else { inh.push(0.0); exh.push(v); }
+                    t += dt;
+                }
+            }
+            return { times, inh, exh };
+        }
+
+        const guideData = makeEducationCurves();
+
+        // =====================================================
+        //  應用程式狀態與圖表初始化
+        // =====================================================
+        let port, reader, isMeasuring = false;
+        let records = [], flowHistory = [], windowHistory = [false, false, false];
+        let lastFFT = {}, startTime = null, currentMode = "inhalation";
+        let lastAchievementSegment = -1;
         let achievementMarkers = []; // 儲存成就點坐標 {x, y}
 
-// 生成標準引導線繪圖數據點
-const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
-const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
+        // 生成標準引導線繪圖數據點
+        const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
+        const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
 
         // 自訂繪圖插件：完美還原 Python 的圓圈金幣與 😊 貼圖效果
         const achievementPlugin = {
@@ -164,76 +238,280 @@ const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.
             }
         };
 
-const ctx = document.getElementById('flowChart').getContext('2d');
-const flowChart = new Chart(ctx, {
-type: 'line',
-@@ -200,11 +249,12 @@
-x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
-y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
-}
-            }
+        const ctx = document.getElementById('flowChart').getContext('2d');
+        const flowChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+                    { label: 'Patient', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
+                },
+                scales: {
+                    x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
+                    y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
+                }
             },
             plugins: [achievementPlugin]
-});
+        });
 
-// =====================================================
-        //  核心演算法
+        // =====================================================
         //  100% 翻譯自原版 Python 的核心判定演算法
-// =====================================================
-function getEducationMode(elapsedTime) {
-let t = 0.0;
-@@ -255,7 +305,7 @@
+        // =====================================================
+        function getEducationMode(elapsedTime) {
+            let t = 0.0;
+            let prevMode = null;
+            for (let i = 0; i < EDUCATION_PROGRAM.length; i++) {
+                let [mode, flow, dur] = EDUCATION_PROGRAM[i];
+                if (t <= elapsedTime && elapsedTime < t + dur) {
+                    if (flow > 0) return mode;
+                    let progress = dur > 0 ? (elapsedTime - t) / dur : 0;
+                    if (prevMode === null) {
+                        for (let j = i - 1; j >= 0; j--) {
+                            if (EDUCATION_PROGRAM[j][1] > 0) { prevMode = EDUCATION_PROGRAM[j][0]; break; }
+                        }
+                    }
+                    let nextMode = null;
+                    for (let j = i + 1; j < EDUCATION_PROGRAM.length; j++) {
+                        if (EDUCATION_PROGRAM[j][1] > 0) { nextMode = EDUCATION_PROGRAM[j][0]; break; }
+                    }
+                    return (progress < 0.5) ? prevMode : nextMode;
+                }
+                if (flow > 0) prevMode = mode;
+                t += dur;
+            }
+            return null;
+        }
 
-function detectFlowRate(mode, estFlow) {
-let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
-            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - estFlow) ? curr : prev);
+        function checkAchievement(elapsedTime) {
+            let t = 0.0;
+            for (let i = 0; i < EDUCATION_PROGRAM.length; i++) {
+                let [mode, flow, dur] = EDUCATION_PROGRAM[i];
+                if (t <= elapsedTime && elapsedTime < t + dur) {
+                    let progress = dur > 0 ? (elapsedTime - t) / dur : 0;
+                    if (flow === 0) return { isActive: false, progress, index: i };
+                    return { isActive: true, progress, index: i };
+                }
+                t += dur;
+            }
+            return { isActive: false, progress: 0, index: -1 };
+        }
+
+        function detectBreathMode(fft) {
+            if (!fft) return null;
+            let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0;
+            if (e1 + e2 + e3 < 500000) return null;
+            let ratio_3to1 = e1 > 0 ? e3 / e1 : 10;
+            return (ratio_3to1 > 0.8) ? "exhalation" : "inhalation";
+        }
+
+        function detectFlowRate(mode, estFlow) {
+            let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
             return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - curr) ? curr : prev);
-}
+        }
 
-// =====================================================
-@@ -341,7 +391,7 @@
-if (startTime === null) startTime = Date.now();
-let elapsed = (Date.now() - startTime) / 1000;
+        // =====================================================
+        //  資料流解析與 UI 互動控制
+        // =====================================================
+        document.getElementById('connectBtn').addEventListener('click', toggleConnection);
+        document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
+        document.getElementById('clearBtn').addEventListener('click', clearPlot);
+        document.getElementById('saveBtn').addEventListener('click', saveCSV);
 
-                // 根據教育引導線判定吸吐
+        async function toggleConnection() {
+            if (!port) {
+                try {
+                    port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 115200 });
+                    document.getElementById('connectBtn').innerText = 'Disconnect';
+                    document.getElementById('startBtn').disabled = false;
+                    updateStatus('Connected. Press Start to begin.');
+                    readLoop();
+                } catch (err) { updateStatus('Connection failed: ' + err); }
+            } else {
+                if (reader) await reader.cancel();
+                await port.close(); port = null;
+                document.getElementById('connectBtn').innerText = 'Connect';
+                document.getElementById('startBtn').disabled = true;
+                updateStatus('Disconnected');
+            }
+        }
+
+        async function readLoop() {
+            const textDecoder = new TextDecoderStream();
+            port.readable.pipeTo(textDecoder.writable);
+            reader = textDecoder.readable.getReader();
+            let buffer = '';
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += value;
+                    let lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (isMeasuring) parseLine(line);
+                    }
+                }
+            } catch (err) { console.error(err); } finally { reader.releaseLock(); }
+        }
+
+        function parseLine(line) {
+            if (line.includes('[FFT]')) {
+                const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
+                for (const match of matches) { lastFFT[match[1]] = parseFloat(match[2]); }
+                return;
+            }
+
+            if (line.includes('[DETECT]')) {
+                const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
+                const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
+                const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
+                if (!flowMatch) return;
+
+                let flowYes = flowMatch[1].toUpperCase() === 'YES';
+                let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
+                let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
+
+                // 噪聲過濾
+                let isCandidate = false;
+                if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
+                if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
+
+                // 滑動視窗多數決
+                windowHistory.shift();
+                windowHistory.push(isCandidate);
+                let trueCount = windowHistory.filter(x => x === true).length;
+                if (trueCount >= 2) {
+                    flowYes = true;
+                    if (est === 0.0 && lowE > 1000000) est = 15.0;
+                } else {
+                    flowYes = false; est = 0.0;
+                }
+
+                if (startTime === null) startTime = Date.now();
+                let elapsed = (Date.now() - startTime) / 1000;
+
                 // 根據教育引導線與進度條判定吸吐與成就笑臉
-let manualMode = document.getElementById('modeSelect').value;
-if (manualMode !== "auto") {
-currentMode = manualMode;
-@@ -350,13 +400,18 @@
-if (edMode) {
-currentMode = edMode;
-let ach = checkAchievement(elapsed);
+                let manualMode = document.getElementById('modeSelect').value;
+                if (manualMode !== "auto") {
+                    currentMode = manualMode;
+                } else {
+                    let edMode = getEducationMode(elapsed);
+                    if (edMode) {
+                        currentMode = edMode;
+                        let ach = checkAchievement(elapsed);
                         // 100% 還原 Python 的成就判斷：正在活動區、流速不為零、此段進度超過 80%
-if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
-if (ach.index !== lastAchievementSegment) {
-lastAchievementSegment = ach.index;
-                                updateStatus("😊 達到 80% 貼合度！表現優異！");
+                        if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
+                            if (ach.index !== lastAchievementSegment) {
+                                lastAchievementSegment = ach.index;
                                 achievementMarkers.push({ x: elapsed, y: 0 }); // 完美還原 Python 的圓圈打點坐標
                                 updateStatus("😊 達到 80% 貼合度！成就解鎖！");
-}
-}
+                            }
+                        }
                     } else {
                         achievementMarkers = [];
-}
+                    }
                     
-if (est > 5) {
-let dMode = detectBreathMode(lastFFT);
-if (dMode) {
-@@ -394,7 +449,7 @@
-let maxPeak = Math.max(...allFlows, 0);
-document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
+                    if (est > 5) {
+                        let dMode = detectBreathMode(lastFFT);
+                        if (dMode) {
+                            let dFlow = detectFlowRate(dMode, est);
+                            document.getElementById('detectedMode').innerText = `Detected: ${dMode} @ ${dFlow} L/min`;
+                        }
+                    }
+                }
 
-                flowChart.update('none'); 
+                if (currentMode === "exhalation") {
+                    if (est === 0.0 && lowE > 800000) est = 30.0;
+                    if (est > 0) est = -Math.abs(est);
+                } else if (currentMode === "inhalation" && est < 0) {
+                    est = Math.abs(est);
+                }
+
+                // 5點 Moving Average 移動平均平滑
+                flowHistory.push(est);
+                if (flowHistory.length > 5) flowHistory.shift();
+                let smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
+
+                // 儲存記錄
+                records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
+                document.getElementById('recordCount').innerText = `Records: ${records.length}`;
+                document.getElementById('saveBtn').disabled = false;
+
+                // 更新圖表與跳格視窗 (每 20 秒跳一格)
+                flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
+                let windowStart = Math.floor(elapsed / 20) * 20;
+                flowChart.options.scales.x.min = windowStart;
+                flowChart.options.scales.x.max = windowStart + 20;
+
+                // 計算 Peak 流速
+                let allFlows = records.map(r => Math.abs(r.est));
+                let maxPeak = Math.max(...allFlows, 0);
+                document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
+
                 flowChart.update('none'); // 最大化即時渲染效能
-}
-}
+            }
+        }
 
-@@ -415,6 +470,7 @@
-records = [];
-flowHistory = [];
-lastAchievementSegment = -1;
+        function toggleMeasuring() {
+            isMeasuring = !isMeasuring;
+            if (isMeasuring) {
+                if (startTime === null) startTime = Date.now();
+                document.getElementById('startBtn').innerText = 'Stop';
+                updateStatus('Measuring...');
+            } else {
+                document.getElementById('startBtn').innerText = 'Start';
+                updateStatus('Measurement stopped (waveform frozen).');
+            }
+        }
+
+        function clearPlot() {
+            startTime = null;
+            records = [];
+            flowHistory = [];
+            lastAchievementSegment = -1;
             achievementMarkers = [];
-flowChart.data.datasets[2].data = [];
-flowChart.options.scales.x.min = 0;
-flowChart.options.scales.x.max = 20;
+            flowChart.data.datasets[2].data = [];
+            flowChart.options.scales.x.min = 0;
+            flowChart.options.scales.x.max = 20;
+            flowChart.update();
+            document.getElementById('recordCount').innerText = 'Records: 0';
+            document.getElementById('peakFlow').innerText = 'Peak: — L/min';
+            document.getElementById('detectedMode').innerText = 'Detected: —';
+            document.getElementById('saveBtn').disabled = true;
+        }
+
+        function saveCSV() {
+            let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
+            let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
+            for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
+            csvContent += "\n";
+
+            records.forEach(r => {
+                let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
+                for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `inhaler_data_${patientId}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
+    </script>
+</body>
+</html>
