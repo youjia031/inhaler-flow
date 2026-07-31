@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整版 v5.4</title>
+<title>呼吸訓練器 - 完整版 v5.5</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -456,6 +456,8 @@ font-size: 13px;
 .editor-btn.reset:hover { background: #d35400; }
 .editor-btn.export { background: #3498db; color: white; }
 .editor-btn.export:hover { background: #2980b9; }
+.editor-btn.import { background: #8e44ad; color: white; }
+.editor-btn.import:hover { background: #71368a; }
 
 #skinEditor {
 display: block;
@@ -836,7 +838,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
     <button class="editor-btn close" onclick="toggleLevelEditor()">❌ 關閉</button>
     <button class="editor-btn reset" onclick="resetToDefault()">🔄 恢復預設</button>
     <button class="editor-btn export" onclick="exportLevelConfig()">📤 匯出設定檔</button>
-    <button class="editor-btn" onclick="importLevelConfig()" style="background:#8e44ad; color:white; border:none; border-radius:4px; padding:8px 20px; cursor:pointer; font-weight:bold;">📥 匯入設定檔</button>
+    <button class="editor-btn import" onclick="document.getElementById('importLevelFile').click()">📥 匯入設定檔</button>
 </div>
 <input type="file" id="importLevelFile" accept=".json" style="display:none;" onchange="handleLevelImport(event)">
 <p style="color:#5a6a7a; font-size:11px; margin-top:8px;">💡 綠色邊框 = 啟用 | 設定檔可匯出分享給朋友</p>
@@ -1521,7 +1523,6 @@ const BOSS_TYPES = [
 // 道具定義
 // ============================================================
 const ITEM_TYPES = [
-    // 正面道具
     {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
     {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
     {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
@@ -1532,7 +1533,6 @@ const ITEM_TYPES = [
     {type:'wing', emoji:'🪶', color:'#1abc9c', label:'翅膀', speed:1.5, category:'positive'},
     {type:'clock', emoji:'⏰', color:'#95a5a6', label:'時鐘', extraTime:30, category:'positive'},
     {type:'key', emoji:'🔑', color:'#f1c40f', label:'鑰匙', unlock:true, category:'positive'},
-    // 攻擊道具
     {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', desc:'對 Boss 造成 30 傷害', category:'attack'},
     {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', desc:'對 Boss 造成 50 傷害', category:'attack'},
     {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', desc:'對 Boss 造成 25 傷害', category:'attack'},
@@ -1540,7 +1540,6 @@ const ITEM_TYPES = [
     {type:'poison', emoji:'🧪', color:'#2ecc71', label:'毒藥', attack:5, attackType:'poison', desc:'持續傷害 5 秒', category:'attack'},
     {type:'thunder', emoji:'⚡', color:'#f1c40f', label:'閃電', attack:40, attackType:'thunder', desc:'對 Boss 造成 40 傷害', category:'attack'},
     {type:'dart', emoji:'🎯', color:'#e74c3c', label:'飛鏢', attack:15, attackType:'dart', desc:'對 Boss 造成 15 傷害', category:'attack'},
-    // 負面道具
     {type:'curse', emoji:'💀', color:'#2c3e50', label:'詛咒寶石', category:'negative'},
 ];
 
@@ -2149,13 +2148,12 @@ function executeBossSkill(boss, skill) {
 }
 
 // ============================================================
-// 🆕 執行攻擊道具（修正：即使沒有 Boss 也有特效）
+// 執行攻擊道具（即使沒有 Boss 也有特效）
 // ============================================================
 function executeAttackItem(itemType, boss) {
     const item = ITEM_TYPES.find(i => i.type === itemType);
     if (!item) return;
     
-    // 播放對應音效
     if (itemType === 'missile') playAudioEffect('missile');
     else if (itemType === 'bomb') playAudioEffect('bomb');
     else if (itemType === 'laser') playAudioEffect('laser');
@@ -2165,14 +2163,11 @@ function executeAttackItem(itemType, boss) {
     else if (itemType === 'dart') playAudioEffect('dart');
     else playAudioEffect('attack');
     
-    // 特效位置（有 Boss 時打在 Boss 上，否則打在畫面中央）
     const targetX = boss ? boss.x : gameCanvas.width / 2;
     const targetY = boss ? boss.y : gameCanvas.height / 2;
     
-    // 各種特效
     switch(itemType) {
         case 'missile':
-            // 飛彈軌跡特效
             for (let i = 0; i < 15; i++) {
                 const progress = i / 15;
                 const x = rocket.x + (targetX - rocket.x) * progress + (Math.random() - 0.5) * 10;
@@ -2186,7 +2181,6 @@ function executeAttackItem(itemType, boss) {
                     life: 1.0
                 });
             }
-            // 爆炸
             for (let i = 0; i < 20; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 2 + Math.random() * 4;
@@ -2200,16 +2194,10 @@ function executeAttackItem(itemType, boss) {
                     life: 0.8 + Math.random() * 0.2
                 });
             }
-            if (boss) {
-                boss.hp = Math.max(0, boss.hp - 30);
-                showNotification(`🚀 飛彈命中！造成 30 傷害！`);
-            } else {
-                showNotification(`🚀 飛彈發射！`);
-            }
+            if (boss) { boss.hp = Math.max(0, boss.hp - 30); showNotification(`🚀 飛彈命中！造成 30 傷害！`); }
+            else { showNotification(`🚀 飛彈發射！`); }
             break;
-            
         case 'bomb':
-            // 大爆炸
             for (let i = 0; i < 50; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 1 + Math.random() * 8;
@@ -2224,40 +2212,27 @@ function executeAttackItem(itemType, boss) {
                     life: 1.0
                 });
             }
-            if (boss) {
-                boss.hp = Math.max(0, boss.hp - 50);
-                showNotification(`💣 炸彈爆炸！造成 50 傷害！`);
-            } else {
-                showNotification(`💣 炸彈爆炸！`);
-            }
+            if (boss) { boss.hp = Math.max(0, boss.hp - 50); showNotification(`💣 炸彈爆炸！造成 50 傷害！`); }
+            else { showNotification(`💣 炸彈爆炸！`); }
             break;
-            
         case 'laser':
-            // 雷射光束
             for (let i = 0; i < 40; i++) {
                 const progress = i / 40;
                 const x = rocket.x + (targetX - rocket.x) * progress + (Math.random() - 0.5) * 6;
                 const y = rocket.y + (targetY - rocket.y) * progress + (Math.random() - 0.5) * 6;
-                const size = 2 + Math.random() * 4;
                 particles.push({
                     x: x, y: y,
                     vx: (Math.random() - 0.5) * 0.2,
                     vy: (Math.random() - 0.5) * 0.2,
-                    size: size,
+                    size: 2 + Math.random() * 4,
                     color: '#3498db',
                     life: 0.6 + Math.random() * 0.4
                 });
             }
-            if (boss) {
-                boss.hp = Math.max(0, boss.hp - 25);
-                showNotification(`🔫 雷射命中！造成 25 傷害！`);
-            } else {
-                showNotification(`🔫 雷射發射！`);
-            }
+            if (boss) { boss.hp = Math.max(0, boss.hp - 25); showNotification(`🔫 雷射命中！造成 25 傷害！`); }
+            else { showNotification(`🔫 雷射發射！`); }
             break;
-            
         case 'freeze':
-            // 冰凍特效
             for (let i = 0; i < 30; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const dist = 10 + Math.random() * 50;
@@ -2271,16 +2246,10 @@ function executeAttackItem(itemType, boss) {
                     life: 0.8 + Math.random() * 0.2
                 });
             }
-            if (boss) {
-                freezeTimer = 120;
-                showNotification(`🧊 Boss 被冰凍 2 秒！`);
-            } else {
-                showNotification(`🧊 冰凍彈發射！`);
-            }
+            if (boss) { freezeTimer = 120; showNotification(`🧊 Boss 被冰凍 2 秒！`); }
+            else { showNotification(`🧊 冰凍彈發射！`); }
             break;
-            
         case 'poison':
-            // 毒霧特效
             for (let i = 0; i < 25; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const dist = 10 + Math.random() * 60;
@@ -2294,17 +2263,10 @@ function executeAttackItem(itemType, boss) {
                     life: 0.8 + Math.random() * 0.2
                 });
             }
-            if (boss) {
-                poisonTimer = 150;
-                poisonDamage = 25;
-                showNotification(`🧪 Boss 中毒！持續受到傷害！`);
-            } else {
-                showNotification(`🧪 毒藥釋放！`);
-            }
+            if (boss) { poisonTimer = 150; poisonDamage = 25; showNotification(`🧪 Boss 中毒！持續受到傷害！`); }
+            else { showNotification(`🧪 毒藥釋放！`); }
             break;
-            
         case 'thunder':
-            // 閃電特效
             for (let i = 0; i < 35; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 2 + Math.random() * 6;
@@ -2318,16 +2280,10 @@ function executeAttackItem(itemType, boss) {
                     life: 0.6 + Math.random() * 0.4
                 });
             }
-            if (boss) {
-                boss.hp = Math.max(0, boss.hp - 40);
-                showNotification(`⚡ 閃電擊中！造成 40 傷害！`);
-            } else {
-                showNotification(`⚡ 閃電落下！`);
-            }
+            if (boss) { boss.hp = Math.max(0, boss.hp - 40); showNotification(`⚡ 閃電擊中！造成 40 傷害！`); }
+            else { showNotification(`⚡ 閃電落下！`); }
             break;
-            
         case 'dart':
-            // 飛鏢特效
             for (let i = 0; i < 12; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 2 + Math.random() * 4;
@@ -2341,12 +2297,8 @@ function executeAttackItem(itemType, boss) {
                     life: 0.7 + Math.random() * 0.3
                 });
             }
-            if (boss) {
-                boss.hp = Math.max(0, boss.hp - 15);
-                showNotification(`🎯 飛鏢命中！造成 15 傷害！`);
-            } else {
-                showNotification(`🎯 飛鏢射出！`);
-            }
+            if (boss) { boss.hp = Math.max(0, boss.hp - 15); showNotification(`🎯 飛鏢命中！造成 15 傷害！`); }
+            else { showNotification(`🎯 飛鏢射出！`); }
             break;
     }
     
@@ -2494,7 +2446,7 @@ if (attackCooldown > 0) attackCooldown--;
 let spawnY=Math.random()*(gameCanvas.height-100)+50;
 if(isUsingCustomMusic&&audioAnalyser&&audioDataArray){audioAnalyser.getByteFrequencyData(audioDataArray);spawnY=gameCanvas.height-(audioDataArray[5]/255)*(gameCanvas.height-80);}
 
-// ===== 🆕 Boss 出現（修正：提高出現率，降低門檻） =====
+// Boss 出現
 const bossRate = parseFloat(document.getElementById('customBossRate')?.value || '0.008');
 const bossLevel = Math.floor((EXP?.currentLevel || 1) / 3) + 1;
 
@@ -2600,7 +2552,6 @@ const coinScore=parseInt(document.getElementById('customCoinScore')?.value||50);
 
 const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
 if (attackItem) {
-    // 攻擊道具：有 Boss 就打 Boss，沒有 Boss 也有特效
     executeAttackItem(c.type, currentBoss);
     c.collected = true;
 } else if (c.type==='coin'||c.type==='star'){
@@ -2929,7 +2880,12 @@ const a=document.createElement('a');
 a.href=url;a.download=`關卡設定_${Date.now()}.json`;
 a.click();URL.revokeObjectURL(url);
 }
-function importLevelConfig(){document.getElementById('importLevelFile').click();}
+
+// 🆕 修復匯入功能
+function importLevelConfig(){
+    document.getElementById('importLevelFile').click();
+}
+
 function handleLevelImport(event){
 const file=event.target.files[0];if(!file)return;
 const reader=new FileReader();
@@ -2953,11 +2909,20 @@ if(config.obstacles)selectedObstacles=config.obstacles;
 if(config.bosses)selectedBosses=config.bosses;
 buildAllCheckboxes();
 const status=document.getElementById('status');
-if(status){status.innerText='✅ 設定檔匯入成功！';status.style.background='#27ae60';setTimeout(()=>{status.style.background='#1f4e79';},2000);}
-}catch(err){alert('❌ 設定檔格式錯誤：'+err.message);}
+if(status){
+status.innerText='✅ 設定檔匯入成功！';
+status.style.background='#27ae60';
+setTimeout(()=>{status.style.background='#1f4e79';},2000);
+}
+}catch(err){
+alert('❌ 設定檔格式錯誤：'+err.message);
+}
 };
 reader.readAsText(file);
+// 重置 input 以便重複選取同一個檔案
+event.target.value = '';
 }
+
 function toggleLevelEditor(){
 const editor=document.getElementById('levelEditor');
 if(editor){
@@ -3002,7 +2967,6 @@ updateStatus(devModeEnabled?'🔧 開發模式已開啟':'🎮 開發模式已�
 // 圖鑑系統
 // ============================================================
 const INTRO_DATA=[
-// 正面道具
 {type:'coin', emoji:'🪙', label:'金幣', cat:'positive', catLabel:'正面道具', desc:'+50分，FEVER/雙倍時加倍'},
 {type:'heart', emoji:'❤️', label:'治癒之心', cat:'positive', catLabel:'正面道具', desc:'恢復 HP +25'},
 {type:'shield', emoji:'🛡️', label:'護盾', cat:'positive', catLabel:'正面道具', desc:'抵擋一次障礙物傷害'},
@@ -3013,7 +2977,6 @@ const INTRO_DATA=[
 {type:'wing', emoji:'🪶', label:'翅膀', cat:'positive', catLabel:'正面道具', desc:'加速 3 秒'},
 {type:'clock', emoji:'⏰', label:'時鐘', cat:'positive', catLabel:'正面道具', desc:'增加 30 秒遊戲時間'},
 {type:'key', emoji:'🔑', label:'鑰匙', cat:'positive', catLabel:'正面道具', desc:'立即升一關'},
-// 攻擊道具
 {type:'missile', emoji:'🚀', label:'飛彈', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 30 傷害'},
 {type:'bomb', emoji:'💣', label:'炸彈', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 50 傷害'},
 {type:'laser', emoji:'🔫', label:'雷射', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 25 傷害'},
@@ -3021,9 +2984,7 @@ const INTRO_DATA=[
 {type:'poison', emoji:'🧪', label:'毒藥', cat:'attack', catLabel:'攻擊道具', desc:'持續傷害 5 秒'},
 {type:'thunder', emoji:'⚡', label:'閃電', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 40 傷害'},
 {type:'dart', emoji:'🎯', label:'飛鏢', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 15 傷害'},
-// 負面道具
 {type:'curse', emoji:'💀', label:'詛咒寶石', cat:'negative', catLabel:'負面道具', desc:'扣 HP 15~25，扣分 -100'},
-// 障礙物
 {type:'cloud', emoji:'⛈️', label:'雷暴雲', cat:'obstacle', catLabel:'障礙物', desc:'傷害：10/25/35'},
 {type:'poison', emoji:'🟣', label:'毒霧', cat:'obstacle', catLabel:'障礙物', desc:'傷害：40/50'},
 {type:'mud', emoji:'🕸️', label:'黏液', cat:'obstacle', catLabel:'障礙物', desc:'減速 50%'},
@@ -3034,7 +2995,6 @@ const INTRO_DATA=[
 {type:'void', emoji:'🌌', label:'虛空', cat:'obstacle', catLabel:'障礙物', desc:'傷害：50'},
 {type:'mirror', emoji:'🪞', label:'鏡像', cat:'obstacle', catLabel:'障礙物', desc:'傷害：10，反彈'},
 {type:'chain', emoji:'⛓️', label:'鎖鏈', cat:'obstacle', catLabel:'障礙物', desc:'傷害：20，減速'},
-// Boss
 {type:'boss_fire', emoji:'🐉', label:'🔥 火龍', cat:'boss', catLabel:'Boss', desc:'🔥 火焰吐息：噴射火焰彈幕 | 🛡️ 烈焰護盾：減少傷害 30%', color:'#e74c3c'},
 {type:'boss_ice', emoji:'🧊', label:'❄️ 冰霜巨人', cat:'boss', catLabel:'Boss', desc:'🧊 冰凍光環：減速 50% 持續 3 秒 | ❄️ 寒冰之牆：抵擋攻擊並減速', color:'#3498db'},
 {type:'boss_shadow', emoji:'🗡️', label:'🌑 暗影刺客', cat:'boss', catLabel:'Boss', desc:'🌑 暗影突襲：瞬間移動攻擊扣 20 HP | 👻 隱身：短暫躲避攻擊', color:'#8e44ad'},
@@ -3043,7 +3003,6 @@ const INTRO_DATA=[
 {type:'boss_storm', emoji:'🌪️', label:'🌪️ 風暴領主', cat:'boss', catLabel:'Boss', desc:'🌪️ 龍捲風：龍捲風彈幕攻擊 | 💨 風牆：抵擋正面攻擊', color:'#1abc9c'},
 {type:'boss_necromancer', emoji:'🧙', label:'💀 死靈法師', cat:'boss', catLabel:'Boss', desc:'💀 召喚骷髏：召喚骷髏兵攻擊 | 🔮 詛咒：直接造成 25 傷害', color:'#2c3e50'},
 {type:'boss_spider', emoji:'🕷️', label:'🕷️ 蜘蛛女王', cat:'boss', catLabel:'Boss', desc:'🕸️ 蛛網：減速 50% 持續 3 秒 | 🧪 毒素：直接造成 25 傷害', color:'#6c3483'},
-// 最終 Boss
 {type:'finalboss', emoji:'👾', label:'🏆 最終 Boss - 虛空領主', cat:'final', catLabel:'最終 Boss', desc:'第100關觸發 · 專屬動畫與配樂 · 擁有全部 Boss 技能'},
 ];
 
@@ -3209,6 +3168,7 @@ function initExpansion(){
     console.log('🗡️ 攻擊道具即使沒有 Boss 也有特效！');
     console.log('📋 Boss 技能詳細說明顯示在 Boss 下方');
     console.log('🎨 道具無外圈設計，純靠表情符號辨識');
+    console.log('📥 點擊「匯入設定檔」上傳 JSON 檔案套用設定');
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
