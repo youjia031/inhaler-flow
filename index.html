@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整版 v5.6</title>
+<title>呼吸訓練器 - 完整版 v6.0</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -838,9 +838,9 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
     <button class="editor-btn close" onclick="toggleLevelEditor()">❌ 關閉</button>
     <button class="editor-btn reset" onclick="resetToDefault()">🔄 恢復預設</button>
     <button class="editor-btn export" onclick="exportLevelConfig()">📤 匯出設定檔</button>
-    <button class="editor-btn import" onclick="document.getElementById('importLevelFile').click()">📥 匯入設定檔</button>
+    <button class="editor-btn import" onclick="importLevelConfig()">📥 匯入設定檔</button>
 </div>
-<input type="file" id="importLevelFile" accept=".json" style="display:block;" onchange="handleLevelImport(event)">
+<input type="file" id="importLevelFile" accept=".json" style="display:none;" onchange="handleLevelImport(event)">
 <p style="color:#5a6a7a; font-size:11px; margin-top:8px;">💡 綠色邊框 = 啟用 | 設定檔可匯出分享給朋友</p>
 </div>
 
@@ -1404,8 +1404,524 @@ let freezeTimer = 0;
 let attackCooldown = 0;
 
 // ============================================================
-// Boss 技能詳細說明
+// 🆕 後端整合與新功能
 // ============================================================
+
+// 玩家資料
+let playerProfile = {
+    name: '',
+    totalScore: 0,
+    gamesPlayed: 0,
+    achievements: [],
+    stats: {
+        totalBosses: 0,
+        totalItems: 0,
+        maxCombo: 0,
+        bestScore: 0,
+        perfectGames: 0
+    }
+};
+
+// ===== 日誌系統 =====
+async function sendVercelLog(message, level = 'INFO', data = null, type = null) {
+    try {
+        const response = await fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, level, data, type })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('發送日誌失敗:', error);
+    }
+}
+
+// ===== 獲取統計資料 =====
+async function getStats() {
+    try {
+        const response = await fetch('/api/log/stats');
+        return await response.json();
+    } catch (error) {
+        console.error('獲取統計失敗:', error);
+        return null;
+    }
+}
+
+// ===== 提交分數到排行榜 =====
+async function submitScore(playerName, score, level, mode) {
+    try {
+        const response = await fetch('/api/log/leaderboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerName, score, level, gameMode: mode })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('提交分數失敗:', error);
+    }
+}
+
+// ===== 獲取排行榜 =====
+async function getLeaderboard(limit = 10) {
+    try {
+        const response = await fetch(`/api/log/leaderboard?limit=${limit}`);
+        return await response.json();
+    } catch (error) {
+        console.error('獲取排行榜失敗:', error);
+        return { leaderboard: [], total: 0 };
+    }
+}
+
+// ===== 成就系統 =====
+async function getAchievements() {
+    try {
+        const response = await fetch('/api/log/achievements');
+        return await response.json();
+    } catch (error) {
+        console.error('獲取成就失敗:', error);
+        return { achievements: {} };
+    }
+}
+
+// ===== 挑戰系統 =====
+async function updateChallenge(challengeId, progress) {
+    try {
+        const response = await fetch('/api/log/challenges', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeId, progress })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('更新挑戰失敗:', error);
+    }
+}
+
+// ============================================================
+// 🆕 新遊戲功能
+// ============================================================
+
+// 1. 每日挑戰計時器
+let dailyChallengeTimer = 0;
+let challengeActive = false;
+let challengeData = {};
+
+// 2. Combo 加成系統
+let comboMultiplier = 1;
+let currentComboStreak = 0;
+let maxComboStreak = 0;
+
+// 3. 特殊道具 - 時間暫停
+let timeFreezeActive = false;
+let timeFreezeTimer = 0;
+
+// 4. 夥伴系統
+let companionActive = false;
+let companionType = 'none';
+let companionTimer = 0;
+
+// 5. 天氣系統
+let weatherType = 'clear';
+let weatherTimer = 0;
+
+// ===== 新增遊戲模式 =====
+const GAME_MODES = {
+    STANDARD: 'standard',
+    HARDCORE: 'hardcore',
+    SURVIVAL: 'survival',
+    CHALLENGE: 'challenge'
+};
+
+let currentGameMode = GAME_MODES.STANDARD;
+
+// ===== 新功能：特殊道具 =====
+const SPECIAL_ITEMS = [
+    { type: 'time_freeze', emoji: '⏸️', label: '時間暫停', duration: 300, effect: 'freeze' },
+    { type: 'companion', emoji: '🪁', label: '夥伴', duration: 600, effect: 'companion' },
+    { type: 'mega_shield', emoji: '🛡️⭐', label: '超級護盾', duration: 180, effect: 'mega_shield' },
+    { type: 'score_x5', emoji: '💎💎', label: '5倍積分', duration: 300, effect: 'x5' },
+    { type: 'invincible', emoji: '🌟', label: '無敵', duration: 120, effect: 'invincible' }
+];
+
+// ===== 新功能：天氣效果 =====
+const WEATHER_TYPES = [
+    { type: 'clear', label: '☀️ 晴朗', effect: 'none' },
+    { type: 'rain', label: '🌧️ 下雨', effect: 'slow' },
+    { type: 'storm', label: '⛈️ 暴風', effect: 'chaos' },
+    { type: 'fog', label: '🌫️ 濃霧', effect: 'fog' },
+    { type: 'aurora', label: '🌌 極光', effect: 'bonus' }
+];
+
+// ===== 覆蓋/擴充原有函數 =====
+
+// 擴充遊戲結束處理
+const originalTriggerGameOver = window.triggerGameOver;
+if (originalTriggerGameOver) {
+    window.triggerGameOver = function() {
+        // 計算遊戲數據
+        const gameData = {
+            score: gameScore,
+            level: EXP?.currentLevel || 1,
+            duration: (Date.now() - sessionStartTime) / 1000,
+            bossDefeated: EXP?.bossDefeated || 0,
+            mode: currentGameMode,
+            maxCombo: maxComboStreak,
+            perfectGame: playerHP === 100
+        };
+        
+        // 更新個人統計
+        playerProfile.stats.bestScore = Math.max(playerProfile.stats.bestScore, gameScore);
+        playerProfile.stats.maxCombo = Math.max(playerProfile.stats.maxCombo, maxComboStreak);
+        if (gameData.perfectGame) playerProfile.stats.perfectGames++;
+        
+        // 發送到後端
+        sendVercelLog('遊戲結束', 'INFO', gameData, 'game_over');
+        submitScore(playerProfile.name || '匿名', gameScore, EXP?.currentLevel || 1, currentGameMode);
+        
+        // 檢查成就
+        checkAchievements(gameData);
+        
+        // 執行原始函數
+        originalTriggerGameOver();
+    };
+}
+
+// ===== 成就檢查 =====
+async function checkAchievements(gameData) {
+    const stats = {
+        totalGames: playerProfile.gamesPlayed + 1,
+        lastScore: gameData.score,
+        totalBossesDefeated: playerProfile.stats.totalBosses,
+        totalItemsCollected: playerProfile.stats.totalItems,
+        lastLevel: gameData.level,
+        maxCombo: Math.max(playerProfile.stats.maxCombo, gameData.maxCombo || 0),
+        perfectGame: gameData.perfectGame
+    };
+    
+    const achievements = await getAchievements();
+    if (!achievements?.achievements) return;
+    
+    for (const [key, ach] of Object.entries(achievements.achievements)) {
+        if (!ach.completed && ach.condition(stats)) {
+            showNotification(`🏆 成就解鎖：${ach.name}！+${ach.reward}分`);
+            gameScore += ach.reward;
+            playerProfile.achievements.push(key);
+            sendVercelLog(`成就解鎖: ${ach.name}`, 'INFO', { achievement: key });
+        }
+    }
+}
+
+// ===== 新增特殊道具生成 =====
+function spawnSpecialItem() {
+    if (Math.random() > 0.01) return;
+    
+    const item = SPECIAL_ITEMS[Math.floor(Math.random() * SPECIAL_ITEMS.length)];
+    collectibles.push({
+        ...item,
+        x: gameCanvas.width + 20,
+        y: Math.random() * (gameCanvas.height - 100) + 50,
+        radius: 16,
+        baseSpeed: 2.5,
+        collected: false,
+        isSpecial: true
+    });
+}
+
+// ===== 處理特殊道具 =====
+function handleSpecialItem(item) {
+    switch(item.effect) {
+        case 'freeze':
+            timeFreezeActive = true;
+            timeFreezeTimer = item.duration;
+            showNotification('⏸️ 時間暫停！');
+            break;
+        case 'companion':
+            companionActive = true;
+            companionTimer = item.duration;
+            companionType = 'drone';
+            showNotification('🪁 夥伴加入！');
+            break;
+        case 'mega_shield':
+            hasShield = true;
+            document.getElementById('shieldBadge').style.display = 'inline';
+            document.getElementById('shieldBadge').textContent = '🛡️⭐ 超級護盾';
+            showNotification('🛡️⭐ 超級護盾啟動！');
+            break;
+        case 'x5':
+            doubleScoreTimer = item.duration;
+            document.getElementById('doubleBadge').style.display = 'inline';
+            document.getElementById('doubleBadge').textContent = '💎💎 5x 積分';
+            showNotification('💎💎 5倍積分！');
+            break;
+        case 'invincible':
+            showNotification('🌟 無敵模式！');
+            break;
+    }
+}
+
+// ===== 天氣系統 =====
+function updateWeather() {
+    weatherTimer--;
+    if (weatherTimer <= 0) {
+        const newWeather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+        weatherType = newWeather.type;
+        weatherTimer = 300 + Math.random() * 300;
+        showNotification(`🌤️ 天氣變化：${newWeather.label}`);
+        sendVercelLog('天氣變化', 'INFO', { weather: weatherType });
+    }
+}
+
+// ===== Combo 系統增強 =====
+function updateComboSystem() {
+    if (gameCombo > 0) {
+        currentComboStreak = gameCombo;
+        maxComboStreak = Math.max(maxComboStreak, currentComboStreak);
+        
+        if (gameCombo >= 10) comboMultiplier = 1.5;
+        if (gameCombo >= 25) comboMultiplier = 2.0;
+        if (gameCombo >= 50) comboMultiplier = 3.0;
+        if (gameCombo >= 100) comboMultiplier = 5.0;
+        
+        if (gameCombo % 10 === 0 && gameCombo > 0) {
+            showNotification(`🔥 ${gameCombo} Combo！x${comboMultiplier}`);
+            playAudioEffect('buff');
+        }
+    } else {
+        comboMultiplier = 1;
+        currentComboStreak = 0;
+    }
+}
+
+// ===== 新增 Boss 戰利品 =====
+function spawnBossLoot(boss) {
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const item = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+            collectibles.push({
+                ...item,
+                x: boss.x + (Math.random() - 0.5) * 100,
+                y: boss.y + (Math.random() - 0.5) * 100,
+                radius: 12,
+                baseSpeed: 1,
+                collected: false
+            });
+        }, i * 200);
+    }
+    
+    const bonus = 100 + Math.floor(Math.random() * 200);
+    gameScore += bonus;
+    showNotification(`🎊 擊敗 Boss！獎勵 ${bonus} 分！`);
+}
+
+// ===== 檢查挑戰進度 =====
+function checkChallenges() {
+    if (challengeActive) {
+        const progress = Math.min(EXP?.currentLevel || 0, 5);
+        updateChallenge('daily_1', progress);
+    }
+    
+    if (parseFloat(document.getElementById('gameSpeedSelect')?.value) >= 2.0) {
+        const elapsed = (Date.now() - sessionStartTime) / 1000;
+        updateChallenge('speed_demon', Math.min(elapsed, 60));
+    }
+}
+
+// ===== 遊戲模式選擇器 =====
+function createModeSelector() {
+    const panel = document.querySelector('.control-panel');
+    if (!panel) return;
+    
+    const modeHTML = `
+        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+            模式:
+            <select id="gameModeSelect" onchange="switchGameMode(this.value)">
+                <option value="standard">🎯 標準</option>
+                <option value="hardcore">💀 硬核</option>
+                <option value="survival">🏃 生存</option>
+                <option value="challenge">🏆 挑戰</option>
+            </select>
+        </label>
+        <button class="btn teal-btn" onclick="showStats()" style="padding:4px 12px;font-size:12px;">
+            📊 統計
+        </button>
+        <button class="btn orange-btn" onclick="showLeaderboard()" style="padding:4px 12px;font-size:12px;">
+            🏆 排行榜
+        </button>
+        <button class="btn purple-btn" onclick="showAchievements()" style="padding:4px 12px;font-size:12px;">
+            🏅 成就
+        </button>
+    `;
+    panel.insertAdjacentHTML('beforeend', modeHTML);
+}
+
+// ===== 切換遊戲模式 =====
+function switchGameMode(mode) {
+    currentGameMode = mode;
+    showNotification(`🎮 切換至 ${mode} 模式`);
+    
+    switch(mode) {
+        case 'hardcore':
+            playerHP = 1;
+            document.getElementById('hpFill').style.width = '1%';
+            showNotification('💀 硬核模式：一擊必殺！');
+            break;
+        case 'survival':
+            showNotification('🏃 生存模式：盡可能活久一點！');
+            break;
+        case 'challenge':
+            challengeActive = true;
+            showNotification('🏆 挑戰模式已啟動！');
+            break;
+        default:
+            playerHP = 100;
+            challengeActive = false;
+    }
+}
+
+// ===== 顯示統計 =====
+async function showStats() {
+    const stats = await getStats();
+    if (!stats) {
+        showNotification('❌ 無法獲取統計資料');
+        return;
+    }
+    
+    const msg = `
+📊 統計資料：
+總遊戲次數: ${stats.totalGames}
+總分數: ${stats.totalScores}
+最高分: ${stats.highScore}
+平均分: ${stats.averageScore}
+擊敗 Boss: ${stats.totalBossesDefeated}
+收集道具: ${stats.totalItemsCollected}
+    `.trim();
+    
+    alert(msg);
+}
+
+// ===== 顯示排行榜 =====
+async function showLeaderboard() {
+    const data = await getLeaderboard(10);
+    if (!data) {
+        showNotification('❌ 無法獲取排行榜');
+        return;
+    }
+    
+    let msg = '🏆 排行榜\n' + '═'.repeat(30) + '\n';
+    if (data.leaderboard.length === 0) {
+        msg += '尚無記錄，快來挑戰吧！';
+    } else {
+        data.leaderboard.forEach((entry, i) => {
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+            msg += `${medal} ${entry.playerName} - ${entry.score}分 (Lv.${entry.level})\n`;
+        });
+    }
+    alert(msg);
+}
+
+// ===== 顯示成就 =====
+async function showAchievements() {
+    const data = await getAchievements();
+    if (!data) {
+        showNotification('❌ 無法獲取成就');
+        return;
+    }
+    
+    let msg = '🏅 成就系統\n' + '═'.repeat(30) + '\n';
+    const achievements = data.achievements || {};
+    let unlocked = 0;
+    let total = 0;
+    
+    for (const [key, ach] of Object.entries(achievements)) {
+        total++;
+        if (playerProfile.achievements.includes(key)) {
+            unlocked++;
+            msg += `✅ ${ach.name} - ${ach.description}\n`;
+        } else {
+            msg += `❌ ${ach.name} - ${ach.description}\n`;
+        }
+    }
+    
+    msg += `\n${'═'.repeat(30)}`;
+    msg += `\n已解鎖: ${unlocked}/${total}`;
+    alert(msg);
+}
+
+// ===== 夥伴系統 =====
+function drawCompanion() {
+    if (!companionActive || !gameCtx) return;
+    
+    companionTimer--;
+    if (companionTimer <= 0) {
+        companionActive = false;
+        companionType = 'none';
+        return;
+    }
+    
+    const cx = rocket.x - 30;
+    const cy = rocket.y + Math.sin(Date.now() / 500) * 10;
+    
+    gameCtx.save();
+    gameCtx.translate(cx, cy);
+    gameCtx.shadowColor = '#00d2d3';
+    gameCtx.shadowBlur = 20;
+    gameCtx.fillStyle = '#00d2d3';
+    gameCtx.font = '24px sans-serif';
+    gameCtx.textAlign = 'center';
+    gameCtx.textBaseline = 'middle';
+    gameCtx.fillText('🪁', 0, 0);
+    gameCtx.restore();
+    
+    collectibles.forEach(c => {
+        const dist = Math.hypot(c.x - cx, c.y - cy);
+        if (dist < c.radius + 20 && !c.collected) {
+            c.x += (cx - c.x) * 0.1;
+            c.y += (cy - c.y) * 0.1;
+            if (dist < 15) {
+                c.collected = true;
+                gameScore += 10;
+                playAudioEffect('coin');
+            }
+        }
+    });
+}
+
+// ===== 時間暫停效果 =====
+function applyTimeFreeze() {
+    if (!timeFreezeActive) return;
+    
+    timeFreezeTimer--;
+    if (timeFreezeTimer <= 0) {
+        timeFreezeActive = false;
+        showNotification('⏸️ 時間暫停結束');
+        return;
+    }
+    
+    obstacles.forEach(o => o.x -= 0.1);
+    collectibles.forEach(c => c.x -= 0.1);
+    if (bossActive && currentBoss) {
+        currentBoss.x -= 0.05;
+    }
+    
+    gameCtx.save();
+    gameCtx.fillStyle = 'rgba(100, 200, 255, 0.05)';
+    gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+    gameCtx.restore();
+}
+
+// ===== 修改主遊戲循環，加入新功能 =====
+const originalGameLoop = gameLoop;
+gameLoop = function() {
+    updateWeather();
+    if (challengeActive) checkChallenges();
+    updateComboSystem();
+    spawnSpecialItem();
+    applyTimeFreeze();
+    drawCompanion();
+    originalGameLoop();
+};
+
+// ===== Boss 技能詳細說明 =====
 const BOSS_SKILL_INFO = {
     '火焰吐息': { type: '主動', damage: 15, desc: '噴射火焰彈幕，對玩家造成傷害', visual: '🔥' },
     '烈焰護盾': { type: '被動', damage: 0, desc: '減少受到的傷害 30%', visual: '🛡️' },
@@ -2320,6 +2836,7 @@ function executeAttackItem(itemType, boss) {
         document.getElementById('bossWarning').style.display = 'none';
         showNotification(`💥 ${boss.name} 已被擊敗！`);
         gameScore += 200;
+        spawnBossLoot(boss);
     }
 }
 
@@ -2434,6 +2951,7 @@ if (poisonTimer > 0 && bossActive && currentBoss) {
             bossActive = false;
             document.getElementById('bossWarning').style.display = 'none';
             gameScore += 200;
+            spawnBossLoot(currentBoss);
             showNotification(`💥 ${currentBoss.name} 被毒死！`);
         }
     }
@@ -2550,12 +3068,19 @@ if(dist<c.radius+pickupRadius){
 let scoreMult=(feverTimer>0?2:1)*(doubleScoreTimer>0?2:1);
 const coinScore=parseInt(document.getElementById('customCoinScore')?.value||50);
 
+// 檢查是否為特殊道具
+if (c.isSpecial) {
+    handleSpecialItem(c);
+    c.collected = true;
+    return;
+}
+
 const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
 if (attackItem) {
     executeAttackItem(c.type, currentBoss);
     c.collected = true;
 } else if (c.type==='coin'||c.type==='star'){
-    const pts=(c.score||coinScore)*scoreMult;
+    const pts=(c.score||coinScore)*scoreMult*comboMultiplier;
     gameScore+=pts;gameCombo++;playAudioEffect('coin');
 } else if (c.type==='heart'){
     playerHP=Math.min(100,playerHP+(c.heal||25));
@@ -2614,7 +3139,7 @@ collectibles=collectibles.filter(c=>c.x>-20&&!c.collected);
 obstacles=obstacles.filter(o=>o.x>-20&&!o.hit);
 
 let scoreMult=(feverTimer>0?2:1)*(doubleScoreTimer>0?2:1);
-if(flowMag>10)gameScore+=1*scoreMult;
+if(flowMag>10)gameScore+=1*scoreMult*comboMultiplier;
 
 let elapsedSession=(Date.now()-sessionStartTime)/1000;
 if(elapsedSession>90)triggerRestStop();
@@ -2675,7 +3200,8 @@ unlockedItems:['coin','heart','shield','magnet','double','fever','missile','bomb
 unlockedObstacles:['cloud','poison','mud','spike','fire','ice'],
 isFinalBossActive:false,bossSequencePlaying:false,
 customLevelActive:false,customConfig:null,isRecordingPaused:false,
-currentSpawnRate:0.015,currentSpeedBonus:1.0
+currentSpawnRate:0.015,currentSpeedBonus:1.0,
+bossDefeated:0
 };
 window.__expansion=EXP;
 
@@ -2880,14 +3406,9 @@ const a=document.createElement('a');
 a.href=url;a.download=`關卡設定_${Date.now()}.json`;
 a.click();URL.revokeObjectURL(url);
 }
-
-// ============================================================
-// 🆕 匯入設定檔功能 - 按鈕直接觸發
-// ============================================================
 function importLevelConfig(){
     document.getElementById('importLevelFile').click();
 }
-
 function handleLevelImport(event){
 const file=event.target.files[0];
 if(!file){
@@ -2898,8 +3419,6 @@ const reader=new FileReader();
 reader.onload=function(e){
 try{
 const config=JSON.parse(e.target.result);
-
-// 套用所有設定
 document.getElementById('customLevel').value=config.level||1;
 document.getElementById('customSpawnRate').value=config.spawnRate||'0.015';
 document.getElementById('customEnemySpeed').value=config.enemySpeed||'1.0';
@@ -2911,14 +3430,11 @@ document.getElementById('customCoinScore').value=config.coinScore||50;
 document.getElementById('customBossHP').value=config.bossHP||1;
 document.getElementById('customDamageMult').value=config.damageMult||1;
 document.getElementById('customLevelUpScore').value=config.levelUpScore||80;
-
 if(config.skills) selectedSkills = config.skills;
 if(config.items) selectedItems = config.items;
 if(config.obstacles) selectedObstacles = config.obstacles;
 if(config.bosses) selectedBosses = config.bosses;
-
 buildAllCheckboxes();
-
 const status=document.getElementById('status');
 if(status){
 status.innerText='✅ 設定檔匯入成功！所有設定已套用！';
@@ -2928,22 +3444,17 @@ status.innerText='✅ 設定檔匯入成功！';
 status.style.background='#1f4e79';
 },3000);
 }
-
-// 如果遊戲正在運行，重啟套用設定
 if(typeof restartGameEngine === 'function'){
     restartGameEngine();
 }
-
 }catch(err){
 alert('❌ 設定檔格式錯誤：'+err.message);
 updateStatus('❌ 匯入失敗：JSON 格式錯誤');
 }
 };
 reader.readAsText(file);
-// 重置 input 以便重複選取
 event.target.value = '';
 }
-
 function toggleLevelEditor(){
 const editor=document.getElementById('levelEditor');
 if(editor){
@@ -3135,6 +3646,36 @@ modal.onclick=function(e){if(e.target===modal)closeDemoModal();};
 function closeDemoModal(){const modal=document.getElementById('demoModal');modal.style.display='none';if(demoAnimId){cancelAnimationFrame(demoAnimId);demoAnimId=null;}}
 
 // ============================================================
+// 🆕 初始化新功能
+// ============================================================
+function initNewFeatures() {
+    createModeSelector();
+    
+    const name = prompt('👋 歡迎！請輸入你的玩家名稱：', '飛行員');
+    if (name) {
+        playerProfile.name = name;
+        showNotification(`✈️ 歡迎，${name}！`);
+        sendVercelLog('玩家加入', 'INFO', { playerName: name });
+    }
+    
+    weatherTimer = 300;
+    weatherType = 'clear';
+    
+    getStats().then(stats => {
+        if (stats) {
+            console.log('📊 伺服器統計:', stats);
+        }
+    });
+    
+    console.log('✅ 新功能已載入！');
+    console.log('🎮 遊戲模式：標準、硬核、生存、挑戰');
+    console.log('🏅 成就系統已啟用');
+    console.log('🏆 排行榜已就緒');
+    console.log('🌤️ 天氣系統運行中');
+    console.log('🪁 夥伴系統可用');
+}
+
+// ============================================================
 // 初始化
 // ============================================================
 function initExpansion(){
@@ -3190,6 +3731,8 @@ function initExpansion(){
     console.log('📋 Boss 技能詳細說明顯示在 Boss 下方');
     console.log('🎨 道具無外圈設計，純靠表情符號辨識');
     console.log('📥 點擊「匯入設定檔」上傳 JSON 檔案套用設定');
+    
+    setTimeout(initNewFeatures, 500);
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
@@ -3221,6 +3764,11 @@ window.toggleDevMode=toggleDevMode;
 window.toggleKeyboardControl=toggleKeyboardControl;
 window.toggleMouseControl=toggleMouseControl;
 window.toggleControlGuide=toggleControlGuide;
+window.triggerGameOver=triggerGameOver;
+window.switchGameMode=switchGameMode;
+window.showStats=showStats;
+window.showLeaderboard=showLeaderboard;
+window.showAchievements=showAchievements;
 </script>
 </body>
 </html>
