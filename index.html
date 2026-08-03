@@ -604,6 +604,14 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 }
 
+#weatherDisplay {
+font-size: 13px;
+padding: 2px 10px;
+border-radius: 12px;
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.1);
+}
+
 @media (max-width: 768px) {
 .intro-card { flex: 1 1 100%; }
 #finalBossOverlay video { max-width: 95%; }
@@ -704,7 +712,8 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="control-hint" id="controlHint">
 🌬️ 呼吸: <span id="hintBreath">等待啟動</span> ｜ 
 ⌨️ 鍵盤: <span id="hintKeyboard">↑↓ / W S</span> ｜ 
-🖱️ 滑鼠: <span id="hintMouse">移動</span>
+🖱️ 滑鼠: <span id="hintMouse">移動</span> ｜
+🌤️ <span id="weatherLabel">晴朗</span>
 </div>
 
 <div class="boss-warning-text" id="bossWarningText">⚠️ 技能來襲！</div>
@@ -749,6 +758,9 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
     </div>
     <div class="priority-note" style="border-top-color:#e74c3c; color:#e74c3c;">
         🗡️ 攻擊道具（🚀💣🔫🧊🧪⚡🎯）吃到自動發動！
+    </div>
+    <div class="priority-note" style="border-top-color:#00d2d3; color:#00d2d3;">
+        ⭐ 特殊道具（⏸️🪁🛡️💎🌟）有強大效果！
     </div>
 </div>
 </div>
@@ -1307,6 +1319,7 @@ const html=`
 <input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
 <label for="mouseToggle">🖱️ 滑鼠</label>
 </span>
+<span id="weatherDisplay">☀️ <span id="weatherLabelText">晴朗</span></span>
 <span id="devControls" style="display:flex;gap:6px;align-items:center;">
 <button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
 <span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
@@ -1531,9 +1544,16 @@ let companionActive = false;
 let companionType = 'none';
 let companionTimer = 0;
 
-// 5. 天氣系統
+// 5. 天氣系統（修復版）
 let weatherType = 'clear';
 let weatherTimer = 0;
+let weatherEffect = {
+    speedMultiplier: 1.0,
+    scoreMultiplier: 1.0,
+    visibility: 1.0,
+    chaos: false,
+    slow: false
+};
 
 // ===== 新增遊戲模式 =====
 const GAME_MODES = {
@@ -1545,66 +1565,200 @@ const GAME_MODES = {
 
 let currentGameMode = GAME_MODES.STANDARD;
 
-// ===== 新功能：特殊道具（已修復 emoji） =====
+// ===== 新功能：特殊道具（單一圖案） =====
 const SPECIAL_ITEMS = [
     { type: 'time_freeze', emoji: '⏸️', label: '時間暫停', duration: 300, effect: 'freeze', desc: '暫停所有敵人移動 5 秒' },
     { type: 'companion', emoji: '🪁', label: '夥伴', duration: 600, effect: 'companion', desc: '召喚夥伴自動收集道具 10 秒' },
-    { type: 'mega_shield', emoji: '🛡️⭐', label: '超級護盾', duration: 180, effect: 'mega_shield', desc: '抵擋 3 次傷害' },
-    { type: 'score_x5', emoji: '💎💎', label: '5倍積分', duration: 300, effect: 'x5', desc: '5 倍積分持續 5 秒' },
+    { type: 'mega_shield', emoji: '🛡️', label: '超級護盾', duration: 180, effect: 'mega_shield', desc: '抵擋 3 次傷害' },
+    { type: 'score_x5', emoji: '💎', label: '5倍積分', duration: 300, effect: 'x5', desc: '5 倍積分持續 5 秒' },
     { type: 'invincible', emoji: '🌟', label: '無敵', duration: 120, effect: 'invincible', desc: '無敵狀態 2 秒' }
 ];
 
 // ===== 新功能：天氣效果 =====
 const WEATHER_TYPES = [
-    { type: 'clear', label: '☀️ 晴朗', effect: 'none' },
-    { type: 'rain', label: '🌧️ 下雨', effect: 'slow' },
-    { type: 'storm', label: '⛈️ 暴風', effect: 'chaos' },
-    { type: 'fog', label: '🌫️ 濃霧', effect: 'fog' },
-    { type: 'aurora', label: '🌌 極光', effect: 'bonus' }
+    { type: 'clear', label: '☀️ 晴朗', emoji: '☀️', effect: 'none' },
+    { type: 'rain', label: '🌧️ 下雨', emoji: '🌧️', effect: 'slow' },
+    { type: 'storm', label: '⛈️ 暴風', emoji: '⛈️', effect: 'chaos' },
+    { type: 'fog', label: '🌫️ 濃霧', emoji: '🌫️', effect: 'fog' },
+    { type: 'aurora', label: '🌌 極光', emoji: '🌌', effect: 'bonus' }
 ];
 
-// ===== 天氣繪製 =====
+// ===== 天氣視覺效果（修復版） =====
 function drawWeatherEffect() {
     if (!gameCtx) return;
+    
+    const width = gameCanvas.width;
+    const height = gameCanvas.height;
     
     switch(weatherType) {
         case 'rain':
             gameCtx.save();
-            gameCtx.fillStyle = 'rgba(100, 150, 255, 0.1)';
-            for (let i = 0; i < 50; i++) {
-                const x = (i * 37 + Date.now() * 0.5) % gameCanvas.width;
-                const y = (i * 53 + Date.now() * 2) % gameCanvas.height;
-                gameCtx.fillRect(x, y, 2, 8);
+            gameCtx.strokeStyle = 'rgba(100, 150, 255, 0.3)';
+            gameCtx.lineWidth = 1;
+            for (let i = 0; i < 80; i++) {
+                const x = (i * 37 + Date.now() * 0.8) % width;
+                const y = (i * 53 + Date.now() * 3) % height;
+                gameCtx.beginPath();
+                gameCtx.moveTo(x, y);
+                gameCtx.lineTo(x + 2, y + 12);
+                gameCtx.stroke();
             }
+            gameCtx.fillStyle = 'rgba(100, 150, 255, 0.05)';
+            gameCtx.fillRect(0, 0, width, height);
             gameCtx.restore();
             break;
+            
         case 'storm':
             gameCtx.save();
-            gameCtx.fillStyle = 'rgba(50, 50, 80, 0.15)';
-            const flash = Math.sin(Date.now() / 1000) > 0.9;
+            const flash = Math.sin(Date.now() / 800) > 0.95;
             if (flash) {
                 gameCtx.fillStyle = 'rgba(255, 255, 200, 0.3)';
+                gameCtx.fillRect(0, 0, width, height);
+                gameCtx.strokeStyle = 'rgba(255, 255, 200, 0.6)';
+                gameCtx.lineWidth = 3;
+                let x = Math.random() * width;
+                let y = 0;
+                gameCtx.beginPath();
+                gameCtx.moveTo(x, y);
+                for (let i = 0; i < 5; i++) {
+                    x += (Math.random() - 0.5) * 40;
+                    y += 30 + Math.random() * 30;
+                    gameCtx.lineTo(x, y);
+                }
+                gameCtx.stroke();
             }
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.fillStyle = 'rgba(50, 50, 80, 0.15)';
+            for (let i = 0; i < 10; i++) {
+                const cx = (i * 100 + Date.now() * 0.1) % width;
+                const cy = 50 + Math.sin(i * 0.7 + Date.now() * 0.0005) * 30;
+                gameCtx.beginPath();
+                gameCtx.arc(cx, cy, 40 + Math.sin(i + Date.now() * 0.001) * 10, 0, Math.PI * 2);
+                gameCtx.fill();
+            }
             gameCtx.restore();
             break;
+            
         case 'fog':
             gameCtx.save();
-            gameCtx.fillStyle = `rgba(200, 200, 200, ${0.1 + Math.sin(Date.now() / 5000) * 0.05})`;
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            const fogAlpha = 0.15 + Math.sin(Date.now() / 3000) * 0.05;
+            gameCtx.fillStyle = `rgba(200, 200, 210, ${fogAlpha})`;
+            gameCtx.fillRect(0, 0, width, height);
+            for (let i = 0; i < 5; i++) {
+                const x = (i * 200 + Date.now() * 0.05) % (width + 100) - 50;
+                const y = 50 + i * 80 + Math.sin(i * 0.5 + Date.now() * 0.001) * 20;
+                const grad = gameCtx.createRadialGradient(x, y, 10, x, y, 100);
+                grad.addColorStop(0, 'rgba(220, 220, 230, 0.1)');
+                grad.addColorStop(1, 'rgba(220, 220, 230, 0)');
+                gameCtx.fillStyle = grad;
+                gameCtx.beginPath();
+                gameCtx.arc(x, y, 100, 0, Math.PI * 2);
+                gameCtx.fill();
+            }
             gameCtx.restore();
             break;
+            
         case 'aurora':
             gameCtx.save();
-            const gradient = gameCtx.createLinearGradient(0, 0, gameCanvas.width, 0);
-            gradient.addColorStop(0, 'rgba(0, 255, 100, 0.05)');
-            gradient.addColorStop(0.3, 'rgba(0, 100, 255, 0.08)');
-            gradient.addColorStop(0.6, 'rgba(200, 0, 255, 0.05)');
-            gradient.addColorStop(1, 'rgba(0, 255, 100, 0.05)');
-            gameCtx.fillStyle = gradient;
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            const time = Date.now() / 2000;
+            for (let i = 0; i < 3; i++) {
+                const yOffset = i * 60 + Math.sin(time + i * 2) * 20;
+                const grad = gameCtx.createLinearGradient(0, yOffset, width, yOffset + 40);
+                const colors = [
+                    `rgba(0, 255, 100, ${0.08 + Math.sin(time + i) * 0.04})`,
+                    `rgba(0, 100, 255, ${0.08 + Math.sin(time + 1 + i) * 0.04})`,
+                    `rgba(200, 0, 255, ${0.08 + Math.sin(time + 2 + i) * 0.04})`,
+                    `rgba(0, 255, 100, ${0.08 + Math.sin(time + 3 + i) * 0.04})`
+                ];
+                grad.addColorStop(0, colors[0]);
+                grad.addColorStop(0.3, colors[1]);
+                grad.addColorStop(0.6, colors[2]);
+                grad.addColorStop(1, colors[3]);
+                gameCtx.fillStyle = grad;
+                gameCtx.beginPath();
+                for (let x = 0; x < width; x += 2) {
+                    const y = yOffset + Math.sin(x * 0.01 + time + i * 0.5) * 30 + Math.sin(x * 0.02 + time * 0.5) * 15;
+                    if (x === 0) gameCtx.moveTo(x, y);
+                    else gameCtx.lineTo(x, y);
+                }
+                gameCtx.lineTo(width, yOffset + 60);
+                gameCtx.lineTo(0, yOffset + 60);
+                gameCtx.closePath();
+                gameCtx.fill();
+            }
+            for (let i = 0; i < 30; i++) {
+                const x = (i * 137 + 50) % width;
+                const y = (i * 251 + 30) % (height * 0.5);
+                const size = 1 + Math.sin(Date.now() / 500 + i) * 0.5;
+                gameCtx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.sin(Date.now() / 300 + i) * 0.2})`;
+                gameCtx.beginPath();
+                gameCtx.arc(x, y, size, 0, Math.PI * 2);
+                gameCtx.fill();
+            }
             gameCtx.restore();
             break;
+            
+        case 'clear':
+        default:
+            gameCtx.save();
+            const grad = gameCtx.createRadialGradient(width * 0.8, 20, 10, width * 0.8, 20, 300);
+            grad.addColorStop(0, 'rgba(255, 200, 100, 0.05)');
+            grad.addColorStop(1, 'rgba(255, 200, 100, 0)');
+            gameCtx.fillStyle = grad;
+            gameCtx.fillRect(0, 0, width, height);
+            gameCtx.restore();
+            break;
+    }
+}
+
+// ===== 天氣更新（修復版） =====
+function updateWeather() {
+    weatherTimer--;
+    if (weatherTimer <= 0) {
+        const newWeather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+        weatherType = newWeather.type;
+        weatherTimer = 300 + Math.random() * 300;
+        
+        switch(weatherType) {
+            case 'clear':
+                weatherEffect = { speedMultiplier: 1.0, scoreMultiplier: 1.0, visibility: 1.0, chaos: false, slow: false };
+                break;
+            case 'rain':
+                weatherEffect = { speedMultiplier: 0.8, scoreMultiplier: 1.2, visibility: 0.9, chaos: false, slow: true };
+                showNotification('🌧️ 下雨：敵人減速 20%，得分 +20%');
+                break;
+            case 'storm':
+                weatherEffect = { speedMultiplier: 1.3, scoreMultiplier: 1.5, visibility: 0.7, chaos: true, slow: false };
+                showNotification('⛈️ 暴風：敵人加速 30%，得分 +50%！');
+                break;
+            case 'fog':
+                weatherEffect = { speedMultiplier: 1.0, scoreMultiplier: 1.3, visibility: 0.4, chaos: false, slow: false };
+                showNotification('🌫️ 濃霧：能見度降低，得分 +30%');
+                break;
+            case 'aurora':
+                weatherEffect = { speedMultiplier: 0.9, scoreMultiplier: 2.0, visibility: 1.0, chaos: false, slow: false };
+                showNotification('🌌 極光：得分 2 倍！');
+                break;
+        }
+        
+        // 更新 UI
+        const weatherLabel = document.getElementById('weatherLabel');
+        const weatherLabelText = document.getElementById('weatherLabelText');
+        const weatherDisplay = document.getElementById('weatherDisplay');
+        if (weatherLabel) {
+            const info = WEATHER_TYPES.find(w => w.type === weatherType);
+            weatherLabel.textContent = info?.emoji || '☀️';
+        }
+        if (weatherLabelText) {
+            const info = WEATHER_TYPES.find(w => w.type === weatherType);
+            weatherLabelText.textContent = info?.label || '晴朗';
+        }
+        if (weatherDisplay) {
+            const colors = { clear: '#f1c40f', rain: '#3498db', storm: '#e74c3c', fog: '#95a5a6', aurora: '#8e44ad' };
+            weatherDisplay.style.color = colors[weatherType] || '#8b949e';
+        }
+        
+        playAudioEffect('weather');
+        sendVercelLog('天氣變化', 'INFO', { weather: weatherType, effect: weatherEffect });
     }
 }
 
@@ -1676,7 +1830,7 @@ function spawnSpecialItem() {
     });
 }
 
-// ===== 處理特殊道具（已修復音效） =====
+// ===== 處理特殊道具 =====
 function handleSpecialItem(item) {
     switch(item.effect) {
         case 'freeze':
@@ -1696,16 +1850,16 @@ function handleSpecialItem(item) {
             hasShield = true;
             shieldCharges = 3;
             document.getElementById('shieldBadge').style.display = 'inline';
-            document.getElementById('shieldBadge').textContent = '🛡️⭐ 超級護盾 x3';
+            document.getElementById('shieldBadge').textContent = '🛡️⭐ x3';
             playAudioEffect('special');
-            showNotification('🛡️⭐ 超級護盾啟動！');
+            showNotification('🛡️ 超級護盾啟動！');
             break;
         case 'x5':
             doubleScoreTimer = item.duration;
             document.getElementById('doubleBadge').style.display = 'inline';
-            document.getElementById('doubleBadge').textContent = '💎💎 5x 積分';
+            document.getElementById('doubleBadge').textContent = '💎 5x';
             playAudioEffect('special');
-            showNotification('💎💎 5倍積分！');
+            showNotification('💎 5倍積分！');
             break;
         case 'invincible':
             invincibleActive = true;
@@ -1713,19 +1867,6 @@ function handleSpecialItem(item) {
             playAudioEffect('special');
             showNotification('🌟 無敵模式！');
             break;
-    }
-}
-
-// ===== 天氣系統 =====
-function updateWeather() {
-    weatherTimer--;
-    if (weatherTimer <= 0) {
-        const newWeather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
-        weatherType = newWeather.type;
-        weatherTimer = 300 + Math.random() * 300;
-        playAudioEffect('weather');
-        showNotification(`🌤️ 天氣變化：${newWeather.label}`);
-        sendVercelLog('天氣變化', 'INFO', { weather: weatherType });
     }
 }
 
@@ -1968,7 +2109,7 @@ function applyTimeFreeze() {
 }
 
 // ============================================================
-// 繪製道具（已修復特殊道具顯示）
+// 繪製道具（修復版 - 支援特殊道具單一圖案）
 // ============================================================
 function drawItem(ctx, x, y, type, radius) {
     ctx.save();
@@ -2899,358 +3040,420 @@ function executeAttackItem(itemType, boss) {
     }
 }
 
-// ===== 主遊戲循環 =====
-function gameLoop(){
-if(!isGameRunning||isGameOver)return;
-gameCtx.globalAlpha=1.0;
-if(customSkins.bg){
-try{const img=new Image();img.src=customSkins.bg;if(img.complete&&img.naturalWidth>0){gameCtx.drawImage(img,0,0,gameCanvas.width,gameCanvas.height);}else{gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}}catch(e){gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}
-}else{gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}
-
-// 繪製天氣效果
-drawWeatherEffect();
-
-let diff=document.getElementById('gameDifficultySelect')?.value||'normal';
-let speedMultByDiff=(diff==='hard')?1.3:(diff==='easy'?0.85:1.0);
-let baseSpeedMult=parseFloat(document.getElementById('gameSpeedSelect')?.value||'1.0')*speedMultByDiff;
-let userSpeedMult=(slowDebuffTimer>0)?(baseSpeedMult*0.5):baseSpeedMult;
-
-gameCtx.fillStyle='rgba(255,255,255,0.3)';
-stars.forEach(s=>{s.x-=s.baseSpeed*userSpeedMult;if(s.x<0)s.x=gameCanvas.width;gameCtx.fillRect(s.x,s.y,s.size,s.size);});
-
-let activeMeasuring=typeof isMeasuring!=='undefined'?isMeasuring:false;
-
-if(activeMeasuring&&!isGamePaused&&!isResting&&!isGameOver){
-let flow=(typeof smoothedEst!=='undefined'&&!isNaN(smoothedEst))?smoothedEst:0;
-let flowMag=Math.abs(flow);
-
-let targetY = null;
-let hasBreathData = activeMeasuring && Math.abs(flow) > 0.5;
-
-if (hasBreathData) {
-    let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard' ? 0.8 : 1.2);
-    targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
-    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-    document.getElementById('hintBreath').style.color = '#2ecc71';
-    document.getElementById('hintKeyboard').style.color = '';
-    document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
-    document.getElementById('hintMouse').style.color = '';
-    document.getElementById('hintMouse').textContent = '移動';
-    useKeyboardControl = false;
-    useMouseControl = false;
-    keyboardY = null;
-    mouseY = null;
-}
-if (targetY === null && keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
-    targetY = keyboardY;
-    document.getElementById('hintKeyboard').style.color = '#f1c40f';
-    document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
-    document.getElementById('hintBreath').textContent = '等待呼吸';
-    document.getElementById('hintBreath').style.color = '';
-}
-if (targetY === null && mouseControlEnabled && useMouseControl && mouseY !== null) {
-    targetY = mouseY;
-    document.getElementById('hintMouse').style.color = '#f1c40f';
-    document.getElementById('hintMouse').textContent = '🖱️ 使用中';
-    document.getElementById('hintBreath').textContent = '等待呼吸';
-    document.getElementById('hintBreath').style.color = '';
-}
-if (targetY === null) {
-    targetY = gameCanvas.height / 2;
-    if (!activeMeasuring) {
-        document.getElementById('hintBreath').textContent = '等待啟動';
-    } else {
-        document.getElementById('hintBreath').textContent = '等待呼吸';
-    }
-    document.getElementById('hintBreath').style.color = '';
-}
-
-targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
-let dy = targetY - rocket.y;
-if (isNaN(dy)) dy = 0;
-let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
-rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
-rocket.angle = Math.atan2(dy, 25);
-
-if(feverTimer>0){feverTimer--;if(feverTimer===0)document.getElementById('feverBadge').style.display='none';}
-if(magnetTimer>0){magnetTimer--;if(magnetTimer===0)document.getElementById('magnetBadge').style.display='none';}
-if(doubleScoreTimer>0){doubleScoreTimer--;if(doubleScoreTimer===0)document.getElementById('doubleBadge').style.display='none';}
-if(slowDebuffTimer>0){slowDebuffTimer--;if(slowDebuffTimer===0)document.getElementById('slowBadge').style.display='none';}
-if(invincibleTimer>0){invincibleTimer--;if(invincibleTimer===0){invincibleActive=false;showNotification('🌟 無敵效果結束');}}
-
-if (poisonTimer > 0 && bossActive && currentBoss) {
-    poisonTimer--;
-    if (poisonTimer % 30 === 0) {
-        const poisonDmg = Math.floor(poisonDamage / 5);
-        currentBoss.hp = Math.max(0, currentBoss.hp - poisonDmg);
-        for (let i = 0; i < 5; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 10 + Math.random() * 30;
-            particles.push({
-                x: currentBoss.x + Math.cos(angle) * dist,
-                y: currentBoss.y + Math.sin(angle) * dist,
-                vx: (Math.random() - 0.5) * 0.2,
-                vy: (Math.random() - 0.5) * 0.2 - 0.3,
-                size: 3 + Math.random() * 4,
-                color: '#2ecc71',
-                life: 0.6 + Math.random() * 0.4
-            });
-        }
-        showNotification(`🧪 毒藥傷害！-${poisonDmg} HP`);
-        if (currentBoss.hp <= 0) {
-            currentBoss.hp = 0;
-            for (let i = 0; i < 40; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 5;
-                particles.push({
-                    x: currentBoss.x, y: currentBoss.y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 1,
-                    size: 3 + Math.random() * 5,
-                    color: '#2ecc71',
-                    life: 1.0
-                });
+// ===== 主遊戲循環（修復版 - 無重複覆蓋） =====
+function gameLoop() {
+    if (!isGameRunning || isGameOver) return;
+    
+    // 繪製背景
+    gameCtx.globalAlpha = 1.0;
+    if (customSkins.bg) {
+        try {
+            const img = new Image();
+            img.src = customSkins.bg;
+            if (img.complete && img.naturalWidth > 0) {
+                gameCtx.drawImage(img, 0, 0, gameCanvas.width, gameCanvas.height);
+            } else {
+                gameCtx.fillStyle = '#0d1117';
+                gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
             }
-            bossActive = false;
-            document.getElementById('bossWarning').style.display = 'none';
-            gameScore += 200;
-            spawnBossLoot(currentBoss);
-            showNotification(`💥 ${currentBoss.name} 被毒死！`);
+        } catch(e) {
+            gameCtx.fillStyle = '#0d1117';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
         }
+    } else {
+        gameCtx.fillStyle = '#0d1117';
+        gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
     }
-    if (poisonTimer === 0) { showNotification(`🧪 毒藥效果結束`); }
-}
+    
+    // 繪製天氣效果
+    drawWeatherEffect();
+    
+    // 更新天氣
+    updateWeather();
+    
+    // 檢查挑戰
+    if (challengeActive) checkChallenges();
+    
+    // 更新 Combo
+    updateComboSystem();
+    
+    // 生成特殊道具
+    spawnSpecialItem();
+    
+    // 應用時間暫停
+    applyTimeFreeze();
+    
+    // 繪製夥伴
+    drawCompanion();
+    
+    let diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+    let speedMultByDiff = (diff === 'hard') ? 1.3 : (diff === 'easy' ? 0.85 : 1.0);
+    let baseSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0') * speedMultByDiff * (weatherEffect.speedMultiplier || 1.0);
+    let userSpeedMult = (slowDebuffTimer > 0) ? (baseSpeedMult * 0.5) : baseSpeedMult;
 
-if (freezeTimer > 0) { freezeTimer--; }
-if (attackCooldown > 0) attackCooldown--;
+    // 繪製星星
+    gameCtx.fillStyle = 'rgba(255,255,255,0.3)';
+    stars.forEach(s => {
+        s.x -= s.baseSpeed * userSpeedMult;
+        if (s.x < 0) s.x = gameCanvas.width;
+        gameCtx.fillRect(s.x, s.y, s.size, s.size);
+    });
 
-let spawnY=Math.random()*(gameCanvas.height-100)+50;
-if(isUsingCustomMusic&&audioAnalyser&&audioDataArray){audioAnalyser.getByteFrequencyData(audioDataArray);spawnY=gameCanvas.height-(audioDataArray[5]/255)*(gameCanvas.height-80);}
+    let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
 
-// Boss 出現
-const bossRate = parseFloat(document.getElementById('customBossRate')?.value || '0.008');
-const bossLevel = Math.floor((EXP?.currentLevel || 1) / 3) + 1;
+    if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
+        let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+        let flowMag = Math.abs(flow);
 
-if (!bossActive && Math.random() < bossRate * userSpeedMult) {
-    const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
-    const boss = BOSS_TYPES[bossIdx];
-    currentBoss = {
-        ...boss,
-        x: gameCanvas.width + 50,
-        y: spawnY,
-        hp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
-        maxHp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
-        skillTimer: 0,
-        active: true
-    };
-    bossActive = true;
-    document.getElementById('bossWarning').style.display = 'inline';
-    playAudioEffect('boss');
-    showNotification(`👹 ${boss.name} 出現！`);
-}
+        let targetY = null;
+        let hasBreathData = activeMeasuring && Math.abs(flow) > 0.5;
 
-// Boss 行為
-if(bossActive&&currentBoss){
-currentBoss.x-=(currentBoss.speed||1)*userSpeedMult;
-currentBoss.skillTimer++;
+        if (hasBreathData) {
+            let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard' ? 0.8 : 1.2);
+            targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
+            document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+            document.getElementById('hintBreath').style.color = '#2ecc71';
+            document.getElementById('hintKeyboard').style.color = '';
+            document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+            document.getElementById('hintMouse').style.color = '';
+            document.getElementById('hintMouse').textContent = '移動';
+            useKeyboardControl = false;
+            useMouseControl = false;
+            keyboardY = null;
+            mouseY = null;
+        }
+        if (targetY === null && keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
+            targetY = keyboardY;
+            document.getElementById('hintKeyboard').style.color = '#f1c40f';
+            document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
+            document.getElementById('hintBreath').textContent = '等待呼吸';
+            document.getElementById('hintBreath').style.color = '';
+        }
+        if (targetY === null && mouseControlEnabled && useMouseControl && mouseY !== null) {
+            targetY = mouseY;
+            document.getElementById('hintMouse').style.color = '#f1c40f';
+            document.getElementById('hintMouse').textContent = '🖱️ 使用中';
+            document.getElementById('hintBreath').textContent = '等待呼吸';
+            document.getElementById('hintBreath').style.color = '';
+        }
+        if (targetY === null) {
+            targetY = gameCanvas.height / 2;
+            if (!activeMeasuring) {
+                document.getElementById('hintBreath').textContent = '等待啟動';
+            } else {
+                document.getElementById('hintBreath').textContent = '等待呼吸';
+            }
+            document.getElementById('hintBreath').style.color = '';
+        }
 
-if (freezeTimer <= 0 && currentBoss.skillTimer > 100 && Math.random() < 0.02 && bossSkillWarning === null) {
-    const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
-    bossSkillType = skill;
-    bossSkillWarning = 60;
-    currentBoss.skillTimer = 0;
-    playAudioEffect('warning');
-    document.getElementById('skillWarning').style.display = 'inline';
-    document.getElementById('bossWarningText').style.display = 'block';
-    const skillInfo = BOSS_SKILL_INFO[skill] || { desc: '未知技能' };
-    document.getElementById('bossWarningText').textContent = `⚠️ ${skill}（${skillInfo.desc}）`;
-    showNotification(`⚠️ ${currentBoss.name} 準備使用 ${skill}！`);
-}
+        targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
+        let dy = targetY - rocket.y;
+        if (isNaN(dy)) dy = 0;
+        let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
+        rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
+        rocket.angle = Math.atan2(dy, 25);
 
-if (bossSkillWarning !== null) {
-    bossSkillWarning--;
-    const countdown = Math.ceil(bossSkillWarning / 30);
-    const skillInfo = BOSS_SKILL_INFO[bossSkillType] || { desc: '' };
-    document.getElementById('bossWarningText').textContent = `⚠️ ${bossSkillType} ${countdown}s ${skillInfo.desc ? '| '+skillInfo.desc : ''}`;
-    if (bossSkillWarning <= 0) {
-        executeBossSkill(currentBoss, bossSkillType);
-        bossSkillWarning = null;
-        bossSkillType = null;
-        document.getElementById('bossWarningText').style.display = 'none';
+        if (feverTimer > 0) { feverTimer--; if (feverTimer === 0) document.getElementById('feverBadge').style.display = 'none'; }
+        if (magnetTimer > 0) { magnetTimer--; if (magnetTimer === 0) document.getElementById('magnetBadge').style.display = 'none'; }
+        if (doubleScoreTimer > 0) { doubleScoreTimer--; if (doubleScoreTimer === 0) document.getElementById('doubleBadge').style.display = 'none'; }
+        if (slowDebuffTimer > 0) { slowDebuffTimer--; if (slowDebuffTimer === 0) document.getElementById('slowBadge').style.display = 'none'; }
+        if (invincibleTimer > 0) { invincibleTimer--; if (invincibleTimer === 0) { invincibleActive = false; showNotification('🌟 無敵效果結束'); } }
+
+        if (poisonTimer > 0 && bossActive && currentBoss) {
+            poisonTimer--;
+            if (poisonTimer % 30 === 0) {
+                const poisonDmg = Math.floor(poisonDamage / 5);
+                currentBoss.hp = Math.max(0, currentBoss.hp - poisonDmg);
+                for (let i = 0; i < 5; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 10 + Math.random() * 30;
+                    particles.push({
+                        x: currentBoss.x + Math.cos(angle) * dist,
+                        y: currentBoss.y + Math.sin(angle) * dist,
+                        vx: (Math.random() - 0.5) * 0.2,
+                        vy: (Math.random() - 0.5) * 0.2 - 0.3,
+                        size: 3 + Math.random() * 4,
+                        color: '#2ecc71',
+                        life: 0.6 + Math.random() * 0.4
+                    });
+                }
+                showNotification(`🧪 毒藥傷害！-${poisonDmg} HP`);
+                if (currentBoss.hp <= 0) {
+                    currentBoss.hp = 0;
+                    for (let i = 0; i < 40; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = 2 + Math.random() * 5;
+                        particles.push({
+                            x: currentBoss.x, y: currentBoss.y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed - 1,
+                            size: 3 + Math.random() * 5,
+                            color: '#2ecc71',
+                            life: 1.0
+                        });
+                    }
+                    bossActive = false;
+                    document.getElementById('bossWarning').style.display = 'none';
+                    gameScore += 200;
+                    spawnBossLoot(currentBoss);
+                    showNotification(`💥 ${currentBoss.name} 被毒死！`);
+                }
+            }
+            if (poisonTimer === 0) { showNotification(`🧪 毒藥效果結束`); }
+        }
+
+        if (freezeTimer > 0) { freezeTimer--; }
+        if (attackCooldown > 0) attackCooldown--;
+
+        let spawnY = Math.random() * (gameCanvas.height - 100) + 50;
+        if (isUsingCustomMusic && audioAnalyser && audioDataArray) {
+            audioAnalyser.getByteFrequencyData(audioDataArray);
+            spawnY = gameCanvas.height - (audioDataArray[5] / 255) * (gameCanvas.height - 80);
+        }
+
+        // Boss 出現
+        const bossRate = parseFloat(document.getElementById('customBossRate')?.value || '0.008');
+        const bossLevel = Math.floor((EXP?.currentLevel || 1) / 3) + 1;
+
+        if (!bossActive && Math.random() < bossRate * userSpeedMult) {
+            const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
+            const boss = BOSS_TYPES[bossIdx];
+            currentBoss = {
+                ...boss,
+                x: gameCanvas.width + 50,
+                y: spawnY,
+                hp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
+                maxHp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
+                skillTimer: 0,
+                active: true
+            };
+            bossActive = true;
+            document.getElementById('bossWarning').style.display = 'inline';
+            playAudioEffect('boss');
+            showNotification(`👹 ${boss.name} 出現！`);
+        }
+
+        // Boss 行為
+        if (bossActive && currentBoss) {
+            currentBoss.x -= (currentBoss.speed || 1) * userSpeedMult;
+            currentBoss.skillTimer++;
+
+            if (freezeTimer <= 0 && currentBoss.skillTimer > 100 && Math.random() < 0.02 && bossSkillWarning === null) {
+                const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
+                bossSkillType = skill;
+                bossSkillWarning = 60;
+                currentBoss.skillTimer = 0;
+                playAudioEffect('warning');
+                document.getElementById('skillWarning').style.display = 'inline';
+                document.getElementById('bossWarningText').style.display = 'block';
+                const skillInfo = BOSS_SKILL_INFO[skill] || { desc: '未知技能' };
+                document.getElementById('bossWarningText').textContent = `⚠️ ${skill}（${skillInfo.desc}）`;
+                showNotification(`⚠️ ${currentBoss.name} 準備使用 ${skill}！`);
+            }
+
+            if (bossSkillWarning !== null) {
+                bossSkillWarning--;
+                const countdown = Math.ceil(bossSkillWarning / 30);
+                const skillInfo = BOSS_SKILL_INFO[bossSkillType] || { desc: '' };
+                document.getElementById('bossWarningText').textContent = `⚠️ ${bossSkillType} ${countdown}s ${skillInfo.desc ? '| '+skillInfo.desc : ''}`;
+                if (bossSkillWarning <= 0) {
+                    executeBossSkill(currentBoss, bossSkillType);
+                    bossSkillWarning = null;
+                    bossSkillType = null;
+                    document.getElementById('bossWarningText').style.display = 'none';
+                }
+            }
+
+            drawBossWithWarning(gameCtx, currentBoss.x, currentBoss.y, currentBoss, bossSkillWarning, bossSkillType);
+
+            const hpPct = currentBoss.hp / currentBoss.maxHp;
+            gameCtx.fillStyle = 'rgba(0,0,0,0.7)';
+            gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60, 6);
+            gameCtx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
+            gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60 * hpPct, 6);
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = '10px sans-serif';
+            gameCtx.textAlign = 'center';
+            gameCtx.fillText(currentBoss.name, currentBoss.x, currentBoss.y - currentBoss.radius - 18);
+
+            const bossDist = Math.hypot(currentBoss.x - rocket.x, currentBoss.y - rocket.y);
+            if (bossDist < currentBoss.radius + rocket.radius) {
+                if (hasShield && shieldCharges > 0) {
+                    shieldCharges--;
+                    document.getElementById('shieldBadge').textContent = `🛡️ x${shieldCharges}`;
+                    if (shieldCharges <= 0) {
+                        hasShield = false;
+                        document.getElementById('shieldBadge').style.display = 'none';
+                    }
+                    playAudioEffect('hit');
+                } else if (invincibleActive) {
+                    showNotification('🌟 無敵狀態！不受傷害！');
+                } else {
+                    playerHP = Math.max(0, playerHP - 15);
+                    playAudioEffect('hit');
+                    if (playerHP <= 0) { triggerGameOver(); return; }
+                }
+            }
+            if (currentBoss.x < -50) { bossActive = false; currentBoss = null; document.getElementById('bossWarning').style.display = 'none'; }
+        }
+
+        // 生成道具
+        const itemRate = parseFloat(document.getElementById('customItemRate')?.value || '0.025');
+        const visibilityMult = weatherEffect.visibility || 1.0;
+        const unlockedItems = EXP?.unlockedItems || ['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];
+        const itemPool = ITEM_TYPES.filter(i => unlockedItems.includes(i.type));
+        if (itemPool.length > 0 && Math.random() < itemRate * userSpeedMult * (visibilityMult > 0.5 ? 1.0 : 0.7)) {
+            const item = itemPool[Math.floor(Math.random() * itemPool.length)];
+            collectibles.push({...item, x: gameCanvas.width + 20, y: spawnY, radius: 12, baseSpeed: 3, collected: false});
+        }
+
+        // 生成障礙物
+        const obstacleRate = parseFloat(document.getElementById('customObstacleRate')?.value || '0.015');
+        const unlockedObstacles = EXP?.unlockedObstacles || ['cloud','poison','mud','spike','fire','ice'];
+        const obstaclePool = OBSTACLE_TYPES.filter(o => unlockedObstacles.includes(o.type));
+        if (obstaclePool.length > 0 && Math.random() < obstacleRate * userSpeedMult * (visibilityMult > 0.5 ? 1.0 : 0.6)) {
+            const obs = obstaclePool[Math.floor(Math.random() * obstaclePool.length)];
+            const dmgMult = parseFloat(document.getElementById('customDamageMult')?.value || 1);
+            const dmg = (diff === 'easy') ? Math.floor(obs.damage * 0.5 * dmgMult) : (diff === 'hard') ? Math.floor(obs.damage * 1.5 * dmgMult) : Math.floor(obs.damage * dmgMult);
+            obstacles.push({...obs, x: gameCanvas.width + 30, y: spawnY, radius: obs.type === 'poison' ? 22 : obs.type === 'void' ? 20 : 14, baseSpeed: obs.type === 'mud' ? 4.5 : obs.type === 'ice' ? 3.5 : 4, damage: dmg, hit: false, slow: obs.slow || false});
+        }
+
+        // 更新道具
+        collectibles.forEach(c => {
+            c.x -= c.baseSpeed * userSpeedMult;
+            if (magnetTimer > 0) {
+                let d = Math.hypot(rocket.x - c.x, rocket.y - c.y);
+                if (d < 200) {
+                    c.x += (rocket.x - c.x) * 0.12;
+                    c.y += (rocket.y - c.y) * 0.12;
+                }
+            }
+            drawItem(gameCtx, c.x, c.y, c.type, c.radius);
+            let pickupRadius = (feverTimer > 0) ? (rocket.radius + 35) : rocket.radius;
+            let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
+            if (dist < c.radius + pickupRadius) {
+                let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1) * (weatherEffect.scoreMultiplier || 1.0);
+                const coinScore = parseInt(document.getElementById('customCoinScore')?.value || 50);
+
+                if (c.isSpecial) {
+                    handleSpecialItem(c);
+                    c.collected = true;
+                    return;
+                }
+
+                const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
+                if (attackItem) {
+                    executeAttackItem(c.type, currentBoss);
+                    c.collected = true;
+                } else if (c.type === 'coin' || c.type === 'star') {
+                    const pts = (c.score || coinScore) * scoreMult * comboMultiplier;
+                    gameScore += pts; gameCombo++; playAudioEffect('coin');
+                } else if (c.type === 'heart') {
+                    playerHP = Math.min(100, playerHP + (c.heal || 25));
+                    playAudioEffect('buff');
+                } else if (c.type === 'shield') {
+                    hasShield = true;
+                    document.getElementById('shieldBadge').style.display = 'inline';
+                    document.getElementById('shieldBadge').textContent = '🛡️ 護盾';
+                    playAudioEffect('buff');
+                } else if (c.type === 'magnet') {
+                    magnetTimer = 350;
+                    document.getElementById('magnetBadge').style.display = 'inline';
+                    playAudioEffect('buff');
+                } else if (c.type === 'double') {
+                    doubleScoreTimer = 350;
+                    document.getElementById('doubleBadge').style.display = 'inline';
+                    playAudioEffect('buff');
+                } else if (c.type === 'fever') {
+                    feverTimer = 300;
+                    document.getElementById('feverBadge').style.display = 'inline';
+                    playAudioEffect('buff');
+                } else if (c.type === 'wing') {
+                    userSpeedMult *= 1.5;
+                    setTimeout(() => { userSpeedMult /= 1.5; }, 3000);
+                    playAudioEffect('buff');
+                } else if (c.type === 'clock') {
+                    sessionStartTime -= 30000;
+                    playAudioEffect('buff');
+                } else if (c.type === 'key') {
+                    if (typeof window.advanceLevel === 'function') window.advanceLevel();
+                    playAudioEffect('buff');
+                } else if (c.type === 'curse') {
+                    playerHP = Math.max(0, playerHP - 20);
+                    gameScore = Math.max(0, gameScore - 100);
+                    playAudioEffect('hit');
+                    if (playerHP <= 0) { triggerGameOver(); return; }
+                }
+                c.collected = true;
+            }
+        });
+
+        // 更新障礙物
+        obstacles.forEach(o => {
+            o.x -= o.baseSpeed * userSpeedMult;
+            drawObstacle(gameCtx, o.x, o.y, o.type, o.radius);
+            let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
+            if (dist < o.radius + rocket.radius) {
+                if (hasShield && shieldCharges > 0 && o.type !== 'mud' && o.type !== 'ice' && o.type !== 'chain') {
+                    shieldCharges--;
+                    document.getElementById('shieldBadge').textContent = `🛡️ x${shieldCharges}`;
+                    if (shieldCharges <= 0) {
+                        hasShield = false;
+                        document.getElementById('shieldBadge').style.display = 'none';
+                    }
+                    playAudioEffect('hit');
+                } else if (invincibleActive) {
+                    showNotification('🌟 無敵狀態！不受傷害！');
+                } else {
+                    if (o.slow) { slowDebuffTimer = (diff === 'hard') ? 360 : 240; document.getElementById('slowBadge').style.display = 'inline'; playAudioEffect('hit'); }
+                    else { playerHP = Math.max(0, playerHP - (o.damage || 10)); if (diff !== 'easy') gameCombo = 0; playAudioEffect('hit'); }
+                }
+                o.hit = true;
+                if (playerHP <= 0) { triggerGameOver(); return; }
+            }
+        });
+
+        if (isGameOver) return;
+        collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
+        obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
+
+        let scoreMult = (feverTimer > 0 ? 2 : 1) * (doubleScoreTimer > 0 ? 2 : 1) * (weatherEffect.scoreMultiplier || 1.0);
+        if (flowMag > 10) gameScore += 1 * scoreMult * comboMultiplier;
+
+        let elapsedSession = (Date.now() - sessionStartTime) / 1000;
+        if (elapsedSession > 90) triggerRestStop();
+
+    } else {
+        let centerTarget = gameCanvas.height / 2;
+        if (isNaN(rocket.y)) rocket.y = centerTarget;
+        rocket.y += (centerTarget - rocket.y) * 0.05;
+        rocket.angle = 0;
     }
-}
 
-drawBossWithWarning(gameCtx, currentBoss.x, currentBoss.y, currentBoss, bossSkillWarning, bossSkillType);
+    particles.forEach(p => {
+        p.x += p.vx * userSpeedMult;
+        p.y += p.vy;
+        p.life -= 0.04;
+        if (p.life > 0) {
+            gameCtx.beginPath();
+            gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
+            gameCtx.fillStyle = p.color;
+            gameCtx.globalAlpha = Math.max(0, p.life);
+            gameCtx.fill();
+        }
+    });
+    particles = particles.filter(p => p.life > 0);
+    gameCtx.globalAlpha = 1.0;
 
-const hpPct = currentBoss.hp / currentBoss.maxHp;
-gameCtx.fillStyle='rgba(0,0,0,0.7)';
-gameCtx.fillRect(currentBoss.x-30,currentBoss.y-currentBoss.radius-12,60,6);
-gameCtx.fillStyle=hpPct>0.5?'#2ecc71':hpPct>0.25?'#f39c12':'#e74c3c';
-gameCtx.fillRect(currentBoss.x-30,currentBoss.y-currentBoss.radius-12,60*hpPct,6);
-gameCtx.fillStyle='#f0f6fc';
-gameCtx.font='10px sans-serif';
-gameCtx.textAlign='center';
-gameCtx.fillText(currentBoss.name,currentBoss.x,currentBoss.y-currentBoss.radius-18);
+    let activeFlow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
+    let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
+    drawRocket(rocket.x, rocket.y, rocket.angle, activeMode === "exhalation", activeFlow);
 
-const bossDist=Math.hypot(currentBoss.x-rocket.x,currentBoss.y-rocket.y);
-if(bossDist<currentBoss.radius+rocket.radius){
-if(hasShield && shieldCharges > 0){
-    shieldCharges--;
-    document.getElementById('shieldBadge').textContent = `🛡️⭐ 超級護盾 x${shieldCharges}`;
-    if(shieldCharges <= 0){
-        hasShield = false;
-        document.getElementById('shieldBadge').style.display = 'none';
-    }
-    playAudioEffect('hit');
-} else if(invincibleActive){
-    showNotification('🌟 無敵狀態！不受傷害！');
-} else {
-    playerHP=Math.max(0,playerHP-15);
-    playAudioEffect('hit');
-    if(playerHP<=0){triggerGameOver();return;}
-}
-}
-if(currentBoss.x<-50){bossActive=false;currentBoss=null;document.getElementById('bossWarning').style.display='none';}
-}
+    document.getElementById('gameScore').innerText = gameScore;
+    document.getElementById('gameCombo').innerText = gameCombo;
+    document.getElementById('hpFill').style.width = `${playerHP}%`;
 
-// 生成道具
-const itemRate=parseFloat(document.getElementById('customItemRate')?.value||'0.025');
-const unlockedItems=EXP?.unlockedItems||['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'];
-const itemPool=ITEM_TYPES.filter(i=>unlockedItems.includes(i.type));
-if(itemPool.length>0&&Math.random()<itemRate*userSpeedMult){
-const item=itemPool[Math.floor(Math.random()*itemPool.length)];
-collectibles.push({...item,x:gameCanvas.width+20,y:spawnY,radius:12,baseSpeed:3,collected:false});
-}
-
-// 生成障礙物
-const obstacleRate=parseFloat(document.getElementById('customObstacleRate')?.value||'0.015');
-const unlockedObstacles=EXP?.unlockedObstacles||['cloud','poison','mud','spike','fire','ice'];
-const obstaclePool=OBSTACLE_TYPES.filter(o=>unlockedObstacles.includes(o.type));
-if(obstaclePool.length>0&&Math.random()<obstacleRate*userSpeedMult){
-const obs=obstaclePool[Math.floor(Math.random()*obstaclePool.length)];
-const dmgMult=parseFloat(document.getElementById('customDamageMult')?.value||1);
-const dmg=(diff==='easy')?Math.floor(obs.damage*0.5*dmgMult):(diff==='hard')?Math.floor(obs.damage*1.5*dmgMult):Math.floor(obs.damage*dmgMult);
-obstacles.push({...obs,x:gameCanvas.width+30,y:spawnY,radius:obs.type==='poison'?22:obs.type==='void'?20:14,baseSpeed:obs.type==='mud'?4.5:obs.type==='ice'?3.5:4,damage:dmg,hit:false,slow:obs.slow||false});
-}
-
-// 更新道具
-collectibles.forEach(c=>{
-c.x-=c.baseSpeed*userSpeedMult;
-if(magnetTimer>0){let d=Math.hypot(rocket.x-c.x,rocket.y-c.y);if(d<200){c.x+=(rocket.x-c.x)*0.12;c.y+=(rocket.y-c.y)*0.12;}}
-drawItem(gameCtx,c.x,c.y,c.type,c.radius);
-let pickupRadius=(feverTimer>0)?(rocket.radius+35):rocket.radius;
-let dist=Math.hypot(c.x-rocket.x,c.y-rocket.y);
-if(dist<c.radius+pickupRadius){
-let scoreMult=(feverTimer>0?2:1)*(doubleScoreTimer>0?2:1);
-const coinScore=parseInt(document.getElementById('customCoinScore')?.value||50);
-
-if (c.isSpecial) {
-    handleSpecialItem(c);
-    c.collected = true;
-    return;
-}
-
-const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
-if (attackItem) {
-    executeAttackItem(c.type, currentBoss);
-    c.collected = true;
-} else if (c.type==='coin'||c.type==='star'){
-    const pts=(c.score||coinScore)*scoreMult*comboMultiplier;
-    gameScore+=pts;gameCombo++;playAudioEffect('coin');
-} else if (c.type==='heart'){
-    playerHP=Math.min(100,playerHP+(c.heal||25));
-    playAudioEffect('buff');
-} else if (c.type==='shield'){
-    hasShield=true;
-    document.getElementById('shieldBadge').style.display='inline';
-    document.getElementById('shieldBadge').textContent='🛡️ 護盾';
-    playAudioEffect('buff');
-} else if (c.type==='magnet'){
-    magnetTimer=350;
-    document.getElementById('magnetBadge').style.display='inline';
-    playAudioEffect('buff');
-} else if (c.type==='double'){
-    doubleScoreTimer=350;
-    document.getElementById('doubleBadge').style.display='inline';
-    playAudioEffect('buff');
-} else if (c.type==='fever'){
-    feverTimer=300;
-    document.getElementById('feverBadge').style.display='inline';
-    playAudioEffect('buff');
-} else if (c.type==='wing'){
-    userSpeedMult*=1.5;
-    setTimeout(()=>{userSpeedMult/=1.5;},3000);
-    playAudioEffect('buff');
-} else if (c.type==='clock'){
-    sessionStartTime-=30000;
-    playAudioEffect('buff');
-} else if (c.type==='key'){
-    if(typeof window.advanceLevel==='function')window.advanceLevel();
-    playAudioEffect('buff');
-} else if (c.type==='curse'){
-    playerHP=Math.max(0,playerHP-20);
-    gameScore=Math.max(0,gameScore-100);
-    playAudioEffect('hit');
-    if(playerHP<=0){triggerGameOver();return;}
-}
-c.collected=true;
-}
-});
-
-// 更新障礙物
-obstacles.forEach(o=>{
-o.x-=o.baseSpeed*userSpeedMult;
-drawObstacle(gameCtx,o.x,o.y,o.type,o.radius);
-let dist=Math.hypot(o.x-rocket.x,o.y-rocket.y);
-if(dist<o.radius+rocket.radius){
-if(hasShield && shieldCharges > 0 && o.type!=='mud'&&o.type!=='ice'&&o.type!=='chain'){
-    shieldCharges--;
-    document.getElementById('shieldBadge').textContent = `🛡️⭐ 超級護盾 x${shieldCharges}`;
-    if(shieldCharges <= 0){
-        hasShield = false;
-        document.getElementById('shieldBadge').style.display = 'none';
-    }
-    playAudioEffect('hit');
-} else if(invincibleActive){
-    showNotification('🌟 無敵狀態！不受傷害！');
-} else {
-    if(o.slow){slowDebuffTimer=(diff==='hard')?360:240;document.getElementById('slowBadge').style.display='inline';playAudioEffect('hit');}
-    else{playerHP=Math.max(0,playerHP-(o.damage||10));if(diff!=='easy')gameCombo=0;playAudioEffect('hit');}
-}
-o.hit=true;if(playerHP<=0){triggerGameOver();return;}
-}
-});
-
-if(isGameOver)return;
-collectibles=collectibles.filter(c=>c.x>-20&&!c.collected);
-obstacles=obstacles.filter(o=>o.x>-20&&!o.hit);
-
-let scoreMult=(feverTimer>0?2:1)*(doubleScoreTimer>0?2:1);
-if(flowMag>10)gameScore+=1*scoreMult*comboMultiplier;
-
-let elapsedSession=(Date.now()-sessionStartTime)/1000;
-if(elapsedSession>90)triggerRestStop();
-
-}else{
-let centerTarget=gameCanvas.height/2;
-if(isNaN(rocket.y))rocket.y=centerTarget;
-rocket.y+=(centerTarget-rocket.y)*0.05;
-rocket.angle=0;
-}
-
-particles.forEach(p=>{p.x+=p.vx*userSpeedMult;p.y+=p.vy;p.life-=0.04;if(p.life>0){gameCtx.beginPath();gameCtx.arc(p.x,p.y,Math.max(0.1,p.size*p.life),0,Math.PI*2);gameCtx.fillStyle=p.color;gameCtx.globalAlpha=Math.max(0,p.life);gameCtx.fill();}});
-particles=particles.filter(p=>p.life>0);
-gameCtx.globalAlpha=1.0;
-
-let activeFlow=activeMeasuring?Math.abs(typeof smoothedEst!=='undefined'?smoothedEst:0):0;
-let activeMode=(typeof currentMode!=='undefined')?currentMode:"inhalation";
-drawRocket(rocket.x,rocket.y,rocket.angle,activeMode==="exhalation",activeFlow);
-
-document.getElementById('gameScore').innerText=gameScore;
-document.getElementById('gameCombo').innerText=gameCombo;
-document.getElementById('hpFill').style.width=`${playerHP}%`;
-
-gameAnimationId=requestAnimationFrame(gameLoop);
+    gameAnimationId = requestAnimationFrame(gameLoop);
 }
 
 function drawRocket(x,y,angle,isExhale,flowMagnitude){
@@ -3628,19 +3831,19 @@ const INTRO_DATA = [
     {type:'boss_necromancer', emoji:'🧙', label:'💀 死靈法師', cat:'boss', catLabel:'Boss', desc:'💀 召喚骷髏：召喚骷髏兵攻擊 | 🔮 詛咒：直接造成 25 傷害', color:'#2c3e50'},
     {type:'boss_spider', emoji:'🕷️', label:'🕷️ 蜘蛛女王', cat:'boss', catLabel:'Boss', desc:'🕸️ 蛛網：減速 50% 持續 3 秒 | 🧪 毒素：直接造成 25 傷害', color:'#6c3483'},
     {type:'finalboss', emoji:'👾', label:'🏆 最終 Boss - 虛空領主', cat:'final', catLabel:'最終 Boss', desc:'第100關觸發 · 專屬動畫與配樂 · 擁有全部 Boss 技能'},
-    // 🆕 特殊道具
+    // 特殊道具（單一圖案）
     {type:'time_freeze', emoji:'⏸️', label:'時間暫停', cat:'special', catLabel:'特殊道具', desc:'暫停所有敵人移動 5 秒'},
     {type:'companion', emoji:'🪁', label:'夥伴', cat:'special', catLabel:'特殊道具', desc:'召喚夥伴自動收集道具 10 秒'},
-    {type:'mega_shield', emoji:'🛡️⭐', label:'超級護盾', cat:'special', catLabel:'特殊道具', desc:'抵擋 3 次傷害'},
-    {type:'score_x5', emoji:'💎💎', label:'5倍積分', cat:'special', catLabel:'特殊道具', desc:'5 倍積分持續 5 秒'},
+    {type:'mega_shield', emoji:'🛡️', label:'超級護盾', cat:'special', catLabel:'特殊道具', desc:'抵擋 3 次傷害'},
+    {type:'score_x5', emoji:'💎', label:'5倍積分', cat:'special', catLabel:'特殊道具', desc:'5 倍積分持續 5 秒'},
     {type:'invincible', emoji:'🌟', label:'無敵', cat:'special', catLabel:'特殊道具', desc:'無敵狀態 2 秒'},
-    // 🆕 天氣
+    // 天氣
     {type:'weather_clear', emoji:'☀️', label:'晴朗', cat:'weather', catLabel:'天氣系統', desc:'無特殊效果'},
-    {type:'weather_rain', emoji:'🌧️', label:'下雨', cat:'weather', catLabel:'天氣系統', desc:'敵人移動減速 20%'},
-    {type:'weather_storm', emoji:'⛈️', label:'暴風', cat:'weather', catLabel:'天氣系統', desc:'畫面震動，敵人速度加快 30%'},
-    {type:'weather_fog', emoji:'🌫️', label:'濃霧', cat:'weather', catLabel:'天氣系統', desc:'視野受限，道具更難看見'},
-    {type:'weather_aurora', emoji:'🌌', label:'極光', cat:'weather', catLabel:'天氣系統', desc:'得分加成 1.5 倍'},
-    // 🆕 遊戲模式
+    {type:'weather_rain', emoji:'🌧️', label:'下雨', cat:'weather', catLabel:'天氣系統', desc:'敵人減速 20%，得分 +20%'},
+    {type:'weather_storm', emoji:'⛈️', label:'暴風', cat:'weather', catLabel:'天氣系統', desc:'敵人加速 30%，得分 +50%'},
+    {type:'weather_fog', emoji:'🌫️', label:'濃霧', cat:'weather', catLabel:'天氣系統', desc:'能見度降低，得分 +30%'},
+    {type:'weather_aurora', emoji:'🌌', label:'極光', cat:'weather', catLabel:'天氣系統', desc:'得分 2 倍！'},
+    // 遊戲模式
     {type:'mode_standard', emoji:'🎯', label:'標準模式', cat:'mode', catLabel:'遊戲模式', desc:'原始遊戲體驗'},
     {type:'mode_hardcore', emoji:'💀', label:'硬核模式', cat:'mode', catLabel:'遊戲模式', desc:'一擊必殺，挑戰極限'},
     {type:'mode_survival', emoji:'🏃', label:'生存模式', cat:'mode', catLabel:'遊戲模式', desc:'盡可能活久一點'},
@@ -3715,7 +3918,7 @@ const nm={boss_fire:'火龍',boss_ice:'冰霜巨人',boss_shadow:'暗影刺客',
 ctx.fillStyle=color||'#8e44ad';ctx.font='7px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(nm[type]||'Boss',w/2,h-2);
 }else{
 ctx.fillStyle='#8b949e';ctx.font='28px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',missile:'🚀',bomb:'💣',laser:'🔫',freeze:'🧊',poison:'🧪',thunder:'⚡',dart:'🎯',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️',time_freeze:'⏸️',companion:'🪁',mega_shield:'🛡️⭐',score_x5:'💎💎',invincible:'🌟',weather_clear:'☀️',weather_rain:'🌧️',weather_storm:'⛈️',weather_fog:'🌫️',weather_aurora:'🌌',mode_standard:'🎯',mode_hardcore:'💀',mode_survival:'🏃',mode_challenge:'🏆'};
+const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',missile:'🚀',bomb:'💣',laser:'🔫',freeze:'🧊',poison:'🧪',thunder:'⚡',dart:'🎯',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️',time_freeze:'⏸️',companion:'🪁',mega_shield:'🛡️',score_x5:'💎',invincible:'🌟',weather_clear:'☀️',weather_rain:'🌧️',weather_storm:'⛈️',weather_fog:'🌫️',weather_aurora:'🌌',mode_standard:'🎯',mode_hardcore:'💀',mode_survival:'🏃',mode_challenge:'🏆'};
 ctx.fillText(em[type]||'🎬',cx,cy);
 }
 ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='7px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('點擊播放',w/2,h-2);
@@ -3755,7 +3958,7 @@ const sm={boss_fire:'火焰吐息 · 烈焰護盾',boss_ice:'冰凍光環 · 寒
 ctx.fillStyle='#8b949e';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('技能: '+(sm[type]||''),cx,cy+40);
 }else{
 ctx.fillStyle='#8b949e';ctx.font='60px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',missile:'🚀',bomb:'💣',laser:'🔫',freeze:'🧊',poison:'🧪',thunder:'⚡',dart:'🎯',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️',time_freeze:'⏸️',companion:'🪁',mega_shield:'🛡️⭐',score_x5:'💎💎',invincible:'🌟',weather_clear:'☀️',weather_rain:'🌧️',weather_storm:'⛈️',weather_fog:'🌫️',weather_aurora:'🌌',mode_standard:'🎯',mode_hardcore:'💀',mode_survival:'🏃',mode_challenge:'🏆'};
+const em={coin:'🪙',heart:'❤️',shield:'🛡️',magnet:'🧲',double:'💎',fever:'⚡',star:'⭐',wing:'🪶',clock:'⏰',key:'🔑',missile:'🚀',bomb:'💣',laser:'🔫',freeze:'🧊',poison:'🧪',thunder:'⚡',dart:'🎯',curse:'💀',cloud:'⛈️',poison:'🟣',mud:'🕸️',spike:'🔺',fire:'🔥',ice:'❄️',thorn:'🌿',void:'🌌',mirror:'🪞',chain:'⛓️',time_freeze:'⏸️',companion:'🪁',mega_shield:'🛡️',score_x5:'💎',invincible:'🌟',weather_clear:'☀️',weather_rain:'🌧️',weather_storm:'⛈️',weather_fog:'🌫️',weather_aurora:'🌌',mode_standard:'🎯',mode_hardcore:'💀',mode_survival:'🏃',mode_challenge:'🏆'};
 ctx.fillText(em[type]||'🎬',cx,cy);ctx.fillStyle='#5a6a7a';ctx.font='14px sans-serif';ctx.textBaseline='bottom';ctx.fillText(label||'',cx,cy-50);
 }
 ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('🎬 示範影片',w/2,h-5);
@@ -3765,20 +3968,6 @@ animateDemo();
 modal.onclick=function(e){if(e.target===modal)closeDemoModal();};
 }
 function closeDemoModal(){const modal=document.getElementById('demoModal');modal.style.display='none';if(demoAnimId){cancelAnimationFrame(demoAnimId);demoAnimId=null;}}
-
-// ============================================================
-// 修改主遊戲循環，加入新功能
-// ============================================================
-const originalGameLoop = gameLoop;
-gameLoop = function() {
-    updateWeather();
-    if (challengeActive) checkChallenges();
-    updateComboSystem();
-    spawnSpecialItem();
-    applyTimeFreeze();
-    drawCompanion();
-    originalGameLoop();
-};
 
 // ============================================================
 // 🆕 初始化新功能
@@ -3795,6 +3984,13 @@ function initNewFeatures() {
     
     weatherTimer = 300;
     weatherType = 'clear';
+    weatherEffect = { speedMultiplier: 1.0, scoreMultiplier: 1.0, visibility: 1.0, chaos: false, slow: false };
+    
+    // 初始化天氣顯示
+    const weatherLabel = document.getElementById('weatherLabel');
+    const weatherLabelText = document.getElementById('weatherLabelText');
+    if (weatherLabel) weatherLabel.textContent = '☀️';
+    if (weatherLabelText) weatherLabelText.textContent = '晴朗';
     
     getStats().then(stats => {
         if (stats) {
@@ -3806,7 +4002,7 @@ function initNewFeatures() {
     console.log('🎮 遊戲模式：標準、硬核、生存、挑戰');
     console.log('🏅 成就系統已啟用');
     console.log('🏆 排行榜已就緒');
-    console.log('🌤️ 天氣系統運行中');
+    console.log('🌤️ 天氣系統運行中（會影響遊戲機制！）');
     console.log('🪁 夥伴系統可用');
 }
 
@@ -3866,9 +4062,9 @@ function initExpansion(){
     console.log('📋 Boss 技能詳細說明顯示在 Boss 下方');
     console.log('🎨 道具無外圈設計，純靠表情符號辨識');
     console.log('📥 點擊「匯入設定檔」上傳 JSON 檔案套用設定');
-    console.log('⭐ 特殊道具：時間暫停、夥伴、超級護盾、5倍積分、無敵');
-    console.log('🌤️ 天氣系統：晴朗、下雨、暴風、濃霧、極光');
-    console.log('🎮 遊戲模式：標準、硬核、生存、挑戰');
+    console.log('⭐ 特殊道具：⏸️時間暫停、🪁夥伴、🛡️超級護盾、💎5倍積分、🌟無敵');
+    console.log('🌤️ 天氣系統：☀️晴朗、🌧️下雨、⛈️暴風、🌫️濃霧、🌌極光（會影響遊戲！）');
+    console.log('🎮 遊戲模式：🎯標準、💀硬核、🏃生存、🏆挑戰');
     
     setTimeout(initNewFeatures, 500);
 }
