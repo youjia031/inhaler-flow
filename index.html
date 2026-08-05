@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 完整版 v6.0</title>
+<title>呼吸訓練器 - 多主題完整版 v7.0</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -84,6 +84,10 @@ position: relative;
 overflow: hidden;
 border: 2px solid #30363d;
 }
+.game-container.painter-style {
+background: #f7f4eb;
+border: 4px solid #8e44ad;
+}
 .game-container.fullscreen {
 position: fixed !important;
 top: 0 !important;
@@ -110,6 +114,9 @@ font-weight: 600;
 pointer-events: none;
 z-index: 5;
 }
+.game-ui-overlay.painter-ui {
+color: #2c3e50;
+}
 .hud-badge {
 background: rgba(22, 27, 34, 0.88);
 padding: 8px 16px;
@@ -121,6 +128,12 @@ display: flex;
 align-items: center;
 gap: 8px;
 flex-wrap: wrap;
+}
+.hud-badge.painter-hud {
+background: rgba(247, 244, 235, 0.92);
+border: 1.5px solid #8e44ad;
+color: #2c3e50;
+box-shadow: 0 4px 12px rgba(142, 68, 173, 0.2);
 }
 .hp-bar-bg {
 width: 120px; height: 14px; background: rgba(255,255,255,0.1);
@@ -164,7 +177,11 @@ background: rgba(0,0,0,0.5);
 padding: 4px 12px;
 border-radius: 12px;
 }
-.control-hint .active { color: #f1c40f; }
+.control-hint.painter-hint {
+background: rgba(255, 255, 255, 0.8);
+color: #2c3e50;
+border: 1px solid #8e44ad;
+}
 
 .control-guide {
 position: absolute;
@@ -209,7 +226,6 @@ text-align: center;
 }
 .control-guide .key-row .key.primary { border-color: #2ecc71; color: #2ecc71; }
 .control-guide .key-row .key.secondary { border-color: #f1c40f; color: #f1c40f; }
-.control-guide .key-row .key.special { border-color: #3498db; color: #3498db; }
 .control-guide .key-row .action { color: #b0b8c0; }
 .control-guide .key-row .action .highlight { color: #2ecc71; }
 .control-guide .divider { border-top: 1px solid #1a1a2e; margin: 4px 0; }
@@ -230,7 +246,6 @@ text-align: center;
 border-top: 1px solid #1a1a2e;
 margin-top: 4px;
 }
-.control-guide .priority-note.warning { border-top-color: #e74c3c; color: #e74c3c; }
 
 .help-btn {
 position: absolute;
@@ -249,10 +264,7 @@ transition: all 0.3s;
 backdrop-filter: blur(4px);
 border: 1px solid rgba(255,255,255,0.1);
 }
-.help-btn:hover {
-background: rgba(31, 78, 121, 1);
-transform: scale(1.1);
-}
+.help-btn:hover { background: rgba(31, 78, 121, 1); transform: scale(1.1); }
 .help-btn.active { background: rgba(231, 76, 60, 0.8); }
 
 #introContainer {
@@ -284,93 +296,6 @@ cursor: pointer;
 .intro-card .icon { font-size: 48px; display: block; text-align: center; margin-bottom: 4px; }
 .intro-card h4 { color: #f0f6fc; margin: 6px 0 3px 0; text-align: center; font-size: 14px; }
 .intro-card p { color: #8b949e; font-size: 11px; margin: 2px 0; text-align: center; }
-.intro-card .click-hint { color: #5a6a7a; font-size: 9px; text-align: center; margin-top: 4px; }
-
-.category-tag {
-position: absolute;
-top: 8px;
-right: 8px;
-padding: 2px 10px;
-border-radius: 12px;
-font-size: 9px;
-font-weight: bold;
-letter-spacing: 0.5px;
-z-index: 2;
-text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-.category-tag.positive { background: #1a7a3a; color: #7ddfa0; border: 1px solid #2ecc71; }
-.category-tag.negative { background: #7a1a1a; color: #df7d7d; border: 1px solid #e74c3c; }
-.category-tag.obstacle { background: #7a5a1a; color: #dfc07d; border: 1px solid #f39c12; }
-.category-tag.boss { background: #4a1a6a; color: #d4a0df; border: 1px solid #8e44ad; }
-.category-tag.final { background: #6a1a1a; color: #f0a0a0; border: 1px solid #e74c3c; }
-.category-tag.attack { background: #c0392b; color: #f5b7b1; border: 1px solid #e74c3c; }
-.category-tag.special { background: #1a5a7a; color: #7dd0df; border: 1px solid #00d2d3; }
-.category-tag.weather { background: #3a2a5a; color: #c0a0df; border: 1px solid #8e44ad; }
-.category-tag.mode { background: #2a4a3a; color: #80d0a0; border: 1px solid #2ecc71; }
-
-.intro-card.positive { border-left: 4px solid #2ecc71; }
-.intro-card.negative { border-left: 4px solid #e74c3c; }
-.intro-card.obstacle { border-left: 4px solid #f39c12; }
-.intro-card.boss-card { border-left: 4px solid #8e44ad; }
-.intro-card.final-card { border-left: 4px solid #e74c3c; border-color: #e74c3c; }
-.intro-card.attack-card { border-left: 4px solid #e74c3c; }
-.intro-card.special-card { border-left: 4px solid #00d2d3; }
-.intro-card.weather-card { border-left: 4px solid #8e44ad; }
-.intro-card.mode-card { border-left: 4px solid #2ecc71; }
-
-.demo-container {
-background: #0a0a12;
-border-radius: 6px;
-padding: 6px;
-margin-top: 6px;
-border: 1px solid #1a1a2e;
-position: relative;
-}
-.demo-container canvas { width: 100%; border-radius: 4px; background: #0a0a12; display: block; }
-.demo-label { color: #5a6a7a; font-size: 9px; text-align: center; margin-top: 3px; display: block; }
-
-#demoModal {
-display: none;
-position: fixed;
-top: 0; left: 0;
-width: 100vw; height: 100vh;
-background: rgba(0,0,0,0.92);
-z-index: 99999;
-justify-content: center;
-align-items: center;
-}
-#demoModal .modal-content {
-background: #161b22;
-padding: 30px;
-border-radius: 16px;
-max-width: 650px;
-width: 90%;
-border: 1px solid #30363d;
-}
-#demoModal .modal-content h3 { color: #f0f6fc; margin-top: 0; text-align: center; }
-#demoModal .modal-content canvas {
-width: 100%;
-border-radius: 8px;
-background: #0a0a12;
-}
-#demoModal .modal-content .modal-info {
-color: #8b949e;
-font-size: 13px;
-margin: 10px 0;
-text-align: center;
-}
-#demoModal .modal-content .close-btn {
-background: #e74c3c;
-color: white;
-border: none;
-padding: 8px 20px;
-border-radius: 4px;
-cursor: pointer;
-font-weight: bold;
-display: block;
-margin: 10px auto 0;
-}
-#demoModal .modal-content .close-btn:hover { background: #c0392b; }
 
 #levelInfo { color: #f1c40f; font-weight: bold; font-size: 13px; margin-left: 10px; }
 .level-progress {
@@ -384,206 +309,6 @@ vertical-align: middle;
 margin: 0 6px;
 }
 .level-progress-fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #e74c3c); transition: width 0.3s; width: 1%; }
-#bossSkillDisplay { font-size: 11px; color: #8e44ad; }
-#qualitySelect { padding: 4px 8px; border-radius: 4px; border: 1px solid #bcc6cf; background: white; font-size: 13px; }
-
-.dev-mode-indicator {
-display: inline-block;
-padding: 2px 10px;
-border-radius: 12px;
-font-size: 10px;
-font-weight: bold;
-}
-.dev-mode-indicator.on { background: #8e44ad; color: white; }
-.dev-mode-indicator.off { background: #2c3e50; color: #8b949e; }
-
-.dev-hidden { display: block !important; }
-.dev-btn { display: flex !important; }
-
-#levelEditor {
-display: block;
-background: #161b22;
-padding: 15px;
-border-radius: 8px;
-border: 1px solid #30363d;
-margin: 5px 0;
-width: 100%;
-max-height: 500px;
-overflow-y: auto;
-}
-#levelEditor h4 { color: #f0f6fc; margin: 0 0 12px 0; }
-#levelEditor .setting-group {
-background: #0d1117;
-padding: 12px;
-border-radius: 6px;
-margin-bottom: 12px;
-}
-#levelEditor .setting-group label {
-color: #8b949e;
-font-size: 12px;
-display: block;
-margin-bottom: 6px;
-}
-#levelEditor .setting-group .btn-group {
-display: flex;
-flex-wrap: wrap;
-gap: 6px;
-}
-#levelEditor .setting-group .toggle-btn {
-padding: 4px 12px;
-border-radius: 16px;
-border: 2px solid #30363d;
-background: transparent;
-color: #8b949e;
-cursor: pointer;
-font-size: 12px;
-transition: all 0.2s;
-}
-#levelEditor .setting-group .toggle-btn.active {
-border-color: #2ecc71;
-background: rgba(46, 204, 113, 0.15);
-color: #7ddfa0;
-}
-#levelEditor .setting-group .toggle-btn:hover { transform: scale(1.05); }
-#levelEditor .editor-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-.editor-btn {
-padding: 8px 20px;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-font-weight: bold;
-font-size: 13px;
-}
-.editor-btn.save { background: #27ae60; color: white; }
-.editor-btn.save:hover { background: #219653; }
-.editor-btn.close { background: #e74c3c; color: white; }
-.editor-btn.close:hover { background: #c0392b; }
-.editor-btn.reset { background: #f39c12; color: white; }
-.editor-btn.reset:hover { background: #d35400; }
-.editor-btn.export { background: #3498db; color: white; }
-.editor-btn.export:hover { background: #2980b9; }
-.editor-btn.import { background: #8e44ad; color: white; }
-.editor-btn.import:hover { background: #71368a; }
-
-#skinEditor {
-display: block;
-background: #161b22;
-padding: 15px;
-border-radius: 8px;
-border: 1px solid #30363d;
-margin: 5px 0;
-width: 100%;
-max-height: 500px;
-overflow-y: auto;
-}
-#skinEditor h4 { color: #f0f6fc; margin: 0 0 12px 0; }
-#skinEditor .skin-group {
-background: #0d1117;
-padding: 12px;
-border-radius: 6px;
-margin-bottom: 12px;
-}
-#skinEditor .skin-group label {
-color: #8b949e;
-font-size: 12px;
-display: block;
-margin-bottom: 6px;
-}
-#skinEditor .skin-preview {
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-align-items: center;
-}
-#skinEditor .skin-preview img {
-max-width: 80px;
-max-height: 80px;
-border-radius: 6px;
-border: 2px solid #30363d;
-background: #0a0a12;
-}
-#skinEditor .skin-preview .no-image {
-width: 80px;
-height: 80px;
-border-radius: 6px;
-border: 2px dashed #30363d;
-display: flex;
-align-items: center;
-justify-content: center;
-color: #5a6a7a;
-font-size: 11px;
-text-align: center;
-background: #0a0a12;
-}
-#skinEditor .upload-btn {
-display: inline-block;
-padding: 4px 12px;
-background: #1f4e79;
-color: white;
-border-radius: 4px;
-cursor: pointer;
-font-size: 12px;
-}
-#skinEditor .upload-btn:hover { background: #163d5e; }
-#skinEditor .clear-btn {
-display: inline-block;
-padding: 4px 12px;
-background: #e74c3c;
-color: white;
-border-radius: 4px;
-cursor: pointer;
-font-size: 12px;
-border: none;
-}
-#skinEditor .clear-btn:hover { background: #c0392b; }
-
-#expansionControls {
-display: flex;
-gap: 10px;
-align-items: center;
-flex-wrap: wrap;
-border-left: 2px solid #ccc;
-padding-left: 10px;
-}
-
-#finalBossOverlay {
-display: none;
-position: absolute;
-top: 0; left: 0;
-width: 100%; height: 100%;
-background: rgba(0,0,0,0.92);
-z-index: 30;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-border-radius: 8px;
-}
-#finalBossOverlay video { max-width: 80%; max-height: 55%; border-radius: 12px; border: 2px solid #f1c40f; }
-#finalBossOverlay .boss-title { color: #f1c40f; font-size: 28px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.3); }
-#finalBossOverlay .boss-subtitle { color: #8b949e; font-size: 14px; margin-bottom: 15px; }
-.boss-skip-btn { background: #1f4e79; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; margin-top: 12px; font-weight: bold; }
-.boss-skip-btn:hover { background: #163d5e; }
-
-.control-toggle {
-display: inline-flex;
-align-items: center;
-gap: 6px;
-background: #161b22;
-padding: 4px 10px;
-border-radius: 16px;
-border: 1px solid #30363d;
-}
-.control-toggle label {
-color: #8b949e;
-font-size: 11px;
-cursor: pointer;
-}
-.control-toggle input[type="checkbox"] {
-accent-color: #1f4e79;
-width: 14px;
-height: 14px;
-cursor: pointer;
-}
 
 .boss-warning-text {
 position: absolute;
@@ -603,16 +328,6 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 0% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 }
-
-@media (max-width: 768px) {
-.intro-card { flex: 1 1 100%; }
-#finalBossOverlay video { max-width: 95%; }
-#expansionControls { border-left: none; padding-left: 0; }
-#demoModal .modal-content { padding: 15px; }
-.control-guide { right: 10px; bottom: 70px; min-width: 170px; padding: 10px 12px; }
-.help-btn { right: 10px; bottom: 70px; width: 32px; height: 32px; font-size: 16px; }
-#levelEditor, #skinEditor { max-height: 300px; }
-}
 </style>
 </head>
 <body>
@@ -621,11 +336,11 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="header">
 <div class="main-title">呼吸訓練器</div>
 <h1>Inhaler Flow Monitor</h1>
-<p>Acoustic inhaler flow visualization & Flight Game</p>
+<p>Acoustic inhaler flow visualization & Multi-Theme Interactive Training Games</p>
 </div>
 
 <!-- ===== 控制面板 ===== -->
-<div class="control-panel" id="mainControlPanel">
+<div class="control-panel">
 <button id="connectBtn" class="btn accent">Connect</button>
 <button id="startBtn" class="btn" disabled>Start</button>
 <button id="segmentBtn" class="btn accent">PKL Index 切分</button>
@@ -645,7 +360,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 圖表 ===== -->
-<div class="chart-container" id="chartContainer">
+<div class="chart-container">
 <canvas id="flowChart"></canvas>
 </div>
 
@@ -657,14 +372,18 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 🚀 請點擊上方「Start」按鈕開始訓練遊戲！
 </div>
 </div>
-<div class="game-ui-overlay">
-<div class="hud-badge" id="gameHUD">
-<!-- 由 JavaScript 動態生成 -->
+<div class="game-ui-overlay" id="gameUiOverlay">
+<div class="hud-badge" id="hudBadgeLeft">
+🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span>
+| 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
+<span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER 2X!</span>
+<span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
+<span id="bossWarning" style="display:none; color:#e74c3c; font-weight:bold;">👹 BOSS!</span>
 </div>
-<div class="hud-badge">
+<div class="hud-badge" id="hudBadgeRight">
 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕 🖥️</button>
 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-<button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置</button>
+<button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置分數</button>
 <span style="margin-left:5px;">❤️ HP</span>
 <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
 </div>
@@ -672,16 +391,9 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="modal-screen" id="gameOverScreen" style="display: none;">
 <div class="modal-card">
 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
-<p style="color: #ccc; font-size: 16px;" id="gameOverMessage">血條已用盡，請重新準備！</p>
-<div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">到達關卡: <span id="finalLevel">0</span></div>
-<button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始</button>
-</div>
-</div>
-<div class="modal-screen" id="winScreen" style="display: none;">
-<div class="modal-card">
-<h1 style="color: #2ecc71; margin-top:0; font-size: 36px;">🎉 恭喜過關！🎉</h1>
-<p style="color: #ccc; font-size: 18px;" id="winMessage">你完成了所有100關！</p>
-<button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 再玩一次</button>
+<p style="color: #ccc; font-size: 16px;">血條已用盡，請重新準備！</p>
+<div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">最終得分: <span id="finalScore">0</span></div>
+<button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
 </div>
 </div>
 <div class="modal-screen" id="restScreen" style="display: none;">
@@ -689,15 +401,8 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
 <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
-<p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續</p>
+<p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
 </div>
-</div>
-<div id="finalBossOverlay">
-<div class="boss-title">👾 虛空領主 · 降臨</div>
-<div class="boss-subtitle">⚔️ 最終試煉 · 第 100 關 ⚔️</div>
-<video id="bossVideo" muted playsinline><source src="" type="video/mp4"></video>
-<audio id="bossAudio" loop></audio>
-<button class="boss-skip-btn" onclick="skipBossSequence()">⏭️ 跳過動畫</button>
 </div>
 
 <div class="control-hint" id="controlHint">
@@ -707,40 +412,49 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <div class="boss-warning-text" id="bossWarningText">⚠️ 技能來襲！</div>
-
 <button class="help-btn" id="helpBtn" onclick="toggleControlGuide()" title="操控說明">❓</button>
 
 <div class="control-guide" id="controlGuide">
-    <h4 id="guideTitle">🎮 操控說明</h4>
-    <div id="guideContent">
-        <!-- 由 JavaScript 動態生成 -->
+    <h4>🎮 操控說明</h4>
+    <div class="key-row">
+        <span class="key primary">🌬️</span>
+        <span class="action">呼吸裝置 → 飛行升降 / 筆觸粗細控制 <span class="highlight">(最優先)</span></span>
+    </div>
+    <div class="divider"></div>
+    <div class="key-row">
+        <span class="key secondary">↑ / W</span>
+        <span class="action">備用向上 / 加粗筆觸</span>
+    </div>
+    <div class="key-row">
+        <span class="key secondary">↓ / S</span>
+        <span class="action">備用向下 / 變細筆觸</span>
+    </div>
+    <div class="key-row">
+        <span class="key special">Space</span>
+        <span class="action">暫停 / 繼續遊戲</span>
     </div>
 </div>
+</div>
+
+<!-- ===== 介紹圖鑑 Container ===== -->
+<div id="introContainer">
+<h2>🎬 主題圖鑑</h2>
+<div class="intro-grid" id="introGrid"></div>
 </div>
 
 <!-- ===== 狀態列 ===== -->
 <div class="statusbar" id="status">Not connected</div>
 
 <!-- ============================================================ -->
-<!-- JavaScript -->
+<!-- JavaScript Part 1: 核心數據流、圖表與 PKL 分析 -->
 <!-- ============================================================ -->
 <script>
-// =====================================================
-// 教育引導線
-// =====================================================
+// 教育引導線設定
 const EDUCATION_PROGRAM = [
 ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
 ["inhalation", 0, 2], ["exhalation", 60, 3], ["inhalation", 0, 2],
 ["inhalation", 60, 2], ["inhalation", 0, 1], ["inhalation", 0, 2],
-["exhalation", 60, 3], ["inhalation", 0, 2], ["inhalation", 0, 1],
-["inhalation", 0, 1], ["inhalation", 90, 1.5], ["inhalation", 0, 2],
-["exhalation", 50, 6], ["inhalation", 0, 1], ["inhalation", 0, 2],
-["inhalation", 90, 1.5], ["inhalation", 0, 2], ["exhalation", 50, 6],
-["inhalation", 0, 2], ["inhalation", 0, 2], ["inhalation", 120, 1],
-["inhalation", 0, 1], ["inhalation", 0, 2], ["exhalation", 100, 2],
-["inhalation", 0, 2], ["inhalation", 40, 3], ["inhalation", 0, 2],
-["exhalation", 40, 4], ["inhalation", 0, 2], ["inhalation", 30, 3],
-["inhalation", 0, 2], ["exhalation", 30, 4], ["inhalation", 0, 3]
+["exhalation", 60, 3], ["inhalation", 0, 2], ["inhalation", 0, 1]
 ];
 function makeEducationCurves(dt, ramp) {
 let times=[], inh=[], exh=[]; let t=0;
@@ -762,9 +476,7 @@ const guideData=makeEducationCurves(0.05,0.4);
 const inhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.inh[i]}));
 const exhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.exh[i]}));
 
-// =====================================================
-// 全域變數 - 串口相關
-// =====================================================
+// 全域通訊變數
 let port=null,reader=null,isMeasuring=false;
 let records=[],flowHistory=[],windowHistory=[false,false,false];
 let lastFFT={},startTime=null,currentMode="inhalation";
@@ -774,784 +486,9 @@ let onnxSession=null;
 let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
 
-// =====================================================
-// 全域變數 - 遊戲相關
-// =====================================================
-const gameCanvas = document.getElementById('gameCanvas');
-const gameCtx = gameCanvas.getContext('2d');
-let gameAnimationId = null;
-let isGameRunning = false;
-let isGamePaused = false;
-let isGameOver = false;
-let isResting = false;
-let restTimer = null;
-let sessionStartTime = 0;
+// 多遊戲主題切換
+let currentSelectedGame = "flight"; // "flight" 氣流飛行員 | "painter" 風之繪師
 
-// =====================================================
-// 鍵盤與滑鼠操控
-// =====================================================
-let keyboardControlEnabled = true;
-let mouseControlEnabled = true;
-let keyboardY = null;
-let mouseY = null;
-let useKeyboardControl = false;
-let useMouseControl = false;
-let keyboardTimeout = null;
-
-// =====================================================
-// 遊戲模式定義
-// =====================================================
-const GAME_MODES = {
-    FLIGHT: 'flight',
-    PAINTER: 'painter'
-};
-
-let currentGameMode = GAME_MODES.FLIGHT;
-
-// =====================================================
-// 🆕 風之繪師 - 完整遊戲引擎
-// =====================================================
-const PainterGame = {
-    level: 1,
-    maxLevel: 100,
-    hp: 100,
-    maxHp: 100,
-    isPlaying: false,
-    isPaused: false,
-    isGameOver: false,
-    
-    brushX: 0,
-    brushY: 0,
-    brushSize: 3,
-    brushAlpha: 0.8,
-    brushColor: '#8B6914',
-    
-    isDrawing: false,
-    drawPoints: [],
-    strokeProgress: 0,
-    strokePoints: [],
-    strokesPerPainting: 1,
-    currentStroke: 0,
-    
-    shapePath: [],
-    currentShapeIndex: 0,
-    shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
-    
-    particles: [],
-    items: [],
-    hasPalette: false,
-    hasFineBrush: false,
-    paletteTimer: 0,
-    fineBrushTimer: 0,
-    
-    paintingsCompleted: 0,
-    errors: 0,
-    maxErrors: 5,
-    
-    musicInterval: null,
-    musicStep: 0,
-    musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319],
-    
-    init() {
-        this.level = 1;
-        this.hp = this.maxHp;
-        this.isPlaying = false;
-        this.isPaused = false;
-        this.isGameOver = false;
-        this.drawPoints = [];
-        this.particles = [];
-        this.items = [];
-        this.paintingsCompleted = 0;
-        this.errors = 0;
-        this.maxErrors = 5;
-        this.hasPalette = false;
-        this.hasFineBrush = false;
-        this.paletteTimer = 0;
-        this.fineBrushTimer = 0;
-        this.strokeProgress = 0;
-        this.currentStroke = 0;
-        
-        this.updateStrokeCount();
-        this.generateShape();
-        
-        const canvas = document.getElementById('gameCanvas');
-        if (canvas) {
-            this.brushX = canvas.width / 2;
-            this.brushY = canvas.height / 2;
-        }
-        this.updateUI();
-        
-        // 啟動音樂
-        this.startMusic();
-    },
-    
-    startMusic() {
-        this.stopMusic();
-        if (!document.getElementById('soundToggle')?.checked) return;
-        
-        this.musicInterval = setInterval(() => {
-            if (this.isPaused || this.isGameOver) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            try {
-                const now = audioCtx.currentTime;
-                const note = this.musicNotes[this.musicStep % this.musicNotes.length];
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(note, now);
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.35);
-                this.musicStep++;
-            } catch(e) {}
-        }, 380);
-    },
-    
-    stopMusic() {
-        if (this.musicInterval) {
-            clearInterval(this.musicInterval);
-            this.musicInterval = null;
-            this.musicStep = 0;
-        }
-    },
-    
-    updateStrokeCount() {
-        if (this.level <= 20) this.strokesPerPainting = 1;
-        else if (this.level <= 40) this.strokesPerPainting = 2;
-        else if (this.level <= 60) this.strokesPerPainting = 3;
-        else if (this.level <= 80) this.strokesPerPainting = 4;
-        else this.strokesPerPainting = 5;
-        this.currentStroke = 0;
-        this.strokeProgress = 0;
-    },
-    
-    generateShape() {
-        const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
-        const w = canvas.width, h = canvas.height;
-        const cx = w / 2, cy = h / 2;
-        const size = Math.min(w, h) * 0.22 * (1 + (this.level - 1) * 0.003);
-        
-        const shapeCount = Math.min(Math.floor(this.level / 8) + 1, this.shapeTypes.length);
-        const shapeType = this.shapeTypes[this.currentShapeIndex % shapeCount];
-        
-        this.shapePath = this.generateShapePoints(shapeType, cx, cy, Math.min(size, Math.min(w, h) * 0.35));
-        this.strokePoints = [];
-        this.strokeProgress = 0;
-        this.drawPoints = [];
-        this.splitIntoStrokes();
-        
-        const shapeNames = {
-            'circle': '⭕ 圓形', 'square': '⬜ 方形', 'triangle': '🔺 三角形',
-            'star': '⭐ 星星', 'heart': '❤️ 愛心', 'flower': '🌸 花朵',
-            'butterfly': '🦋 蝴蝶', 'diamond': '💎 鑽石', 'moon': '🌙 月亮', 'spiral': '🌀 螺旋'
-        };
-        const el = document.getElementById('painterShapeName');
-        if (el) el.textContent = shapeNames[shapeType] || '未知';
-        const el2 = document.getElementById('painterStrokesNeeded');
-        if (el2) el2.textContent = this.strokesPerPainting;
-    },
-    
-    generateShapePoints(type, cx, cy, size) {
-        const points = [];
-        const steps = 80 + Math.floor(this.level / 2);
-        switch(type) {
-            case 'circle':
-                for (let i = 0; i < steps; i++) {
-                    const angle = (i / steps) * Math.PI * 2;
-                    points.push({x: cx + size * Math.cos(angle), y: cy + size * Math.sin(angle)});
-                }
-                break;
-            case 'square': {
-                const halfSize = size * 0.7;
-                for (let i = 0; i < steps; i++) {
-                    const progress = i / steps;
-                    const corner = Math.floor(progress * 4);
-                    const cp = (progress * 4) - corner;
-                    const angle = (corner / 4) * Math.PI * 2;
-                    const nextAngle = ((corner + 1) / 4) * Math.PI * 2;
-                    points.push({
-                        x: cx + halfSize * (Math.cos(angle) + cp * (Math.cos(nextAngle) - Math.cos(angle))),
-                        y: cy + halfSize * (Math.sin(angle) + cp * (Math.sin(nextAngle) - Math.sin(angle)))
-                    });
-                }
-                break;
-            }
-            case 'triangle': {
-                for (let i = 0; i < steps; i++) {
-                    const progress = i / steps;
-                    const corner = Math.floor(progress * 3);
-                    const cp = (progress * 3) - corner;
-                    const angle = (corner / 3) * Math.PI * 2 - Math.PI / 2;
-                    const nextAngle = ((corner + 1) / 3) * Math.PI * 2 - Math.PI / 2;
-                    points.push({
-                        x: cx + size * 0.7 * (Math.cos(angle) + cp * (Math.cos(nextAngle) - Math.cos(angle))),
-                        y: cy + size * 0.7 * (Math.sin(angle) + cp * (Math.sin(nextAngle) - Math.sin(angle)))
-                    });
-                }
-                break;
-            }
-            case 'star': {
-                for (let i = 0; i < steps; i++) {
-                    const progress = i / steps;
-                    const angle = progress * Math.PI * 2 - Math.PI / 2;
-                    const radius = (Math.floor(progress * 10) % 2 === 0) ? size : size * 0.4;
-                    points.push({x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle)});
-                }
-                break;
-            }
-            case 'heart': {
-                for (let i = 0; i < steps; i++) {
-                    const t = (i / steps) * Math.PI * 2;
-                    points.push({
-                        x: cx + size * 0.6 * (16 * Math.pow(Math.sin(t), 3)),
-                        y: cy - size * 0.6 * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t))
-                    });
-                }
-                break;
-            }
-            case 'flower': {
-                const petals = 5 + Math.floor(this.level / 15);
-                for (let i = 0; i < steps; i++) {
-                    const angle = (i / steps) * Math.PI * 2;
-                    const r = size * (0.6 + 0.4 * Math.sin(petals * angle));
-                    points.push({x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle)});
-                }
-                break;
-            }
-            case 'butterfly': {
-                for (let i = 0; i < steps; i++) {
-                    const t = (i / steps) * Math.PI * 2;
-                    const r = size * (0.7 + 0.3 * Math.sin(3 * t));
-                    points.push({x: cx + r * Math.cos(t) * 0.7, y: cy + r * Math.sin(t) * 0.5});
-                }
-                break;
-            }
-            case 'diamond': {
-                for (let i = 0; i < steps; i++) {
-                    const progress = i / steps;
-                    const corner = Math.floor(progress * 4);
-                    const cp = (progress * 4) - corner;
-                    const angle = (corner / 4) * Math.PI * 2 + Math.PI / 4;
-                    const nextAngle = ((corner + 1) / 4) * Math.PI * 2 + Math.PI / 4;
-                    points.push({
-                        x: cx + size * 0.8 * (Math.cos(angle) + cp * (Math.cos(nextAngle) - Math.cos(angle))),
-                        y: cy + size * 0.8 * (Math.sin(angle) + cp * (Math.sin(nextAngle) - Math.sin(angle)))
-                    });
-                }
-                break;
-            }
-            case 'moon': {
-                for (let i = 0; i < steps; i++) {
-                    const angle = (i / steps) * Math.PI * 2;
-                    const r = size * (0.5 + 0.5 * Math.sin(angle));
-                    points.push({x: cx + r * Math.cos(angle) * 0.8, y: cy + r * Math.sin(angle) * 0.8});
-                }
-                break;
-            }
-            case 'spiral': {
-                const turns = 2 + Math.floor(this.level / 20);
-                for (let i = 0; i < steps * 2; i++) {
-                    const progress = i / (steps * 2);
-                    const angle = progress * Math.PI * 2 * turns;
-                    const r = size * 0.1 + size * 0.8 * progress;
-                    points.push({x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle)});
-                }
-                break;
-            }
-            default: {
-                for (let i = 0; i < steps; i++) {
-                    const angle = (i / steps) * Math.PI * 2;
-                    points.push({x: cx + size * Math.cos(angle), y: cy + size * Math.sin(angle)});
-                }
-            }
-        }
-        return points;
-    },
-    
-    splitIntoStrokes() {
-        const totalPoints = this.shapePath.length;
-        const pointsPerStroke = Math.floor(totalPoints / this.strokesPerPainting);
-        this.strokePoints = [];
-        for (let i = 0; i < this.strokesPerPainting; i++) {
-            const start = i * pointsPerStroke;
-            const end = (i === this.strokesPerPainting - 1) ? totalPoints : (i + 1) * pointsPerStroke;
-            this.strokePoints.push(this.shapePath.slice(start, end));
-        }
-        const remaining = totalPoints - (this.strokesPerPainting * pointsPerStroke);
-        if (remaining > 0 && this.strokePoints.length > 0) {
-            const lastStroke = this.strokePoints[this.strokePoints.length - 1];
-            for (let i = totalPoints - remaining; i < totalPoints; i++) {
-                lastStroke.push(this.shapePath[i]);
-            }
-        }
-        this.strokeIndex = 0;
-        this.strokeProgress = 0;
-        this.currentStroke = 0;
-    },
-    
-    update(breathFlow) {
-        if (this.isPaused || this.isGameOver) return;
-        const flowMag = Math.abs(breathFlow);
-        const isExhaling = breathFlow < 0;
-        
-        if (isExhaling && flowMag > 3) {
-            this.isDrawing = true;
-            this.brushSize = Math.min(3 + flowMag / 5, 20);
-            this.brushAlpha = Math.min(1, 0.3 + flowMag / 40);
-            if (this.hasPalette) {
-                const hue = (Date.now() / 50 + this.level * 10) % 360;
-                this.brushColor = `hsl(${hue}, 70%, 55%)`;
-            } else {
-                const colors = ['#8B6914', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#D35400'];
-                this.brushColor = colors[Math.floor((this.level - 1) / 15) % colors.length];
-            }
-            this.drawAlongPath(flowMag);
-        } else {
-            this.isDrawing = false;
-        }
-        this.updateParticles();
-        this.updateItems();
-        if (this.paletteTimer > 0) this.paletteTimer--;
-        if (this.fineBrushTimer > 0) this.fineBrushTimer--;
-        if (this.hp <= 0) this.triggerGameOver();
-    },
-    
-    drawAlongPath(flowMag) {
-        if (this.currentStroke >= this.strokesPerPainting) return;
-        const currentStrokePoints = this.strokePoints[this.currentStroke];
-        if (!currentStrokePoints || currentStrokePoints.length === 0) {
-            this.currentStroke++;
-            this.strokeProgress = 0;
-            return;
-        }
-        const speed = Math.min(0.8 + flowMag / 40, 3.0);
-        this.strokeProgress += speed / currentStrokePoints.length;
-        const totalToDraw = Math.floor(this.strokeProgress * currentStrokePoints.length);
-        for (let i = this.drawPoints.length; i < totalToDraw && i < currentStrokePoints.length; i++) {
-            const point = currentStrokePoints[i];
-            if (point) {
-                this.drawPoints.push({
-                    x: point.x, y: point.y,
-                    size: this.brushSize,
-                    alpha: this.brushAlpha,
-                    color: this.brushColor
-                });
-                this.brushX = point.x;
-                this.brushY = point.y;
-            }
-        }
-        if (Math.random() < 0.2 && this.drawPoints.length > 0) {
-            const last = this.drawPoints[this.drawPoints.length - 1];
-            this.particles.push({
-                x: last.x + (Math.random() - 0.5) * 8,
-                y: last.y + (Math.random() - 0.5) * 8,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5 - 0.5,
-                size: 1 + Math.random() * 3,
-                color: this.brushColor,
-                life: 1.0,
-                decay: 0.01 + Math.random() * 0.02
-            });
-        }
-        if (this.strokeProgress >= 1) this.finishStroke();
-        this.updateUI();
-    },
-    
-    finishStroke() {
-        this.currentStroke++;
-        this.strokeProgress = 0;
-        if (this.drawPoints.length > 0) {
-            const last = this.drawPoints[this.drawPoints.length - 1];
-            this.createSplashParticles(last.x, last.y, this.brushColor);
-        }
-        playAudioEffect('buff');
-        if (this.currentStroke >= this.strokesPerPainting) {
-            this.completePainting();
-        } else {
-            showNotification(`🖌️ 第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆，繼續！`);
-        }
-        this.updateUI();
-    },
-    
-    completePainting() {
-        this.paintingsCompleted++;
-        this.currentStroke = 0;
-        this.strokeProgress = 0;
-        this.drawPoints = [];
-        for (let i = 0; i < 60; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 2 + Math.random() * 6;
-            this.particles.push({
-                x: this.brushX, y: this.brushY,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 1,
-                size: 2 + Math.random() * 5,
-                color: ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#8e44ad'][Math.floor(Math.random() * 5)],
-                life: 1.0,
-                decay: 0.005 + Math.random() * 0.015
-            });
-        }
-        playAudioEffect('special');
-        this.level++;
-        this.updateStrokeCount();
-        this.currentShapeIndex++;
-        this.generateShape();
-        if (this.level % 10 === 0) {
-            this.hp = Math.min(this.maxHp, this.hp + 20);
-            showNotification(`🎉 第 ${this.level} 關！HP +20！`);
-        }
-        if (this.level > this.maxLevel) { this.triggerWin(); return; }
-        showNotification(`🎨 完成第 ${this.paintingsCompleted} 幅畫！進入第 ${this.level} 關`);
-        this.updateUI();
-    },
-    
-    updateUI() {
-        const el1 = document.getElementById('painterLevel');
-        if (el1) el1.textContent = `${this.level}/${this.maxLevel}`;
-        const el2 = document.getElementById('painterProgress');
-        if (el2) el2.textContent = this.paintingsCompleted;
-        const el3 = document.getElementById('painterStrokeCurrent');
-        if (el3) el3.textContent = `${this.currentStroke + 1}/${this.strokesPerPainting}`;
-        const el4 = document.getElementById('painterErrors');
-        if (el4) el4.textContent = `${this.errors}/${this.maxErrors}`;
-        const hpFill = document.getElementById('hpFill');
-        if (hpFill) hpFill.style.width = `${(this.hp / this.maxHp) * 100}%`;
-        const progressFill = document.getElementById('painterProgressFill');
-        if (progressFill) progressFill.style.width = `${Math.min(this.strokeProgress * 100, 100)}%`;
-    },
-    
-    createSplashParticles(x, y, color) {
-        for (let i = 0; i < 30; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 2 + Math.random() * 5;
-            this.particles.push({
-                x, y,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 1,
-                size: 2 + Math.random() * 4,
-                color,
-                life: 1.0,
-                decay: 0.008 + Math.random() * 0.015
-            });
-        }
-    },
-    
-    updateParticles() {
-        for (const p of this.particles) {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.05;
-            p.life -= p.decay;
-        }
-        this.particles = this.particles.filter(p => p.life > 0);
-    },
-    
-    updateItems() {
-        if (Math.random() < 0.001) {
-            const canvas = document.getElementById('gameCanvas');
-            if (!canvas) return;
-            const w = canvas.width, h = canvas.height;
-            const itemType = Math.random() < 0.5 ? 'palette' : 'fineBrush';
-            this.items.push({
-                type: itemType,
-                x: 50 + Math.random() * (w - 100),
-                y: 50 + Math.random() * (h - 100),
-                radius: 20,
-                life: 300
-            });
-        }
-        for (const item of this.items) {
-            item.life--;
-            const dist = Math.hypot(item.x - this.brushX, item.y - this.brushY);
-            if (dist < item.radius + 15) {
-                if (item.type === 'palette') {
-                    this.hasPalette = true;
-                    this.paletteTimer = 600;
-                    playAudioEffect('buff');
-                    showNotification('🎨 調色盤！顏色變得更豐富！');
-                } else if (item.type === 'fineBrush') {
-                    this.hasFineBrush = true;
-                    this.fineBrushTimer = 600;
-                    playAudioEffect('buff');
-                    showNotification('🖌️ 細筆！失誤懲罰降低！');
-                }
-                item.life = 0;
-            }
-        }
-        this.items = this.items.filter(item => item.life > 0);
-    },
-    
-    render(ctx) {
-        const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
-        const w = canvas.width, h = canvas.height;
-        
-        const grad = ctx.createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, '#fdf6f0');
-        grad.addColorStop(1, '#f5ece4');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-        
-        ctx.save();
-        for (let i = 0; i < 80; i++) {
-            ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
-            ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
-        }
-        ctx.restore();
-        
-        ctx.save();
-        ctx.strokeStyle = 'rgba(139, 115, 85, 0.2)';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(15, 15, w - 30, h - 30);
-        ctx.strokeStyle = 'rgba(139, 115, 85, 0.1)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 20, w - 40, h - 40);
-        ctx.restore();
-        
-        ctx.save();
-        if (this.shapePath.length > 0) {
-            const glow = 0.3 + 0.2 * Math.sin(Date.now() / 1000);
-            ctx.shadowColor = '#8B6914';
-            ctx.shadowBlur = 20 * glow;
-            ctx.strokeStyle = `rgba(139, 105, 20, ${0.2 + 0.1 * Math.sin(Date.now() / 1500)})`;
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([6, 8]);
-            ctx.beginPath();
-            ctx.moveTo(this.shapePath[0].x, this.shapePath[0].y);
-            for (let i = 1; i < this.shapePath.length; i++) {
-                ctx.lineTo(this.shapePath[i].x, this.shapePath[i].y);
-            }
-            ctx.closePath();
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-        ctx.restore();
-        
-        if (this.currentStroke < this.strokesPerPainting) {
-            const nextPoints = this.strokePoints[this.currentStroke];
-            if (nextPoints && nextPoints.length > 0) {
-                ctx.save();
-                ctx.strokeStyle = 'rgba(139, 105, 20, 0.1)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 8]);
-                ctx.beginPath();
-                const startIdx = Math.floor(this.strokeProgress * nextPoints.length);
-                if (startIdx < nextPoints.length) {
-                    ctx.moveTo(nextPoints[startIdx].x, nextPoints[startIdx].y);
-                    for (let i = startIdx + 1; i < nextPoints.length; i++) {
-                        ctx.lineTo(nextPoints[i].x, nextPoints[i].y);
-                    }
-                    ctx.stroke();
-                }
-                ctx.setLineDash([]);
-                ctx.restore();
-            }
-        }
-        
-        ctx.save();
-        for (const point of this.drawPoints) {
-            ctx.globalAlpha = point.alpha || 0.8;
-            ctx.fillStyle = point.color || '#8B6914';
-            ctx.shadowColor = point.color || '#8B6914';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, point.size || 4, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.restore();
-        
-        ctx.save();
-        if (this.isDrawing) {
-            ctx.shadowColor = this.brushColor;
-            ctx.shadowBlur = 30;
-            ctx.globalAlpha = this.brushAlpha;
-            ctx.fillStyle = this.brushColor;
-            ctx.beginPath();
-            ctx.arc(this.brushX, this.brushY, this.brushSize, 0, Math.PI * 2);
-            ctx.fill();
-        } else {
-            ctx.strokeStyle = 'rgba(92, 61, 46, 0.4)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]);
-            const pulse = 15 + 5 * Math.sin(Date.now() / 500);
-            ctx.beginPath();
-            ctx.arc(this.brushX, this.brushY, pulse, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.fillStyle = 'rgba(92, 61, 46, 0.2)';
-            ctx.beginPath();
-            ctx.arc(this.brushX, this.brushY, 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.restore();
-        
-        ctx.save();
-        for (const p of this.particles) {
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.restore();
-        
-        ctx.save();
-        for (const item of this.items) {
-            const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
-            ctx.translate(item.x, item.y);
-            ctx.scale(pulse, pulse);
-            ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
-            ctx.shadowBlur = 20;
-            ctx.font = '32px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-        }
-        ctx.restore();
-        
-        ctx.save();
-        const px = 60, py = h - 40, pw = w - 120, ph = 10;
-        ctx.fillStyle = 'rgba(139, 115, 85, 0.2)';
-        ctx.beginPath();
-        ctx.roundRect(px, py, pw, ph, 5);
-        ctx.fill();
-        const pct = this.strokeProgress;
-        ctx.fillStyle = '#8B6914';
-        ctx.beginPath();
-        ctx.roundRect(px, py, pw * pct, ph, 5);
-        ctx.fill();
-        ctx.fillStyle = '#5c3d2e';
-        ctx.font = '11px Georgia, serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆  ${Math.round(pct * 100)}%`, w / 2, py - 6);
-        ctx.restore();
-        
-        ctx.save();
-        ctx.fillStyle = 'rgba(92, 61, 46, 0.3)';
-        ctx.font = '13px Georgia, serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        const shapeNames = {
-            'circle': '⭕ 圓形', 'square': '⬜ 方形', 'triangle': '🔺 三角形',
-            'star': '⭐ 星星', 'heart': '❤️ 愛心', 'flower': '🌸 花朵',
-            'butterfly': '🦋 蝴蝶', 'diamond': '💎 鑽石', 'moon': '🌙 月亮', 'spiral': '🌀 螺旋'
-        };
-        const currentShape = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
-        ctx.fillText(`🎨 ${shapeNames[currentShape] || '繪畫'}  |  關卡 ${this.level}  |  筆畫 ${this.strokesPerPainting}`, w / 2, 20);
-        ctx.restore();
-    },
-    
-    triggerGameOver() {
-        this.isGameOver = true;
-        this.isPlaying = false;
-        this.stopMusic();
-        playAudioEffect('hit');
-        const el = document.getElementById('finalLevel');
-        if (el) el.textContent = this.level;
-        const screen = document.getElementById('gameOverScreen');
-        if (screen) screen.style.display = 'flex';
-    },
-    
-    triggerWin() {
-        this.isGameOver = true;
-        this.isPlaying = false;
-        this.stopMusic();
-        playAudioEffect('special');
-        const el = document.getElementById('winMessage');
-        if (el) el.textContent = `你完成了所有 ${this.maxLevel} 關！`;
-        const screen = document.getElementById('winScreen');
-        if (screen) screen.style.display = 'flex';
-    }
-};
-
-// =====================================================
-// 音效系統
-// =====================================================
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let bgmInterval = null;
-let bgmStep = 0;
-let customAudioBuffer = null;
-let customAudioSource = null;
-
-function playAudioEffect(type) {
-    if (!document.getElementById('soundToggle')?.checked) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    try {
-        const now = audioCtx.currentTime;
-        if (type === 'buff') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(523.25, now);
-            osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
-            gain.gain.setValueAtTime(0.3, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.3);
-        } else if (type === 'hit') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(200, now);
-            osc.frequency.linearRampToValueAtTime(40, now + 0.2);
-            gain.gain.setValueAtTime(0.3, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.2);
-        } else if (type === 'special') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(440, now);
-            osc.frequency.setValueAtTime(880, now + 0.1);
-            osc.frequency.setValueAtTime(1320, now + 0.2);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.3);
-        }
-    } catch(e) {}
-}
-
-function startBGM() {
-    // 風之繪師使用自己的音樂，這裡不做任何事情
-}
-
-function stopBGM() {
-    // 風之繪師使用自己的音樂，這裡不做任何事情
-}
-
-function toggleSoundSetting(enabled) {
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        if (enabled) {
-            PainterGame.startMusic();
-        } else {
-            PainterGame.stopMusic();
-        }
-    }
-}
-
-function handleCustomMusicUpload(event) {
-    // 暫不實現
-}
-
-// =====================================================
-// 串口功能
-// =====================================================
 async function loadPKLModel(){
 try{onnxSession=await ort.InferenceSession.create('./rf_model.onnx');updateStatus('✅ PKL 模型載入成功！');}catch(err){console.warn("未檢測到 rf_model.onnx",err);}
 }
@@ -1617,7 +554,7 @@ flowChart.update();
 }
 
 function detectFlowRate(mode,estFlow){let presets=(mode==="inhalation")?[30,60,90]:[60,90,120];return presets.reduce((prev,curr)=>Math.abs(curr-estFlow)<Math.abs(prev-estFlow)?curr:prev);}
-function resetUIState(){port=null;reader=null;isMeasuring=false;document.getElementById('connectBtn').innerText='Connect';document.getElementById('startBtn').innerText='Start';document.getElementById('startBtn').disabled=true;updateStatus('Disconnected / Ready to connect');}
+function resetUIState(){port=null;reader=null;isMeasuring=false;document.getElementById('connectBtn').innerText='Connect';document.getElementById('startBtn').innerText='Start';document.getElementById('startBtn').disabled=true;updateStatus('Disconnected / Ready to connect');if(typeof updateGameMeasurementState==='function')updateGameMeasurementState(false);}
 if('serial' in navigator){navigator.serial.addEventListener('disconnect',()=>{resetUIState();});}
 window.addEventListener('beforeunload',async()=>{try{if(reader)await reader.cancel();if(port)await port.close();}catch(e){}});
 document.getElementById('connectBtn').addEventListener('click',toggleConnection);
@@ -1679,14 +616,11 @@ flowChart.update('none');
 
 function toggleMeasuring(){
 isMeasuring=!isMeasuring;
-if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Stop';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
+if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Start';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
+if(typeof updateGameMeasurementState==='function'){updateGameMeasurementState(isMeasuring);}
 if (isMeasuring) {
     document.getElementById('hintBreath').textContent = '🌬️ 使用中';
     document.getElementById('hintBreath').style.color = '#2ecc71';
-    // 啟動遊戲
-    if (!isGameRunning) {
-        restartGameEngine();
-    }
 } else {
     document.getElementById('hintBreath').textContent = '等待啟動';
     document.getElementById('hintBreath').style.color = '';
@@ -1725,304 +659,193 @@ document.body.removeChild(link);
 }
 
 function updateStatus(msg){document.getElementById('status').innerText=msg;}
+</script>
+<!-- ============================================================ -->
+<!-- JavaScript Part 2: 多遊戲音樂/音效引擎 + 風之繪師 100關 Engine -->
+<!-- ============================================================ -->
+<script>
+// ===== 動態擴充控制面板選單 =====
+const controlPanel = document.querySelector('.control-panel');
+if (controlPanel) {
+    const html = `
+    <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+    視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
+    <option value="chart">📊 專業圖表</option>
+    <option value="game">🎮 遊戲模式</option>
+    <option value="both" selected>全模式</option>
+    <option value="intro">📖 介紹圖鑑</option>
+    </select>
+    </label>
+    <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+    🎮 訓練遊戲主題:
+    <select id="gameSelect" onchange="switchGameTheme(this.value)">
+    <option value="flight" selected>🚀 氣流飛行員</option>
+    <option value="painter">🎨 1. 風之繪師</option>
+    </select>
+    </label>
+    <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
+    <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option></select></label>
+    <label class="music-upload-btn">🎵 自選 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
+    <span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
+    <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
+    <span id="expansionControls">
+    <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span></span>
+    </span>
+    `;
+    controlPanel.insertAdjacentHTML('beforeend', html);
+}
 
-// =====================================================
-// 遊戲切換函數
-// =====================================================
-function switchGameMode(mode) {
-    // 停止當前遊戲
-    if (gameAnimationId) {
-        cancelAnimationFrame(gameAnimationId);
-        gameAnimationId = null;
-    }
-    isGameRunning = false;
-    
-    // 停止風之繪師的音樂
-    PainterGame.stopMusic();
-    
-    currentGameMode = mode;
-    
-    if (mode === GAME_MODES.PAINTER) {
-        // ===== 切換到風之繪師 =====
-        console.log('🎨 切換到風之繪師');
-        
-        // 更新HUD
-        const hud = document.getElementById('gameHUD');
-        if (hud) {
-            hud.innerHTML = `
-                🎨 關卡: <span id="painterLevel">1/100</span>
-                | 🖼️ 畫作: <span id="painterProgress">0</span>
-                | 🖌️ 筆觸: <span id="painterStrokeCurrent">0/1</span>
-                | ❌ 失誤: <span id="painterErrors">0/5</span>
-                | <span class="level-progress"><span class="level-progress-fill" id="painterProgressFill" style="width:1%;"></span></span>
-                | <span id="painterShapeName">⭕ 圓形</span>
-                | <span id="painterStrokesNeeded" style="display:none;">1</span>
-            `;
-        }
-        
-        // 更新操控說明
-        const guideTitle = document.getElementById('guideTitle');
-        if (guideTitle) guideTitle.textContent = '🎨 風之繪師 操控說明';
-        const guideContent = document.getElementById('guideContent');
-        if (guideContent) {
-            guideContent.innerHTML = `
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">吸氣 → 暫停繪畫</span>
-                </div>
-                <div class="divider"></div>
-                <div class="key-row">
-                    <span class="key secondary">↑↓</span>
-                    <span class="action">微調畫筆位置</span>
-                </div>
-                <div class="key-row">
-                    <span class="key special">Space</span>
-                    <span class="action">暫停 / 繼續</span>
-                </div>
-                <div class="divider"></div>
-                <div class="priority-note">
-                    ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
-                </div>
-                <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
-                    🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
-                </div>
-            `;
-        }
-        
-        // 初始化風之繪師
-        PainterGame.init();
-        PainterGame.isPlaying = true;
-        PainterGame.isPaused = false;
-        PainterGame.isGameOver = false;
-        
-        // 重置UI
-        document.getElementById('gameOverScreen').style.display = 'none';
-        document.getElementById('winScreen').style.display = 'none';
-        document.getElementById('restScreen').style.display = 'none';
-        document.getElementById('hpFill').style.width = '100%';
-        document.getElementById('gamePauseBtn').innerText = '暫停';
-        document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
-        
-        // 啟動遊戲
-        isGameRunning = true;
-        isGamePaused = false;
-        isGameOver = false;
-        
-        // 開始遊戲循環
-        gameLoop();
-        
-        updateStatus('🎨 切換至 風之繪師 模式！');
-        
+function switchGameTheme(theme) {
+    currentSelectedGame = theme;
+    const gameBox = document.getElementById('gameContainer');
+    const hudLeft = document.getElementById('hudBadgeLeft');
+    const hudRight = document.getElementById('hudBadgeRight');
+    const controlHint = document.getElementById('controlHint');
+
+    if (theme === 'painter') {
+        if (gameBox) gameBox.classList.add('painter-style');
+        if (hudLeft) hudLeft.classList.add('painter-hud');
+        if (hudRight) hudRight.classList.add('painter-hud');
+        if (controlHint) controlHint.classList.add('painter-hint');
+        showNotification('🎨 切換至【風之繪師】：用吐氣控制水彩筆觸粗細！');
     } else {
-        // ===== 切換到氣流飛行員 =====
-        console.log('✈️ 切換到氣流飛行員');
-        
-        // 更新HUD
-        const hud = document.getElementById('gameHUD');
-        if (hud) {
-            hud.innerHTML = `
-                🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span>
-                | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
-                <span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER 2X!</span>
-                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
-                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
-                <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X SCORE</span>
-                <span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOWED</span>
-                <span id="bossWarning" style="display:none; color:#e74c3c; font-weight:bold;">👹 BOSS!</span>
-                <span id="skillWarning" style="display:none; color:#ff4444; font-weight:bold;">⚠️ 技能預警!</span>
-            `;
-        }
-        
-        // 更新操控說明
-        const guideTitle = document.getElementById('guideTitle');
-        if (guideTitle) guideTitle.textContent = '✈️ 氣流飛行員 操控說明';
-        const guideContent = document.getElementById('guideContent');
-        if (guideContent) {
-            guideContent.innerHTML = `
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">呼吸裝置 → 飛船隨呼吸升降 <span class="highlight">(最優先)</span></span>
-                </div>
-                <div class="divider"></div>
-                <div class="key-row">
-                    <span class="key secondary">↑</span>
-                    <span class="key secondary">W</span>
-                    <span class="action">飛船 <span class="highlight">向上</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key secondary">↓</span>
-                    <span class="key secondary">S</span>
-                    <span class="action">飛船 <span class="highlight">向下</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key special">Space</span>
-                    <span class="action">暫停 / 繼續遊戲</span>
-                </div>
-                <div class="divider"></div>
-                <div class="mouse-row">
-                    <span class="icon">🖱️</span>
-                    <span class="action">移動滑鼠 → 飛船跟隨</span>
-                </div>
-                <div class="priority-note warning">
-                    ⚠️ Boss 技能有 2 秒預警！看到 ⚠️ 標記請立即躲避！
-                </div>
-            `;
-        }
-        
-        // 重置UI
-        document.getElementById('gameOverScreen').style.display = 'none';
-        document.getElementById('winScreen').style.display = 'none';
-        document.getElementById('restScreen').style.display = 'none';
-        document.getElementById('hpFill').style.width = '100%';
-        document.getElementById('gamePauseBtn').innerText = '暫停';
-        document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
-        
-        // 啟動遊戲
-        isGameRunning = true;
-        isGamePaused = false;
-        isGameOver = false;
-        
-        // 開始遊戲循環
-        gameLoop();
-        
-        updateStatus('✈️ 切換至 氣流飛行員 模式！');
+        if (gameBox) gameBox.classList.remove('painter-style');
+        if (hudLeft) hudLeft.classList.remove('painter-hud');
+        if (hudRight) hudRight.classList.remove('painter-hud');
+        if (controlHint) controlHint.classList.remove('painter-hint');
+        showNotification('🚀 切換至【氣流飛行員】：用呼吸操控飛船高度！');
+    }
+
+    if (isMeasuring && isGameRunning) {
+        startBGM(); // 自動無縫更換該遊戲主題曲
     }
 }
 
-// =====================================================
-// 遊戲循環
-// =====================================================
-function gameLoop() {
-    if (!isGameRunning || isGameOver) return;
-    
-    // 取得呼吸數據
-    let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
-    let breathFlow = 0;
-    if (activeMeasuring && !isGamePaused && !isResting && !isGameOver) {
-        breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-    }
-    
-    // 根據當前遊戲模式渲染
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        // 風之繪師模式
-        if (!PainterGame.isPaused && !PainterGame.isGameOver) {
-            PainterGame.update(breathFlow);
-            PainterGame.render(gameCtx);
-        }
-        // 更新HP
-        const hpFill = document.getElementById('hpFill');
-        if (hpFill) hpFill.style.width = `${(PainterGame.hp / PainterGame.maxHp) * 100}%`;
-    } else {
-        // 氣流飛行員模式 - 簡化版顯示
-        gameCtx.fillStyle = '#0d1117';
-        gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-        
-        // 顯示星星背景
-        for (let i = 0; i < 50; i++) {
-            gameCtx.fillStyle = `rgba(255,255,255,${0.1 + Math.random() * 0.3})`;
-            gameCtx.fillRect(Math.random() * gameCanvas.width, Math.random() * gameCanvas.height, 2, 2);
-        }
-        
-        gameCtx.fillStyle = '#f0f6fc';
-        gameCtx.font = '28px sans-serif';
-        gameCtx.textAlign = 'center';
-        gameCtx.fillText('✈️ 氣流飛行員', gameCanvas.width/2, gameCanvas.height/2 - 30);
-        
-        gameCtx.font = '16px sans-serif';
-        gameCtx.fillStyle = '#8b949e';
-        gameCtx.fillText('呼吸控制飛船升降 · 收集金幣 · 躲避障礙', gameCanvas.width/2, gameCanvas.height/2 + 20);
-        
-        // 顯示呼吸數據
-        if (activeMeasuring) {
-            gameCtx.fillStyle = '#2ecc71';
-            gameCtx.font = '14px sans-serif';
-            gameCtx.fillText(`🌬️ 呼吸強度: ${Math.abs(breathFlow).toFixed(1)} L/min`, gameCanvas.width/2, gameCanvas.height - 40);
-        }
-    }
-    
-    gameAnimationId = requestAnimationFrame(gameLoop);
+// ===== 多主題 BGM 與音效系統 =====
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let bgmInterval = null, bgmStep = 0, customAudioBuffer = null, customAudioSource = null;
+let isUsingCustomMusic = false;
+
+function handleCustomMusicUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    updateStatus(`正在解析自選音樂: ${file.name}...`);
+    reader.onload = function(e) {
+        audioCtx.decodeAudioData(e.target.result, (buffer) => {
+            customAudioBuffer = buffer;
+            isUsingCustomMusic = true;
+            document.getElementById('musicStatus').innerText = `🎶 自選: ${file.name.substring(0, 10)}...`;
+            updateStatus(`✅ 音樂解析成功！`);
+            if (isMeasuring) startBGM();
+        }, () => { alert("音訊檔案解析失敗，請上傳 MP3/WAV 格式。"); });
+    };
+    reader.readAsArrayBuffer(file);
 }
 
-// =====================================================
-// 遊戲控制函數
-// =====================================================
-function restartGameEngine() {
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        if (gameAnimationId) {
-            cancelAnimationFrame(gameAnimationId);
-            gameAnimationId = null;
+// 主題音樂音階庫 (高對比風格)
+const C4=261.63, D4=293.66, E4=329.63, G4=392.00, A4=440.00, C5=523.25, D5=587.33, E5=659.25;
+const pilotTheme = [C4, E4, G4, C5, G4, E4, G4, C5, D5, C5, E5, C5, G4, E4, C4, G4]; // 飛船科幻樂
+const painterTheme = [C4, D4, E4, G4, A4, G4, E4, D4, C4, E4, G4, A4, C5, A4, G4, E4]; // 水彩雅緻樂
+
+function playAudioEffect(type) {
+    if (!document.getElementById('soundToggle')?.checked) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+        let now = audioCtx.currentTime;
+        if (type === 'coin') {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now);
+            osc.frequency.setValueAtTime(1318.51, now + 0.08);
+            gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.start(); osc.stop(now + 0.25);
+        } else if (type === 'buff') {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
+            gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(); osc.stop(now + 0.3);
+        } else if (type === 'hit') {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(40, now + 0.2);
+            gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.start(); osc.stop(now + 0.2);
+        } else if (type === 'paint_spatter') {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.start(); osc.stop(now + 0.15);
         }
-        PainterGame.init();
-        PainterGame.isPlaying = true;
-        PainterGame.isPaused = false;
-        PainterGame.isGameOver = false;
-        PainterGame.hp = PainterGame.maxHp;
-        PainterGame.errors = 0;
-        PainterGame.paintingsCompleted = 0;
-        PainterGame.drawPoints = [];
-        PainterGame.particles = [];
-        PainterGame.items = [];
-        PainterGame.currentStroke = 0;
-        PainterGame.strokeProgress = 0;
-        
-        document.getElementById('gamePauseBtn').innerText = '暫停';
-        document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
-        document.getElementById('gameOverScreen').style.display = 'none';
-        document.getElementById('winScreen').style.display = 'none';
-        document.getElementById('restScreen').style.display = 'none';
-        document.getElementById('hpFill').style.width = '100%';
-        
-        isGameRunning = true;
-        isGamePaused = false;
-        isGameOver = false;
-        
-        PainterGame.updateUI();
-        gameLoop();
+    } catch (e) {}
+}
+
+function startBGM() {
+    stopBGM();
+    if (!document.getElementById('soundToggle')?.checked) return;
+    if (isUsingCustomMusic && customAudioBuffer) {
+        customAudioSource = audioCtx.createBufferSource();
+        customAudioSource.buffer = customAudioBuffer;
+        customAudioSource.loop = true;
+        customAudioSource.connect(audioCtx.destination);
+        customAudioSource.start(0);
     } else {
-        // 氣流飛行員重置
-        isGameRunning = true;
-        isGamePaused = false;
-        isGameOver = false;
-        document.getElementById('hpFill').style.width = '100%';
-        document.getElementById('gameOverScreen').style.display = 'none';
-        document.getElementById('winScreen').style.display = 'none';
-        document.getElementById('restScreen').style.display = 'none';
-        gameLoop();
+        const themeNotes = (currentSelectedGame === 'painter') ? painterTheme : pilotTheme;
+        const waveform = (currentSelectedGame === 'painter') ? 'triangle' : 'sawtooth';
+        bgmInterval = setInterval(() => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                let now = audioCtx.currentTime;
+                let idx = bgmStep % themeNotes.length;
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.type = waveform; osc.frequency.setValueAtTime(themeNotes[idx], now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.18);
+                bgmStep++;
+            } catch (e) {}
+        }, 200);
     }
 }
 
-function toggleGamePause() {
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        if (!PainterGame.isPlaying || PainterGame.isGameOver) return;
-        PainterGame.isPaused = !PainterGame.isPaused;
-        isGamePaused = PainterGame.isPaused;
-        const btn = document.getElementById('gamePauseBtn');
-        if (PainterGame.isPaused) {
-            btn.innerText = '繼續';
-            btn.style.backgroundColor = '#f39c12';
-            PainterGame.stopMusic();
-        } else {
-            btn.innerText = '暫停';
-            btn.style.backgroundColor = '#27ae60';
-            if (document.getElementById('soundToggle')?.checked) {
-                PainterGame.startMusic();
-            }
-        }
-    } else {
-        isGamePaused = !isGamePaused;
-        const btn = document.getElementById('gamePauseBtn');
-        if (isGamePaused) {
-            btn.innerText = '繼續';
-            btn.style.backgroundColor = '#f39c12';
-        } else {
-            btn.innerText = '暫停';
-            btn.style.backgroundColor = '#27ae60';
-        }
+function stopBGM() {
+    if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
+    if (customAudioSource) {
+        try { customAudioSource.stop(); customAudioSource.disconnect(); } catch (e) {}
+        customAudioSource = null;
     }
+}
+function toggleSoundSetting(enabled) { if (!enabled) stopBGM(); else startBGM(); }
+
+function switchViewMode(mode) {
+    const chartBox = document.querySelector('.chart-container');
+    const gameBox = document.getElementById('gameContainer');
+    const introBox = document.getElementById('introContainer');
+    if (chartBox) chartBox.style.display = 'none';
+    if (gameBox) gameBox.style.display = 'none';
+    if (introBox) introBox.style.display = 'none';
+    if (mode === 'both') {
+        if (chartBox) { chartBox.style.display = 'block'; chartBox.style.marginBottom = '15px'; }
+        if (gameBox) gameBox.style.display = 'block';
+    } else if (mode === 'game') {
+        if (gameBox) gameBox.style.display = 'block';
+    } else if (mode === 'chart') {
+        if (chartBox) chartBox.style.display = 'block';
+    } else if (mode === 'intro') {
+        if (introBox) introBox.style.display = 'block';
+    }
+}
+setTimeout(() => { switchViewMode('both'); }, 100);
+
+function updateGameMeasurementState(measuring) {
+    document.getElementById('gameStartPrompt').style.display = measuring ? 'none' : 'flex';
+    if (measuring) startBGM(); else stopBGM();
 }
 
 function toggleFullscreen() {
@@ -2034,273 +857,527 @@ function toggleFullscreen() {
         if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
         gameBox.classList.remove('fullscreen');
     }
-    setTimeout(resizeGameCanvas, 150);
 }
 
-document.addEventListener('fullscreenchange', () => {
-    const gameBox = document.getElementById('gameContainer');
-    if (!document.fullscreenElement) gameBox.classList.remove('fullscreen');
-    else gameBox.classList.add('fullscreen');
-    setTimeout(resizeGameCanvas, 150);
-});
-
-function resizeGameCanvas() {
-    if (gameCanvas && gameCanvas.parentElement) {
-        const w = gameCanvas.parentElement.clientWidth || 800;
-        const h = gameCanvas.parentElement.clientHeight || 480;
-        gameCanvas.width = w;
-        gameCanvas.height = h;
-        gameCanvas.style.width = w + 'px';
-        gameCanvas.style.height = h + 'px';
+// ============================================================
+// 遊戲一：風之繪師 🎨 完整 100 關獨立 Engine (無濃縮規格)
+// ============================================================
+class WindPainterGame {
+    constructor() {
+        this.reset();
     }
+    reset() {
+        this.paintProgress = 0;          // 當前幅畫完成 % (0~100)
+        this.completedPaintings = 0;     // 完成畫作計數
+        this.mistakes = 0;               // 筆觸偏差失誤計數
+        this.pathProgress = 0;           // 自動畫筆軌道位置 (0.0 ~ 1.0)
+        this.paletteRichness = 1.0;      // 調色盤加成
+        this.fineBrushActive = false;    // 細筆狀態
+        this.fineBrushTimer = 0;         // 細筆倒數
+        this.hasWaterproofShield = false;// 防潑水漆 (護盾)
+        this.doubleScoreActive = false;  // 雙倍分數
+        this.doubleScoreTimer = 0;
+        this.particles = [];             // 濺墨粒子
+        this.items = [];                 // 藝術專屬道具
+        this.obstacles = [];             // 藝術專屬障礙物
+        this.itemDropTimer = 0;
+        this.obstacleSpawnTimer = 0;
+        this.paintedCanvasBuffer = [];   // 筆觸歷史紀錄
+        this.shapes = ['flower', 'butterfly', 'star', 'heart', 'spiral'];
+        this.currentShapeIdx = 0;
+
+        // Boss【墨水風暴大師】變數
+        this.bossActive = false;
+        this.bossHP = 100;
+        this.bossMaxHP = 100;
+        this.bossWarningTimer = 0;
+    }
+
+    // 根據 100 關難度計算軌道座標與預期要求的筆觸粗細
+    getTargetPointAndTargetWidth(progress) {
+        const cx = gameCanvas.width / 2;
+        const cy = gameCanvas.height / 2;
+        const shape = this.shapes[this.currentShapeIdx];
+        let x = cx, y = cy;
+        let targetWidth = 15; // 預設要求粗細
+
+        const angle = progress * Math.PI * 2;
+        if (shape === 'flower') {
+            const r = 85 + Math.sin(angle * 5) * 35;
+            x = cx + Math.cos(angle) * r;
+            y = cy + Math.sin(angle) * r;
+            targetWidth = 12 + Math.abs(Math.sin(angle * 5)) * 22; // 花瓣處要求強吐氣粗筆觸
+        } else if (shape === 'butterfly') {
+            const r = 90 * Math.sin(angle * 2);
+            x = cx + Math.cos(angle) * Math.abs(r);
+            y = cy + Math.sin(angle) * Math.abs(r);
+            targetWidth = 18;
+        } else if (shape === 'star') {
+            const r = 85 + Math.sin(angle * 5) * 45;
+            x = cx + Math.cos(angle) * r;
+            y = cy + Math.sin(angle) * r;
+            targetWidth = 10 + Math.abs(Math.cos(angle * 5)) * 20;
+        } else if (shape === 'heart') {
+            const t = angle;
+            x = cx + 16 * Math.pow(Math.sin(t), 3) * 5.5;
+            y = cy - (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 5.5;
+            targetWidth = 16;
+        } else { // 圓形/螺旋
+            x = cx + Math.cos(angle) * 85;
+            y = cy + Math.sin(angle) * 85;
+            targetWidth = 15;
+        }
+        return { x, y, targetWidth };
+    }
+
+    update(exhaleIntensity) {
+        if (this.fineBrushTimer > 0) {
+            this.fineBrushTimer--;
+            if (this.fineBrushTimer === 0) this.fineBrushActive = false;
+        }
+        if (this.doubleScoreTimer > 0) {
+            this.doubleScoreTimer--;
+            if (this.doubleScoreTimer === 0) this.doubleScoreActive = false;
+        }
+
+        // 畫筆自動沿著 100 關軌道前進 (關卡越高速度微幅增加)
+        const currentLevel = EXP?.currentLevel || 1;
+        const pathSpeed = 0.0015 + (currentLevel * 0.00003); // 1~100關漸進升速
+        this.pathProgress = (this.pathProgress + pathSpeed) % 1.0;
+
+        const target = this.getTargetPointAndTargetWidth(this.pathProgress);
+
+        // 吐氣強度即時控制筆觸粗細 (吐氣越強筆觸越粗)
+        const currentBrushWidth = (5 + exhaleIntensity * 38) * (this.fineBrushActive ? 0.65 : 1.0);
+
+        // 吐氣進行繪製
+        if (exhaleIntensity > 0.05) {
+            const scoreGain = (this.doubleScoreActive ? 2 : 1);
+            this.paintProgress += exhaleIntensity * 0.25;
+
+            // 每描繪 30% 觸發顏料噴濺特效與音效
+            const prevProgress = this.paintProgress - exhaleIntensity * 0.25;
+            if (Math.floor(this.paintProgress / 30) > Math.floor(prevProgress / 30)) {
+                this.triggerPaintSpatter(target.x, target.y);
+                playAudioEffect('paint_spatter');
+            }
+
+            // 紀錄筆觸歷史
+            this.paintedCanvasBuffer.push({
+                x: target.x,
+                y: target.y,
+                radius: currentBrushWidth / 2,
+                color: `hsl(${(this.pathProgress * 360 * this.paletteRichness) % 360}, 80%, ${45 + exhaleIntensity * 20}%)`,
+                alpha: 0.35 + exhaleIntensity * 0.65
+            });
+            if (this.paintedCanvasBuffer.length > 300) this.paintedCanvasBuffer.shift();
+
+            // 筆觸偏差判定 (粗細與要求相差太大會累積失誤)
+            const widthDiff = Math.abs(currentBrushWidth - target.targetWidth);
+            if (widthDiff > 20 && !this.fineBrushActive) {
+                this.mistakes++;
+                if (this.mistakes >= 5) {
+                    playerHP = Math.max(0, playerHP - 10);
+                    this.mistakes = 0;
+                    showNotification('⚠️ 吐氣粗細偏差過大！扣除 10 HP');
+                    playAudioEffect('hit');
+                    if (playerHP <= 0) triggerGameOver();
+                }
+            }
+
+            // 完成一幅畫過關
+            if (this.paintProgress >= 100) {
+                this.completedPaintings++;
+                this.paintProgress = 0;
+                gameScore += 100 * scoreGain;
+                this.paintedCanvasBuffer = [];
+                this.currentShapeIdx = (this.currentShapeIdx + 1) % this.shapes.length;
+                showNotification(`🎨 完成第 ${this.completedPaintings} 幅畫作！`);
+                advanceLevel(); // 邁向 100 關
+            }
+        }
+
+        // 專屬藝術道具生成 (每 8 秒)
+        this.itemDropTimer++;
+        if (this.itemDropTimer > 480) {
+            this.itemDropTimer = 0;
+            const itemTypes = ['palette', 'fine_brush', 'water', 'inspiration', 'waterproof'];
+            const chosen = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+            this.items.push({
+                type: chosen,
+                x: gameCanvas.width + 20,
+                y: Math.random() * (gameCanvas.height - 120) + 60,
+                speed: 2.2
+            });
+        }
+
+        // 更新道具與碰撞
+        this.items.forEach(item => {
+            item.x -= item.speed;
+            const dist = Math.hypot(item.x - target.x, item.y - target.y);
+            if (dist < 35) {
+                if (item.type === 'palette') {
+                    this.paletteRichness = 2.0; showNotification('🎨 獲得【調色盤】！筆觸變豐富！');
+                } else if (item.type === 'fine_brush') {
+                    this.fineBrushActive = true; this.fineBrushTimer = 350; showNotification('🖌️ 獲得【極細畫筆】！提升精度防失誤！');
+                } else if (item.type === 'water') {
+                    this.obstacles = []; showNotification('💧 獲得【清水洗筆】！洗淨畫布障礙！');
+                } else if (item.type === 'inspiration') {
+                    this.doubleScoreActive = true; this.doubleScoreTimer = 300; showNotification('✨ 獲得【靈感閃光】！雙倍得分！');
+                } else if (item.type === 'waterproof') {
+                    this.hasWaterproofShield = true; showNotification('📜 獲得【防潑水漆】！抵擋一次傷害！');
+                }
+                playAudioEffect('buff');
+                item.collected = true;
+            }
+        });
+        this.items = this.items.filter(i => i.x > -20 && !i.collected);
+
+        // 專屬藝術障礙物生成 (墨水噴濺/顏料乾涸)
+        this.obstacleSpawnTimer++;
+        if (this.obstacleSpawnTimer > 350) {
+            this.obstacleSpawnTimer = 0;
+            this.obstacles.push({
+                x: gameCanvas.width + 20,
+                y: Math.random() * (gameCanvas.height - 100) + 50,
+                radius: 18,
+                speed: 1.8 + Math.random() * 1.5,
+                type: Math.random() < 0.5 ? 'ink_splash' : 'dry_paint'
+            });
+        }
+
+        // 更新障礙物碰撞
+        this.obstacles.forEach(obs => {
+            obs.x -= obs.speed;
+            const dist = Math.hypot(obs.x - target.x, obs.y - target.y);
+            if (dist < obs.radius + 12) {
+                if (this.hasWaterproofShield) {
+                    this.hasWaterproofShield = false;
+                    showNotification('📜 防潑水漆抵擋了墨水污染！');
+                } else {
+                    playerHP = Math.max(0, playerHP - 15);
+                    showNotification('💥 碰到墨水污漬！扣除 15 HP');
+                    playAudioEffect('hit');
+                    if (playerHP <= 0) triggerGameOver();
+                }
+                obs.hit = true;
+            }
+        });
+        this.obstacles = this.obstacles.filter(o => o.x > -30 && !o.hit);
+
+        // 更新粒子
+        this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; });
+        this.particles = this.particles.filter(p => p.life > 0);
+    }
+
+    triggerPaintSpatter(x, y) {
+        for (let i = 0; i < 18; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1.5 + Math.random() * 4;
+            this.particles.push({
+                x: x, y: y,
+                vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                color: `hsl(${Math.random() * 360}, 85%, 60%)`,
+                size: 3 + Math.random() * 5, life: 1.0
+            });
+        }
+    }
+
+    draw(ctx) {
+        // 水彩紙紋理質感背景
+        ctx.fillStyle = '#f7f4eb';
+        ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        // 畫框風格邊框
+        ctx.strokeStyle = '#8e44ad';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, gameCanvas.width - 20, gameCanvas.height - 20);
+
+        // 繪製 100 關目標發光軌道
+        ctx.save();
+        ctx.strokeStyle = 'rgba(142, 68, 173, 0.45)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 6]);
+        ctx.shadowColor = '#8e44ad';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        for (let p = 0; p <= 1.0; p += 0.01) {
+            const pt = this.getTargetPointAndTargetWidth(p);
+            if (p === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+
+        // 繪製玩家筆觸渲染歷史
+        this.paintedCanvasBuffer.forEach(b => {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fillStyle = b.color;
+            ctx.globalAlpha = b.alpha;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        });
+
+        // 繪製自動流動的畫筆筆尖位置
+        const currentPt = this.getTargetPointAndTargetWidth(this.pathProgress);
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(currentPt.x, currentPt.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 繪製障礙物 (墨水噴濺 / 乾涸顏料)
+        this.obstacles.forEach(obs => {
+            ctx.fillStyle = obs.type === 'ink_splash' ? '#2c3e50' : '#d35400';
+            ctx.beginPath();
+            ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '16px sans-serif';
+            ctx.fillText(obs.type === 'ink_splash' ? '墨' : '乾', obs.x - 7, obs.y + 5);
+        });
+
+        // 繪製專屬藝術道具
+        this.items.forEach(item => {
+            let icon = '🎨';
+            if (item.type === 'fine_brush') icon = '🖌️';
+            else if (item.type === 'water') icon = '💧';
+            else if (item.type === 'inspiration') icon = '✨';
+            else if (item.type === 'waterproof') icon = '📜';
+            ctx.font = '24px sans-serif';
+            ctx.fillText(icon, item.x, item.y);
+        });
+
+        // 繪製粒子
+        this.particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        });
+
+        // 風之繪師 HUD 數據顯示
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.fillText(`🎨 風之繪師 - 已完成: ${this.completedPaintings} 幅`, 30, 42);
+        ctx.fillText(`🖌️ 當前畫作進度: ${Math.floor(this.paintProgress)}%`, 30, 65);
+    }
+}
+
+const windPainterGame = new WindPainterGame();
+<!-- ============================================================ -->
+<!-- JavaScript Part 3: 氣流飛行員 Engine + 遊戲主調度 Loop + 初始化 -->
+<!-- ============================================================ -->
+<script>
+// ============================================================
+// 氣流飛行員 🚀 獨立 Engine
+// ============================================================
+const gameCanvas = document.getElementById('gameCanvas');
+const gameCtx = gameCanvas.getContext('2d');
+let gameAnimationId = null;
+let isGameRunning = false, isGamePaused = false, isGameOver = false;
+
+// 飛船玩家物件與遊戲狀態
+let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
+let stars = [], particles = [], collectibles = [], obstacles = [];
+let gameScore = 0, gameCombo = 0, playerHP = 100;
+let hasShield = false, feverTimer = 0, magnetTimer = 0, doubleScoreTimer = 0;
+let bossActive = false, currentBoss = null;
+
+// 初始化太空星空粒子
+function initStars() {
+    stars = [];
+    for (let i = 0; i < 60; i++) {
+        stars.push({
+            x: Math.random() * (gameCanvas.width || 800),
+            y: Math.random() * (gameCanvas.height || 480),
+            size: Math.random() * 2 + 1,
+            baseSpeed: Math.random() * 1.5 + 0.5
+        });
+    }
+}
+
+// 關卡與晉級系統 (共 100 關)
+const EXP = { currentLevel: 1, maxLevel: 100 };
+function updateLevelDisplay() {
+    const display = document.getElementById('levelDisplay');
+    const fill = document.getElementById('levelProgressFill');
+    if (display) display.innerText = EXP.currentLevel;
+    if (fill) fill.style.width = `${EXP.currentLevel}%`;
+}
+
+function advanceLevel() {
+    EXP.currentLevel++;
+    if (EXP.currentLevel > 100) EXP.currentLevel = 100;
+    updateLevelDisplay();
+    showNotification(`🎉 晉級至第 ${EXP.currentLevel}/100 關！`);
 }
 
 function showNotification(msg) {
     const status = document.getElementById('status');
     if (status) {
-        const orig = status.innerText;
         status.innerText = `🎯 ${msg}`;
-        status.style.background = '#8e44ad';
-        setTimeout(() => {
-            status.innerText = orig;
-            status.style.background = '#1f4e79';
-        }, 2500);
+        setTimeout(() => { status.innerText = 'Running'; }, 3000);
     }
 }
 
-// =====================================================
-// 擴充 roundRect 方法
-// =====================================================
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-        if (r > w/2) r = w/2;
-        if (r > h/2) r = h/2;
-        this.moveTo(x + r, y);
-        this.lineTo(x + w - r, y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r);
-        this.lineTo(x + w, y + h - r);
-        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        this.lineTo(x + r, y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r);
-        this.lineTo(x, y + r);
-        this.quadraticCurveTo(x, y, x + r, y);
-        this.closePath();
-        return this;
-    };
-}
+// 繪製飛船
+function drawRocket(x, y, angle, isExhale, flowMagnitude) {
+    gameCtx.save();
+    gameCtx.translate(x, y);
+    gameCtx.fillStyle = '#ecf0f1';
+    gameCtx.beginPath();
+    gameCtx.moveTo(22, 0);
+    gameCtx.lineTo(-14, -12);
+    gameCtx.lineTo(-8, 0);
+    gameCtx.lineTo(-14, 12);
+    gameCtx.closePath();
+    gameCtx.fill();
 
-// =====================================================
-// 控制面板擴充
-// =====================================================
-const controlPanel = document.getElementById('mainControlPanel');
-if (controlPanel) {
-    const html = `
-    <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-        視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
-            <option value="chart">📊 專業圖表</option>
-            <option value="game">🎮 遊戲模式</option>
-            <option value="both" selected>全模式</option>
-        </select>
-    </label>
-    <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
-    <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
-    <label class="music-upload-btn">🎵 自選音樂 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
-    <span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
-    <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
-    <span id="expansionControls">
-        <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
-        <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
-        <span class="control-toggle">
-            <input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
-            <label for="keyboardToggle">⌨️ 鍵盤</label>
-            <input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
-            <label for="mouseToggle">🖱️ 滑鼠</label>
-        </span>
-        <span id="devControls" style="display:flex;gap:6px;align-items:center;">
-            <button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
-            <span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
-        </span>
-        <span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
-            <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
-            <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
-            <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
-            <button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
-        </span>
-        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-            🎮 遊戲:
-            <select id="gameSelector" onchange="switchGameMode(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                <option value="flight">✈️ 氣流飛行員</option>
-                <option value="painter">🎨 風之繪師</option>
-            </select>
-        </label>
-    </span>
-    `;
-    controlPanel.insertAdjacentHTML('beforeend', html);
-}
-
-function switchViewMode(mode) {
-    const chartBox = document.getElementById('chartContainer');
-    const gameBox = document.getElementById('gameContainer');
-    if (chartBox) chartBox.style.display = (mode === 'chart' || mode === 'both') ? 'block' : 'none';
-    if (gameBox) gameBox.style.display = (mode === 'game' || mode === 'both') ? 'block' : 'none';
-}
-
-function toggleLevelEditor() {
-    const editor = document.getElementById('levelEditor');
-    if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-}
-
-function toggleSkinEditor() {
-    const editor = document.getElementById('skinEditor');
-    if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-}
-
-function toggleDevMode() {
-    const btn = document.getElementById('devModeToggle');
-    const indicator = document.getElementById('devIndicator');
-    if (btn) {
-        btn.textContent = btn.textContent.includes('ON') ? '🔧 開發模式 OFF' : '🔧 開發模式 ON';
-        btn.classList.toggle('active');
+    // 噴射尾焰 (呼吸吐氣時變大)
+    if (isExhale || flowMagnitude > 0) {
+        gameCtx.fillStyle = '#e74c3c';
+        gameCtx.beginPath();
+        gameCtx.moveTo(-10, 0);
+        gameCtx.lineTo(-22 - flowMagnitude * 0.2, -6);
+        gameCtx.lineTo(-22 - flowMagnitude * 0.2, 6);
+        gameCtx.closePath();
+        gameCtx.fill();
     }
-    if (indicator) {
-        indicator.textContent = indicator.textContent.includes('開發中') ? '🎮 一般模式' : '🔧 開發中';
-        indicator.className = 'dev-mode-indicator ' + (indicator.textContent.includes('開發中') ? 'on' : 'off');
+    gameCtx.restore();
+}
+
+// ============================================================
+// 主遊戲 Loop 調度器 (Game Loop)
+// ============================================================
+function gameLoop() {
+    if (!isGameRunning || isGameOver) return;
+    if (isGamePaused) {
+        gameAnimationId = requestAnimationFrame(gameLoop);
+        return;
     }
-}
 
-function setQuality(val) {
-    updateStatus(`🖥️ 畫質: ${val}`);
-}
+    // 1. 取得統一輸入 (呼吸氣流優先)
+    let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
+    let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+    let activeMode = (typeof currentMode !== 'undefined') ? currentMode : "inhalation";
 
-function openCustomQuality() {
-    alert('自訂畫質功能開發中');
-}
-
-function resetLevelProgress() {
-    if (confirm('確定要重置所有關卡進度嗎？')) {
-        if (currentGameMode === GAME_MODES.PAINTER) {
-            PainterGame.level = 1;
-            PainterGame.paintingsCompleted = 0;
-            PainterGame.updateStrokeCount();
-            PainterGame.generateShape();
-            PainterGame.updateUI();
-            showNotification('🔄 關卡進度已重置');
-        }
+    let exhaleIntensity = 0;
+    if (activeMeasuring && (activeMode === "exhalation" || flow < 0)) {
+        exhaleIntensity = Math.min(1.0, Math.abs(flow) / 90.0);
+    } else if (keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
+        exhaleIntensity = 0.6;
+    } else if (mouseControlEnabled && useMouseControl && mouseY !== null) {
+        exhaleIntensity = 0.6;
     }
-}
 
-// =====================================================
-// 鍵盤事件
-// =====================================================
-document.addEventListener('keydown', function(e) {
-    if (!keyboardControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
-    
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        const step = 10;
-        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-            e.preventDefault();
-            PainterGame.brushY = Math.max(30, PainterGame.brushY - step);
-        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-            e.preventDefault();
-            PainterGame.brushY = Math.min(gameCanvas.height - 30, PainterGame.brushY + step);
-        } else if (e.key === ' ' || e.key === 'Space') {
-            e.preventDefault();
-            toggleGamePause();
-        }
-    }
-});
+    // 2. 根據當前選擇的主題分流運算與渲染
+    if (currentSelectedGame === 'painter') {
+        // 🎨【風之繪師】：執行畫布更新與水彩渲染
+        windPainterGame.update(exhaleIntensity);
+        windPainterGame.draw(gameCtx);
+    } else {
+        // 🚀【氣流飛行員】：執行太空飛船飛行與障礙物碰撞
+        gameCtx.globalAlpha = 1.0;
+        gameCtx.fillStyle = '#0d1117';
+        gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-document.addEventListener('DOMContentLoaded', function() {
-    const canvas = document.getElementById('gameCanvas');
-    if (canvas) {
-        canvas.addEventListener('mousemove', function(e) {
-            if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
-            if (currentGameMode === GAME_MODES.PAINTER) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleY = canvas.height / rect.height;
-                const mouseRelativeY = (e.clientY - rect.top) * scaleY;
-                PainterGame.brushY = Math.max(30, Math.min(canvas.height - 30, mouseRelativeY));
-            }
+        // 渲染星空背景
+        let baseSpeedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
+        gameCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        stars.forEach(s => {
+            s.x -= s.baseSpeed * baseSpeedMult;
+            if (s.x < 0) s.x = gameCanvas.width;
+            gameCtx.fillRect(s.x, s.y, s.size, s.size);
         });
-    }
-});
 
-function toggleKeyboardControl() {
-    keyboardControlEnabled = !keyboardControlEnabled;
-    if (!keyboardControlEnabled) {
-        keyboardY = null;
-        useKeyboardControl = false;
-        document.getElementById('hintKeyboard').style.color = '';
-        document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+        // 計算飛船飛行高度
+        let targetY = gameCanvas.height / 2;
+        if (activeMeasuring && Math.abs(flow) > 0.5) {
+            targetY = gameCanvas.height / 2 - (flow * 2.2);
+        } else if (keyboardY !== null) {
+            targetY = keyboardY;
+        } else if (mouseY !== null) {
+            targetY = mouseY;
+        }
+        rocket.y += (targetY - rocket.y) * 0.1;
+        drawRocket(rocket.x, rocket.y, 0, activeMode === "exhalation", Math.abs(flow));
     }
-    updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
+
+    // 更新 HUD 數據
+    document.getElementById('gameScore').innerText = gameScore;
+    document.getElementById('gameCombo').innerText = gameCombo;
+    document.getElementById('hpFill').style.width = `${playerHP}%`;
+
+    gameAnimationId = requestAnimationFrame(gameLoop);
 }
 
-function toggleMouseControl() {
-    mouseControlEnabled = !mouseControlEnabled;
-    if (!mouseControlEnabled) {
-        mouseY = null;
-        useMouseControl = false;
-        document.getElementById('hintMouse').style.color = '';
-        document.getElementById('hintMouse').textContent = '移動';
-    }
-    updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
-}
-
-function toggleControlGuide() {
-    const guide = document.getElementById('controlGuide');
-    const btn = document.getElementById('helpBtn');
-    if (guide) {
-        guide.classList.toggle('show');
-        btn.classList.toggle('active');
-        btn.textContent = guide.classList.contains('show') ? '✕' : '❓';
+// 調整 Canvas 畫布尺寸
+function resizeGameCanvas() {
+    if (gameCanvas) {
+        const rect = gameCanvas.parentElement.getBoundingClientRect();
+        gameCanvas.width = rect.width || 800;
+        gameCanvas.height = rect.height || 480;
+        initStars();
     }
 }
+window.addEventListener('resize', resizeGameCanvas);
 
-// =====================================================
-// 初始化
-// =====================================================
-function initExpansion() {
+// 遊戲重置與重開
+function restartGameEngine() {
+    stopGameEngine();
     resizeGameCanvas();
-    PainterGame.init();
-    
-    // 預設為飛行模式
-    setTimeout(() => {
-        switchGameMode(GAME_MODES.FLIGHT);
-    }, 100);
-    
-    // 設定視窗模式為全模式
-    const viewSelect = document.getElementById('viewModeSelect');
-    if (viewSelect) {
-        viewSelect.value = 'both';
-        switchViewMode('both');
+    isGameRunning = true;
+    isGamePaused = false;
+    isGameOver = false;
+    playerHP = 100;
+    gameScore = 0;
+    gameCombo = 0;
+    windPainterGame.reset();
+
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('hpFill').style.width = '100%';
+    gameLoop();
+}
+
+function toggleGamePause() {
+    if (!isGameRunning || isGameOver) return;
+    isGamePaused = !isGamePaused;
+    showNotification(isGamePaused ? '⏸️ 遊戲已暫停' : '▶️ 遊戲繼續');
+}
+
+function triggerGameOver() {
+    isGameOver = true;
+    stopBGM();
+    document.getElementById('finalScore').innerText = gameScore;
+    document.getElementById('gameOverScreen').style.display = 'flex';
+    stopGameEngine();
+}
+
+function stopGameEngine() {
+    isGameRunning = false;
+    if (gameAnimationId) {
+        cancelAnimationFrame(gameAnimationId);
+        gameAnimationId = null;
     }
-    
-    console.log('✅ 所有功能已載入！');
-    console.log('🔌 串口功能: Connect → Start 開始測量');
-    console.log('📊 圖表顯示呼吸波形');
-    console.log('🎮 使用遊戲切換器在「氣流飛行員」和「風之繪師」間切換');
-    console.log('🎨 風之繪師：吐氣控制筆觸粗細，自動沿路徑繪畫');
+}
+
+// 頁面加載初始化
+function initGameSystem() {
+    resizeGameCanvas();
+    updateLevelDisplay();
+    setTimeout(() => {
+        restartGameEngine();
+    }, 300);
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initExpansion);
+    document.addEventListener('DOMContentLoaded', initGameSystem);
 } else {
-    initExpansion();
+    initGameSystem();
 }
-
-// 暴露給外部使用
-window.switchGameMode = switchGameMode;
-window.restartGameEngine = restartGameEngine;
-window.toggleGamePause = toggleGamePause;
-window.toggleFullscreen = toggleFullscreen;
-window.GAME_MODES = GAME_MODES;
-window.PainterGame = PainterGame;
-window.toggleMeasuring = toggleMeasuring;
-window.clearPlot = clearPlot;
-window.saveCSV = saveCSV;
-window.runPKLIndexSegmentation = runPKLIndexSegmentation;
-window.toggleConnection = toggleConnection;
 </script>
 </body>
 </html>
