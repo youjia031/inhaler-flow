@@ -1474,9 +1474,9 @@
     <div class="statusbar" id="status">🎮 遊戲已就緒（無需連接裝置）</div>
     <script>
         // =====================================================
-        // 教育引導線（原有）
+        // 教育引導線
         // =====================================================
-        const EDUCATION_PROGRAM = [
+        var EDUCATION_PROGRAM = [
             ["inhalation", 0, 3],
             ["inhalation", 60, 2],
             ["inhalation", 0, 1],
@@ -1738,7 +1738,7 @@
         }
 
         // =====================================================
-        // 原有函式（保持不變）
+        // 原有函式
         // =====================================================
         async function loadPKLModel() {
             try {
@@ -2068,6 +2068,7 @@
                 flowChart.update('none');
             }
         }
+
         // =====================================================
         // 模擬呼吸數據
         // =====================================================
@@ -2203,7 +2204,7 @@
         }
 
         // ============================================================
-        // 音效系統（擴充版 - 支援每款遊戲獨立音樂）
+        // 音效系統
         // ============================================================
         var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
         var bgmInterval = null,
@@ -2549,6 +2550,7 @@
                 }
             } catch (e) {}
         }
+
         // ============================================================
         // 視窗模式切換
         // ============================================================
@@ -2663,7 +2665,7 @@
         var gameInstances = {};
 
         // ============================================================
-        // 遊戲基類（供所有遊戲繼承）
+        // 遊戲基類
         // ============================================================
         function BaseGame(name, displayName) {
             this.name = name;
@@ -2884,7 +2886,7 @@
         };
 
         // ============================================================
-        // 遊戲二：燭光遠征 🕯️（簡化版）
+        // 遊戲二：燭光遠征 🕯️
         // ============================================================
         function CandleGame() {
             BaseGame.call(this, 'candle', '🕯️ 燭光遠征');
@@ -2899,9 +2901,24 @@
             this.maxGems = 3;
             this.visionRadius = 80;
             this.mazeSize = 18;
-            this.items = [];
-            this.obstacles = [];
-            this.bosses = [];
+            this.items = [
+                { id: 'lamp_oil', emoji: '🪔', name: '燈油', desc: '補充燃料', effect: 'refuel' },
+                { id: 'compass', emoji: '🧭', name: '指南針', desc: '顯示出口方向', duration: 300,
+                effect: 'show_exit' },
+                { id: 'torch', emoji: '🔥', name: '火把', desc: '擴大視野', duration: 200, effect: 'big_vision' },
+                { id: 'shield', emoji: '🛡️', name: '護盾', desc: '抵擋一次碰撞', effect: 'shield' }
+            ];
+            this.obstacles = [
+                { id: 'wall_spike', emoji: '⚔️', name: '尖刺牆', damage: 25, desc: '撞到扣血' },
+                { id: 'dark_fog', emoji: '🌑', name: '暗霧', damage: 0, desc: '縮小視野' },
+                { id: 'trap', emoji: '🪤', name: '陷阱', damage: 30, desc: '隱藏陷阱' }
+            ];
+            this.bosses = [
+                { id: 'shadow_wraith', name: '👻 暗影幽靈', hp: 180, speed: 1.2, skills: ['吞噬', '恐懼',
+                    '黑暗'], color: '#2c3e50' },
+                { id: 'candle_golem', name: '🕯️ 燭火魔像', hp: 250, speed: 0.7, skills: ['火焰噴射', '熔岩',
+                    '粉碎'], color: '#e67e22' }
+            ];
             this.music = GAME_MUSIC.candle;
             this.init();
         }
@@ -3023,6 +3040,10 @@
                 if (this.gems >= this.maxGems) this.winGame();
                 else showNotification('🚪 需要 ' + this.maxGems + ' 顆寶石！');
             }
+            if (this.compassTimer > 0) {
+                this.compassTimer--;
+                if (this.compassTimer === 0) { this.hasCompass = false; }
+            }
         };
         CandleGame.prototype.draw = function(ctx, w, h) {
             var s = this.mazeSize;
@@ -3107,6 +3128,11 @@
             ctx.fillStyle = '#E74C3C';
             ctx.textAlign = 'right';
             ctx.fillText('❤️'.repeat(GAME_STATE.lives), w - 20, 30);
+            if (this.hasCompass) {
+                ctx.fillStyle = '#4D96FF';
+                ctx.textAlign = 'left';
+                ctx.fillText('🧭 指南針', 20, 74);
+            }
         };
         CandleGame.prototype.winGame = function() {
             GAME_STATE.score += 300;
@@ -3122,7 +3148,7 @@
         };
 
         // ============================================================
-        // 遊戲三：魔導士破魔 ⚔️（簡化版）
+        // 遊戲三：魔導士破魔 ⚔️
         // ============================================================
         function MageGame() {
             BaseGame.call(this, 'mage', '⚔️ 魔導士破魔');
@@ -3135,9 +3161,24 @@
             this.hasCrystal = false;
             this.hasSpellbook = false;
             this.spellbookCharges = 0;
-            this.items = [];
-            this.obstacles = [];
-            this.bosses = [];
+            this.items = [
+                { id: 'mana_crystal', emoji: '💜', name: '魔力水晶', desc: '瞬間充能50%', effect: 'charge' },
+                { id: 'spellbook', emoji: '📖', name: '咒語書', desc: '下次法術暴擊', effect: 'crit' },
+                { id: 'wand', emoji: '🪄', name: '魔法杖', desc: '法術傷害+50%', duration: 200,
+                effect: 'damage_up' },
+                { id: 'robe', emoji: '🧙', name: '法袍', desc: '減少敵人速度', duration: 300, effect: 'slow_enemy' }
+            ];
+            this.obstacles = [
+                { id: 'magic_trap', emoji: '🔮', name: '魔法陷阱', damage: 20, desc: '觸發陷阱' },
+                { id: 'dark_rune', emoji: '🖤', name: '黑暗符文', damage: 0, desc: '吸取能量' },
+                { id: 'cursed_ground', emoji: '☠️', name: '詛咒之地', damage: 25, desc: '持續傷害' }
+            ];
+            this.bosses = [
+                { id: 'arch_mage', name: '🧙 大法師', hp: 200, speed: 0.9, skills: ['火球', '冰錐', '傳送'],
+                    color: '#9B59B6' },
+                { id: 'void_lord', name: '👾 虛空領主', hp: 300, speed: 0.6, skills: ['虛空爆破', '暗影箭',
+                    '召喚'], color: '#2C3E50' }
+            ];
             this.music = GAME_MUSIC.mage;
             this.init();
         }
@@ -3215,6 +3256,12 @@
             if (this.hasCrystal) { damage *= 1.5;
                 this.hasCrystal = false;
                 showNotification('💜 魔力水晶加成！'); }
+            if (this.hasSpellbook && this.spellbookCharges > 0) {
+                damage *= 2;
+                this.spellbookCharges--;
+                if (this.spellbookCharges === 0) this.hasSpellbook = false;
+                showNotification('📖 暴擊！');
+            }
             target.hp -= damage;
             this.createSpellEffect(target.x, target.y);
             if (target.hp <= 0) {
@@ -3223,6 +3270,9 @@
                 GAME_STATE.score += 20;
                 if (Math.random() < 0.2) { this.hasCrystal = true;
                     showNotification('💜 獲得魔力水晶！'); }
+                if (Math.random() < 0.15) { this.hasSpellbook = true;
+                    this.spellbookCharges = 3;
+                    showNotification('📖 獲得咒語書！'); }
                 if (this.enemies.length === 0) {
                     var self = this;
                     setTimeout(function() { self.startWave(); }, 1500);
@@ -3328,6 +3378,11 @@
                 ctx.textAlign = 'right';
                 ctx.fillText('💜 水晶', w - 20, 56);
             }
+            if (this.hasSpellbook) {
+                ctx.fillStyle = '#F39C12';
+                ctx.textAlign = 'right';
+                ctx.fillText('📖 咒語 x' + this.spellbookCharges, w - 20, 74);
+            }
         };
         MageGame.prototype.winGame = function() {
             GAME_STATE.score += 500;
@@ -3343,7 +3398,7 @@
         };
 
         // ============================================================
-        // 遊戲四：蒲公英快遞 🌿（簡化版）
+        // 遊戲四：蒲公英快遞 🌿
         // ============================================================
         function DandelionGame() {
             BaseGame.call(this, 'dandelion', '🌿 蒲公英快遞');
@@ -3360,9 +3415,24 @@
             this.compassTimer = 0;
             this.hasTailwind = false;
             this.tailwindTimer = 0;
-            this.items = [];
-            this.obstacles = [];
-            this.bosses = [];
+            this.items = [
+                { id: 'tailwind', emoji: '💨', name: '順風', desc: '短暫加速', duration: 200, effect: 'speed_up' },
+                { id: 'compass', emoji: '🧭', name: '指南針', desc: '顯示最近花朵', duration: 300,
+                effect: 'show_flower' },
+                { id: 'pollen', emoji: '🌼', name: '花粉', desc: '吸引花朵', effect: 'attract' },
+                { id: 'shield', emoji: '☂️', name: '雨傘', desc: '抵擋一次障礙', effect: 'shield' }
+            ];
+            this.obstacles = [
+                { id: 'spider_web', emoji: '🕸️', name: '蜘蛛網', damage: 15, desc: '纏住減速' },
+                { id: 'thorn_bush', emoji: '🌿', name: '荊棘叢', damage: 20, desc: '刺傷' },
+                { id: 'rain_cloud', emoji: '☁️', name: '雨雲', damage: 0, desc: '降低視野' }
+            ];
+            this.bosses = [
+                { id: 'bee_king', name: '🐝 蜜蜂王', hp: 160, speed: 1.5, skills: ['毒刺', '蜂群', '衝刺'],
+                    color: '#F1C40F' },
+                { id: 'spider_queen', name: '🕷️ 蜘蛛女王', hp: 220, speed: 0.9, skills: ['蛛網', '毒液',
+                    '吞噬'], color: '#6C3483' }
+            ];
             this.music = GAME_MUSIC.dandelion;
             this.init();
         }
@@ -3422,8 +3492,8 @@
             this.playerY = Math.max(20, Math.min(gameCanvas.height - 20, this.playerY));
             this.trail.push({ x: this.playerX, y: this.playerY, life: 1.0 });
             if (this.trail.length > 50) this.trail.shift();
-            for (var i = 0; i < this.obstacles.length; i++) {
-                var o = this.obstacles[i];
+            for (var l = 0; l < this.obstacles.length; l++) {
+                var o = this.obstacles[l];
                 if (Math.hypot(this.playerX - o.x, this.playerY - o.y) < o.radius + 10) {
                     GAME_STATE.lives--;
                     if (GAME_STATE.lives <= 0) { this.gameOver(); return; }
@@ -3443,7 +3513,7 @@
                     GAME_STATE.score += 30;
                     showNotification('🌺 送達花粉！' + this.deliveries + '/' + this.maxDeliveries);
                     playAudioEffect('coin');
-                    for (var l = 0; l < 30; l++) {
+                    for (var m = 0; m < 30; m++) {
                         var angle2 = Math.random() * Math.PI * 2,
                             speed = 1 + Math.random() * 3;
                         var colors = ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6BD6'];
@@ -3460,6 +3530,15 @@
                     this.targetFlower++;
                     if (this.deliveries >= this.maxDeliveries) { this.winGame(); return; }
                 }
+            }
+            if (this.compassTimer > 0) {
+                this.compassTimer--;
+                if (this.compassTimer === 0) this.hasCompass = false;
+            }
+            if (this.tailwindTimer > 0) {
+                this.tailwindTimer--;
+                if (this.tailwindTimer === 0) { this.hasTailwind = false;
+                    showNotification('💨 順風效果消失'); }
             }
         };
         DandelionGame.prototype.draw = function(ctx, w, h) {
@@ -3500,11 +3579,11 @@
                 }
                 for (var r = 0.2; r <= 1; r += 0.2) {
                     ctx.beginPath();
-                    for (var m = 0; m <= 8; m++) {
-                        var angle2 = (m / 8) * Math.PI * 2;
+                    for (var n = 0; n <= 8; n++) {
+                        var angle2 = (n / 8) * Math.PI * 2;
                         var x = Math.cos(angle2) * o.radius * r,
                             y = Math.sin(angle2) * o.radius * r;
-                        if (m === 0) ctx.moveTo(x, y);
+                        if (n === 0) ctx.moveTo(x, y);
                         else ctx.lineTo(x, y);
                     }
                     ctx.closePath();
@@ -3512,16 +3591,16 @@
                 }
                 ctx.restore();
             }
-            for (var n = 0; n < this.flowers.length; n++) {
-                var flower = this.flowers[n];
+            for (var p = 0; p < this.flowers.length; p++) {
+                var flower = this.flowers[p];
                 if (flower.delivered) continue;
                 ctx.save();
                 ctx.translate(flower.x, flower.y);
                 var bloom = 0.5 + Math.sin(Date.now() / 500 + flower.x) * 0.3;
                 ctx.shadowColor = '#FF6B6B';
                 ctx.shadowBlur = 20 * bloom;
-                for (var p = 0; p < 5; p++) {
-                    var angle3 = (p / 5) * Math.PI * 2 + Date.now() / 2000;
+                for (var q = 0; q < 5; q++) {
+                    var angle3 = (q / 5) * Math.PI * 2 + Date.now() / 2000;
                     ctx.beginPath();
                     ctx.ellipse(Math.cos(angle3) * 12, Math.sin(angle3) * 12, 10, 6, angle3, 0, Math.PI * 2);
                     ctx.fillStyle = 'rgba(255,107,107,' + (0.6 + bloom * 0.4) + ')';
@@ -3545,17 +3624,17 @@
             }
             ctx.save();
             ctx.translate(this.playerX, this.playerY);
-            for (var q = 0; q < this.trail.length; q++) {
-                var t = this.trail[q];
+            for (var r2 = 0; r2 < this.trail.length; r2++) {
+                var t = this.trail[r2];
                 t.life -= 0.02;
                 ctx.beginPath();
                 ctx.arc(t.x - this.playerX, t.y - this.playerY, 3 * t.life, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(200,230,255,' + t.life * 0.3 + ')';
                 ctx.fill();
             }
-            for (var r2 = 0; r2 < 8; r2++) {
-                var angle4 = (r2 / 8) * Math.PI * 2 + Date.now() / 1000;
-                var dist = 12 + Math.sin(Date.now() / 500 + r2) * 4;
+            for (var s = 0; s < 8; s++) {
+                var angle4 = (s / 8) * Math.PI * 2 + Date.now() / 1000;
+                var dist = 12 + Math.sin(Date.now() / 500 + s) * 4;
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 var ex = Math.cos(angle4) * dist,
@@ -3584,6 +3663,16 @@
             ctx.fillStyle = '#E74C3C';
             ctx.textAlign = 'right';
             ctx.fillText('❤️'.repeat(GAME_STATE.lives), w - 20, 35);
+            if (this.hasCompass) {
+                ctx.fillStyle = '#4D96FF';
+                ctx.textAlign = 'left';
+                ctx.fillText('🧭 指南針', 20, 75);
+            }
+            if (this.hasTailwind) {
+                ctx.fillStyle = '#2ECC71';
+                ctx.textAlign = 'left';
+                ctx.fillText('💨 順風', 20, 95);
+            }
             if (this.targetFlower < this.flowers.length) {
                 var flower2 = this.flowers[this.targetFlower];
                 var angle5 = Math.atan2(flower2.y - this.playerY, flower2.x - this.playerX);
@@ -3608,7 +3697,7 @@
         };
 
         // ============================================================
-        // 遊戲五：玻璃心大師 💎（簡化版）
+        // 遊戲五：玻璃心大師 💎
         // ============================================================
         function CrystalGame() {
             BaseGame.call(this, 'crystal', '💎 玻璃心大師');
@@ -3624,9 +3713,23 @@
             this.hasStrengthen = false;
             this.hasLens = false;
             this.lensTimer = 0;
-            this.items = [];
-            this.obstacles = [];
-            this.bosses = [];
+            this.items = [
+                { id: 'strengthen', emoji: '💪', name: '強化液', desc: '增加一次容錯', effect: 'strengthen' },
+                { id: 'lens', emoji: '🔮', name: '透鏡', desc: '顯示最佳路徑', duration: 300, effect: 'show_path' },
+                { id: 'polish', emoji: '✨', name: '拋光粉', desc: '加快切割速度', duration: 200, effect: 'speed_cut' },
+                { id: 'crystal_shard', emoji: '💎', name: '水晶碎片', desc: '自動完成10%', effect: 'auto_cut' }
+            ];
+            this.obstacles = [
+                { id: 'crack', emoji: '💥', name: '裂紋', damage: 20, desc: '導致碎裂' },
+                { id: 'impurity', emoji: '🟤', name: '雜質', damage: 0, desc: '增加失誤' },
+                { id: 'stress', emoji: '⚡', name: '應力', damage: 15, desc: '內部壓力' }
+            ];
+            this.bosses = [
+                { id: 'crystal_golem', name: '🗿 水晶巨像', hp: 250, speed: 0.7, skills: ['震擊', '結晶',
+                    '粉碎'], color: '#4DB8D9' },
+                { id: 'glass_dragon', name: '🐉 玻璃龍', hp: 200, speed: 1.1, skills: ['吐息', '折射',
+                    '碎裂'], color: '#A8D8EA' }
+            ];
             this.music = GAME_MUSIC.crystal;
             this.init();
         }
@@ -3697,6 +3800,10 @@
                 }
             }
             if (this.progress >= 80 && this.cutPath.length > 10) { this.completePiece(); }
+            if (this.lensTimer > 0) {
+                this.lensTimer--;
+                if (this.lensTimer === 0) this.hasLens = false;
+            }
         };
         CrystalGame.prototype.completePiece = function() {
             this.completedPieces++;
@@ -3767,12 +3874,26 @@
             ctx.closePath();
             ctx.stroke();
             ctx.setLineDash([]);
+            if (this.hasLens) {
+                var idx = Math.floor((this.cutPath.length / this.targetPath.length) * this.targetPath.length);
+                var start = Math.max(0, idx - 10);
+                var end = Math.min(this.targetPath.length, idx + 10);
+                ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (var k = start; k < end; k++) {
+                    var p2 = this.targetPath[k];
+                    if (k === start) ctx.moveTo(p2.x - 200, p2.y - 200);
+                    else ctx.lineTo(p2.x - 200, p2.y - 200);
+                }
+                ctx.stroke();
+            }
             if (this.cutPath.length > 1) {
                 ctx.shadowColor = '#4DB8D9';
                 ctx.shadowBlur = 10;
-                for (var k = 0; k < this.cutPath.length - 1; k++) {
-                    var p1 = this.cutPath[k],
-                        p2 = this.cutPath[k + 1];
+                for (var l = 0; l < this.cutPath.length - 1; l++) {
+                    var p1 = this.cutPath[l],
+                        p2 = this.cutPath[l + 1];
                     var depth = (p1.depth + p2.depth) / 2;
                     ctx.beginPath();
                     ctx.moveTo(p1.x - 200, p1.y - 200);
@@ -3799,6 +3920,16 @@
             ctx.fillStyle = '#E74C3C';
             ctx.textAlign = 'right';
             ctx.fillText('❤️'.repeat(GAME_STATE.lives), w - 20, 35);
+            ctx.textAlign = 'right';
+            ctx.font = '12px sans-serif';
+            if (this.hasStrengthen) {
+                ctx.fillStyle = '#2ECC71';
+                ctx.fillText('💪 強化液', w - 20, 56);
+            }
+            if (this.hasLens) {
+                ctx.fillStyle = '#F1C40F';
+                ctx.fillText('🔮 透鏡 ' + Math.ceil(this.lensTimer / 60) + 's', w - 20, 74);
+            }
             ctx.fillStyle = '#8B949E';
             ctx.textAlign = 'center';
             ctx.font = '12px sans-serif';
@@ -3818,10 +3949,9 @@
         };
 
         // ============================================================
-        // 遊戲切換器（已整合音樂切換）
+        // 遊戲切換器
         // ============================================================
         function switchGame(gameName) {
-            // 停止當前遊戲
             if (currentGame && gameInstances[currentGame.name]) {
                 GAME_STATE.isGameActive = false;
                 if (typeof currentGame.stopMusic === 'function') {
@@ -3863,7 +3993,6 @@
                 document.getElementById('gameNameDisplay').textContent = info.name;
                 document.getElementById('gameBadge').textContent = '吐氣';
                 showNotification('🎮 ' + info.name);
-                // 啟動遊戲音樂
                 if (isMeasuring && typeof currentGame.startMusic === 'function') {
                     currentGame.startMusic();
                 }
@@ -3871,7 +4000,295 @@
         }
 
         // ============================================================
-        // 遊戲循環（完整版 - 支援飛行員模式）
+        // Boss 定義
+        // ============================================================
+        var BOSS_SKILL_INFO = {
+            '火焰吐息': { type: '主動', damage: 15, desc: '噴射火焰彈幕', visual: '🔥' },
+            '烈焰護盾': { type: '被動', damage: 0, desc: '減少傷害30%', visual: '🛡️' },
+            '冰凍光環': { type: '主動', damage: 0, desc: '減速50%持續3秒', visual: '🧊' },
+            '寒冰之牆': { type: '被動', damage: 0, desc: '抵擋攻擊並減速', visual: '❄️' },
+            '暗影突襲': { type: '主動', damage: 20, desc: '瞬間移動突襲', visual: '🌑' },
+            '隱身': { type: '被動', damage: 0, desc: '短暫隱身', visual: '👻' },
+            '閃電風暴': { type: '主動', damage: 12, desc: '閃電彈幕攻擊', visual: '⚡' },
+            '復活': { type: '被動', damage: 0, desc: '死亡時恢復15%HP', visual: '💚' },
+            '地震': { type: '主動', damage: 10, desc: '全畫面震動落石', visual: '🌍' },
+            '岩石護甲': { type: '被動', damage: 0, desc: '增加護甲', visual: '🪨' },
+            '龍捲風': { type: '主動', damage: 12, desc: '龍捲風彈幕', visual: '🌪️' },
+            '風牆': { type: '被動', damage: 0, desc: '抵擋正面攻擊', visual: '💨' },
+            '召喚骷髏': { type: '主動', damage: 8, desc: '召喚骷髏兵', visual: '💀' },
+            '詛咒': { type: '主動', damage: 25, desc: '直接造成傷害', visual: '🔮' },
+            '蛛網': { type: '主動', damage: 0, desc: '減速50%持續3秒', visual: '🕸️' },
+            '毒素': { type: '主動', damage: 25, desc: '釋放毒素', visual: '🧪' }
+        };
+        var BOSS_TYPES = [
+            { type: 'boss_fire', name: '🔥 火龍', emoji: '🐉', color: '#e74c3c', hp: 200, speed: 1.2, radius: 30,
+                skills: ['火焰吐息', '烈焰護盾'], skillInfo: '🔥 火焰吐息：噴射火焰彈幕 | 🛡️ 烈焰護盾：減少傷害30%' },
+            { type: 'boss_ice', name: '❄️ 冰霜巨人', emoji: '🧊', color: '#3498db', hp: 300, speed: 0.8, radius: 35,
+                skills: ['冰凍光環', '寒冰之牆'], skillInfo: '🧊 冰凍光環：減速50%持續3秒 | ❄️ 寒冰之牆：抵擋攻擊並減速' },
+            { type: 'boss_shadow', name: '🌑 暗影刺客', emoji: '🗡️', color: '#8e44ad', hp: 150, speed: 2.0, radius: 22,
+                skills: ['暗影突襲', '隱身'], skillInfo: '🌑 暗影突襲：瞬間移動攻擊扣20HP | 👻 隱身：短暫躲避攻擊' },
+            { type: 'boss_thunder', name: '⚡ 雷霆鳳凰', emoji: '🦅', color: '#f1c40f', hp: 180, speed: 1.5,
+                radius: 28, skills: ['閃電風暴', '復活'], skillInfo: '⚡ 閃電風暴：閃電彈幕攻擊 | 💚 復活：死亡時恢復15%HP' },
+            { type: 'boss_rock', name: '🪨 岩石泰坦', emoji: '🗿', color: '#7f8c8d', hp: 400, speed: 0.5, radius: 40,
+                skills: ['地震', '岩石護甲'], skillInfo: '🌍 地震：全畫面震動和落石 | 🪨 岩石護甲：減少受到的傷害' },
+            { type: 'boss_storm', name: '🌪️ 風暴領主', emoji: '🌪️', color: '#1abc9c', hp: 220, speed: 1.8,
+                radius: 26, skills: ['龍捲風', '風牆'], skillInfo: '🌪️ 龍捲風：龍捲風彈幕攻擊 | 💨 風牆：抵擋正面攻擊' },
+            { type: 'boss_necromancer', name: '💀 死靈法師', emoji: '🧙', color: '#2c3e50', hp: 160, speed: 1.0,
+                radius: 25, skills: ['召喚骷髏', '詛咒'], skillInfo: '💀 召喚骷髏：召喚骷髏兵攻擊 | 🔮 詛咒：直接造成25傷害' },
+            { type: 'boss_spider', name: '🕷️ 蜘蛛女王', emoji: '🕷️', color: '#6c3483', hp: 250, speed: 1.3,
+                radius: 32, skills: ['蛛網', '毒素'], skillInfo: '🕸️ 蛛網：減速50%持續3秒 | 🧪 毒素：直接造成25傷害' }
+        ];
+
+        // ============================================================
+        // 道具與障礙物定義
+        // ============================================================
+        var ITEM_TYPES = [
+            { type: 'coin', emoji: '🪙', color: '#f1c40f', label: '金幣', score: 50, category: 'positive' },
+            { type: 'heart', emoji: '❤️', color: '#e74c3c', label: '治癒之心', heal: 25, category: 'positive' },
+            { type: 'shield', emoji: '🛡️', color: '#3498db', label: '護盾', category: 'positive' },
+            { type: 'magnet', emoji: '🧲', color: '#e74c3c', label: '磁鐵', category: 'positive' },
+            { type: 'double', emoji: '💎', color: '#9b59b6', label: '雙倍積分', category: 'positive' },
+            { type: 'fever', emoji: '⚡', color: '#e67e22', label: 'FEVER', category: 'positive' },
+            { type: 'star', emoji: '⭐', color: '#f1c40f', label: '星星', score: 100, category: 'positive' },
+            { type: 'wing', emoji: '🪶', color: '#1abc9c', label: '翅膀', speed: 1.5, category: 'positive' },
+            { type: 'clock', emoji: '⏰', color: '#95a5a6', label: '時鐘', extraTime: 30, category: 'positive' },
+            { type: 'key', emoji: '🔑', color: '#f1c40f', label: '鑰匙', unlock: true, category: 'positive' },
+            { type: 'missile', emoji: '🚀', color: '#e74c3c', label: '飛彈', attack: 30, attackType: 'missile',
+                desc: '對Boss造成30傷害', category: 'attack' },
+            { type: 'bomb', emoji: '💣', color: '#e74c3c', label: '炸彈', attack: 50, attackType: 'bomb',
+                desc: '對Boss造成50傷害', category: 'attack' },
+            { type: 'laser', emoji: '🔫', color: '#e74c3c', label: '雷射', attack: 25, attackType: 'laser',
+                desc: '對Boss造成25傷害', category: 'attack' },
+            { type: 'freeze', emoji: '🧊', color: '#3498db', label: '冰凍彈', attack: 0, attackType: 'freeze',
+                desc: '冰凍Boss2秒', category: 'attack' },
+            { type: 'poison', emoji: '🧪', color: '#2ecc71', label: '毒藥', attack: 5, attackType: 'poison',
+                desc: '持續傷害5秒', category: 'attack' },
+            { type: 'thunder', emoji: '⚡', color: '#f1c40f', label: '閃電', attack: 40, attackType: 'thunder',
+                desc: '對Boss造成40傷害', category: 'attack' },
+            { type: 'dart', emoji: '🎯', color: '#e74c3c', label: '飛鏢', attack: 15, attackType: 'dart',
+                desc: '對Boss造成15傷害', category: 'attack' },
+            { type: 'curse', emoji: '💀', color: '#2c3e50', label: '詛咒寶石', category: 'negative' }
+        ];
+        var OBSTACLE_TYPES = [
+            { type: 'cloud', emoji: '⛈️', color: '#34495e', label: '雷暴雲', damage: 25 },
+            { type: 'poison', emoji: '🟣', color: '#8e44ad', label: '毒霧', damage: 40 },
+            { type: 'mud', emoji: '🕸️', color: '#d35400', label: '黏液', damage: 0, slow: true },
+            { type: 'spike', emoji: '🔺', color: '#e74c3c', label: '尖刺', damage: 30 },
+            { type: 'fire', emoji: '🔥', color: '#e67e22', label: '火焰', damage: 35 },
+            { type: 'ice', emoji: '❄️', color: '#3498db', label: '冰塊', damage: 20, slow: true },
+            { type: 'thorn', emoji: '🌿', color: '#27ae60', label: '荊棘', damage: 15 },
+            { type: 'void', emoji: '🌌', color: '#2c3e50', label: '虛空', damage: 50 },
+            { type: 'mirror', emoji: '🪞', color: '#95a5a6', label: '鏡像', damage: 10, mirror: true },
+            { type: 'chain', emoji: '⛓️', color: '#95a5a6', label: '鎖鏈', damage: 20, slow: true }
+        ];
+
+        // ============================================================
+        // 特殊道具與天氣系統
+        // ============================================================
+        var SPECIAL_ITEMS = [
+            { type: 'time_freeze', emoji: '⏸️', label: '時間暫停', duration: 300, effect: 'freeze',
+            desc: '暫停所有敵人移動5秒' },
+            { type: 'companion', emoji: '🪁', label: '夥伴', duration: 600, effect: 'companion',
+            desc: '召喚夥伴自動收集道具10秒' },
+            { type: 'mega_shield', emoji: '🛡️', label: '超級護盾', duration: 180, effect: 'mega_shield',
+                desc: '抵擋3次傷害' },
+            { type: 'score_x5', emoji: '💎', label: '5倍積分', duration: 300, effect: 'x5', desc: '5倍積分持續5秒' },
+            { type: 'invincible', emoji: '🌟', label: '無敵', duration: 120, effect: 'invincible',
+            desc: '無敵狀態2秒' }
+        ];
+        var WEATHER_TYPES = [
+            { type: 'clear', label: '☀️ 晴朗', emoji: '☀️', effect: 'none' },
+            { type: 'rain', label: '🌧️ 下雨', emoji: '🌧️', effect: 'slow' },
+            { type: 'storm', label: '⛈️ 暴風', emoji: '⛈️', effect: 'chaos' },
+            { type: 'fog', label: '🌫️ 濃霧', emoji: '🌫️', effect: 'fog' },
+            { type: 'aurora', label: '🌌 極光', emoji: '🌌', effect: 'bonus' }
+        ];
+        var weatherEffect = { speedMultiplier: 1.0, scoreMultiplier: 1.0, visibility: 1.0, chaos: false, slow: false };
+        var weatherTimer = 0;
+        var weatherType = 'clear';
+
+        function drawWeatherEffect() {
+            if (!gameCtx) return;
+            var w = gameCanvas.width,
+                h = gameCanvas.height;
+            switch (weatherType) {
+                case 'rain':
+                    gameCtx.save();
+                    gameCtx.strokeStyle = 'rgba(100,150,255,0.3)';
+                    gameCtx.lineWidth = 1;
+                    for (var i = 0; i < 80; i++) {
+                        var x = (i * 37 + Date.now() * 0.8) % w;
+                        var y = (i * 53 + Date.now() * 3) % h;
+                        gameCtx.beginPath();
+                        gameCtx.moveTo(x, y);
+                        gameCtx.lineTo(x + 2, y + 12);
+                        gameCtx.stroke();
+                    }
+                    gameCtx.fillStyle = 'rgba(100,150,255,0.05)';
+                    gameCtx.fillRect(0, 0, w, h);
+                    gameCtx.restore();
+                    break;
+                case 'storm':
+                    gameCtx.save();
+                    var flash = Math.sin(Date.now() / 800) > 0.95;
+                    if (flash) {
+                        gameCtx.fillStyle = 'rgba(255,255,200,0.3)';
+                        gameCtx.fillRect(0, 0, w, h);
+                        gameCtx.strokeStyle = 'rgba(255,255,200,0.6)';
+                        gameCtx.lineWidth = 3;
+                        var x2 = Math.random() * w;
+                        var y2 = 0;
+                        gameCtx.beginPath();
+                        gameCtx.moveTo(x2, y2);
+                        for (var j = 0; j < 5; j++) {
+                            x2 += (Math.random() - 0.5) * 40;
+                            y2 += 30 + Math.random() * 30;
+                            gameCtx.lineTo(x2, y2);
+                        }
+                        gameCtx.stroke();
+                    }
+                    gameCtx.fillStyle = 'rgba(50,50,80,0.15)';
+                    for (var k = 0; k < 10; k++) {
+                        var cx = (k * 100 + Date.now() * 0.1) % w;
+                        var cy = 50 + Math.sin(k * 0.7 + Date.now() * 0.0005) * 30;
+                        gameCtx.beginPath();
+                        gameCtx.arc(cx, cy, 40 + Math.sin(k + Date.now() * 0.001) * 10, 0, Math.PI * 2);
+                        gameCtx.fill();
+                    }
+                    gameCtx.restore();
+                    break;
+                case 'fog':
+                    gameCtx.save();
+                    var fogAlpha = 0.15 + Math.sin(Date.now() / 3000) * 0.05;
+                    gameCtx.fillStyle = 'rgba(200,200,210,' + fogAlpha + ')';
+                    gameCtx.fillRect(0, 0, w, h);
+                    for (var l = 0; l < 5; l++) {
+                        var x3 = (l * 200 + Date.now() * 0.05) % (w + 100) - 50;
+                        var y3 = 50 + l * 80 + Math.sin(l * 0.5 + Date.now() * 0.001) * 20;
+                        var grad = gameCtx.createRadialGradient(x3, y3, 10, x3, y3, 100);
+                        grad.addColorStop(0, 'rgba(220,220,230,0.1)');
+                        grad.addColorStop(1, 'rgba(220,220,230,0)');
+                        gameCtx.fillStyle = grad;
+                        gameCtx.beginPath();
+                        gameCtx.arc(x3, y3, 100, 0, Math.PI * 2);
+                        gameCtx.fill();
+                    }
+                    gameCtx.restore();
+                    break;
+                case 'aurora':
+                    gameCtx.save();
+                    var time = Date.now() / 2000;
+                    for (var m = 0; m < 3; m++) {
+                        var yOffset = m * 60 + Math.sin(time + m * 2) * 20;
+                        var grad2 = gameCtx.createLinearGradient(0, yOffset, w, yOffset + 40);
+                        var colors = [
+                            'rgba(0,255,100,' + (0.08 + Math.sin(time + m) * 0.04) + ')',
+                            'rgba(0,100,255,' + (0.08 + Math.sin(time + 1 + m) * 0.04) + ')',
+                            'rgba(200,0,255,' + (0.08 + Math.sin(time + 2 + m) * 0.04) + ')',
+                            'rgba(0,255,100,' + (0.08 + Math.sin(time + 3 + m) * 0.04) + ')'
+                        ];
+                        grad2.addColorStop(0, colors[0]);
+                        grad2.addColorStop(0.3, colors[1]);
+                        grad2.addColorStop(0.6, colors[2]);
+                        grad2.addColorStop(1, colors[3]);
+                        gameCtx.fillStyle = grad2;
+                        gameCtx.beginPath();
+                        for (var x4 = 0; x4 < w; x4 += 2) {
+                            var y4 = yOffset + Math.sin(x4 * 0.01 + time + m * 0.5) * 30 + Math.sin(x4 * 0.02 +
+                                time * 0.5) * 15;
+                            if (x4 === 0) gameCtx.moveTo(x4, y4);
+                            else gameCtx.lineTo(x4, y4);
+                        }
+                        gameCtx.lineTo(w, yOffset + 60);
+                        gameCtx.lineTo(0, yOffset + 60);
+                        gameCtx.closePath();
+                        gameCtx.fill();
+                    }
+                    for (var n = 0; n < 30; n++) {
+                        var x5 = (n * 137 + 50) % w;
+                        var y5 = (n * 251 + 30) % (h * 0.5);
+                        var size = 1 + Math.sin(Date.now() / 500 + n) * 0.5;
+                        gameCtx.fillStyle = 'rgba(255,255,255,' + (0.3 + Math.sin(Date.now() / 300 + n) * 0.2) +
+                        ')';
+                        gameCtx.beginPath();
+                        gameCtx.arc(x5, y5, size, 0, Math.PI * 2);
+                        gameCtx.fill();
+                    }
+                    gameCtx.restore();
+                    break;
+                case 'clear':
+                default:
+                    gameCtx.save();
+                    var grad3 = gameCtx.createRadialGradient(w * 0.8, 20, 10, w * 0.8, 20, 300);
+                    grad3.addColorStop(0, 'rgba(255,200,100,0.05)');
+                    grad3.addColorStop(1, 'rgba(255,200,100,0)');
+                    gameCtx.fillStyle = grad3;
+                    gameCtx.fillRect(0, 0, w, h);
+                    gameCtx.restore();
+                    break;
+            }
+        }
+
+        function updateWeather() {
+            weatherTimer--;
+            if (weatherTimer <= 0) {
+                var newWeather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+                weatherType = newWeather.type;
+                weatherTimer = 300 + Math.random() * 300;
+                switch (weatherType) {
+                    case 'clear':
+                        weatherEffect = { speedMultiplier: 1.0, scoreMultiplier: 1.0, visibility: 1.0, chaos: false,
+                            slow: false };
+                        break;
+                    case 'rain':
+                        weatherEffect = { speedMultiplier: 0.8, scoreMultiplier: 1.2, visibility: 0.9, chaos: false,
+                            slow: true };
+                        showNotification('🌧️ 下雨：敵人減速20%，得分+20%');
+                        break;
+                    case 'storm':
+                        weatherEffect = { speedMultiplier: 1.3, scoreMultiplier: 1.5, visibility: 0.7, chaos: true,
+                            slow: false };
+                        showNotification('⛈️ 暴風：敵人加速30%，得分+50%！');
+                        break;
+                    case 'fog':
+                        weatherEffect = { speedMultiplier: 1.0, scoreMultiplier: 1.3, visibility: 0.4, chaos: false,
+                            slow: false };
+                        showNotification('🌫️ 濃霧：能見度降低，得分+30%');
+                        break;
+                    case 'aurora':
+                        weatherEffect = { speedMultiplier: 0.9, scoreMultiplier: 2.0, visibility: 1.0, chaos: false,
+                            slow: false };
+                        showNotification('🌌 極光：得分2倍！');
+                        break;
+                }
+                var weatherLabel = document.getElementById('weatherLabel');
+                var weatherLabelText = document.getElementById('weatherLabelText');
+                var weatherDisplay = document.getElementById('weatherDisplay');
+                if (weatherLabel) {
+                    var info = null;
+                    for (var i = 0; i < WEATHER_TYPES.length; i++) {
+                        if (WEATHER_TYPES[i].type === weatherType) { info = WEATHER_TYPES[i]; break; }
+                    }
+                    weatherLabel.textContent = info ? info.emoji : '☀️';
+                }
+                if (weatherLabelText) {
+                    var info2 = null;
+                    for (var j = 0; j < WEATHER_TYPES.length; j++) {
+                        if (WEATHER_TYPES[j].type === weatherType) { info2 = WEATHER_TYPES[j]; break; }
+                    }
+                    weatherLabelText.textContent = info2 ? info2.label : '晴朗';
+                }
+                if (weatherDisplay) {
+                    var colors = { clear: '#f1c40f', rain: '#3498db', storm: '#e74c3c', fog: '#95a5a6',
+                        aurora: '#8e44ad' };
+                    weatherDisplay.style.color = colors[weatherType] || '#8b949e';
+                }
+                playAudioEffect('weather');
+            }
+        }
+
+        // ============================================================
+        // 完整遊戲循環
         // ============================================================
         var lastFrameTime = 0;
         var TARGET_FPS = 60;
@@ -3892,99 +4309,485 @@
             // 清除畫面
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            // 如果有遊戲實例且活躍，繪製遊戲內容
+            // === 檢查是否有遊戲實例 ===
             if (currentGame && GAME_STATE.isGameActive && !isGamePaused) {
+                // 繪製當前遊戲
                 currentGame.draw(gameCtx, gameCanvas.width, gameCanvas.height);
                 // 更新 HUD
                 document.getElementById('gameScore').innerText = GAME_STATE.score;
                 document.getElementById('gameLives').innerText = GAME_STATE.lives;
                 document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
             } else {
-                // === 飛行員模式（原版遊戲） ===
-                // 背景
-                gameCtx.fillStyle = '#0d1117';
-                gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-                // 星星
-                gameCtx.fillStyle = 'rgba(255,255,255,0.3)';
-                for (var i = 0; i < stars.length; i++) {
-                    var s = stars[i];
-                    s.x -= s.baseSpeed;
-                    if (s.x < 0) s.x = gameCanvas.width;
-                    gameCtx.fillRect(s.x, s.y, s.size, s.size);
-                }
-
-                // 呼吸控制飛船
-                if (isMeasuring && !isGamePaused) {
-                    var flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-                    var targetY = gameCanvas.height / 2 - (flow * 2.2);
-                    targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
-                    var dy = targetY - rocket.y;
-                    rocket.y += dy * 0.1;
-                    rocket.angle = Math.atan2(dy, 25);
-                }
-
-                // 繪製飛船
-                gameCtx.save();
-                gameCtx.translate(rocket.x, rocket.y);
-                gameCtx.rotate(rocket.angle);
-                gameCtx.fillStyle = '#ecf0f1';
-                gameCtx.beginPath();
-                gameCtx.moveTo(20, 0);
-                gameCtx.lineTo(-12, -10);
-                gameCtx.lineTo(-8, 0);
-                gameCtx.lineTo(-12, 10);
-                gameCtx.closePath();
-                gameCtx.fill();
-                gameCtx.fillStyle = '#3498db';
-                gameCtx.beginPath();
-                gameCtx.moveTo(-4, -6);
-                gameCtx.lineTo(-14, -14);
-                gameCtx.lineTo(-8, 0);
-                gameCtx.lineTo(-14, 14);
-                gameCtx.lineTo(-4, 6);
-                gameCtx.closePath();
-                gameCtx.fill();
-                gameCtx.restore();
-
-                // HUD
-                document.getElementById('gameScore').innerText = gameScore;
-                document.getElementById('gameLives').innerText = GAME_STATE.lives;
-                document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
-
-                // 提示文字
-                if (!isMeasuring) {
-                    gameCtx.fillStyle = '#8b949e';
-                    gameCtx.font = '24px sans-serif';
-                    gameCtx.textAlign = 'center';
-                    gameCtx.textBaseline = 'middle';
-                    gameCtx.fillText('按「Start」開始遊戲', gameCanvas.width / 2, gameCanvas.height / 2 - 30);
-                }
+                // === 飛行員模式（完整原版遊戲） ===
+                drawFlightGame();
             }
 
-            // 粒子特效
-            for (var p = 0; p < particles.length; p++) {
+            // 粒子特效（獨立於遊戲）
+            for (var p = particles.length - 1; p >= 0; p--) {
                 var pt = particles[p];
                 pt.x += pt.vx || 0;
                 pt.y += pt.vy || 0;
                 pt.life -= 0.02;
-                if (pt.life > 0) {
-                    gameCtx.beginPath();
-                    gameCtx.arc(pt.x, pt.y, Math.max(0.5, pt.size * pt.life), 0, Math.PI * 2);
-                    gameCtx.fillStyle = pt.color || '#fff';
-                    gameCtx.globalAlpha = Math.max(0, pt.life);
-                    gameCtx.fill();
+                if (pt.life <= 0) {
+                    particles.splice(p, 1);
+                    continue;
                 }
+                gameCtx.beginPath();
+                gameCtx.arc(pt.x, pt.y, Math.max(0.5, pt.size * pt.life), 0, Math.PI * 2);
+                gameCtx.fillStyle = pt.color || '#fff';
+                gameCtx.globalAlpha = Math.max(0, pt.life);
+                gameCtx.fill();
             }
             gameCtx.globalAlpha = 1.0;
-            particles = particles.filter(function(p) { return p.life > 0; });
 
             gameAnimationId = requestAnimationFrame(gameLoop);
         }
 
+        function drawFlightGame() {
+            // === 飛行員模式（原版遊戲完整功能） ===
+            // 背景
+            if (customSkins.bg) {
+                try {
+                    var img = new Image();
+                    img.src = customSkins.bg;
+                    if (img.complete && img.naturalWidth > 0) {
+                        gameCtx.drawImage(img, 0, 0, gameCanvas.width, gameCanvas.height);
+                    } else {
+                        gameCtx.fillStyle = '#0d1117';
+                        gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                    }
+                } catch (e) {
+                    gameCtx.fillStyle = '#0d1117';
+                    gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                }
+            } else {
+                gameCtx.fillStyle = '#0d1117';
+                gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            }
+
+            // 天氣效果
+            drawWeatherEffect();
+
+            // 星星
+            gameCtx.fillStyle = 'rgba(255,255,255,0.3)';
+            for (var i = 0; i < stars.length; i++) {
+                var s = stars[i];
+                s.x -= s.baseSpeed;
+                if (s.x < 0) s.x = gameCanvas.width;
+                gameCtx.fillRect(s.x, s.y, s.size, s.size);
+            }
+
+            // 呼吸控制飛船
+            if (isMeasuring && !isGamePaused && !isResting) {
+                var flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+                var diff = document.getElementById('gameDifficultySelect') ? document.getElementById(
+                    'gameDifficultySelect').value : 'normal';
+                var sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard' ? 0.8 : 1.2);
+                var targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
+                targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
+                var dy = targetY - rocket.y;
+                rocket.y += dy * 0.1;
+                rocket.angle = Math.atan2(dy, 25);
+            }
+
+            // 繪製飛船
+            gameCtx.save();
+            gameCtx.translate(rocket.x, rocket.y);
+            gameCtx.rotate(rocket.angle);
+
+            if (customSkins.rocket) {
+                try {
+                    var img2 = new Image();
+                    img2.src = customSkins.rocket;
+                    if (img2.complete && img2.naturalWidth > 0) {
+                        gameCtx.drawImage(img2, -22, -22, 44, 44);
+                        gameCtx.restore();
+                        // 更新 HUD
+                        document.getElementById('gameScore').innerText = gameScore;
+                        document.getElementById('gameLives').innerText = GAME_STATE.lives;
+                        document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // 飛船本體
+            gameCtx.fillStyle = '#ecf0f1';
+            gameCtx.beginPath();
+            gameCtx.moveTo(20, 0);
+            gameCtx.lineTo(-12, -10);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-12, 10);
+            gameCtx.closePath();
+            gameCtx.fill();
+            gameCtx.fillStyle = '#3498db';
+            gameCtx.beginPath();
+            gameCtx.moveTo(-4, -6);
+            gameCtx.lineTo(-14, -14);
+            gameCtx.lineTo(-8, 0);
+            gameCtx.lineTo(-14, 14);
+            gameCtx.lineTo(-4, 6);
+            gameCtx.closePath();
+            gameCtx.fill();
+            gameCtx.restore();
+
+            // 更新 HUD
+            document.getElementById('gameScore').innerText = gameScore;
+            document.getElementById('gameLives').innerText = GAME_STATE.lives;
+            document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
+
+            // 提示文字
+            if (!isMeasuring) {
+                gameCtx.fillStyle = '#8b949e';
+                gameCtx.font = '24px sans-serif';
+                gameCtx.textAlign = 'center';
+                gameCtx.textBaseline = 'middle';
+                gameCtx.fillText('按「Start」開始遊戲', gameCanvas.width / 2, gameCanvas.height / 2 - 30);
+            }
+        }
+
         // ============================================================
-        // 其餘功能（簡化版，保留核心）
+        // 後端整合
         // ============================================================
+        var playerProfile = {
+            name: '',
+            totalScore: 0,
+            gamesPlayed: 0,
+            achievements: [],
+            stats: { totalBosses: 0, totalItems: 0, maxCombo: 0, bestScore: 0, perfectGames: 0 }
+        };
+
+        async function sendVercelLog(message, level, data, type) {
+            try {
+                var response = await fetch('/api/log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, level: level || 'INFO', data: data, type: type })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('發送日誌失敗:', error);
+            }
+        }
+
+        async function getStats() {
+            try {
+                var response = await fetch('/api/log/stats');
+                return await response.json();
+            } catch (error) {
+                console.error('獲取統計失敗:', error);
+                return null;
+            }
+        }
+
+        async function submitScore(playerName, score, level, mode) {
+            try {
+                var response = await fetch('/api/log/leaderboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ playerName: playerName, score: score, level: level, gameMode: mode })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('提交分數失敗:', error);
+            }
+        }
+
+        async function getLeaderboard(limit) {
+            try {
+                var response = await fetch('/api/log/leaderboard?limit=' + (limit || 10));
+                return await response.json();
+            } catch (error) {
+                console.error('獲取排行榜失敗:', error);
+                return { leaderboard: [], total: 0 };
+            }
+        }
+
+        async function getAchievements() {
+            try {
+                var response = await fetch('/api/log/achievements');
+                return await response.json();
+            } catch (error) {
+                console.error('獲取成就失敗:', error);
+                return { achievements: {} };
+            }
+        }
+
+        async function updateChallenge(challengeId, progress) {
+            try {
+                var response = await fetch('/api/log/challenges', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challengeId: challengeId, progress: progress })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('更新挑戰失敗:', error);
+            }
+        }
+
+        // ============================================================
+        // 遊戲模式與輔助功能
+        // ============================================================
+        var dailyChallengeTimer = 0;
+        var challengeActive = false;
+        var challengeData = {};
+        var comboMultiplier = 1;
+        var currentComboStreak = 0;
+        var maxComboStreak = 0;
+        var timeFreezeActive = false;
+        var timeFreezeTimer = 0;
+        var companionActive = false;
+        var companionType = 'none';
+        var companionTimer = 0;
+        var GAME_MODES = { STANDARD: 'standard', HARDCORE: 'hardcore', SURVIVAL: 'survival',
+        CHALLENGE: 'challenge' };
+        var currentGameMode = GAME_MODES.STANDARD;
+
+        function spawnSpecialItem() {
+            if (Math.random() > 0.008) return;
+            var item = SPECIAL_ITEMS[Math.floor(Math.random() * SPECIAL_ITEMS.length)];
+            collectibles.push({
+                type: item.type,
+                emoji: item.emoji,
+                label: item.label,
+                duration: item.duration,
+                effect: item.effect,
+                desc: item.desc,
+                x: gameCanvas.width + 20,
+                y: Math.random() * (gameCanvas.height - 100) + 50,
+                radius: 16,
+                baseSpeed: 2.5,
+                collected: false,
+                isSpecial: true
+            });
+        }
+
+        function handleSpecialItem(item) {
+            switch (item.effect) {
+                case 'freeze':
+                    timeFreezeActive = true;
+                    timeFreezeTimer = item.duration;
+                    playAudioEffect('special');
+                    showNotification('⏸️ 時間暫停！');
+                    break;
+                case 'companion':
+                    companionActive = true;
+                    companionTimer = item.duration;
+                    companionType = 'drone';
+                    playAudioEffect('special');
+                    showNotification('🪁 夥伴加入！');
+                    break;
+                case 'mega_shield':
+                    hasShield = true;
+                    shieldCharges = 3;
+                    document.getElementById('shieldBadge').style.display = 'inline';
+                    document.getElementById('shieldBadge').textContent = '🛡️ x3';
+                    playAudioEffect('special');
+                    showNotification('🛡️ 超級護盾啟動！');
+                    break;
+                case 'x5':
+                    doubleScoreTimer = item.duration;
+                    document.getElementById('doubleBadge').style.display = 'inline';
+                    document.getElementById('doubleBadge').textContent = '💎 5x';
+                    playAudioEffect('special');
+                    showNotification('💎 5倍積分！');
+                    break;
+                case 'invincible':
+                    invincibleActive = true;
+                    invincibleTimer = item.duration;
+                    playAudioEffect('special');
+                    showNotification('🌟 無敵模式！');
+                    break;
+            }
+        }
+
+        function updateComboSystem() {
+            if (gameCombo > 0) {
+                currentComboStreak = gameCombo;
+                maxComboStreak = Math.max(maxComboStreak, currentComboStreak);
+                if (gameCombo >= 10) comboMultiplier = 1.5;
+                if (gameCombo >= 25) comboMultiplier = 2.0;
+                if (gameCombo >= 50) comboMultiplier = 3.0;
+                if (gameCombo >= 100) comboMultiplier = 5.0;
+                if (gameCombo % 10 === 0 && gameCombo > 0) {
+                    showNotification('🔥 ' + gameCombo + ' Combo！x' + comboMultiplier);
+                    playAudioEffect('buff');
+                }
+            } else {
+                comboMultiplier = 1;
+                currentComboStreak = 0;
+            }
+        }
+
+        function spawnBossLoot(boss) {
+            for (var i = 0; i < 5; i++) {
+                (function(index) {
+                    setTimeout(function() {
+                        var item = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+                        collectibles.push({
+                            type: item.type,
+                            emoji: item.emoji,
+                            color: item.color,
+                            label: item.label,
+                            score: item.score,
+                            category: item.category,
+                            x: boss.x + (Math.random() - 0.5) * 100,
+                            y: boss.y + (Math.random() - 0.5) * 100,
+                            radius: 12,
+                            baseSpeed: 1,
+                            collected: false
+                        });
+                    }, index * 200);
+                })(i);
+            }
+            var bonus = 100 + Math.floor(Math.random() * 200);
+            gameScore += bonus;
+            showNotification('🎊 擊敗 Boss！獎勵 ' + bonus + ' 分！');
+        }
+
+        function checkChallenges() {
+            if (challengeActive) {
+                var progress = Math.min(EXP ? EXP.currentLevel || 0 : 0, 5);
+                updateChallenge('daily_1', progress);
+            }
+            var speedSelect = document.getElementById('gameSpeedSelect');
+            if (speedSelect && parseFloat(speedSelect.value) >= 2.0) {
+                var elapsed = (Date.now() - sessionStartTime) / 1000;
+                updateChallenge('speed_demon', Math.min(elapsed, 60));
+            }
+        }
+
+        function createModeSelector() {
+            var panel = document.querySelector('.control-panel');
+            if (!panel) return;
+            var modeHTML =
+                '<label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">模式:<select id="gameModeSelect" onchange="switchGameMode(this.value)"><option value="standard">🎯 標準</option><option value="hardcore">💀 硬核</option><option value="survival">🏃 生存</option><option value="challenge">🏆 挑戰</option></select></label><button class="btn teal-btn" onclick="showStats()" style="padding:4px 12px;font-size:12px;">📊 統計</button><button class="btn orange-btn" onclick="showLeaderboard()" style="padding:4px 12px;font-size:12px;">🏆 排行榜</button><button class="btn purple-btn" onclick="showAchievements()" style="padding:4px 12px;font-size:12px;">🏅 成就</button>';
+            panel.insertAdjacentHTML('beforeend', modeHTML);
+        }
+
+        function switchGameMode(mode) {
+            currentGameMode = mode;
+            showNotification('🎮 切換至 ' + mode + ' 模式');
+            switch (mode) {
+                case 'hardcore':
+                    playerHP = 1;
+                    document.getElementById('hpFill').style.width = '1%';
+                    showNotification('💀 硬核模式：一擊必殺！');
+                    break;
+                case 'survival':
+                    showNotification('🏃 生存模式：盡可能活久一點！');
+                    break;
+                case 'challenge':
+                    challengeActive = true;
+                    showNotification('🏆 挑戰模式已啟動！');
+                    break;
+                default:
+                    playerHP = 100;
+                    challengeActive = false;
+            }
+        }
+
+        async function showStats() {
+            var stats = await getStats();
+            if (!stats) { showNotification('❌ 無法獲取統計資料'); return; }
+            var msg =
+                '📊 統計資料：\n總遊戲次數: ' + stats.totalGames + '\n總分數: ' + stats.totalScores + '\n最高分: ' + stats.highScore +
+                '\n平均分: ' + stats.averageScore + '\n擊敗 Boss: ' + stats.totalBossesDefeated + '\n收集道具: ' + stats
+                .totalItemsCollected;
+            alert(msg);
+        }
+
+        async function showLeaderboard() {
+            var data = await getLeaderboard(10);
+            if (!data) { showNotification('❌ 無法獲取排行榜'); return; }
+            var msg = '🏆 排行榜\n' + '═'.repeat(30) + '\n';
+            if (data.leaderboard.length === 0) {
+                msg += '尚無記錄，快來挑戰吧！';
+            } else {
+                for (var i = 0; i < data.leaderboard.length; i++) {
+                    var entry = data.leaderboard[i];
+                    var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+                    msg += medal + ' ' + entry.playerName + ' - ' + entry.score + '分 (Lv.' + entry.level + ')\n';
+                }
+            }
+            alert(msg);
+        }
+
+        async function showAchievements() {
+            var data = await getAchievements();
+            if (!data) { showNotification('❌ 無法獲取成就'); return; }
+            var msg = '🏅 成就系統\n' + '═'.repeat(30) + '\n';
+            var achievements = data.achievements || {};
+            var unlocked = 0,
+                total = 0;
+            for (var key in achievements) {
+                if (achievements.hasOwnProperty(key)) {
+                    var ach = achievements[key];
+                    total++;
+                    if (playerProfile.achievements.indexOf(key) !== -1) {
+                        unlocked++;
+                        msg += '✅ ' + ach.name + ' - ' + ach.description + '\n';
+                    } else {
+                        msg += '❌ ' + ach.name + ' - ' + ach.description + '\n';
+                    }
+                }
+            }
+            msg += '\n' + '═'.repeat(30);
+            msg += '\n已解鎖: ' + unlocked + '/' + total;
+            alert(msg);
+        }
+
+        function drawCompanion() {
+            if (!companionActive || !gameCtx) return;
+            companionTimer--;
+            if (companionTimer <= 0) { companionActive = false;
+                companionType = 'none'; return; }
+            var cx = rocket.x - 30;
+            var cy = rocket.y + Math.sin(Date.now() / 500) * 10;
+            gameCtx.save();
+            gameCtx.translate(cx, cy);
+            gameCtx.shadowColor = '#00d2d3';
+            gameCtx.shadowBlur = 20;
+            gameCtx.fillStyle = '#00d2d3';
+            gameCtx.font = '24px sans-serif';
+            gameCtx.textAlign = 'center';
+            gameCtx.textBaseline = 'middle';
+            gameCtx.fillText('🪁', 0, 0);
+            gameCtx.restore();
+            for (var i = 0; i < collectibles.length; i++) {
+                var c = collectibles[i];
+                var dist = Math.hypot(c.x - cx, c.y - cy);
+                if (dist < c.radius + 20 && !c.collected) {
+                    c.x += (cx - c.x) * 0.1;
+                    c.y += (cy - c.y) * 0.1;
+                    if (dist < 15) {
+                        c.collected = true;
+                        gameScore += 10;
+                        playAudioEffect('coin');
+                    }
+                }
+            }
+        }
+
+        function applyTimeFreeze() {
+            if (!timeFreezeActive) return;
+            timeFreezeTimer--;
+            if (timeFreezeTimer <= 0) { timeFreezeActive = false;
+                showNotification('⏸️ 時間暫停結束'); return; }
+            for (var i = 0; i < obstacles.length; i++) {
+                obstacles[i].x -= 0.1;
+            }
+            for (var j = 0; j < collectibles.length; j++) {
+                collectibles[j].x -= 0.1;
+            }
+            if (bossActive && currentBoss) { currentBoss.x -= 0.05; }
+            gameCtx.save();
+            gameCtx.fillStyle = 'rgba(100,200,255,0.05)';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.restore();
+        }
+
         function showNotification(msg) {
             var status = document.getElementById('status');
             if (status) {
@@ -3998,66 +4801,8 @@
             }
         }
 
-        function restartGameEngine() {
-            stopGameEngine();
-            isGameRunning = true;
-            isGamePaused = false;
-            isGameOver = false;
-            GAME_STATE.lives = 3;
-            GAME_STATE.score = 0;
-            gameScore = 0;
-            playerHP = 100;
-            rocket.y = gameCanvas.height / 2;
-            rocket.angle = 0;
-            sessionStartTime = Date.now();
-            document.getElementById('gamePauseBtn').innerText = "暫停";
-            document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
-            document.getElementById('restScreen').style.display = 'none';
-            document.getElementById('gameOverScreen').style.display = 'none';
-            document.getElementById('hpFill').style.width = '100%';
-            if (isMeasuring) {
-                document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-                document.getElementById('hintBreath').style.color = '#2ecc71';
-            } else {
-                document.getElementById('hintBreath').textContent = '等待啟動';
-                document.getElementById('hintBreath').style.color = '';
-            }
-            document.getElementById('hintKeyboard').style.color = '';
-            document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
-            document.getElementById('hintMouse').style.color = '';
-            document.getElementById('hintMouse').textContent = '移動';
-            document.getElementById('controlGuide').classList.remove('show');
-            document.getElementById('helpBtn').textContent = '❓';
-            document.getElementById('helpBtn').classList.remove('active');
-            updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
-            gameLoop();
-        }
-
-        function toggleGamePause() {
-            if (!isGameRunning || isGameOver) return;
-            isGamePaused = !isGamePaused;
-            var btn = document.getElementById('gamePauseBtn');
-            if (isGamePaused) {
-                btn.innerText = "繼續";
-                btn.style.backgroundColor = "#f39c12";
-                stopBGM();
-            } else {
-                btn.innerText = "暫停";
-                btn.style.backgroundColor = "#27ae60";
-                if (isMeasuring) startBGM();
-            }
-        }
-
-        function stopGameEngine() {
-            isGameRunning = false;
-            if (gameAnimationId) {
-                cancelAnimationFrame(gameAnimationId);
-                gameAnimationId = null;
-            }
-        }
-
         // ============================================================
-        // 自訂外觀與自創內容（簡化版）
+        // 自訂外觀系統（完整版）
         // ============================================================
         var ALL_SKIN_ELEMENTS = [
             { id: 'bg', label: '🌌 背景', defaultEmoji: '🌌' },
@@ -4078,7 +4823,12 @@
             { id: 'freeze', label: '🧊 冰凍彈', defaultEmoji: '🧊' },
             { id: 'poison', label: '🧪 毒藥', defaultEmoji: '🧪' },
             { id: 'thunder', label: '⚡ 閃電', defaultEmoji: '⚡' },
-            { id: 'dart', label: '🎯 飛鏢', defaultEmoji: '🎯' }
+            { id: 'dart', label: '🎯 飛鏢', defaultEmoji: '🎯' },
+            { id: 'time_freeze', label: '⏸️ 時間暫停', defaultEmoji: '⏸️' },
+            { id: 'companion', label: '🪁 夥伴', defaultEmoji: '🪁' },
+            { id: 'mega_shield', label: '🛡️ 超級護盾', defaultEmoji: '🛡️' },
+            { id: 'score_x5', label: '💎 5倍積分', defaultEmoji: '💎' },
+            { id: 'invincible', label: '🌟 無敵', defaultEmoji: '🌟' }
         ];
         var customSkins = {};
         for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
@@ -4173,6 +4923,40 @@
             updateStatus('✅ 所有外觀已重置');
         }
 
+        function exportSkins() {
+            var data = JSON.stringify(customSkins);
+            var blob = new Blob([data], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '外觀設定_' + Date.now() + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function handleSkinImport(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var parsed = JSON.parse(e.target.result);
+                    for (var key in parsed) {
+                        if (parsed.hasOwnProperty(key) && customSkins.hasOwnProperty(key) && parsed[key]) {
+                            customSkins[key] = parsed[key];
+                            updateSkinPreviewAll(key);
+                        }
+                    }
+                    saveSkinsAll();
+                    updateStatus('✅ 外觀設定匯入成功！');
+                } catch (err) {
+                    alert('❌ 外觀設定檔格式錯誤：' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
         function toggleSkinEditor() {
             var editor = document.getElementById('skinEditor');
             if (editor) {
@@ -4182,7 +4966,7 @@
         }
 
         // ============================================================
-        // 自創內容（簡化版）
+        // 自創內容系統
         // ============================================================
         var customContent = { items: [], obstacles: [], bosses: [] };
 
@@ -4359,6 +5143,7 @@
                 initStars();
             }
         }
+        window.addEventListener('resize', resizeGameCanvas);
 
         function initStars() {
             var count = window.__qualitySettings ? window.__qualitySettings.particles : 50;
@@ -4370,101 +5155,456 @@
                         .random() * 2 + 0.5 });
             }
         }
-        window.addEventListener('resize', resizeGameCanvas);
 
-        // ============================================================
-        // 圖鑑系統（簡化版）
-        // ============================================================
-        function buildIntroTabs() {
-            var tabs = document.getElementById('introTabs');
-            if (!tabs) return;
-            tabs.innerHTML = '';
-            var games = ['flight', 'artist', 'candle', 'mage', 'dandelion', 'crystal'];
-            var labels = ['✈️ 飛行員', '🎨 風之繪師', '🕯️ 燭光遠征', '⚔️ 魔導士破魔', '🌿 蒲公英快遞', '💎 玻璃心大師'];
-            for (var i = 0; i < games.length; i++) {
-                var btn = document.createElement('button');
-                btn.className = 'game-tab-btn' + (i === 0 ? ' active' : '');
-                btn.textContent = labels[i];
-                btn.onclick = (function(game) {
-                    return function() {
-                        var btns = document.querySelectorAll('.game-tab-btn');
-                        for (var j = 0; j < btns.length; j++) {
-                            btns[j].classList.remove('active');
-                        }
-                        this.classList.add('active');
-                        showIntroTab(game);
-                    };
-                })(games[i]);
-                tabs.appendChild(btn);
+        function restartGameEngine() {
+            stopGameEngine();
+            isGameRunning = true;
+            isGamePaused = false;
+            isGameOver = false;
+            playerHP = 100;
+            gameScore = 0;
+            gameCombo = 0;
+            GAME_STATE.lives = 3;
+            GAME_STATE.score = 0;
+            hasShield = false;
+            feverTimer = 0;
+            magnetTimer = 0;
+            doubleScoreTimer = 0;
+            slowDebuffTimer = 0;
+            poisonTimer = 0;
+            freezeTimer = 0;
+            shieldCharges = 0;
+            invincibleActive = false;
+            invincibleTimer = 0;
+            particles = [];
+            collectibles = [];
+            obstacles = [];
+            bgmStep = 0;
+            bossActive = false;
+            currentBoss = null;
+            bossSkillWarning = null;
+            bossSkillType = null;
+            keyboardY = null;
+            mouseY = null;
+            useKeyboardControl = false;
+            useMouseControl = false;
+            rocket.y = gameCanvas.height / 2;
+            rocket.angle = 0;
+            sessionStartTime = Date.now();
+            document.getElementById('gamePauseBtn').innerText = "暫停";
+            document.getElementById('gamePauseBtn').style.backgroundColor = "#27ae60";
+            document.getElementById('restScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('hpFill').style.width = '100%';
+            document.getElementById('feverBadge').style.display = 'none';
+            document.getElementById('shieldBadge').style.display = 'none';
+            document.getElementById('magnetBadge').style.display = 'none';
+            document.getElementById('doubleBadge').style.display = 'none';
+            document.getElementById('slowBadge').style.display = 'none';
+            document.getElementById('bossWarning').style.display = 'none';
+            document.getElementById('skillWarning').style.display = 'none';
+            document.getElementById('bossWarningText').style.display = 'none';
+            if (isMeasuring) {
+                document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+                document.getElementById('hintBreath').style.color = '#2ecc71';
+            } else {
+                document.getElementById('hintBreath').textContent = '等待啟動';
+                document.getElementById('hintBreath').style.color = '';
+            }
+            document.getElementById('hintKeyboard').style.color = '';
+            document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+            document.getElementById('hintMouse').style.color = '';
+            document.getElementById('hintMouse').textContent = '移動';
+            document.getElementById('controlGuide').classList.remove('show');
+            document.getElementById('helpBtn').textContent = '❓';
+            document.getElementById('helpBtn').classList.remove('active');
+            updateGameMeasurementState(typeof isMeasuring !== 'undefined' ? isMeasuring : false);
+            gameLoop();
+        }
+
+        function toggleGamePause() {
+            if (!isGameRunning || isGameOver) return;
+            isGamePaused = !isGamePaused;
+            var btn = document.getElementById('gamePauseBtn');
+            if (isGamePaused) {
+                btn.innerText = "繼續";
+                btn.style.backgroundColor = "#f39c12";
+                stopBGM();
+            } else {
+                btn.innerText = "暫停";
+                btn.style.backgroundColor = "#27ae60";
+                if (isMeasuring) startBGM();
             }
         }
 
-        function showIntroTab(gameName) {
-            var container = document.getElementById('introContent');
-            if (!container) return;
-            var data = [];
-            if (gameName === 'flight') {
-                data = [
-                    { cat: '正面道具', items: ['🪙 金幣', '❤️ 治癒之心', '🛡️ 護盾', '🧲 磁鐵', '💎 雙倍積分', '⚡ FEVER',
-                            '⭐ 星星', '🪶 翅膀', '⏰ 時鐘', '🔑 鑰匙'
-                        ] },
-                    { cat: '攻擊道具', items: ['🚀 飛彈', '💣 炸彈', '🔫 雷射', '🧊 冰凍彈', '🧪 毒藥', '⚡ 閃電', '🎯 飛鏢'] },
-                    { cat: '障礙物', items: ['⛈️ 雷暴雲', '🟣 毒霧', '🕸️ 黏液', '🔺 尖刺', '🔥 火焰', '❄️ 冰塊', '🌿 荊棘',
-                            '🌌 虛空', '🪞 鏡像', '⛓️ 鎖鏈'
-                        ] },
-                    { cat: 'Boss', items: ['🐉 火龍', '🧊 冰霜巨人', '🗡️ 暗影刺客', '🦅 雷霆鳳凰', '🗿 岩石泰坦',
-                            '🌪️ 風暴領主', '🧙 死靈法師', '🕷️ 蜘蛛女王'
-                        ] }
-                ];
-            } else if (gameName === 'artist') {
-                data = [
-                    { cat: '🎨 專屬道具', items: ['🎨 調色盤', '🖌️ 細筆', '🌈 彩虹', '🧹 橡皮擦'] },
-                    { cat: '🚧 專屬障礙物', items: ['💧 顏料濺', '🌫️ 模糊霧', '✂️ 刮痕'] },
-                    { cat: '👹 專屬Boss', items: ['🗣️ 評論家', '🟣 顏料怪'] }
-                ];
-            } else if (gameName === 'candle') {
-                data = [
-                    { cat: '🕯️ 專屬道具', items: ['🪔 燈油', '🧭 指南針', '🔥 火把', '🛡️ 護盾'] },
-                    { cat: '🚧 專屬障礙物', items: ['⚔️ 尖刺牆', '🌑 暗霧', '🪤 陷阱'] },
-                    { cat: '👹 專屬Boss', items: ['👻 暗影幽靈', '🕯️ 燭火魔像'] }
-                ];
-            } else if (gameName === 'mage') {
-                data = [
-                    { cat: '⚔️ 專屬道具', items: ['💜 魔力水晶', '📖 咒語書', '🪄 魔法杖', '🧙 法袍'] },
-                    { cat: '🚧 專屬障礙物', items: ['🔮 魔法陷阱', '🖤 黑暗符文', '☠️ 詛咒之地'] },
-                    { cat: '👹 專屬Boss', items: ['🧙 大法師', '👾 虛空領主'] }
-                ];
-            } else if (gameName === 'dandelion') {
-                data = [
-                    { cat: '🌿 專屬道具', items: ['💨 順風', '🧭 指南針', '🌼 花粉', '☂️ 雨傘'] },
-                    { cat: '🚧 專屬障礙物', items: ['🕸️ 蜘蛛網', '🌿 荊棘叢', '☁️ 雨雲'] },
-                    { cat: '👹 專屬Boss', items: ['🐝 蜜蜂王', '🕷️ 蜘蛛女王'] }
-                ];
-            } else if (gameName === 'crystal') {
-                data = [
-                    { cat: '💎 專屬道具', items: ['💪 強化液', '🔮 透鏡', '✨ 拋光粉', '💎 水晶碎片'] },
-                    { cat: '🚧 專屬障礙物', items: ['💥 裂紋', '🟤 雜質', '⚡ 應力'] },
-                    { cat: '👹 專屬Boss', items: ['🗿 水晶巨像', '🐉 玻璃龍'] }
-                ];
+        function triggerGameOver() {
+            isGameOver = true;
+            stopBGM();
+            playAudioEffect('hit');
+            document.getElementById('finalScore').innerText = gameScore;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            stopGameEngine();
+        }
+
+        function stopGameEngine() {
+            isGameRunning = false;
+            if (gameAnimationId) {
+                cancelAnimationFrame(gameAnimationId);
+                gameAnimationId = null;
             }
-            var html = '';
-            for (var i = 0; i < data.length; i++) {
-                var cat = data[i];
-                html +=
-                    '<h3 style="color:#f0f6fc;margin:15px 0 10px 0;border-bottom:1px solid #30363d;padding-bottom:8px;">' +
-                    cat.cat + '</h3><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;">';
-                for (var j = 0; j < cat.items.length; j++) {
-                    html +=
-                        '<span style="background:#161b22;padding:6px 14px;border-radius:16px;border:1px solid #30363d;font-size:13px;color:#8b949e;">' +
-                        cat.items[j] + '</span>';
+        }
+
+        // ============================================================
+        // 繪圖函式
+        // ============================================================
+        function drawItem(ctx, x, y, type, radius) {
+            ctx.save();
+            ctx.translate(x, y);
+            var r = radius || 14;
+            var specialItem = null;
+            for (var i = 0; i < SPECIAL_ITEMS.length; i++) {
+                if (SPECIAL_ITEMS[i].type === type) { specialItem = SPECIAL_ITEMS[i]; break; }
+            }
+            var item = null;
+            for (var j = 0; j < ITEM_TYPES.length; j++) {
+                if (ITEM_TYPES[j].type === type) { item = ITEM_TYPES[j]; break; }
+            }
+            var emoji = specialItem ? specialItem.emoji : (item ? item.emoji : '?');
+            var category = item ? item.category : '';
+            var color = item ? item.color : '#8b949e';
+            if (specialItem) {
+                var pulse = 1 + Math.sin(Date.now() / 300) * 0.08;
+                ctx.scale(pulse, pulse);
+                ctx.shadowColor = '#f1c40f';
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(241,196,15,0.15)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                for (var k = 0; k < 3; k++) {
+                    var angle = Date.now() / 500 + k * 2.094;
+                    var dist = r * 0.9 + Math.sin(Date.now() / 400 + k) * 5;
+                    ctx.fillStyle = 'rgba(241,196,15,' + (0.2 + Math.sin(Date.now() / 300 + k) * 0.1) + ')';
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 4, 0, Math.PI * 2);
+                    ctx.fill();
                 }
-                html += '</div>';
+            } else if (category === 'attack') {
+                var pulse2 = 1 + Math.sin(Date.now() / 250) * 0.06;
+                ctx.scale(pulse2, pulse2);
+                ctx.shadowColor = '#ff4444';
+                ctx.shadowBlur = 35;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,68,68,0.1)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ff6b6b';
+                ctx.font = '8px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('⚔', 0, -r * 0.5);
+            } else if (category === 'positive') {
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
             }
-            container.innerHTML = html;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 6;
+            ctx.fillStyle = 'white';
+            ctx.font = r * 1.5 + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 0, 1);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawObstacle(ctx, x, y, type, radius) {
+            ctx.save();
+            ctx.translate(x, y);
+            var r = radius || 14;
+            var obs = null;
+            for (var i = 0; i < OBSTACLE_TYPES.length; i++) {
+                if (OBSTACLE_TYPES[i].type === type) { obs = OBSTACLE_TYPES[i]; break; }
+            }
+            var emoji = obs ? obs.emoji : '💥';
+            var color = obs ? obs.color : '#e74c3c';
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 6;
+            ctx.fillStyle = 'white';
+            ctx.font = r * 1.2 + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 0, 1);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
+            ctx.save();
+            ctx.translate(x, y);
+            var r = boss.radius || 30;
+            var color = boss.color || '#8e44ad';
+            if (freezeTimer > 0) {
+                ctx.shadowColor = '#3498db';
+                ctx.shadowBlur = 50;
+                ctx.strokeStyle = 'rgba(52,152,219,0.5)';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([8, 8]);
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                for (var a = 0; a < 5; a++) {
+                    var angle2 = Date.now() / 500 + a * 1.256;
+                    var dist2 = r * 0.8 + Math.sin(Date.now() / 300 + a) * r * 0.2;
+                    ctx.fillStyle = 'rgba(174,214,241,0.6)';
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle2) * dist2, Math.sin(angle2) * dist2, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#aed6f1';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('🧊', 0, -r * 1.3);
+            }
+            if (poisonTimer > 0) {
+                for (var b = 0; b < 6; b++) {
+                    var angle3 = Date.now() / 400 + b * 1.047;
+                    var dist3 = r * 0.9 + Math.sin(Date.now() / 300 + b) * r * 0.2;
+                    ctx.fillStyle = 'rgba(46,204,113,' + (0.15 + Math.sin(Date.now() / 500 + b) * 0.1) + ')';
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle3) * dist3, Math.sin(angle3) * dist3, 6 + Math.sin(Date.now() / 400 + b) *
+                        2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            if (warning !== null && warning > 0) {
+                var progress = 1 - (warning / 60);
+                var pulseRadius = r * 1.3 + progress * r * 0.8;
+                ctx.shadowColor = '#ff4444';
+                ctx.shadowBlur = 30 + progress * 40;
+                ctx.strokeStyle = 'rgba(255,68,68,' + (0.3 + progress * 0.5) + ')';
+                ctx.lineWidth = 2 + progress * 4;
+                ctx.beginPath();
+                ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                if (Math.floor(warning / 5) % 2 === 0) {
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = 'rgba(255,255,0,' + (0.4 + progress * 0.3) + ')';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([6, 6]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r * 1.15 + progress * r * 0.15, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                ctx.shadowBlur = 0;
+                var countdown = Math.ceil(warning / 30);
+                ctx.fillStyle = '#ff4444';
+                ctx.font = 'bold ' + (16 + progress * 8) + 'px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('⚠️ ' + countdown, 0, -r * 1.5 - 10);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textBaseline = 'top';
+                ctx.fillText(skillType || '???', 0, -r * 1.5 + 4);
+                if (skillType === '火焰吐息' || skillType === '閃電風暴' || skillType === '龍捲風') {
+                    for (var c = 0; c < 12; c++) {
+                        var angle4 = (c / 12) * Math.PI * 2 + Date.now() / 200;
+                        var dist4 = r * 1.6 + progress * r * 0.6;
+                        ctx.fillStyle = 'rgba(255,0,0,' + (0.08 + progress * 0.15) + ')';
+                        ctx.beginPath();
+                        ctx.arc(Math.cos(angle4) * dist4, Math.sin(angle4) * dist4, 5 + progress * 6, 0, Math.PI *
+                        2);
+                        ctx.fill();
+                    }
+                } else if (skillType === '暗影突襲') {
+                    for (var d = 0; d < 4; d++) {
+                        var angle5 = d * Math.PI / 2 + Date.now() / 500;
+                        var dist5 = r * 1.8 + progress * r * 0.5;
+                        var arrowSize = 8 + progress * 6;
+                        ctx.fillStyle = 'rgba(100,0,200,' + (0.2 + progress * 0.2) + ')';
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(angle5) * dist5, Math.sin(angle5) * dist5);
+                        ctx.lineTo(Math.cos(angle5 + 0.3) * (dist5 - arrowSize), Math.sin(angle5 + 0.3) * (dist5 -
+                            arrowSize));
+                        ctx.lineTo(Math.cos(angle5 - 0.3) * (dist5 - arrowSize), Math.sin(angle5 - 0.3) * (dist5 -
+                            arrowSize));
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                } else if (skillType === '冰凍光環' || skillType === '寒冰之牆' || skillType === '蛛網') {
+                    for (var e = 0; e < 6; e++) {
+                        var angle6 = e * Math.PI / 3 + Date.now() / 400;
+                        var dist6 = r * 1.2 + progress * r * 0.8;
+                        var size = 3 + progress * 5;
+                        ctx.fillStyle = 'rgba(52,152,219,' + (0.1 + progress * 0.15) + ')';
+                        ctx.beginPath();
+                        ctx.arc(Math.cos(angle6) * dist6, Math.sin(angle6) * dist6, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                var shake = progress * 4;
+                ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+                if (progress > 0.8) {
+                    ctx.fillStyle = 'rgba(255,0,0,' + ((progress - 0.8) * 0.3) + ')';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.shadowColor = freezeTimer > 0 ? '#3498db' : color;
+            ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 40;
+            var bodyColor = freezeTimer > 0 ? '#85c1e9' : color;
+            switch (boss.type) {
+                case 'boss_fire':
+                    ctx.beginPath();
+                    for (var f = 0; f < 8; f++) {
+                        var angle7 = f * Math.PI / 4;
+                        var d7 = r * (0.7 + Math.sin(Date.now() / 300 + f * 0.5) * 0.2);
+                        if (f === 0) ctx.moveTo(Math.cos(angle7) * d7, Math.sin(angle7) * d7);
+                        else ctx.lineTo(Math.cos(angle7) * d7, Math.sin(angle7) * d7);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    break;
+                case 'boss_ice':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
+                    ctx.beginPath();
+                    for (var g = 0; g < 6; g++) {
+                        var angle8 = g * Math.PI / 3 - Math.PI / 6;
+                        var d8 = r * 0.9;
+                        if (g === 0) ctx.moveTo(Math.cos(angle8) * d8, Math.sin(angle8) * d8);
+                        else ctx.lineTo(Math.cos(angle8) * d8, Math.sin(angle8) * d8);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    break;
+                case 'boss_shadow':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 35;
+                    ctx.beginPath();
+                    for (var h = 0; h < 5; h++) {
+                        var angle9 = h * 4 * Math.PI / 5 - Math.PI / 2;
+                        var d9 = (h % 2 === 0) ? r : r * 0.5;
+                        if (h === 0) ctx.moveTo(Math.cos(angle9) * d9, Math.sin(angle9) * d9);
+                        else ctx.lineTo(Math.cos(angle9) * d9, Math.sin(angle9) * d9);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    break;
+                case 'boss_thunder':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 35;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -r);
+                    ctx.lineTo(r * 0.8, 0);
+                    ctx.lineTo(0, r);
+                    ctx.lineTo(-r * 0.8, 0);
+                    ctx.closePath();
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    break;
+                case 'boss_rock':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 25;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r, 0, Math.PI * 2);
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.5, -r * 0.4);
+                    ctx.lineTo(-r * 0.2, -r * 0.1);
+                    ctx.lineTo(r * 0.3, -r * 0.5);
+                    ctx.moveTo(-r * 0.3, r * 0.3);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(r * 0.4, r * 0.4);
+                    ctx.stroke();
+                    break;
+                case 'boss_storm':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
+                    ctx.beginPath();
+                    for (var i = 0; i < 12; i++) {
+                        var angle10 = i * Math.PI / 6;
+                        var d10 = r * (0.3 + i / 12 * 0.7);
+                        if (i === 0) ctx.moveTo(Math.cos(angle10) * d10, Math.sin(angle10) * d10);
+                        else ctx.lineTo(Math.cos(angle10) * d10, Math.sin(angle10) * d10);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    break;
+                case 'boss_necromancer':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 30;
+                    ctx.beginPath();
+                    ctx.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    break;
+                case 'boss_spider':
+                    ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 25;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    for (var j = 0; j < 8; j++) {
+                        var angle11 = j * Math.PI / 4;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(angle11) * r * 0.5, Math.sin(angle11) * r * 0.5);
+                        ctx.lineTo(Math.cos(angle11) * r * 1.1, Math.sin(angle11) * r * 1.1);
+                        ctx.stroke();
+                    }
+                    break;
+                default:
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r, 0, Math.PI * 2);
+                    ctx.fillStyle = bodyColor;
+                    ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = r * 0.7 + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(boss.emoji || '👹', 0, 0);
+            if (boss.skillInfo) {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.font = '8px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                var lines = boss.skillInfo.split(' | ');
+                for (var l = 0; l < lines.length; l++) {
+                    ctx.fillText(lines[l], 0, r + 8 + l * 12);
+                }
+            }
+            ctx.restore();
         }
 
         // ============================================================
-        // 關卡系統（簡化版）
+        // 關卡系統
         // ============================================================
         var EXP = {
             currentLevel: 1,
@@ -4509,8 +5649,133 @@
             }
         }
 
+        window.advanceLevel = function() {
+            if (EXP.isFinalBossActive) return;
+            EXP.currentLevel++;
+            if (EXP.currentLevel > EXP.maxLevel) { triggerFinalBoss(); return; }
+            if (EXP.currentLevel % 5 === 0) {
+                var skill = getRandomBossSkill();
+                EXP.bossSkills.push(skill);
+                showNotification('👹 新 Boss 技能: ' + skill.name + ' (' + skill.type + ')');
+            }
+            if (EXP.currentLevel % 3 === 0) {
+                var newItem = getRandomItemType();
+                if (EXP.unlockedItems.indexOf(newItem) === -1) {
+                    EXP.unlockedItems.push(newItem);
+                    var info = null;
+                    for (var j = 0; j < ITEM_TYPES.length; j++) {
+                        if (ITEM_TYPES[j].type === newItem) { info = ITEM_TYPES[j]; break; }
+                    }
+                    showNotification('🎁 新道具: ' + (info ? info.emoji : '🎁') + ' ' + (info ? info.label :
+                    newItem));
+                }
+            }
+            if (EXP.currentLevel % 4 === 0) {
+                var newObstacle = getRandomObstacleType();
+                if (EXP.unlockedObstacles.indexOf(newObstacle) === -1) {
+                    EXP.unlockedObstacles.push(newObstacle);
+                    var info2 = null;
+                    for (var k = 0; k < OBSTACLE_TYPES.length; k++) {
+                        if (OBSTACLE_TYPES[k].type === newObstacle) { info2 = OBSTACLE_TYPES[k]; break; }
+                    }
+                    showNotification('⚠️ 新障礙物: ' + (info2 ? info2.emoji : '⚠️') + ' ' + (info2 ? info2.label :
+                        newObstacle));
+                }
+            }
+            EXP.currentSpawnRate = Math.min(0.015 + EXP.currentLevel * 0.0008, 0.05);
+            EXP.currentSpeedBonus = 1 + (EXP.currentLevel - 1) * 0.008;
+            updateLevelDisplay();
+        };
+
+        function getRandomBossSkill() {
+            var pool = [
+                { name: '🛡️ 護盾', type: 'passive' },
+                { name: '⚡ 閃電鏈', type: 'active' },
+                { name: '🌀 減速領域', type: 'passive' },
+                { name: '🔥 火焰風暴', type: 'active' },
+                { name: '💀 詛咒之觸', type: 'passive' },
+                { name: '🌪️ 颶風吸扯', type: 'active' },
+                { name: '❄️ 冰凍光環', type: 'passive' },
+                { name: '🌑 暗影突襲', type: 'active' }
+            ];
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function getRandomItemType() {
+            var all = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'star', 'wing', 'clock', 'key',
+                'missile', 'bomb', 'laser', 'freeze', 'poison', 'thunder', 'dart'
+            ];
+            var available = [];
+            for (var i = 0; i < all.length; i++) {
+                if (EXP.unlockedItems.indexOf(all[i]) === -1) available.push(all[i]);
+            }
+            return available.length === 0 ? 'coin' : available[Math.floor(Math.random() * available.length)];
+        }
+
+        function getRandomObstacleType() {
+            var all = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice', 'thorn', 'void', 'mirror', 'chain'];
+            var available = [];
+            for (var i = 0; i < all.length; i++) {
+                if (EXP.unlockedObstacles.indexOf(all[i]) === -1) available.push(all[i]);
+            }
+            return available.length === 0 ? 'cloud' : available[Math.floor(Math.random() * available.length)];
+        }
+
+        function triggerFinalBoss() {
+            if (EXP.isFinalBossActive) return;
+            EXP.isFinalBossActive = true;
+            EXP.bossSequencePlaying = true;
+            if (typeof window.isGameRunning !== 'undefined') window.isGameRunning = false;
+            EXP.isRecordingPaused = true;
+            if (typeof window.stopBGM === 'function') window.stopBGM();
+            var overlay = document.getElementById('finalBossOverlay');
+            var video = document.getElementById('bossVideo');
+            var audio = document.getElementById('bossAudio');
+            if (overlay) overlay.style.display = 'flex';
+            if (video) video.play().catch(function() {});
+            if (audio) audio.play().catch(function() {});
+            var status = document.getElementById('status');
+            if (status) {
+                status.innerText = '👾 最終 Boss 戰 · 虛空領主降臨！';
+                status.style.background = '#c0392b';
+            }
+            setTimeout(function() { skipBossSequence(); }, 8000);
+        }
+
+        window.skipBossSequence = function() {
+            var overlay = document.getElementById('finalBossOverlay');
+            var video = document.getElementById('bossVideo');
+            var audio = document.getElementById('bossAudio');
+            if (overlay) overlay.style.display = 'none';
+            if (video) video.pause();
+            if (audio) audio.pause();
+            EXP.bossSequencePlaying = false;
+            EXP.isRecordingPaused = false;
+            if (typeof window.isGameRunning !== 'undefined') window.isGameRunning = true;
+            if (typeof window.startBGM === 'function') window.startBGM();
+            var status = document.getElementById('status');
+            if (status) {
+                status.innerText = '🏆 恭喜通關！擊敗虛空領主！';
+                status.style.background = '#27ae60';
+            }
+            setTimeout(function() {
+                EXP.currentLevel = 1;
+                EXP.bossSkills = [];
+                EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'missile', 'bomb',
+                    'laser', 'freeze', 'poison', 'thunder', 'dart'
+                ];
+                EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
+                EXP.isFinalBossActive = false;
+                updateLevelDisplay();
+                if (status) {
+                    status.innerText = '🎮 進入無盡模式 · 繼續挑戰！';
+                    status.style.background = '#1f4e79';
+                }
+            }, 3000);
+        };
+
         // ============================================================
-        // 自訂關卡編輯器（簡化版）
+        // 自訂關卡編輯器
         // ============================================================
         var ALL_SKILLS = [
             { id: 'shield', label: '🛡️ 護盾', type: 'passive' },
@@ -4794,28 +6059,273 @@
             updateStatus(devModeEnabled ? '🔧 開發模式已開啟' : '🎮 開發模式已關閉');
         }
 
-        function resetLevelProgress() {
-            if (confirm('確定要重置所有關卡進度嗎？')) {
-                EXP.currentLevel = 1;
-                EXP.bossSkills = [];
-                EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'missile', 'bomb',
-                    'laser', 'freeze', 'poison', 'thunder', 'dart'
-                ];
-                EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
-                EXP.customLevelActive = false;
-                EXP.customConfig = null;
-                EXP.isFinalBossActive = false;
-                EXP.bossSequencePlaying = false;
-                EXP.isRecordingPaused = false;
-                updateLevelDisplay();
-                if (typeof restartGameEngine === 'function') restartGameEngine();
-                var status = document.getElementById('status');
-                if (status) {
-                    status.innerText = '🔄 關卡進度已重置';
-                    status.style.background = '#e67e22';
-                    setTimeout(function() { status.style.background = '#1f4e79'; }, 2000);
-                }
+        // ============================================================
+        // 完整圖鑑系統
+        // ============================================================
+        var INTRO_DATA = {
+            flight: {
+                name: '✈️ 飛行員',
+                categories: [{
+                    name: '🎁 正面道具',
+                    items: [
+                        { emoji: '🪙', name: '金幣', desc: '+50分，FEVER/雙倍時加倍' },
+                        { emoji: '❤️', name: '治癒之心', desc: '恢復 HP +25' },
+                        { emoji: '🛡️', name: '護盾', desc: '抵擋一次障礙物傷害' },
+                        { emoji: '🧲', name: '磁鐵', desc: '吸引 200px 內道具' },
+                        { emoji: '💎', name: '雙倍積分', desc: '得分 ×2' },
+                        { emoji: '⚡', name: 'FEVER', desc: '得分 ×2 + 超大吸取' },
+                        { emoji: '⭐', name: '星星', desc: '+100分' },
+                        { emoji: '🪶', name: '翅膀', desc: '加速 3 秒' },
+                        { emoji: '⏰', name: '時鐘', desc: '增加 30 秒遊戲時間' },
+                        { emoji: '🔑', name: '鑰匙', desc: '立即升一關' }
+                    ]
+                }, {
+                    name: '🗡️ 攻擊道具',
+                    items: [
+                        { emoji: '🚀', name: '飛彈', desc: '對 Boss 造成 30 傷害' },
+                        { emoji: '💣', name: '炸彈', desc: '對 Boss 造成 50 傷害' },
+                        { emoji: '🔫', name: '雷射', desc: '對 Boss 造成 25 傷害' },
+                        { emoji: '🧊', name: '冰凍彈', desc: '冰凍 Boss 2 秒' },
+                        { emoji: '🧪', name: '毒藥', desc: '持續傷害 5 秒' },
+                        { emoji: '⚡', name: '閃電', desc: '對 Boss 造成 40 傷害' },
+                        { emoji: '🎯', name: '飛鏢', desc: '對 Boss 造成 15 傷害' }
+                    ]
+                }, {
+                    name: '🚧 障礙物',
+                    items: [
+                        { emoji: '⛈️', name: '雷暴雲', desc: '傷害：25' },
+                        { emoji: '🟣', name: '毒霧', desc: '傷害：40' },
+                        { emoji: '🕸️', name: '黏液', desc: '減速 50%' },
+                        { emoji: '🔺', name: '尖刺', desc: '傷害：30' },
+                        { emoji: '🔥', name: '火焰', desc: '傷害：35' },
+                        { emoji: '❄️', name: '冰塊', desc: '傷害：20，減速' },
+                        { emoji: '🌿', name: '荊棘', desc: '傷害：15' },
+                        { emoji: '🌌', name: '虛空', desc: '傷害：50' },
+                        { emoji: '🪞', name: '鏡像', desc: '傷害：10，反彈' },
+                        { emoji: '⛓️', name: '鎖鏈', desc: '傷害：20，減速' }
+                    ]
+                }, {
+                    name: '👹 Boss',
+                    items: [
+                        { emoji: '🐉', name: '火龍', desc: '火焰吐息 + 烈焰護盾' },
+                        { emoji: '🧊', name: '冰霜巨人', desc: '冰凍光環 + 寒冰之牆' },
+                        { emoji: '🗡️', name: '暗影刺客', desc: '暗影突襲 + 隱身' },
+                        { emoji: '🦅', name: '雷霆鳳凰', desc: '閃電風暴 + 復活' },
+                        { emoji: '🗿', name: '岩石泰坦', desc: '地震 + 岩石護甲' },
+                        { emoji: '🌪️', name: '風暴領主', desc: '龍捲風 + 風牆' },
+                        { emoji: '🧙', name: '死靈法師', desc: '召喚骷髏 + 詛咒' },
+                        { emoji: '🕷️', name: '蜘蛛女王', desc: '蛛網 + 毒素' }
+                    ]
+                }, {
+                    name: '⭐ 特殊道具',
+                    items: [
+                        { emoji: '⏸️', name: '時間暫停', desc: '暫停所有敵人移動 5 秒' },
+                        { emoji: '🪁', name: '夥伴', desc: '召喚夥伴自動收集道具 10 秒' },
+                        { emoji: '🛡️', name: '超級護盾', desc: '抵擋 3 次傷害' },
+                        { emoji: '💎', name: '5倍積分', desc: '5 倍積分持續 5 秒' },
+                        { emoji: '🌟', name: '無敵', desc: '無敵狀態 2 秒' }
+                    ]
+                }, {
+                    name: '🌤️ 天氣系統',
+                    items: [
+                        { emoji: '☀️', name: '晴朗', desc: '無特殊效果' },
+                        { emoji: '🌧️', name: '下雨', desc: '敵人減速 20%，得分 +20%' },
+                        { emoji: '⛈️', name: '暴風', desc: '敵人加速 30%，得分 +50%' },
+                        { emoji: '🌫️', name: '濃霧', desc: '能見度降低，得分 +30%' },
+                        { emoji: '🌌', name: '極光', desc: '得分 2 倍！' }
+                    ]
+                }, {
+                    name: '🎮 遊戲模式',
+                    items: [
+                        { emoji: '🎯', name: '標準模式', desc: '原始遊戲體驗' },
+                        { emoji: '💀', name: '硬核模式', desc: '一擊必殺，挑戰極限' },
+                        { emoji: '🏃', name: '生存模式', desc: '盡可能活久一點' },
+                        { emoji: '🏆', name: '挑戰模式', desc: '每日挑戰任務' }
+                    ]
+                }]
+            },
+            artist: {
+                name: '🎨 風之繪師',
+                categories: [{
+                    name: '🎨 專屬道具',
+                    items: [
+                        { emoji: '🎨', name: '調色盤', desc: '顏色變化更豐富' },
+                        { emoji: '🖌️', name: '細筆', desc: '降低失誤懲罰' },
+                        { emoji: '🌈', name: '彩虹', desc: '自動完成10%進度' },
+                        { emoji: '🧹', name: '橡皮擦', desc: '清除一次失誤' }
+                    ]
+                }, {
+                    name: '🚧 專屬障礙物',
+                    items: [
+                        { emoji: '💧', name: '顏料濺', desc: '弄髒畫布，扣生命' },
+                        { emoji: '🌫️', name: '模糊霧', desc: '暫時模糊視線' },
+                        { emoji: '✂️', name: '刮痕', desc: '刮壞畫布' }
+                    ]
+                }, {
+                    name: '👹 專屬 Boss',
+                    items: [
+                        { emoji: '🗣️', name: '評論家', desc: '嘲諷 + 否定 + 打斷' },
+                        { emoji: '🟣', name: '顏料怪', desc: '噴濺 + 染色 + 吞噬' }
+                    ]
+                }]
+            },
+            candle: {
+                name: '🕯️ 燭光遠征',
+                categories: [{
+                    name: '🕯️ 專屬道具',
+                    items: [
+                        { emoji: '🪔', name: '燈油', desc: '補充燃料' },
+                        { emoji: '🧭', name: '指南針', desc: '顯示出口方向' },
+                        { emoji: '🔥', name: '火把', desc: '擴大視野' },
+                        { emoji: '🛡️', name: '護盾', desc: '抵擋一次碰撞' }
+                    ]
+                }, {
+                    name: '🚧 專屬障礙物',
+                    items: [
+                        { emoji: '⚔️', name: '尖刺牆', desc: '撞到扣血' },
+                        { emoji: '🌑', name: '暗霧', desc: '縮小視野' },
+                        { emoji: '🪤', name: '陷阱', desc: '隱藏陷阱' }
+                    ]
+                }, {
+                    name: '👹 專屬 Boss',
+                    items: [
+                        { emoji: '👻', name: '暗影幽靈', desc: '吞噬 + 恐懼 + 黑暗' },
+                        { emoji: '🕯️', name: '燭火魔像', desc: '火焰噴射 + 熔岩 + 粉碎' }
+                    ]
+                }]
+            },
+            mage: {
+                name: '⚔️ 魔導士破魔',
+                categories: [{
+                    name: '⚔️ 專屬道具',
+                    items: [
+                        { emoji: '💜', name: '魔力水晶', desc: '瞬間充能 50%' },
+                        { emoji: '📖', name: '咒語書', desc: '下次法術暴擊' },
+                        { emoji: '🪄', name: '魔法杖', desc: '法術傷害 +50%' },
+                        { emoji: '🧙', name: '法袍', desc: '減少敵人速度' }
+                    ]
+                }, {
+                    name: '🚧 專屬障礙物',
+                    items: [
+                        { emoji: '🔮', name: '魔法陷阱', desc: '觸發陷阱扣血' },
+                        { emoji: '🖤', name: '黑暗符文', desc: '吸取能量' },
+                        { emoji: '☠️', name: '詛咒之地', desc: '持續傷害' }
+                    ]
+                }, {
+                    name: '👹 專屬 Boss',
+                    items: [
+                        { emoji: '🧙', name: '大法師', desc: '火球 + 冰錐 + 傳送' },
+                        { emoji: '👾', name: '虛空領主', desc: '虛空爆破 + 暗影箭 + 召喚' }
+                    ]
+                }]
+            },
+            dandelion: {
+                name: '🌿 蒲公英快遞',
+                categories: [{
+                    name: '🌿 專屬道具',
+                    items: [
+                        { emoji: '💨', name: '順風', desc: '短暫加速' },
+                        { emoji: '🧭', name: '指南針', desc: '顯示最近花朵' },
+                        { emoji: '🌼', name: '花粉', desc: '吸引花朵' },
+                        { emoji: '☂️', name: '雨傘', desc: '抵擋一次障礙' }
+                    ]
+                }, {
+                    name: '🚧 專屬障礙物',
+                    items: [
+                        { emoji: '🕸️', name: '蜘蛛網', desc: '纏住減速' },
+                        { emoji: '🌿', name: '荊棘叢', desc: '刺傷扣血' },
+                        { emoji: '☁️', name: '雨雲', desc: '降低視野' }
+                    ]
+                }, {
+                    name: '👹 專屬 Boss',
+                    items: [
+                        { emoji: '🐝', name: '蜜蜂王', desc: '毒刺 + 蜂群 + 衝刺' },
+                        { emoji: '🕷️', name: '蜘蛛女王', desc: '蛛網 + 毒液 + 吞噬' }
+                    ]
+                }]
+            },
+            crystal: {
+                name: '💎 玻璃心大師',
+                categories: [{
+                    name: '💎 專屬道具',
+                    items: [
+                        { emoji: '💪', name: '強化液', desc: '增加一次容錯' },
+                        { emoji: '🔮', name: '透鏡', desc: '顯示最佳路徑' },
+                        { emoji: '✨', name: '拋光粉', desc: '加快切割速度' },
+                        { emoji: '💎', name: '水晶碎片', desc: '自動完成 10%' }
+                    ]
+                }, {
+                    name: '🚧 專屬障礙物',
+                    items: [
+                        { emoji: '💥', name: '裂紋', desc: '導致碎裂' },
+                        { emoji: '🟤', name: '雜質', desc: '增加失誤' },
+                        { emoji: '⚡', name: '應力', desc: '內部壓力' }
+                    ]
+                }, {
+                    name: '👹 專屬 Boss',
+                    items: [
+                        { emoji: '🗿', name: '水晶巨像', desc: '震擊 + 結晶 + 粉碎' },
+                        { emoji: '🐉', name: '玻璃龍', desc: '吐息 + 折射 + 碎裂' }
+                    ]
+                }]
             }
+        };
+
+        function buildIntroTabs() {
+            var tabs = document.getElementById('introTabs');
+            if (!tabs) return;
+            tabs.innerHTML = '';
+            var gameKeys = ['flight', 'artist', 'candle', 'mage', 'dandelion', 'crystal'];
+            var gameLabels = ['✈️ 飛行員', '🎨 風之繪師', '🕯️ 燭光遠征', '⚔️ 魔導士破魔', '🌿 蒲公英快遞', '💎 玻璃心大師'];
+
+            for (var i = 0; i < gameKeys.length; i++) {
+                var btn = document.createElement('button');
+                btn.className = 'game-tab-btn' + (i === 0 ? ' active' : '');
+                btn.textContent = gameLabels[i];
+                btn.dataset.game = gameKeys[i];
+                btn.onclick = function() {
+                    var btns = document.querySelectorAll('.game-tab-btn');
+                    for (var j = 0; j < btns.length; j++) {
+                        btns[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    showIntroTab(this.dataset.game);
+                };
+                tabs.appendChild(btn);
+            }
+            showIntroTab('flight');
+        }
+
+        function showIntroTab(gameKey) {
+            var container = document.getElementById('introContent');
+            if (!container) return;
+
+            var gameData = INTRO_DATA[gameKey];
+            if (!gameData) {
+                container.innerHTML = '<p style="color:#8b949e;">暫無資料</p>';
+                return;
+            }
+
+            var html = '<h2 style="color:#f0f6fc;border-bottom:2px solid #1f4e79;padding-bottom:10px;">' + gameData
+                .name + '</h2>';
+
+            for (var i = 0; i < gameData.categories.length; i++) {
+                var cat = gameData.categories[i];
+                html += '<h3 style="color:#f0f6fc;margin:15px 0 10px 0;border-bottom:1px solid #30363d;padding-bottom:8px;">' +
+                    cat.name + '</h3>';
+                html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;">';
+
+                for (var j = 0; j < cat.items.length; j++) {
+                    var item = cat.items[j];
+                    html += '<div style="background:#161b22;padding:8px 14px;border-radius:16px;border:1px solid #30363d;font-size:13px;color:#8b949e;display:flex;align-items:center;gap:6px;">';
+                    html += '<span style="font-size:20px;">' + item.emoji + '</span>';
+                    html += '<span style="font-weight:bold;color:#f0f6fc;">' + item.name + '</span>';
+                    html += '<span style="color:#5a6a7a;font-size:11px;">' + item.desc + '</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
         }
 
         // ============================================================
@@ -4829,7 +6339,6 @@
             loadCustomContent();
             renderCustomLists();
             buildIntroTabs();
-            showIntroTab('flight');
             var select = document.getElementById('viewModeSelect');
             if (select && !Array.from(select.options).some(function(o) { return o.value === 'intro'; })) {
                 var opt = document.createElement('option');
@@ -4845,9 +6354,14 @@
             console.log('✅ v9.0 完整版已載入！');
             console.log('🎮 六款遊戲各有獨立道具、Boss、障礙物、音樂音效');
             console.log('📖 圖鑑已分頁顯示');
+
+            // 建立模式選擇器
+            createModeSelector();
         }
 
+        // ============================================================
         // 暴露全局函數
+        // ============================================================
         window.switchGame = switchGame;
         window.restartGameEngine = restartGameEngine;
         window.toggleGamePause = toggleGamePause;
@@ -4873,7 +6387,29 @@
         window.showStats = showStats;
         window.showLeaderboard = showLeaderboard;
         window.showAchievements = showAchievements;
-        window.resetLevelProgress = resetLevelProgress;
+        window.resetLevelProgress = function() {
+            if (confirm('確定要重置所有關卡進度嗎？')) {
+                EXP.currentLevel = 1;
+                EXP.bossSkills = [];
+                EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'missile', 'bomb',
+                    'laser', 'freeze', 'poison', 'thunder', 'dart'
+                ];
+                EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
+                EXP.customLevelActive = false;
+                EXP.customConfig = null;
+                EXP.isFinalBossActive = false;
+                EXP.bossSequencePlaying = false;
+                EXP.isRecordingPaused = false;
+                updateLevelDisplay();
+                if (typeof restartGameEngine === 'function') restartGameEngine();
+                var status = document.getElementById('status');
+                if (status) {
+                    status.innerText = '🔄 關卡進度已重置';
+                    status.style.background = '#e67e22';
+                    setTimeout(function() { status.style.background = '#1f4e79'; }, 2000);
+                }
+            }
+        };
         window.addCustomItem = addCustomItem;
         window.addCustomObstacle = addCustomObstacle;
         window.addCustomBoss = addCustomBoss;
