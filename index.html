@@ -9,7 +9,6 @@
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <style>
-/* ===== 所有樣式保持不變（此處省略以節省空間，但實際使用時需保留完整） ===== */
 * { box-sizing: border-box; }
 body {
 font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -626,7 +625,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 控制面板 ===== -->
-<div class="control-panel">
+<div class="control-panel" id="mainControlPanel">
 <button id="connectBtn" class="btn accent">Connect</button>
 <button id="startBtn" class="btn" disabled>Start</button>
 <button id="segmentBtn" class="btn accent">PKL Index 切分</button>
@@ -646,7 +645,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 圖表 ===== -->
-<div class="chart-container">
+<div class="chart-container" id="chartContainer">
 <canvas id="flowChart"></canvas>
 </div>
 
@@ -764,7 +763,7 @@ const inhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.inh[i]}));
 const exhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.exh[i]}));
 
 // =====================================================
-// 全域變數
+// 全域變數 - 串口相關
 // =====================================================
 let port=null,reader=null,isMeasuring=false;
 let records=[],flowHistory=[],windowHistory=[false,false,false];
@@ -774,6 +773,19 @@ let pklSegments=[];
 let onnxSession=null;
 let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
+
+// =====================================================
+// 全域變數 - 遊戲相關
+// =====================================================
+const gameCanvas = document.getElementById('gameCanvas');
+const gameCtx = gameCanvas.getContext('2d');
+let gameAnimationId = null;
+let isGameRunning = false;
+let isGamePaused = false;
+let isGameOver = false;
+let isResting = false;
+let restTimer = null;
+let sessionStartTime = 0;
 
 // =====================================================
 // 鍵盤與滑鼠操控
@@ -787,20 +799,7 @@ let useMouseControl = false;
 let keyboardTimeout = null;
 
 // =====================================================
-// 遊戲狀態
-// =====================================================
-const gameCanvas = document.getElementById('gameCanvas');
-const gameCtx = gameCanvas.getContext('2d');
-let gameAnimationId = null;
-let isGameRunning = false;
-let isGamePaused = false;
-let isGameOver = false;
-let isResting = false;
-let restTimer = null;
-let sessionStartTime = 0;
-
-// =====================================================
-// 🆕 遊戲模式定義
+// 遊戲模式定義
 // =====================================================
 const GAME_MODES = {
     FLIGHT: 'flight',
@@ -1474,91 +1473,6 @@ const PainterGame = {
 };
 
 // =====================================================
-// 鍵盤事件
-// =====================================================
-document.addEventListener('keydown', function(e) {
-    if (!keyboardControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
-    
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        const step = 10;
-        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-            e.preventDefault();
-            PainterGame.brushY = Math.max(30, PainterGame.brushY - step);
-        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-            e.preventDefault();
-            PainterGame.brushY = Math.min(gameCanvas.height - 30, PainterGame.brushY + step);
-        } else if (e.key === ' ' || e.key === 'Space') {
-            e.preventDefault();
-            toggleGamePause();
-        }
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const canvas = document.getElementById('gameCanvas');
-    if (canvas) {
-        canvas.addEventListener('mousemove', function(e) {
-            if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
-            if (currentGameMode === GAME_MODES.PAINTER) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleY = canvas.height / rect.height;
-                const mouseRelativeY = (e.clientY - rect.top) * scaleY;
-                PainterGame.brushY = Math.max(30, Math.min(canvas.height - 30, mouseRelativeY));
-            }
-        });
-    }
-});
-
-// =====================================================
-// 控制面板擴充
-// =====================================================
-const controlPanel = document.querySelector('.control-panel');
-if (controlPanel) {
-    const html = `
-    <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-        視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
-            <option value="chart">📊 專業圖表</option>
-            <option value="game">🎮 遊戲模式</option>
-            <option value="both" selected>全模式</option>
-        </select>
-    </label>
-    <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
-    <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
-    <label class="music-upload-btn">🎵 自選音樂 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
-    <span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
-    <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
-    <span id="expansionControls">
-        <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
-        <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
-        <span class="control-toggle">
-            <input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
-            <label for="keyboardToggle">⌨️ 鍵盤</label>
-            <input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
-            <label for="mouseToggle">🖱️ 滑鼠</label>
-        </span>
-        <span id="devControls" style="display:flex;gap:6px;align-items:center;">
-            <button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
-            <span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
-        </span>
-        <span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
-            <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
-            <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
-            <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
-            <button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
-        </span>
-        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-            🎮 遊戲:
-            <select id="gameSelector" onchange="switchGameMode(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                <option value="flight">✈️ 氣流飛行員</option>
-                <option value="painter">🎨 風之繪師</option>
-            </select>
-        </label>
-    </span>
-    `;
-    controlPanel.insertAdjacentHTML('beforeend', html);
-}
-
-// =====================================================
 // 音效系統
 // =====================================================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1636,7 +1550,184 @@ function handleCustomMusicUpload(event) {
 }
 
 // =====================================================
-// 🆕 遊戲切換函數 (修正版)
+// 串口功能
+// =====================================================
+async function loadPKLModel(){
+try{onnxSession=await ort.InferenceSession.create('./rf_model.onnx');updateStatus('✅ PKL 模型載入成功！');}catch(err){console.warn("未檢測到 rf_model.onnx",err);}
+}
+loadPKLModel();
+
+const customOverlayPlugin={
+id:'customOverlayPlugin',
+beforeDatasetsDraw(chart){
+if(pklSegments.length>0){
+const{ctx,scales:{x,y}}=chart;ctx.save();
+pklSegments.forEach(seg=>{
+const startX=x.getPixelForValue(seg.start_time);
+const endX=x.getPixelForValue(seg.end_time);
+ctx.fillStyle=(seg.state==="Inspiration")?"rgba(135,206,235,0.35)":"rgba(240,128,128,0.35)";
+ctx.fillRect(startX,y.top,endX-startX,y.bottom-y.top);
+});
+ctx.restore();
+}
+}
+};
+const ctx=document.getElementById('flowChart').getContext('2d');
+const flowChart=new Chart(ctx,{
+type:'line',
+data:{datasets:[
+{label:'Inhale guide',data:inhaleGuidePoints,borderColor:'#2e7d32',borderWidth:1.8,borderDash:[5,5],fill:false,pointRadius:0,tension:0.4},
+{label:'Exhale guide',data:exhaleGuidePoints,borderColor:'#1565c0',borderWidth:1.8,borderDash:[5,5],fill:false,pointRadius:0,tension:0.4},
+{label:'Patient Flow',data:[],borderColor:'#c0392b',borderWidth:2.4,fill:false,pointRadius:0,tension:0.4}
+]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Inhaler Flow Profile',font:{size:16,weight:'bold'},color:'#1f4e79'}},scales:{x:{type:'linear',min:0,max:20,title:{display:true,text:'Time (secs)'}},y:{min:-120,max:120,title:{display:true,text:'Flow (L/min)'}}}},
+plugins:[customOverlayPlugin]
+});
+
+async function detectBreathModePKL(fft){
+if(!fft)return"inhalation";
+let e1=fft[1]||0,e2=fft[2]||0,e3=fft[3]||0,e4=fft[4]||0,e5=fft[5]||0;
+let totalE=e1+e2+e3+e4+e5;
+if(totalE<20000){predictionBuffer=[];lastConfirmedMode="inhalation";return"inhalation";}
+let rawMode="inhalation";
+let ratio_3to1=e1>0?(e3/e1):0;
+if(totalE<250000){rawMode=(ratio_3to1>0.45)?"exhalation":"inhalation";}else{
+if(onnxSession){try{const inputTensor=new ort.Tensor('float32',new Float32Array([e1,e2,e3,e4,e5]),[1,5]);const results=await onnxSession.run({float_input:inputTensor});rawMode=(results.label.data[0]===0)?"inhalation":"exhalation";}catch(e){rawMode=(ratio_3to1>0.7)?"exhalation":"inhalation";}}else{rawMode=(ratio_3to1>0.7)?"exhalation":"inhalation";}
+}
+predictionBuffer.push(rawMode);if(predictionBuffer.length>3)predictionBuffer.shift();
+let exhCount=predictionBuffer.filter(m=>m==="exhalation").length;
+let currentVote=(exhCount>=2)?"exhalation":"inhalation";
+if(totalE<300000&&lastConfirmedMode==="exhalation"){if(predictionBuffer.filter(m=>m==="inhalation").length<3){currentVote="exhalation";}}
+lastConfirmedMode=currentVote;
+return currentVote;
+}
+
+async function runPKLIndexSegmentation(){
+if(records.length===0){alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");return;}
+updateStatus("正在進行 PKL Index 切分中...");
+let predictions=[];
+for(let i=0;i<records.length;i++){let rec=records[i];if(!rec.flowYes||Math.abs(rec.est)<5.0){predictions.push(-1);}else{let mode=await detectBreathModePKL(rec.fft);predictions.push(mode==="inhalation"?0:1);}}
+pklSegments=[];
+let currentS=predictions[0];
+let startIdx=0;
+for(let i=1;i<predictions.length;i++){if(predictions[i]!==currentS){if(currentS!==-1){pklSegments.push({state:(currentS===0)?"Inspiration":"Expiration",start_index:startIdx,end_index:i-1,start_time:records[startIdx].elapsed,end_time:records[i-1].elapsed});}currentS=predictions[i];startIdx=i;}}
+if(currentS!==-1){pklSegments.push({state:(currentS===0)?"Inspiration":"Expiration",start_index:startIdx,end_index:records.length-1,start_time:records[startIdx].elapsed,end_time:records[records.length-1].elapsed});}
+updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
+flowChart.update();
+}
+
+function detectFlowRate(mode,estFlow){let presets=(mode==="inhalation")?[30,60,90]:[60,90,120];return presets.reduce((prev,curr)=>Math.abs(curr-estFlow)<Math.abs(prev-estFlow)?curr:prev);}
+function resetUIState(){port=null;reader=null;isMeasuring=false;document.getElementById('connectBtn').innerText='Connect';document.getElementById('startBtn').innerText='Start';document.getElementById('startBtn').disabled=true;updateStatus('Disconnected / Ready to connect');}
+if('serial' in navigator){navigator.serial.addEventListener('disconnect',()=>{resetUIState();});}
+window.addEventListener('beforeunload',async()=>{try{if(reader)await reader.cancel();if(port)await port.close();}catch(e){}});
+document.getElementById('connectBtn').addEventListener('click',toggleConnection);
+document.getElementById('startBtn').addEventListener('click',toggleMeasuring);
+document.getElementById('segmentBtn').addEventListener('click',runPKLIndexSegmentation);
+document.getElementById('clearBtn').addEventListener('click',clearPlot);
+document.getElementById('saveBtn').addEventListener('click',saveCSV);
+
+async function toggleConnection(){
+if(!port){try{port=await navigator.serial.requestPort();await port.open({baudRate:115200});document.getElementById('connectBtn').innerText='Disconnect';document.getElementById('startBtn').disabled=false;updateStatus('Connected. Press Start to begin.');readLoop();}catch(err){updateStatus('Connection failed: '+err.message);resetUIState();}}else{try{isMeasuring=false;if(reader)await reader.cancel();if(port)await port.close();}catch(err){}finally{resetUIState();}}
+}
+
+async function readLoop(){
+if(!port||!port.readable)return;
+const textDecoder=new TextDecoderStream();
+const readableStreamClosed=port.readable.pipeTo(textDecoder.writable);
+reader=textDecoder.readable.getReader();
+let buffer='';
+try{while(true){const{value,done}=await reader.read();if(done)break;buffer+=value;let lines=buffer.split('\n');buffer=lines.pop();if(lines.length>10)lines=lines.slice(-3);for(let line of lines){line=line.trim();if(isMeasuring)await parseLine(line);}}}catch(err){console.warn("串口讀取中斷",err);}finally{try{reader.releaseLock();}catch(e){}try{await readableStreamClosed.catch(()=>{});}catch(e){}if(!port)resetUIState();}
+}
+
+async function parseLine(line){
+if(line.includes('[FFT]')){const matches=line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);for(const match of matches){lastFFT[match[1]]=parseFloat(match[2]);}return;}
+if(line.includes('[DETECT]')){
+const flowMatch=line.match(/Flow\s*=\s*(YES|no)/i);
+const estMatch=line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
+const lowMatch=line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
+if(!flowMatch)return;
+let flowYes=flowMatch[1].toUpperCase()==='YES';
+let est=estMatch?parseFloat(estMatch[1]):0.0;
+let lowE=lowMatch?parseInt(lowMatch[1]):0;
+let isCandidate=false;
+if(flowYes||(lowE>800000&&est>0.0))isCandidate=true;
+if(lastFFT[1]>800000&&lastFFT[8]<5000)isCandidate=false;
+windowHistory.shift();windowHistory.push(isCandidate);
+let trueCount=windowHistory.filter(x=>x===true).length;
+if(trueCount>=2){flowYes=true;if(est===0.0&&lowE>1000000)est=15.0;}else{flowYes=false;est=0.0;}
+if(startTime===null)startTime=Date.now();
+let elapsed=(Date.now()-startTime)/1000;
+let manualMode=document.getElementById('modeSelect').value;
+if(manualMode!=="auto"){currentMode=manualMode;}else{currentMode=await detectBreathModePKL(lastFFT);}
+if(est>0){let dFlow=detectFlowRate(currentMode,est);document.getElementById('detectedMode').innerText=`Detected: ${currentMode} @ ${dFlow} L/min`;}else{document.getElementById('detectedMode').innerText=`Detected: Idle`;}
+if(currentMode==="exhalation"){if(est===0.0&&lowE>800000)est=30.0;if(est>0)est=-Math.abs(est);}else if(currentMode==="inhalation"&&est<0){est=Math.abs(est);}
+flowHistory.push(est);if(flowHistory.length>5)flowHistory.shift();
+smoothedEst=flowHistory.reduce((a,b)=>a+b,0)/flowHistory.length;
+records.push({elapsed,flowYes,est:smoothedEst,lowE,fft:{...lastFFT}});
+document.getElementById('recordCount').innerText=`Records: ${records.length}`;
+document.getElementById('saveBtn').disabled=false;
+flowChart.data.datasets[2].data.push({x:elapsed,y:smoothedEst});
+let windowStart=Math.floor(elapsed/20)*20;
+flowChart.options.scales.x.min=windowStart;
+flowChart.options.scales.x.max=windowStart+20;
+let allFlows=records.map(r=>Math.abs(r.est));
+let maxPeak=Math.max(...allFlows,0);
+document.getElementById('peakFlow').innerText=`Peak: ${maxPeak.toFixed(1)} L/min`;
+flowChart.update('none');
+}
+}
+
+function toggleMeasuring(){
+isMeasuring=!isMeasuring;
+if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Stop';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
+if (isMeasuring) {
+    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+    document.getElementById('hintBreath').style.color = '#2ecc71';
+    // 啟動遊戲
+    if (!isGameRunning) {
+        restartGameEngine();
+    }
+} else {
+    document.getElementById('hintBreath').textContent = '等待啟動';
+    document.getElementById('hintBreath').style.color = '';
+}
+}
+
+function clearPlot(){
+startTime=null;records=[];flowHistory=[];pklSegments=[];predictionBuffer=[];
+lastConfirmedMode="inhalation";smoothedEst=0;
+flowChart.data.datasets[2].data=[];
+flowChart.options.scales.x.min=0;flowChart.options.scales.x.max=20;
+flowChart.update();
+document.getElementById('recordCount').innerText='Records: 0';
+document.getElementById('peakFlow').innerText='Peak: --- L/min';
+document.getElementById('detectedMode').innerText='Detected: ---';
+document.getElementById('saveBtn').disabled=true;
+}
+
+function saveCSV(){
+let patientId=document.getElementById('patientId').value.trim()||'inhaler_data';
+let csvContent="data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
+for(let i=1;i<=20;i++)csvContent+=`,${i}kHz`;
+csvContent+="\n";
+records.forEach(r=>{
+let row=`${patientId},${r.elapsed.toFixed(2)},${r.flowYes?'YES':'no'},${r.est.toFixed(1)},${r.lowE}`;
+for(let i=1;i<=20;i++){row+=`,${r.fft[i]||''}`;}
+csvContent+=row+"\n";
+});
+const encodedUri=encodeURI(csvContent);
+const link=document.createElement("a");
+link.setAttribute("href",encodedUri);
+link.setAttribute("download",`inhaler_data_${patientId}.csv`);
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+}
+
+function updateStatus(msg){document.getElementById('status').innerText=msg;}
+
+// =====================================================
+// 遊戲切換函數
 // =====================================================
 function switchGameMode(mode) {
     // 停止當前遊戲
@@ -1844,7 +1935,6 @@ function gameLoop() {
         gameCtx.font = '16px sans-serif';
         gameCtx.fillStyle = '#8b949e';
         gameCtx.fillText('呼吸控制飛船升降 · 收集金幣 · 躲避障礙', gameCanvas.width/2, gameCanvas.height/2 + 20);
-        gameCtx.fillText('(完整版遊戲功能開發中)', gameCanvas.width/2, gameCanvas.height/2 + 50);
         
         // 顯示呼吸數據
         if (activeMeasuring) {
@@ -1978,13 +2068,78 @@ function showNotification(msg) {
     }
 }
 
-function updateStatus(msg) {
-    const status = document.getElementById('status');
-    if (status) status.innerText = msg;
+// =====================================================
+// 擴充 roundRect 方法
+// =====================================================
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (r > w/2) r = w/2;
+        if (r > h/2) r = h/2;
+        this.moveTo(x + r, y);
+        this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r);
+        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        this.closePath();
+        return this;
+    };
+}
+
+// =====================================================
+// 控制面板擴充
+// =====================================================
+const controlPanel = document.getElementById('mainControlPanel');
+if (controlPanel) {
+    const html = `
+    <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+        視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
+            <option value="chart">📊 專業圖表</option>
+            <option value="game">🎮 遊戲模式</option>
+            <option value="both" selected>全模式</option>
+        </select>
+    </label>
+    <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
+    <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
+    <label class="music-upload-btn">🎵 自選音樂 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
+    <span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
+    <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
+    <span id="expansionControls">
+        <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
+        <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
+        <span class="control-toggle">
+            <input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
+            <label for="keyboardToggle">⌨️ 鍵盤</label>
+            <input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
+            <label for="mouseToggle">🖱️ 滑鼠</label>
+        </span>
+        <span id="devControls" style="display:flex;gap:6px;align-items:center;">
+            <button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
+            <span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
+        </span>
+        <span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
+            <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
+            <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
+            <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
+            <button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
+        </span>
+        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+            🎮 遊戲:
+            <select id="gameSelector" onchange="switchGameMode(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
+                <option value="flight">✈️ 氣流飛行員</option>
+                <option value="painter">🎨 風之繪師</option>
+            </select>
+        </label>
+    </span>
+    `;
+    controlPanel.insertAdjacentHTML('beforeend', html);
 }
 
 function switchViewMode(mode) {
-    const chartBox = document.querySelector('.chart-container');
+    const chartBox = document.getElementById('chartContainer');
     const gameBox = document.getElementById('gameContainer');
     if (chartBox) chartBox.style.display = (mode === 'chart' || mode === 'both') ? 'block' : 'none';
     if (gameBox) gameBox.style.display = (mode === 'game' || mode === 'both') ? 'block' : 'none';
@@ -2001,7 +2156,6 @@ function toggleSkinEditor() {
 }
 
 function toggleDevMode() {
-    // 簡單的開發模式切換
     const btn = document.getElementById('devModeToggle');
     const indicator = document.getElementById('devIndicator');
     if (btn) {
@@ -2036,24 +2190,71 @@ function resetLevelProgress() {
 }
 
 // =====================================================
-// 擴充 roundRect 方法
+// 鍵盤事件
 // =====================================================
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-        if (r > w/2) r = w/2;
-        if (r > h/2) r = h/2;
-        this.moveTo(x + r, y);
-        this.lineTo(x + w - r, y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r);
-        this.lineTo(x + w, y + h - r);
-        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        this.lineTo(x + r, y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r);
-        this.lineTo(x, y + r);
-        this.quadraticCurveTo(x, y, x + r, y);
-        this.closePath();
-        return this;
-    };
+document.addEventListener('keydown', function(e) {
+    if (!keyboardControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
+    
+    if (currentGameMode === GAME_MODES.PAINTER) {
+        const step = 10;
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            e.preventDefault();
+            PainterGame.brushY = Math.max(30, PainterGame.brushY - step);
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            PainterGame.brushY = Math.min(gameCanvas.height - 30, PainterGame.brushY + step);
+        } else if (e.key === ' ' || e.key === 'Space') {
+            e.preventDefault();
+            toggleGamePause();
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        canvas.addEventListener('mousemove', function(e) {
+            if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
+            if (currentGameMode === GAME_MODES.PAINTER) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleY = canvas.height / rect.height;
+                const mouseRelativeY = (e.clientY - rect.top) * scaleY;
+                PainterGame.brushY = Math.max(30, Math.min(canvas.height - 30, mouseRelativeY));
+            }
+        });
+    }
+});
+
+function toggleKeyboardControl() {
+    keyboardControlEnabled = !keyboardControlEnabled;
+    if (!keyboardControlEnabled) {
+        keyboardY = null;
+        useKeyboardControl = false;
+        document.getElementById('hintKeyboard').style.color = '';
+        document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
+    }
+    updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
+}
+
+function toggleMouseControl() {
+    mouseControlEnabled = !mouseControlEnabled;
+    if (!mouseControlEnabled) {
+        mouseY = null;
+        useMouseControl = false;
+        document.getElementById('hintMouse').style.color = '';
+        document.getElementById('hintMouse').textContent = '移動';
+    }
+    updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
+}
+
+function toggleControlGuide() {
+    const guide = document.getElementById('controlGuide');
+    const btn = document.getElementById('helpBtn');
+    if (guide) {
+        guide.classList.toggle('show');
+        btn.classList.toggle('active');
+        btn.textContent = guide.classList.contains('show') ? '✕' : '❓';
+    }
 }
 
 // =====================================================
@@ -2069,13 +2270,17 @@ function initExpansion() {
     }, 100);
     
     // 設定視窗模式為全模式
-    document.getElementById('viewModeSelect').value = 'both';
-    switchViewMode('both');
+    const viewSelect = document.getElementById('viewModeSelect');
+    if (viewSelect) {
+        viewSelect.value = 'both';
+        switchViewMode('both');
+    }
     
     console.log('✅ 所有功能已載入！');
+    console.log('🔌 串口功能: Connect → Start 開始測量');
+    console.log('📊 圖表顯示呼吸波形');
     console.log('🎮 使用遊戲切換器在「氣流飛行員」和「風之繪師」間切換');
     console.log('🎨 風之繪師：吐氣控制筆觸粗細，自動沿路徑繪畫');
-    console.log('📈 筆畫數隨關卡增加：1→2→3→4→5筆');
 }
 
 if (document.readyState === 'loading') {
@@ -2091,6 +2296,11 @@ window.toggleGamePause = toggleGamePause;
 window.toggleFullscreen = toggleFullscreen;
 window.GAME_MODES = GAME_MODES;
 window.PainterGame = PainterGame;
+window.toggleMeasuring = toggleMeasuring;
+window.clearPlot = clearPlot;
+window.saveCSV = saveCSV;
+window.runPKLIndexSegmentation = runPKLIndexSegmentation;
+window.toggleConnection = toggleConnection;
 </script>
 </body>
 </html>
