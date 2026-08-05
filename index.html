@@ -2204,7 +2204,7 @@
         }
 
         // ============================================================
-        // 音效系統
+        // 音效系統（擴充版 - 支援每款遊戲獨立音樂）
         // ============================================================
         var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
         var bgmInterval = null,
@@ -2663,7 +2663,6 @@
         };
         var currentGame = null;
         var gameInstances = {};
-
         // ============================================================
         // 遊戲基類
         // ============================================================
@@ -3947,11 +3946,11 @@
             var self = this;
             setTimeout(function() { if (typeof switchGame === 'function') switchGame('flight'); }, 2000);
         };
-
         // ============================================================
         // 遊戲切換器
         // ============================================================
         function switchGame(gameName) {
+            // 停止當前遊戲
             if (currentGame && gameInstances[currentGame.name]) {
                 GAME_STATE.isGameActive = false;
                 if (typeof currentGame.stopMusic === 'function') {
@@ -3981,21 +3980,39 @@
                 document.getElementById('gameBadge').textContent = '原版';
                 showNotification('✈️ 回到飛行員模式');
                 if (isMeasuring) playGameMusic('flight');
+                // 重置飛船位置
+                rocket.y = gameCanvas.height / 2;
+                rocket.angle = 0;
                 return;
             }
 
             var info = gameNames[gameName];
             if (info) {
+                // 如果遊戲實例不存在或需要重新初始化，創建新實例
                 if (!gameInstances[gameName]) {
                     gameInstances[gameName] = new info.class();
+                } else {
+                    // 重新初始化遊戲
+                    if (typeof gameInstances[gameName].init === 'function') {
+                        gameInstances[gameName].init();
+                    }
                 }
                 currentGame = gameInstances[gameName];
                 document.getElementById('gameNameDisplay').textContent = info.name;
                 document.getElementById('gameBadge').textContent = '吐氣';
                 showNotification('🎮 ' + info.name);
+
+                // 啟動遊戲音樂
                 if (isMeasuring && typeof currentGame.startMusic === 'function') {
                     currentGame.startMusic();
                 }
+
+                // 強制重繪
+                if (gameAnimationId) {
+                    cancelAnimationFrame(gameAnimationId);
+                    gameAnimationId = null;
+                }
+                gameLoop();
             }
         }
 
@@ -4312,19 +4329,28 @@
             // === 檢查是否有遊戲實例 ===
             if (currentGame && GAME_STATE.isGameActive && !isGamePaused) {
                 // 繪製當前遊戲
-                currentGame.draw(gameCtx, gameCanvas.width, gameCanvas.height);
+                try {
+                    currentGame.draw(gameCtx, gameCanvas.width, gameCanvas.height);
+                } catch (e) {
+                    gameCtx.fillStyle = '#ff4444';
+                    gameCtx.font = '20px sans-serif';
+                    gameCtx.textAlign = 'center';
+                    gameCtx.textBaseline = 'middle';
+                    gameCtx.fillText('⚠️ 繪製錯誤: ' + e.message, gameCanvas.width / 2, gameCanvas.height / 2);
+                }
                 // 更新 HUD
-                document.getElementById('gameScore').innerText = GAME_STATE.score;
-                document.getElementById('gameLives').innerText = GAME_STATE.lives;
-                document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
+                document.getElementById('gameScore').innerText = GAME_STATE.score || 0;
+                document.getElementById('gameLives').innerText = GAME_STATE.lives || 3;
+                document.getElementById('hpFill').style.width = ((GAME_STATE.lives || 3) / 3 * 100) + '%';
             } else {
-                // === 飛行員模式（完整原版遊戲） ===
+                // === 飛行員模式 ===
                 drawFlightGame();
             }
 
-            // 粒子特效（獨立於遊戲）
+            // === 繪製粒子特效（獨立於所有遊戲） ===
             for (var p = particles.length - 1; p >= 0; p--) {
                 var pt = particles[p];
+                if (!pt) continue;
                 pt.x += pt.vx || 0;
                 pt.y += pt.vy || 0;
                 pt.life -= 0.02;
@@ -4332,11 +4358,13 @@
                     particles.splice(p, 1);
                     continue;
                 }
-                gameCtx.beginPath();
-                gameCtx.arc(pt.x, pt.y, Math.max(0.5, pt.size * pt.life), 0, Math.PI * 2);
-                gameCtx.fillStyle = pt.color || '#fff';
-                gameCtx.globalAlpha = Math.max(0, pt.life);
-                gameCtx.fill();
+                try {
+                    gameCtx.beginPath();
+                    gameCtx.arc(pt.x, pt.y, Math.max(0.5, (pt.size || 3) * pt.life), 0, Math.PI * 2);
+                    gameCtx.fillStyle = pt.color || '#ffffff';
+                    gameCtx.globalAlpha = Math.max(0, pt.life);
+                    gameCtx.fill();
+                } catch (e) {}
             }
             gameCtx.globalAlpha = 1.0;
 
@@ -4346,7 +4374,7 @@
         function drawFlightGame() {
             // === 飛行員模式（原版遊戲完整功能） ===
             // 背景
-            if (customSkins.bg) {
+            if (customSkins && customSkins.bg) {
                 try {
                     var img = new Image();
                     img.src = customSkins.bg;
@@ -4369,12 +4397,15 @@
             drawWeatherEffect();
 
             // 星星
-            gameCtx.fillStyle = 'rgba(255,255,255,0.3)';
-            for (var i = 0; i < stars.length; i++) {
-                var s = stars[i];
-                s.x -= s.baseSpeed;
-                if (s.x < 0) s.x = gameCanvas.width;
-                gameCtx.fillRect(s.x, s.y, s.size, s.size);
+            if (stars && stars.length > 0) {
+                gameCtx.fillStyle = 'rgba(255,255,255,0.3)';
+                for (var i = 0; i < stars.length; i++) {
+                    var s = stars[i];
+                    if (!s) continue;
+                    s.x -= s.baseSpeed || 1;
+                    if (s.x < 0) s.x = gameCanvas.width;
+                    gameCtx.fillRect(s.x, s.y, s.size || 2, s.size || 2);
+                }
             }
 
             // 呼吸控制飛船
@@ -4395,17 +4426,14 @@
             gameCtx.translate(rocket.x, rocket.y);
             gameCtx.rotate(rocket.angle);
 
-            if (customSkins.rocket) {
+            if (customSkins && customSkins.rocket) {
                 try {
                     var img2 = new Image();
                     img2.src = customSkins.rocket;
                     if (img2.complete && img2.naturalWidth > 0) {
                         gameCtx.drawImage(img2, -22, -22, 44, 44);
                         gameCtx.restore();
-                        // 更新 HUD
-                        document.getElementById('gameScore').innerText = gameScore;
-                        document.getElementById('gameLives').innerText = GAME_STATE.lives;
-                        document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
+                        updateFlightHUD();
                         return;
                     }
                 } catch (e) {}
@@ -4431,10 +4459,7 @@
             gameCtx.fill();
             gameCtx.restore();
 
-            // 更新 HUD
-            document.getElementById('gameScore').innerText = gameScore;
-            document.getElementById('gameLives').innerText = GAME_STATE.lives;
-            document.getElementById('hpFill').style.width = (GAME_STATE.lives / 3 * 100) + '%';
+            updateFlightHUD();
 
             // 提示文字
             if (!isMeasuring) {
@@ -4446,348 +4471,15 @@
             }
         }
 
-        // ============================================================
-        // 後端整合
-        // ============================================================
-        var playerProfile = {
-            name: '',
-            totalScore: 0,
-            gamesPlayed: 0,
-            achievements: [],
-            stats: { totalBosses: 0, totalItems: 0, maxCombo: 0, bestScore: 0, perfectGames: 0 }
-        };
-
-        async function sendVercelLog(message, level, data, type) {
-            try {
-                var response = await fetch('/api/log', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message, level: level || 'INFO', data: data, type: type })
-                });
-                return await response.json();
-            } catch (error) {
-                console.error('發送日誌失敗:', error);
-            }
-        }
-
-        async function getStats() {
-            try {
-                var response = await fetch('/api/log/stats');
-                return await response.json();
-            } catch (error) {
-                console.error('獲取統計失敗:', error);
-                return null;
-            }
-        }
-
-        async function submitScore(playerName, score, level, mode) {
-            try {
-                var response = await fetch('/api/log/leaderboard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ playerName: playerName, score: score, level: level, gameMode: mode })
-                });
-                return await response.json();
-            } catch (error) {
-                console.error('提交分數失敗:', error);
-            }
-        }
-
-        async function getLeaderboard(limit) {
-            try {
-                var response = await fetch('/api/log/leaderboard?limit=' + (limit || 10));
-                return await response.json();
-            } catch (error) {
-                console.error('獲取排行榜失敗:', error);
-                return { leaderboard: [], total: 0 };
-            }
-        }
-
-        async function getAchievements() {
-            try {
-                var response = await fetch('/api/log/achievements');
-                return await response.json();
-            } catch (error) {
-                console.error('獲取成就失敗:', error);
-                return { achievements: {} };
-            }
-        }
-
-        async function updateChallenge(challengeId, progress) {
-            try {
-                var response = await fetch('/api/log/challenges', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ challengeId: challengeId, progress: progress })
-                });
-                return await response.json();
-            } catch (error) {
-                console.error('更新挑戰失敗:', error);
-            }
+        function updateFlightHUD() {
+            document.getElementById('gameScore').innerText = gameScore || 0;
+            document.getElementById('gameLives').innerText = GAME_STATE.lives || 3;
+            document.getElementById('hpFill').style.width = ((GAME_STATE.lives || 3) / 3 * 100) + '%';
         }
 
         // ============================================================
-        // 遊戲模式與輔助功能
+        // 遊戲輔助功能
         // ============================================================
-        var dailyChallengeTimer = 0;
-        var challengeActive = false;
-        var challengeData = {};
-        var comboMultiplier = 1;
-        var currentComboStreak = 0;
-        var maxComboStreak = 0;
-        var timeFreezeActive = false;
-        var timeFreezeTimer = 0;
-        var companionActive = false;
-        var companionType = 'none';
-        var companionTimer = 0;
-        var GAME_MODES = { STANDARD: 'standard', HARDCORE: 'hardcore', SURVIVAL: 'survival',
-        CHALLENGE: 'challenge' };
-        var currentGameMode = GAME_MODES.STANDARD;
-
-        function spawnSpecialItem() {
-            if (Math.random() > 0.008) return;
-            var item = SPECIAL_ITEMS[Math.floor(Math.random() * SPECIAL_ITEMS.length)];
-            collectibles.push({
-                type: item.type,
-                emoji: item.emoji,
-                label: item.label,
-                duration: item.duration,
-                effect: item.effect,
-                desc: item.desc,
-                x: gameCanvas.width + 20,
-                y: Math.random() * (gameCanvas.height - 100) + 50,
-                radius: 16,
-                baseSpeed: 2.5,
-                collected: false,
-                isSpecial: true
-            });
-        }
-
-        function handleSpecialItem(item) {
-            switch (item.effect) {
-                case 'freeze':
-                    timeFreezeActive = true;
-                    timeFreezeTimer = item.duration;
-                    playAudioEffect('special');
-                    showNotification('⏸️ 時間暫停！');
-                    break;
-                case 'companion':
-                    companionActive = true;
-                    companionTimer = item.duration;
-                    companionType = 'drone';
-                    playAudioEffect('special');
-                    showNotification('🪁 夥伴加入！');
-                    break;
-                case 'mega_shield':
-                    hasShield = true;
-                    shieldCharges = 3;
-                    document.getElementById('shieldBadge').style.display = 'inline';
-                    document.getElementById('shieldBadge').textContent = '🛡️ x3';
-                    playAudioEffect('special');
-                    showNotification('🛡️ 超級護盾啟動！');
-                    break;
-                case 'x5':
-                    doubleScoreTimer = item.duration;
-                    document.getElementById('doubleBadge').style.display = 'inline';
-                    document.getElementById('doubleBadge').textContent = '💎 5x';
-                    playAudioEffect('special');
-                    showNotification('💎 5倍積分！');
-                    break;
-                case 'invincible':
-                    invincibleActive = true;
-                    invincibleTimer = item.duration;
-                    playAudioEffect('special');
-                    showNotification('🌟 無敵模式！');
-                    break;
-            }
-        }
-
-        function updateComboSystem() {
-            if (gameCombo > 0) {
-                currentComboStreak = gameCombo;
-                maxComboStreak = Math.max(maxComboStreak, currentComboStreak);
-                if (gameCombo >= 10) comboMultiplier = 1.5;
-                if (gameCombo >= 25) comboMultiplier = 2.0;
-                if (gameCombo >= 50) comboMultiplier = 3.0;
-                if (gameCombo >= 100) comboMultiplier = 5.0;
-                if (gameCombo % 10 === 0 && gameCombo > 0) {
-                    showNotification('🔥 ' + gameCombo + ' Combo！x' + comboMultiplier);
-                    playAudioEffect('buff');
-                }
-            } else {
-                comboMultiplier = 1;
-                currentComboStreak = 0;
-            }
-        }
-
-        function spawnBossLoot(boss) {
-            for (var i = 0; i < 5; i++) {
-                (function(index) {
-                    setTimeout(function() {
-                        var item = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
-                        collectibles.push({
-                            type: item.type,
-                            emoji: item.emoji,
-                            color: item.color,
-                            label: item.label,
-                            score: item.score,
-                            category: item.category,
-                            x: boss.x + (Math.random() - 0.5) * 100,
-                            y: boss.y + (Math.random() - 0.5) * 100,
-                            radius: 12,
-                            baseSpeed: 1,
-                            collected: false
-                        });
-                    }, index * 200);
-                })(i);
-            }
-            var bonus = 100 + Math.floor(Math.random() * 200);
-            gameScore += bonus;
-            showNotification('🎊 擊敗 Boss！獎勵 ' + bonus + ' 分！');
-        }
-
-        function checkChallenges() {
-            if (challengeActive) {
-                var progress = Math.min(EXP ? EXP.currentLevel || 0 : 0, 5);
-                updateChallenge('daily_1', progress);
-            }
-            var speedSelect = document.getElementById('gameSpeedSelect');
-            if (speedSelect && parseFloat(speedSelect.value) >= 2.0) {
-                var elapsed = (Date.now() - sessionStartTime) / 1000;
-                updateChallenge('speed_demon', Math.min(elapsed, 60));
-            }
-        }
-
-        function createModeSelector() {
-            var panel = document.querySelector('.control-panel');
-            if (!panel) return;
-            var modeHTML =
-                '<label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">模式:<select id="gameModeSelect" onchange="switchGameMode(this.value)"><option value="standard">🎯 標準</option><option value="hardcore">💀 硬核</option><option value="survival">🏃 生存</option><option value="challenge">🏆 挑戰</option></select></label><button class="btn teal-btn" onclick="showStats()" style="padding:4px 12px;font-size:12px;">📊 統計</button><button class="btn orange-btn" onclick="showLeaderboard()" style="padding:4px 12px;font-size:12px;">🏆 排行榜</button><button class="btn purple-btn" onclick="showAchievements()" style="padding:4px 12px;font-size:12px;">🏅 成就</button>';
-            panel.insertAdjacentHTML('beforeend', modeHTML);
-        }
-
-        function switchGameMode(mode) {
-            currentGameMode = mode;
-            showNotification('🎮 切換至 ' + mode + ' 模式');
-            switch (mode) {
-                case 'hardcore':
-                    playerHP = 1;
-                    document.getElementById('hpFill').style.width = '1%';
-                    showNotification('💀 硬核模式：一擊必殺！');
-                    break;
-                case 'survival':
-                    showNotification('🏃 生存模式：盡可能活久一點！');
-                    break;
-                case 'challenge':
-                    challengeActive = true;
-                    showNotification('🏆 挑戰模式已啟動！');
-                    break;
-                default:
-                    playerHP = 100;
-                    challengeActive = false;
-            }
-        }
-
-        async function showStats() {
-            var stats = await getStats();
-            if (!stats) { showNotification('❌ 無法獲取統計資料'); return; }
-            var msg =
-                '📊 統計資料：\n總遊戲次數: ' + stats.totalGames + '\n總分數: ' + stats.totalScores + '\n最高分: ' + stats.highScore +
-                '\n平均分: ' + stats.averageScore + '\n擊敗 Boss: ' + stats.totalBossesDefeated + '\n收集道具: ' + stats
-                .totalItemsCollected;
-            alert(msg);
-        }
-
-        async function showLeaderboard() {
-            var data = await getLeaderboard(10);
-            if (!data) { showNotification('❌ 無法獲取排行榜'); return; }
-            var msg = '🏆 排行榜\n' + '═'.repeat(30) + '\n';
-            if (data.leaderboard.length === 0) {
-                msg += '尚無記錄，快來挑戰吧！';
-            } else {
-                for (var i = 0; i < data.leaderboard.length; i++) {
-                    var entry = data.leaderboard[i];
-                    var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
-                    msg += medal + ' ' + entry.playerName + ' - ' + entry.score + '分 (Lv.' + entry.level + ')\n';
-                }
-            }
-            alert(msg);
-        }
-
-        async function showAchievements() {
-            var data = await getAchievements();
-            if (!data) { showNotification('❌ 無法獲取成就'); return; }
-            var msg = '🏅 成就系統\n' + '═'.repeat(30) + '\n';
-            var achievements = data.achievements || {};
-            var unlocked = 0,
-                total = 0;
-            for (var key in achievements) {
-                if (achievements.hasOwnProperty(key)) {
-                    var ach = achievements[key];
-                    total++;
-                    if (playerProfile.achievements.indexOf(key) !== -1) {
-                        unlocked++;
-                        msg += '✅ ' + ach.name + ' - ' + ach.description + '\n';
-                    } else {
-                        msg += '❌ ' + ach.name + ' - ' + ach.description + '\n';
-                    }
-                }
-            }
-            msg += '\n' + '═'.repeat(30);
-            msg += '\n已解鎖: ' + unlocked + '/' + total;
-            alert(msg);
-        }
-
-        function drawCompanion() {
-            if (!companionActive || !gameCtx) return;
-            companionTimer--;
-            if (companionTimer <= 0) { companionActive = false;
-                companionType = 'none'; return; }
-            var cx = rocket.x - 30;
-            var cy = rocket.y + Math.sin(Date.now() / 500) * 10;
-            gameCtx.save();
-            gameCtx.translate(cx, cy);
-            gameCtx.shadowColor = '#00d2d3';
-            gameCtx.shadowBlur = 20;
-            gameCtx.fillStyle = '#00d2d3';
-            gameCtx.font = '24px sans-serif';
-            gameCtx.textAlign = 'center';
-            gameCtx.textBaseline = 'middle';
-            gameCtx.fillText('🪁', 0, 0);
-            gameCtx.restore();
-            for (var i = 0; i < collectibles.length; i++) {
-                var c = collectibles[i];
-                var dist = Math.hypot(c.x - cx, c.y - cy);
-                if (dist < c.radius + 20 && !c.collected) {
-                    c.x += (cx - c.x) * 0.1;
-                    c.y += (cy - c.y) * 0.1;
-                    if (dist < 15) {
-                        c.collected = true;
-                        gameScore += 10;
-                        playAudioEffect('coin');
-                    }
-                }
-            }
-        }
-
-        function applyTimeFreeze() {
-            if (!timeFreezeActive) return;
-            timeFreezeTimer--;
-            if (timeFreezeTimer <= 0) { timeFreezeActive = false;
-                showNotification('⏸️ 時間暫停結束'); return; }
-            for (var i = 0; i < obstacles.length; i++) {
-                obstacles[i].x -= 0.1;
-            }
-            for (var j = 0; j < collectibles.length; j++) {
-                collectibles[j].x -= 0.1;
-            }
-            if (bossActive && currentBoss) { currentBoss.x -= 0.05; }
-            gameCtx.save();
-            gameCtx.fillStyle = 'rgba(100,200,255,0.05)';
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-            gameCtx.restore();
-        }
-
         function showNotification(msg) {
             var status = document.getElementById('status');
             if (status) {
@@ -4798,361 +4490,6 @@
                     status.innerText = orig;
                     status.style.background = '#1f4e79';
                 }, 3000);
-            }
-        }
-
-        // ============================================================
-        // 自訂外觀系統（完整版）
-        // ============================================================
-        var ALL_SKIN_ELEMENTS = [
-            { id: 'bg', label: '🌌 背景', defaultEmoji: '🌌' },
-            { id: 'rocket', label: '🚀 飛船', defaultEmoji: '🚀' },
-            { id: 'coin', label: '🪙 金幣', defaultEmoji: '🪙' },
-            { id: 'heart', label: '❤️ 治癒之心', defaultEmoji: '❤️' },
-            { id: 'shield', label: '🛡️ 護盾', defaultEmoji: '🛡️' },
-            { id: 'magnet', label: '🧲 磁鐵', defaultEmoji: '🧲' },
-            { id: 'double', label: '💎 雙倍積分', defaultEmoji: '💎' },
-            { id: 'fever', label: '⚡ FEVER', defaultEmoji: '⚡' },
-            { id: 'star', label: '⭐ 星星', defaultEmoji: '⭐' },
-            { id: 'wing', label: '🪶 翅膀', defaultEmoji: '🪶' },
-            { id: 'cloud', label: '⛈️ 障礙物', defaultEmoji: '⛈️' },
-            { id: 'boss', label: '👹 Boss', defaultEmoji: '👹' },
-            { id: 'missile', label: '🚀 飛彈', defaultEmoji: '🚀' },
-            { id: 'bomb', label: '💣 炸彈', defaultEmoji: '💣' },
-            { id: 'laser', label: '🔫 雷射', defaultEmoji: '🔫' },
-            { id: 'freeze', label: '🧊 冰凍彈', defaultEmoji: '🧊' },
-            { id: 'poison', label: '🧪 毒藥', defaultEmoji: '🧪' },
-            { id: 'thunder', label: '⚡ 閃電', defaultEmoji: '⚡' },
-            { id: 'dart', label: '🎯 飛鏢', defaultEmoji: '🎯' },
-            { id: 'time_freeze', label: '⏸️ 時間暫停', defaultEmoji: '⏸️' },
-            { id: 'companion', label: '🪁 夥伴', defaultEmoji: '🪁' },
-            { id: 'mega_shield', label: '🛡️ 超級護盾', defaultEmoji: '🛡️' },
-            { id: 'score_x5', label: '💎 5倍積分', defaultEmoji: '💎' },
-            { id: 'invincible', label: '🌟 無敵', defaultEmoji: '🌟' }
-        ];
-        var customSkins = {};
-        for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
-            customSkins[ALL_SKIN_ELEMENTS[i].id] = null;
-        }
-
-        function initSkinGrid() {
-            var grid = document.getElementById('skinAllGrid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
-                var el = ALL_SKIN_ELEMENTS[i];
-                var div = document.createElement('div');
-                div.className = 'skin-all-item';
-                div.innerHTML =
-                    '<label>' + el.label + '</label><div class="preview" id="skinPreview_' + el.id + '">' + el
-                    .defaultEmoji + '</div><input type="file" accept="image/*" id="skinInput_' + el.id +
-                    '" onchange="uploadSkinAll(\'' + el.id + '\',this)"><label class="upload-btn" for="skinInput_' +
-                    el.id + '">📤 上傳</label><button class="clear-btn" onclick="clearSkinAll(\'' + el.id +
-                    '\')">清除</button>';
-                grid.appendChild(div);
-            }
-            loadSkinsAll();
-        }
-
-        function loadSkinsAll() {
-            try {
-                var saved = localStorage.getItem('customSkinsAll');
-                if (saved) {
-                    var parsed = JSON.parse(saved);
-                    for (var key in parsed) {
-                        if (parsed.hasOwnProperty(key) && customSkins.hasOwnProperty(key) && parsed[key]) {
-                            customSkins[key] = parsed[key];
-                            updateSkinPreviewAll(key);
-                        }
-                    }
-                }
-            } catch (e) {}
-        }
-
-        function saveSkinsAll() {
-            try {
-                localStorage.setItem('customSkinsAll', JSON.stringify(customSkins));
-            } catch (e) {}
-        }
-
-        function updateSkinPreviewAll(key) {
-            var preview = document.getElementById('skinPreview_' + key);
-            if (!preview) return;
-            if (customSkins[key]) {
-                preview.innerHTML = '<img src="' + customSkins[key] +
-                    '" style="max-width:60px;max-height:60px;border-radius:4px;">';
-            } else {
-                var el = null;
-                for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
-                    if (ALL_SKIN_ELEMENTS[i].id === key) { el = ALL_SKIN_ELEMENTS[i]; break; }
-                }
-                preview.textContent = el ? el.defaultEmoji : '❓';
-            }
-        }
-
-        function uploadSkinAll(key, input) {
-            var file = input.files[0];
-            if (!file) return;
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                customSkins[key] = e.target.result;
-                saveSkinsAll();
-                updateSkinPreviewAll(key);
-                updateStatus('✅ ' + key + ' 外觀已更新！');
-            };
-            reader.readAsDataURL(file);
-            input.value = '';
-        }
-
-        function clearSkinAll(key) {
-            customSkins[key] = null;
-            saveSkinsAll();
-            updateSkinPreviewAll(key);
-            updateStatus('已清除 ' + key + ' 外觀');
-        }
-
-        function resetAllSkins() {
-            if (!confirm('確定要清除所有自訂外觀嗎？')) return;
-            for (var key in customSkins) {
-                if (customSkins.hasOwnProperty(key)) {
-                    customSkins[key] = null;
-                    updateSkinPreviewAll(key);
-                }
-            }
-            saveSkinsAll();
-            updateStatus('✅ 所有外觀已重置');
-        }
-
-        function exportSkins() {
-            var data = JSON.stringify(customSkins);
-            var blob = new Blob([data], { type: 'application/json' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = '外觀設定_' + Date.now() + '.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function handleSkinImport(event) {
-            var file = event.target.files[0];
-            if (!file) return;
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    var parsed = JSON.parse(e.target.result);
-                    for (var key in parsed) {
-                        if (parsed.hasOwnProperty(key) && customSkins.hasOwnProperty(key) && parsed[key]) {
-                            customSkins[key] = parsed[key];
-                            updateSkinPreviewAll(key);
-                        }
-                    }
-                    saveSkinsAll();
-                    updateStatus('✅ 外觀設定匯入成功！');
-                } catch (err) {
-                    alert('❌ 外觀設定檔格式錯誤：' + err.message);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-        function toggleSkinEditor() {
-            var editor = document.getElementById('skinEditor');
-            if (editor) {
-                editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-                if (editor.style.display === 'block') { initSkinGrid(); }
-            }
-        }
-
-        // ============================================================
-        // 自創內容系統
-        // ============================================================
-        var customContent = { items: [], obstacles: [], bosses: [] };
-
-        function loadCustomContent() {
-            try {
-                var saved = localStorage.getItem('customContent');
-                if (saved) { customContent = JSON.parse(saved);
-                    renderCustomLists(); }
-            } catch (e) {}
-        }
-
-        function saveCustomContent() {
-            try {
-                localStorage.setItem('customContent', JSON.stringify(customContent));
-                showNotification('✅ 自創內容已儲存！');
-            } catch (e) {}
-            renderCustomLists();
-        }
-
-        function addCustomItem() {
-            var emoji = document.getElementById('customItemEmoji').value || '🍕';
-            var name = document.getElementById('customItemName').value || '自創道具';
-            var score = parseInt(document.getElementById('customItemScore').value) || 30;
-            var category = document.getElementById('customItemCategory').value;
-            var desc = document.getElementById('customItemDesc').value || '';
-            customContent.items.push({ id: 'custom_item_' + Date.now(), emoji: emoji, name: name, score: score,
-                category: category, desc: desc });
-            document.getElementById('customItemPreview').textContent = emoji;
-            renderCustomLists();
-            saveCustomContent();
-            showNotification('✅ 已新增道具：' + emoji + ' ' + name);
-        }
-
-        function addCustomObstacle() {
-            var emoji = document.getElementById('customObstacleEmoji').value || '🧱';
-            var name = document.getElementById('customObstacleName').value || '自創障礙物';
-            var damage = parseInt(document.getElementById('customObstacleDamage').value) || 20;
-            var effect = document.getElementById('customObstacleEffect').value;
-            customContent.obstacles.push({ id: 'custom_obs_' + Date.now(), emoji: emoji, name: name, damage: damage,
-                slow: effect === 'slow' });
-            document.getElementById('customObstaclePreview').textContent = emoji;
-            renderCustomLists();
-            saveCustomContent();
-            showNotification('✅ 已新增障礙物：' + emoji + ' ' + name);
-        }
-
-        function addCustomBoss() {
-            var emoji = document.getElementById('customBossEmoji').value || '👾';
-            var name = document.getElementById('customBossName').value || '自創Boss';
-            var hp = parseInt(document.getElementById('customBossHP').value) || 150;
-            var speed = parseFloat(document.getElementById('customBossSpeed').value) || 1.2;
-            var skills = document.getElementById('customBossSkills').value.split(',').map(function(s) { return s
-                    .trim(); }).filter(function(s) { return s; });
-            var color = document.getElementById('customBossColor').value || '#ff6b6b';
-            customContent.bosses.push({ id: 'custom_boss_' + Date.now(), emoji: emoji, name: name, hp: hp,
-                speed: speed, skills: skills, color: color, type: 'custom_boss' });
-            document.getElementById('customBossPreview').textContent = emoji;
-            renderCustomLists();
-            saveCustomContent();
-            showNotification('✅ 已新增 Boss：' + emoji + ' ' + name);
-        }
-
-        function renderCustomLists() {
-            var itemList = document.getElementById('customItemList');
-            if (itemList) {
-                var html = '';
-                for (var i = 0; i < customContent.items.length; i++) {
-                    var item = customContent.items[i];
-                    html += '<span class="custom-item-tag">' + item.emoji + ' ' + item.name +
-                        '<span class="remove-btn" onclick="removeCustomItem(' + i + ')">✕</span></span>';
-                }
-                itemList.innerHTML = html;
-            }
-            var obsList = document.getElementById('customObstacleList');
-            if (obsList) {
-                var html2 = '';
-                for (var j = 0; j < customContent.obstacles.length; j++) {
-                    var obs = customContent.obstacles[j];
-                    html2 += '<span class="custom-item-tag">' + obs.emoji + ' ' + obs.name + ' (傷害:' + obs.damage +
-                        ')<span class="remove-btn" onclick="removeCustomObstacle(' + j +
-                        ')">✕</span></span>';
-                }
-                obsList.innerHTML = html2;
-            }
-            var bossList = document.getElementById('customBossList');
-            if (bossList) {
-                var html3 = '';
-                for (var k = 0; k < customContent.bosses.length; k++) {
-                    var boss = customContent.bosses[k];
-                    html3 += '<span class="custom-item-tag">' + boss.emoji + ' ' + boss.name + ' (HP:' + boss.hp +
-                        ')<span class="remove-btn" onclick="removeCustomBoss(' + k +
-                        ')">✕</span></span>';
-                }
-                bossList.innerHTML = html3;
-            }
-        }
-
-        function removeCustomItem(index) { customContent.items.splice(index, 1);
-            renderCustomLists();
-            saveCustomContent(); }
-
-        function removeCustomObstacle(index) { customContent.obstacles.splice(index, 1);
-            renderCustomLists();
-            saveCustomContent(); }
-
-        function removeCustomBoss(index) { customContent.bosses.splice(index, 1);
-            renderCustomLists();
-            saveCustomContent(); }
-
-        function resetCustomContent() {
-            if (!confirm('確定要清除所有自創內容嗎？')) return;
-            customContent = { items: [], obstacles: [], bosses: [] };
-            renderCustomLists();
-            saveCustomContent();
-            showNotification('🔄 已清除所有自創內容');
-        }
-
-        function toggleCustomCreator() {
-            var editor = document.getElementById('customCreator');
-            if (editor) {
-                editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-                if (editor.style.display === 'block') { loadCustomContent();
-                    renderCustomLists(); }
-            }
-        }
-
-        // ============================================================
-        // 畫質設定
-        // ============================================================
-        var QUALITY_SETTINGS = {
-            ultra: { scale: 1.0, particles: 80, effects: true, shadows: true, glow: true },
-            high: { scale: 1.0, particles: 50, effects: true, shadows: true, glow: true },
-            medium: { scale: 0.75, particles: 30, effects: true, shadows: false, glow: true },
-            low: { scale: 0.5, particles: 15, effects: false, shadows: false, glow: false },
-            potato: { scale: 0.3, particles: 5, effects: false, shadows: false, glow: false }
-        };
-        var currentQuality = 'high';
-        var customQuality = null;
-
-        function setQuality(val) {
-            currentQuality = val;
-            var settings = customQuality || QUALITY_SETTINGS[val] || QUALITY_SETTINGS.high;
-            window.__qualitySettings = settings;
-            if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
-            updateStatus('🖥️ 畫質: ' + val + ' (粒子:' + settings.particles);
-        }
-
-        function openCustomQuality() {
-            var current = customQuality || QUALITY_SETTINGS[currentQuality];
-            var val = prompt(
-                '自訂畫質參數 (JSON格式):\n{"scale":1.0,"particles":50,"effects":true,"shadows":true,"glow":true}\n\n當前值: ' +
-                JSON.stringify(current), JSON.stringify(current, null, 2));
-            if (val) {
-                try {
-                    var parsed = JSON.parse(val);
-                    customQuality = parsed;
-                    window.__qualitySettings = parsed;
-                    setQuality('custom');
-                    updateStatus('✅ 自訂畫質已套用');
-                } catch (e) { alert('❌ JSON 格式錯誤'); }
-            }
-        }
-
-        function resizeGameCanvas() {
-            var settings = window.__qualitySettings || QUALITY_SETTINGS.high;
-            if (gameCanvas && gameCanvas.parentElement) {
-                var w = gameCanvas.parentElement.clientWidth || 800;
-                var h = gameCanvas.parentElement.clientHeight || 480;
-                gameCanvas.width = w * settings.scale;
-                gameCanvas.height = h * settings.scale;
-                gameCanvas.style.width = w + 'px';
-                gameCanvas.style.height = h + 'px';
-                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = gameCanvas.height / 2;
-                initStars();
-            }
-        }
-        window.addEventListener('resize', resizeGameCanvas);
-
-        function initStars() {
-            var count = window.__qualitySettings ? window.__qualitySettings.particles : 50;
-            stars = [];
-            var w = gameCanvas.width || 800,
-                h = gameCanvas.height || 480;
-            for (var i = 0; i < count; i++) {
-                stars.push({ x: Math.random() * w, y: Math.random() * h, size: Math.random() * 2 + 1, baseSpeed: Math
-                        .random() * 2 + 0.5 });
             }
         }
 
@@ -6024,7 +5361,6 @@
                 if (editor.style.display === 'block') { buildAllCheckboxes(); }
             }
         }
-
         // ============================================================
         // 開發模式
         // ============================================================
@@ -6329,6 +5665,764 @@
         }
 
         // ============================================================
+        // 自訂外觀系統（完整版）
+        // ============================================================
+        var ALL_SKIN_ELEMENTS = [
+            { id: 'bg', label: '🌌 背景', defaultEmoji: '🌌' },
+            { id: 'rocket', label: '🚀 飛船', defaultEmoji: '🚀' },
+            { id: 'coin', label: '🪙 金幣', defaultEmoji: '🪙' },
+            { id: 'heart', label: '❤️ 治癒之心', defaultEmoji: '❤️' },
+            { id: 'shield', label: '🛡️ 護盾', defaultEmoji: '🛡️' },
+            { id: 'magnet', label: '🧲 磁鐵', defaultEmoji: '🧲' },
+            { id: 'double', label: '💎 雙倍積分', defaultEmoji: '💎' },
+            { id: 'fever', label: '⚡ FEVER', defaultEmoji: '⚡' },
+            { id: 'star', label: '⭐ 星星', defaultEmoji: '⭐' },
+            { id: 'wing', label: '🪶 翅膀', defaultEmoji: '🪶' },
+            { id: 'cloud', label: '⛈️ 障礙物', defaultEmoji: '⛈️' },
+            { id: 'boss', label: '👹 Boss', defaultEmoji: '👹' },
+            { id: 'missile', label: '🚀 飛彈', defaultEmoji: '🚀' },
+            { id: 'bomb', label: '💣 炸彈', defaultEmoji: '💣' },
+            { id: 'laser', label: '🔫 雷射', defaultEmoji: '🔫' },
+            { id: 'freeze', label: '🧊 冰凍彈', defaultEmoji: '🧊' },
+            { id: 'poison', label: '🧪 毒藥', defaultEmoji: '🧪' },
+            { id: 'thunder', label: '⚡ 閃電', defaultEmoji: '⚡' },
+            { id: 'dart', label: '🎯 飛鏢', defaultEmoji: '🎯' },
+            { id: 'time_freeze', label: '⏸️ 時間暫停', defaultEmoji: '⏸️' },
+            { id: 'companion', label: '🪁 夥伴', defaultEmoji: '🪁' },
+            { id: 'mega_shield', label: '🛡️ 超級護盾', defaultEmoji: '🛡️' },
+            { id: 'score_x5', label: '💎 5倍積分', defaultEmoji: '💎' },
+            { id: 'invincible', label: '🌟 無敵', defaultEmoji: '🌟' }
+        ];
+        var customSkins = {};
+        for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
+            customSkins[ALL_SKIN_ELEMENTS[i].id] = null;
+        }
+
+        function initSkinGrid() {
+            var grid = document.getElementById('skinAllGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
+                var el = ALL_SKIN_ELEMENTS[i];
+                var div = document.createElement('div');
+                div.className = 'skin-all-item';
+                div.innerHTML =
+                    '<label>' + el.label + '</label><div class="preview" id="skinPreview_' + el.id + '">' + el
+                    .defaultEmoji + '</div><input type="file" accept="image/*" id="skinInput_' + el.id +
+                    '" onchange="uploadSkinAll(\'' + el.id + '\',this)"><label class="upload-btn" for="skinInput_' +
+                    el.id + '">📤 上傳</label><button class="clear-btn" onclick="clearSkinAll(\'' + el.id +
+                    '\')">清除</button>';
+                grid.appendChild(div);
+            }
+            loadSkinsAll();
+        }
+
+        function loadSkinsAll() {
+            try {
+                var saved = localStorage.getItem('customSkinsAll');
+                if (saved) {
+                    var parsed = JSON.parse(saved);
+                    for (var key in parsed) {
+                        if (parsed.hasOwnProperty(key) && customSkins.hasOwnProperty(key) && parsed[key]) {
+                            customSkins[key] = parsed[key];
+                            updateSkinPreviewAll(key);
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function saveSkinsAll() {
+            try {
+                localStorage.setItem('customSkinsAll', JSON.stringify(customSkins));
+            } catch (e) {}
+        }
+
+        function updateSkinPreviewAll(key) {
+            var preview = document.getElementById('skinPreview_' + key);
+            if (!preview) return;
+            if (customSkins[key]) {
+                preview.innerHTML = '<img src="' + customSkins[key] +
+                    '" style="max-width:60px;max-height:60px;border-radius:4px;">';
+            } else {
+                var el = null;
+                for (var i = 0; i < ALL_SKIN_ELEMENTS.length; i++) {
+                    if (ALL_SKIN_ELEMENTS[i].id === key) { el = ALL_SKIN_ELEMENTS[i]; break; }
+                }
+                preview.textContent = el ? el.defaultEmoji : '❓';
+            }
+        }
+
+        function uploadSkinAll(key, input) {
+            var file = input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                customSkins[key] = e.target.result;
+                saveSkinsAll();
+                updateSkinPreviewAll(key);
+                updateStatus('✅ ' + key + ' 外觀已更新！');
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+
+        function clearSkinAll(key) {
+            customSkins[key] = null;
+            saveSkinsAll();
+            updateSkinPreviewAll(key);
+            updateStatus('已清除 ' + key + ' 外觀');
+        }
+
+        function resetAllSkins() {
+            if (!confirm('確定要清除所有自訂外觀嗎？')) return;
+            for (var key in customSkins) {
+                if (customSkins.hasOwnProperty(key)) {
+                    customSkins[key] = null;
+                    updateSkinPreviewAll(key);
+                }
+            }
+            saveSkinsAll();
+            updateStatus('✅ 所有外觀已重置');
+        }
+
+        function exportSkins() {
+            var data = JSON.stringify(customSkins);
+            var blob = new Blob([data], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '外觀設定_' + Date.now() + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function handleSkinImport(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var parsed = JSON.parse(e.target.result);
+                    for (var key in parsed) {
+                        if (parsed.hasOwnProperty(key) && customSkins.hasOwnProperty(key) && parsed[key]) {
+                            customSkins[key] = parsed[key];
+                            updateSkinPreviewAll(key);
+                        }
+                    }
+                    saveSkinsAll();
+                    updateStatus('✅ 外觀設定匯入成功！');
+                } catch (err) {
+                    alert('❌ 外觀設定檔格式錯誤：' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function toggleSkinEditor() {
+            var editor = document.getElementById('skinEditor');
+            if (editor) {
+                editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+                if (editor.style.display === 'block') { initSkinGrid(); }
+            }
+        }
+
+        // ============================================================
+        // 自創內容系統
+        // ============================================================
+        var customContent = { items: [], obstacles: [], bosses: [] };
+
+        function loadCustomContent() {
+            try {
+                var saved = localStorage.getItem('customContent');
+                if (saved) { customContent = JSON.parse(saved);
+                    renderCustomLists(); }
+            } catch (e) {}
+        }
+
+        function saveCustomContent() {
+            try {
+                localStorage.setItem('customContent', JSON.stringify(customContent));
+                showNotification('✅ 自創內容已儲存！');
+            } catch (e) {}
+            renderCustomLists();
+        }
+
+        function addCustomItem() {
+            var emoji = document.getElementById('customItemEmoji').value || '🍕';
+            var name = document.getElementById('customItemName').value || '自創道具';
+            var score = parseInt(document.getElementById('customItemScore').value) || 30;
+            var category = document.getElementById('customItemCategory').value;
+            var desc = document.getElementById('customItemDesc').value || '';
+            customContent.items.push({ id: 'custom_item_' + Date.now(), emoji: emoji, name: name, score: score,
+                category: category, desc: desc });
+            document.getElementById('customItemPreview').textContent = emoji;
+            renderCustomLists();
+            saveCustomContent();
+            showNotification('✅ 已新增道具：' + emoji + ' ' + name);
+        }
+
+        function addCustomObstacle() {
+            var emoji = document.getElementById('customObstacleEmoji').value || '🧱';
+            var name = document.getElementById('customObstacleName').value || '自創障礙物';
+            var damage = parseInt(document.getElementById('customObstacleDamage').value) || 20;
+            var effect = document.getElementById('customObstacleEffect').value;
+            customContent.obstacles.push({ id: 'custom_obs_' + Date.now(), emoji: emoji, name: name, damage: damage,
+                slow: effect === 'slow' });
+            document.getElementById('customObstaclePreview').textContent = emoji;
+            renderCustomLists();
+            saveCustomContent();
+            showNotification('✅ 已新增障礙物：' + emoji + ' ' + name);
+        }
+
+        function addCustomBoss() {
+            var emoji = document.getElementById('customBossEmoji').value || '👾';
+            var name = document.getElementById('customBossName').value || '自創Boss';
+            var hp = parseInt(document.getElementById('customBossHP').value) || 150;
+            var speed = parseFloat(document.getElementById('customBossSpeed').value) || 1.2;
+            var skills = document.getElementById('customBossSkills').value.split(',').map(function(s) { return s
+                    .trim(); }).filter(function(s) { return s; });
+            var color = document.getElementById('customBossColor').value || '#ff6b6b';
+            customContent.bosses.push({ id: 'custom_boss_' + Date.now(), emoji: emoji, name: name, hp: hp,
+                speed: speed, skills: skills, color: color, type: 'custom_boss' });
+            document.getElementById('customBossPreview').textContent = emoji;
+            renderCustomLists();
+            saveCustomContent();
+            showNotification('✅ 已新增 Boss：' + emoji + ' ' + name);
+        }
+
+        function renderCustomLists() {
+            var itemList = document.getElementById('customItemList');
+            if (itemList) {
+                var html = '';
+                for (var i = 0; i < customContent.items.length; i++) {
+                    var item = customContent.items[i];
+                    html += '<span class="custom-item-tag">' + item.emoji + ' ' + item.name +
+                        '<span class="remove-btn" onclick="removeCustomItem(' + i + ')">✕</span></span>';
+                }
+                itemList.innerHTML = html;
+            }
+            var obsList = document.getElementById('customObstacleList');
+            if (obsList) {
+                var html2 = '';
+                for (var j = 0; j < customContent.obstacles.length; j++) {
+                    var obs = customContent.obstacles[j];
+                    html2 += '<span class="custom-item-tag">' + obs.emoji + ' ' + obs.name + ' (傷害:' + obs.damage +
+                        ')<span class="remove-btn" onclick="removeCustomObstacle(' + j +
+                        ')">✕</span></span>';
+                }
+                obsList.innerHTML = html2;
+            }
+            var bossList = document.getElementById('customBossList');
+            if (bossList) {
+                var html3 = '';
+                for (var k = 0; k < customContent.bosses.length; k++) {
+                    var boss = customContent.bosses[k];
+                    html3 += '<span class="custom-item-tag">' + boss.emoji + ' ' + boss.name + ' (HP:' + boss.hp +
+                        ')<span class="remove-btn" onclick="removeCustomBoss(' + k +
+                        ')">✕</span></span>';
+                }
+                bossList.innerHTML = html3;
+            }
+        }
+
+        function removeCustomItem(index) { customContent.items.splice(index, 1);
+            renderCustomLists();
+            saveCustomContent(); }
+
+        function removeCustomObstacle(index) { customContent.obstacles.splice(index, 1);
+            renderCustomLists();
+            saveCustomContent(); }
+
+        function removeCustomBoss(index) { customContent.bosses.splice(index, 1);
+            renderCustomLists();
+            saveCustomContent(); }
+
+        function resetCustomContent() {
+            if (!confirm('確定要清除所有自創內容嗎？')) return;
+            customContent = { items: [], obstacles: [], bosses: [] };
+            renderCustomLists();
+            saveCustomContent();
+            showNotification('🔄 已清除所有自創內容');
+        }
+
+        function toggleCustomCreator() {
+            var editor = document.getElementById('customCreator');
+            if (editor) {
+                editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+                if (editor.style.display === 'block') { loadCustomContent();
+                    renderCustomLists(); }
+            }
+        }
+
+        // ============================================================
+        // 後端整合
+        // ============================================================
+        var playerProfile = {
+            name: '',
+            totalScore: 0,
+            gamesPlayed: 0,
+            achievements: [],
+            stats: { totalBosses: 0, totalItems: 0, maxCombo: 0, bestScore: 0, perfectGames: 0 }
+        };
+
+        async function sendVercelLog(message, level, data, type, game) {
+            try {
+                var response = await fetch('/api/log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        level: level || 'INFO',
+                        data: data,
+                        type: type,
+                        game: game || 'flight'
+                    })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('發送日誌失敗:', error);
+            }
+        }
+
+        async function getStats() {
+            try {
+                var response = await fetch('/api/log/stats');
+                return await response.json();
+            } catch (error) {
+                console.error('獲取統計失敗:', error);
+                return null;
+            }
+        }
+
+        async function submitScore(playerName, score, level, mode, game) {
+            try {
+                var response = await fetch('/api/log/leaderboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        playerName: playerName,
+                        score: score,
+                        level: level,
+                        gameMode: mode,
+                        game: game || 'flight'
+                    })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('提交分數失敗:', error);
+            }
+        }
+
+        async function getLeaderboard(limit, game) {
+            try {
+                var url = '/api/log/leaderboard?limit=' + (limit || 10);
+                if (game) url += '&game=' + game;
+                var response = await fetch(url);
+                return await response.json();
+            } catch (error) {
+                console.error('獲取排行榜失敗:', error);
+                return { leaderboard: [], total: 0 };
+            }
+        }
+
+        async function getAchievements(game) {
+            try {
+                var url = '/api/log/achievements';
+                if (game) url += '?game=' + game;
+                var response = await fetch(url);
+                return await response.json();
+            } catch (error) {
+                console.error('獲取成就失敗:', error);
+                return { achievements: {} };
+            }
+        }
+
+        async function updateChallenge(challengeId, progress) {
+            try {
+                var response = await fetch('/api/log/challenges', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challengeId: challengeId, progress: progress })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('更新挑戰失敗:', error);
+            }
+        }
+
+        // ============================================================
+        // 遊戲模式與輔助功能
+        // ============================================================
+        var dailyChallengeTimer = 0;
+        var challengeActive = false;
+        var challengeData = {};
+        var comboMultiplier = 1;
+        var currentComboStreak = 0;
+        var maxComboStreak = 0;
+        var timeFreezeActive = false;
+        var timeFreezeTimer = 0;
+        var companionActive = false;
+        var companionType = 'none';
+        var companionTimer = 0;
+        var GAME_MODES = { STANDARD: 'standard', HARDCORE: 'hardcore', SURVIVAL: 'survival',
+        CHALLENGE: 'challenge' };
+        var currentGameMode = GAME_MODES.STANDARD;
+
+        function spawnSpecialItem() {
+            if (Math.random() > 0.008) return;
+            var item = SPECIAL_ITEMS[Math.floor(Math.random() * SPECIAL_ITEMS.length)];
+            collectibles.push({
+                type: item.type,
+                emoji: item.emoji,
+                label: item.label,
+                duration: item.duration,
+                effect: item.effect,
+                desc: item.desc,
+                x: gameCanvas.width + 20,
+                y: Math.random() * (gameCanvas.height - 100) + 50,
+                radius: 16,
+                baseSpeed: 2.5,
+                collected: false,
+                isSpecial: true
+            });
+        }
+
+        function handleSpecialItem(item) {
+            switch (item.effect) {
+                case 'freeze':
+                    timeFreezeActive = true;
+                    timeFreezeTimer = item.duration;
+                    playAudioEffect('special');
+                    showNotification('⏸️ 時間暫停！');
+                    break;
+                case 'companion':
+                    companionActive = true;
+                    companionTimer = item.duration;
+                    companionType = 'drone';
+                    playAudioEffect('special');
+                    showNotification('🪁 夥伴加入！');
+                    break;
+                case 'mega_shield':
+                    hasShield = true;
+                    shieldCharges = 3;
+                    document.getElementById('shieldBadge').style.display = 'inline';
+                    document.getElementById('shieldBadge').textContent = '🛡️ x3';
+                    playAudioEffect('special');
+                    showNotification('🛡️ 超級護盾啟動！');
+                    break;
+                case 'x5':
+                    doubleScoreTimer = item.duration;
+                    document.getElementById('doubleBadge').style.display = 'inline';
+                    document.getElementById('doubleBadge').textContent = '💎 5x';
+                    playAudioEffect('special');
+                    showNotification('💎 5倍積分！');
+                    break;
+                case 'invincible':
+                    invincibleActive = true;
+                    invincibleTimer = item.duration;
+                    playAudioEffect('special');
+                    showNotification('🌟 無敵模式！');
+                    break;
+            }
+        }
+
+        function updateComboSystem() {
+            if (gameCombo > 0) {
+                currentComboStreak = gameCombo;
+                maxComboStreak = Math.max(maxComboStreak, currentComboStreak);
+                if (gameCombo >= 10) comboMultiplier = 1.5;
+                if (gameCombo >= 25) comboMultiplier = 2.0;
+                if (gameCombo >= 50) comboMultiplier = 3.0;
+                if (gameCombo >= 100) comboMultiplier = 5.0;
+                if (gameCombo % 10 === 0 && gameCombo > 0) {
+                    showNotification('🔥 ' + gameCombo + ' Combo！x' + comboMultiplier);
+                    playAudioEffect('buff');
+                }
+            } else {
+                comboMultiplier = 1;
+                currentComboStreak = 0;
+            }
+        }
+
+        function spawnBossLoot(boss) {
+            for (var i = 0; i < 5; i++) {
+                (function(index) {
+                    setTimeout(function() {
+                        var item = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+                        collectibles.push({
+                            type: item.type,
+                            emoji: item.emoji,
+                            color: item.color,
+                            label: item.label,
+                            score: item.score,
+                            category: item.category,
+                            x: boss.x + (Math.random() - 0.5) * 100,
+                            y: boss.y + (Math.random() - 0.5) * 100,
+                            radius: 12,
+                            baseSpeed: 1,
+                            collected: false
+                        });
+                    }, index * 200);
+                })(i);
+            }
+            var bonus = 100 + Math.floor(Math.random() * 200);
+            gameScore += bonus;
+            showNotification('🎊 擊敗 Boss！獎勵 ' + bonus + ' 分！');
+        }
+
+        function checkChallenges() {
+            if (challengeActive) {
+                var progress = Math.min(EXP ? EXP.currentLevel || 0 : 0, 5);
+                updateChallenge('daily_1', progress);
+            }
+            var speedSelect = document.getElementById('gameSpeedSelect');
+            if (speedSelect && parseFloat(speedSelect.value) >= 2.0) {
+                var elapsed = (Date.now() - sessionStartTime) / 1000;
+                updateChallenge('speed_demon', Math.min(elapsed, 60));
+            }
+        }
+
+        function createModeSelector() {
+            var panel = document.querySelector('.control-panel');
+            if (!panel) return;
+            var modeHTML =
+                '<label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">模式:<select id="gameModeSelect" onchange="switchGameMode(this.value)"><option value="standard">🎯 標準</option><option value="hardcore">💀 硬核</option><option value="survival">🏃 生存</option><option value="challenge">🏆 挑戰</option></select></label><button class="btn teal-btn" onclick="showStats()" style="padding:4px 12px;font-size:12px;">📊 統計</button><button class="btn orange-btn" onclick="showLeaderboard()" style="padding:4px 12px;font-size:12px;">🏆 排行榜</button><button class="btn purple-btn" onclick="showAchievements()" style="padding:4px 12px;font-size:12px;">🏅 成就</button>';
+            panel.insertAdjacentHTML('beforeend', modeHTML);
+        }
+
+        function switchGameMode(mode) {
+            currentGameMode = mode;
+            showNotification('🎮 切換至 ' + mode + ' 模式');
+            switch (mode) {
+                case 'hardcore':
+                    playerHP = 1;
+                    document.getElementById('hpFill').style.width = '1%';
+                    showNotification('💀 硬核模式：一擊必殺！');
+                    break;
+                case 'survival':
+                    showNotification('🏃 生存模式：盡可能活久一點！');
+                    break;
+                case 'challenge':
+                    challengeActive = true;
+                    showNotification('🏆 挑戰模式已啟動！');
+                    break;
+                default:
+                    playerHP = 100;
+                    challengeActive = false;
+            }
+        }
+
+        async function showStats() {
+            var stats = await getStats();
+            if (!stats) { showNotification('❌ 無法獲取統計資料'); return; }
+            var msg =
+                '📊 統計資料：\n總遊戲次數: ' + stats.totalGames + '\n總分數: ' + stats.totalScores + '\n最高分: ' + stats.highScore +
+                '\n平均分: ' + stats.averageScore + '\n擊敗 Boss: ' + stats.totalBossesDefeated + '\n收集道具: ' + stats
+                .totalItemsCollected;
+            alert(msg);
+        }
+
+        async function showLeaderboard() {
+            var game = currentGame ? currentGame.name : 'flight';
+            var data = await getLeaderboard(10, game);
+            if (!data) { showNotification('❌ 無法獲取排行榜'); return; }
+            var msg = '🏆 排行榜 (' + (GAME_CONFIGS[game] ? GAME_CONFIGS[game].name : '飛行員') + ')\n' + '═'.repeat(
+                30) + '\n';
+            if (data.leaderboard.length === 0) {
+                msg += '尚無記錄，快來挑戰吧！';
+            } else {
+                for (var i = 0; i < data.leaderboard.length; i++) {
+                    var entry = data.leaderboard[i];
+                    var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+                    msg += medal + ' ' + entry.playerName + ' - ' + entry.score + '分 (Lv.' + entry.level + ')\n';
+                }
+            }
+            alert(msg);
+        }
+
+        async function showAchievements() {
+            var game = currentGame ? currentGame.name : 'flight';
+            var data = await getAchievements(game);
+            if (!data) { showNotification('❌ 無法獲取成就'); return; }
+            var msg = '🏅 成就系統 (' + (GAME_CONFIGS[game] ? GAME_CONFIGS[game].name : '飛行員') + ')\n' + '═'.repeat(
+                30) + '\n';
+            var achievements = data.achievements || {};
+            var unlocked = 0,
+                total = 0;
+            for (var key in achievements) {
+                if (achievements.hasOwnProperty(key)) {
+                    var ach = achievements[key];
+                    total++;
+                    if (playerProfile.achievements.indexOf(key) !== -1) {
+                        unlocked++;
+                        msg += '✅ ' + ach.name + ' - ' + ach.description + '\n';
+                    } else {
+                        msg += '❌ ' + ach.name + ' - ' + ach.description + '\n';
+                    }
+                }
+            }
+            msg += '\n' + '═'.repeat(30);
+            msg += '\n已解鎖: ' + unlocked + '/' + total;
+            alert(msg);
+        }
+
+        function drawCompanion() {
+            if (!companionActive || !gameCtx) return;
+            companionTimer--;
+            if (companionTimer <= 0) { companionActive = false;
+                companionType = 'none'; return; }
+            var cx = rocket.x - 30;
+            var cy = rocket.y + Math.sin(Date.now() / 500) * 10;
+            gameCtx.save();
+            gameCtx.translate(cx, cy);
+            gameCtx.shadowColor = '#00d2d3';
+            gameCtx.shadowBlur = 20;
+            gameCtx.fillStyle = '#00d2d3';
+            gameCtx.font = '24px sans-serif';
+            gameCtx.textAlign = 'center';
+            gameCtx.textBaseline = 'middle';
+            gameCtx.fillText('🪁', 0, 0);
+            gameCtx.restore();
+            for (var i = 0; i < collectibles.length; i++) {
+                var c = collectibles[i];
+                var dist = Math.hypot(c.x - cx, c.y - cy);
+                if (dist < c.radius + 20 && !c.collected) {
+                    c.x += (cx - c.x) * 0.1;
+                    c.y += (cy - c.y) * 0.1;
+                    if (dist < 15) {
+                        c.collected = true;
+                        gameScore += 10;
+                        playAudioEffect('coin');
+                    }
+                }
+            }
+        }
+
+        function applyTimeFreeze() {
+            if (!timeFreezeActive) return;
+            timeFreezeTimer--;
+            if (timeFreezeTimer <= 0) { timeFreezeActive = false;
+                showNotification('⏸️ 時間暫停結束'); return; }
+            for (var i = 0; i < obstacles.length; i++) {
+                obstacles[i].x -= 0.1;
+            }
+            for (var j = 0; j < collectibles.length; j++) {
+                collectibles[j].x -= 0.1;
+            }
+            if (bossActive && currentBoss) { currentBoss.x -= 0.05; }
+            gameCtx.save();
+            gameCtx.fillStyle = 'rgba(100,200,255,0.05)';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.restore();
+        }
+
+        // ============================================================
+        // 畫質設定
+        // ============================================================
+        var QUALITY_SETTINGS = {
+            ultra: { scale: 1.0, particles: 80, effects: true, shadows: true, glow: true },
+            high: { scale: 1.0, particles: 50, effects: true, shadows: true, glow: true },
+            medium: { scale: 0.75, particles: 30, effects: true, shadows: false, glow: true },
+            low: { scale: 0.5, particles: 15, effects: false, shadows: false, glow: false },
+            potato: { scale: 0.3, particles: 5, effects: false, shadows: false, glow: false }
+        };
+        var currentQuality = 'high';
+        var customQuality = null;
+
+        function setQuality(val) {
+            currentQuality = val;
+            var settings = customQuality || QUALITY_SETTINGS[val] || QUALITY_SETTINGS.high;
+            window.__qualitySettings = settings;
+            if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+            updateStatus('🖥️ 畫質: ' + val + ' (粒子:' + settings.particles);
+        }
+
+        function openCustomQuality() {
+            var current = customQuality || QUALITY_SETTINGS[currentQuality];
+            var val = prompt(
+                '自訂畫質參數 (JSON格式):\n{"scale":1.0,"particles":50,"effects":true,"shadows":true,"glow":true}\n\n當前值: ' +
+                JSON.stringify(current), JSON.stringify(current, null, 2));
+            if (val) {
+                try {
+                    var parsed = JSON.parse(val);
+                    customQuality = parsed;
+                    window.__qualitySettings = parsed;
+                    setQuality('custom');
+                    updateStatus('✅ 自訂畫質已套用');
+                } catch (e) { alert('❌ JSON 格式錯誤'); }
+            }
+        }
+
+        function resizeGameCanvas() {
+            var settings = window.__qualitySettings || QUALITY_SETTINGS.high;
+            if (gameCanvas && gameCanvas.parentElement) {
+                var w = gameCanvas.parentElement.clientWidth || 800;
+                var h = gameCanvas.parentElement.clientHeight || 480;
+                gameCanvas.width = w * settings.scale;
+                gameCanvas.height = h * settings.scale;
+                gameCanvas.style.width = w + 'px';
+                gameCanvas.style.height = h + 'px';
+                if (isNaN(rocket.y) || rocket.y <= 0) rocket.y = gameCanvas.height / 2;
+                initStars();
+            }
+        }
+        window.addEventListener('resize', resizeGameCanvas);
+
+        function initStars() {
+            var count = window.__qualitySettings ? window.__qualitySettings.particles : 50;
+            stars = [];
+            var w = gameCanvas.width || 800,
+                h = gameCanvas.height || 480;
+            for (var i = 0; i < count; i++) {
+                stars.push({ x: Math.random() * w, y: Math.random() * h, size: Math.random() * 2 + 1, baseSpeed: Math
+                        .random() * 2 + 0.5 });
+            }
+        }
+
+        // ============================================================
+        // 重置關卡進度
+        // ============================================================
+        window.resetLevelProgress = function() {
+            if (confirm('確定要重置所有關卡進度嗎？')) {
+                EXP.currentLevel = 1;
+                EXP.bossSkills = [];
+                EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'missile', 'bomb',
+                    'laser', 'freeze', 'poison', 'thunder', 'dart'
+                ];
+                EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
+                EXP.customLevelActive = false;
+                EXP.customConfig = null;
+                EXP.isFinalBossActive = false;
+                EXP.bossSequencePlaying = false;
+                EXP.isRecordingPaused = false;
+                updateLevelDisplay();
+                if (typeof restartGameEngine === 'function') restartGameEngine();
+                var status = document.getElementById('status');
+                if (status) {
+                    status.innerText = '🔄 關卡進度已重置';
+                    status.style.background = '#e67e22';
+                    setTimeout(function() { status.style.background = '#1f4e79'; }, 2000);
+                }
+            }
+        };
+
+        // ============================================================
+        // 示範影片 Modal
+        // ============================================================
+        var demoAnimId = null;
+
+        function closeDemoModal() {
+            var modal = document.getElementById('demoModal');
+            modal.style.display = 'none';
+            if (demoAnimId) {
+                cancelAnimationFrame(demoAnimId);
+                demoAnimId = null;
+            }
+        }
+
+        // ============================================================
         // 初始化
         // ============================================================
         function initExpansion() {
@@ -6387,29 +6481,7 @@
         window.showStats = showStats;
         window.showLeaderboard = showLeaderboard;
         window.showAchievements = showAchievements;
-        window.resetLevelProgress = function() {
-            if (confirm('確定要重置所有關卡進度嗎？')) {
-                EXP.currentLevel = 1;
-                EXP.bossSkills = [];
-                EXP.unlockedItems = ['coin', 'heart', 'shield', 'magnet', 'double', 'fever', 'missile', 'bomb',
-                    'laser', 'freeze', 'poison', 'thunder', 'dart'
-                ];
-                EXP.unlockedObstacles = ['cloud', 'poison', 'mud', 'spike', 'fire', 'ice'];
-                EXP.customLevelActive = false;
-                EXP.customConfig = null;
-                EXP.isFinalBossActive = false;
-                EXP.bossSequencePlaying = false;
-                EXP.isRecordingPaused = false;
-                updateLevelDisplay();
-                if (typeof restartGameEngine === 'function') restartGameEngine();
-                var status = document.getElementById('status');
-                if (status) {
-                    status.innerText = '🔄 關卡進度已重置';
-                    status.style.background = '#e67e22';
-                    setTimeout(function() { status.style.background = '#1f4e79'; }, 2000);
-                }
-            }
-        };
+        window.resetLevelProgress = resetLevelProgress;
         window.addCustomItem = addCustomItem;
         window.addCustomObstacle = addCustomObstacle;
         window.addCustomBoss = addCustomBoss;
@@ -6423,6 +6495,12 @@
         window.resetAllSkins = resetAllSkins;
         window.exportSkins = exportSkins;
         window.handleSkinImport = handleSkinImport;
+        window.sendVercelLog = sendVercelLog;
+        window.getStats = getStats;
+        window.submitScore = submitScore;
+        window.getLeaderboard = getLeaderboard;
+        window.getAchievements = getAchievements;
+        window.updateChallenge = updateChallenge;
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initExpansion);
