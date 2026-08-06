@@ -3975,7 +3975,7 @@ window.showAchievements=showAchievements;
 </script>
 <script>
 // ============================================================
-// 🌟 五大獨立遊戲模式：終極完全重製版
+// 🌟 五大獨立遊戲模式：生命值與墜毀終結防護版
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3987,7 +3987,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="painter" id="opt_painter">🎨 風之繪師 (自由穩定訓練)</option>
             <option value="candle" id="opt_candle">🕯️ 燭光遠征 (動態分岔迷宮)</option>
             <option value="mage" id="opt_mage">⚔️ 魔導士破魔 (中央防衛戰)</option>
-            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (動態氣象與墜毀)</option>
+            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (嚴格落地墜毀)</option>
             <option value="crystal" id="opt_crystal">💎 玻璃心大師 (100關進階雕刻)</option>
             <option value="both">全模式 (圖表+飛行家)</option>
             <option value="intro">📖 介紹圖鑑</option>
@@ -4101,7 +4101,7 @@ window.switchViewMode = function(mode) {
 };
 
 // ============================================================
-// 🎮 遊戲核心引擎
+// 🎮 遊戲核心引擎 (含生命值絕對終結防護)
 // ============================================================
 function startSubGameEngine(theme) {
     const canvas = document.getElementById('subGameCanvas');
@@ -4112,12 +4112,12 @@ function startSubGameEngine(theme) {
     canvas.height = canvas.parentElement.clientHeight || 480;
 
     let state = {
-        hp: 100, frame: 0, level: 1, score: 0,
-        painter: { cursorX: canvas.width/2, cursorY: canvas.height/2, lines: [], stabilityScore: 100 },
+        hp: 100, frame: 0, level: 1, score: 0, isGameOver: false,
+        painter: { cursorX: canvas.width/2, cursorY: canvas.height/2, lines: [] },
         candle: { pathX: canvas.width / 2, angle: 0, obstacles: [], items: [], distance: 0 },
         mage: { spells: [], enemies: [], chargeTime: 0 },
         dandelion: { y: canvas.height / 2, weather: 'sunny', obstacles: [], items: [], distance: 0 },
-        crystal: { cracksPercent: 0, level: 1, gemType: 0 }
+        crystal: { cracksPercent: 0, level: 1 }
     };
 
     const themeNames = {
@@ -4135,8 +4135,21 @@ function startSubGameEngine(theme) {
         mousePos.y = e.clientY - rect.top;
     };
 
+    function triggerGameOver(reason) {
+        state.isGameOver = true;
+        alert(`💥 遊戲結束！(${reason})`);
+        // 重置遊戲狀態
+        state.hp = 100;
+        state.level = 1;
+        state.score = 0;
+        state.isGameOver = false;
+        state.mage.enemies = [];
+        state.candle.obstacles = [];
+        state.dandelion.obstacles = [];
+    }
+
     function loop() {
-        if (currentActiveSubTheme !== theme) return;
+        if (currentActiveSubTheme !== theme || state.isGameOver) return;
         let w = canvas.width, h = canvas.height;
         let pressure = getSubPressureInput();
         state.frame++;
@@ -4167,13 +4180,12 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【風之繪師】移動滑鼠自由繪製，穩定氣流維持筆寬一致`, 40, 30);
         }
 
-        // 🕯️ 2. 燭光遠征：動態分岔路與轉彎迷宮
+        // 🕯️ 2. 燭光遠征
         else if (theme === 'candle') {
             ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
             state.candle.distance += 2;
             state.candle.angle += 0.02;
 
-            // 讓迷宮中心軸線隨著正弦波產生轉彎與分岔偏移
             let targetCenterX = w / 2 + Math.sin(state.candle.angle) * 180 + Math.cos(state.candle.angle * 0.5) * 100;
             state.candle.pathX += (targetCenterX - state.candle.pathX) * 0.05;
 
@@ -4182,7 +4194,6 @@ function startSubGameEngine(theme) {
                 if (Math.random() > 0.4) state.candle.items.push({ x: state.candle.pathX + (Math.random() - 0.5) * 80, y: h + 30 });
             }
 
-            // 高對比動態迷宮壁面
             ctx.fillStyle = '#00ffcc';
             ctx.fillRect(0, 0, state.candle.pathX - 100, h);
             ctx.fillRect(state.candle.pathX + 100, 0, w - (state.candle.pathX + 100), h);
@@ -4214,7 +4225,7 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【燭光遠征】動態轉彎與分岔迷宮：控制視野尋找燈油`, 40, 30);
         }
 
-        // ⚔️ 3. 魔導士破魔：中央實體防衛戰
+        // ⚔️ 3. 魔導士破魔 (血量歸零絕對觸發遊戲結束)
         else if (theme === 'mage') {
             ctx.fillStyle = '#110c1d'; ctx.fillRect(0, 0, w, h);
             let centerX = w / 2, centerY = h / 2;
@@ -4233,7 +4244,6 @@ function startSubGameEngine(theme) {
                 state.mage.chargeTime = 0;
             }
 
-            // 關卡越高，怪物生成頻率越快
             let spawnInterval = Math.max(20, 70 - state.level * 3);
             if (state.frame % spawnInterval === 0) {
                 let angle = Math.random() * Math.PI * 2;
@@ -4246,11 +4256,9 @@ function startSubGameEngine(theme) {
                 });
             }
 
-            // 繪製中央魔導士實體防衛塔
             ctx.fillStyle = '#9b59b6'; ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.arc(centerX, centerY, 24, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-            // 處理魔法彈
             state.mage.spells.forEach((s, idx) => {
                 if (s.target && s.target.hp > 0) {
                     let angle = Math.atan2(s.target.y - s.y, s.target.x - s.x);
@@ -4273,7 +4281,6 @@ function startSubGameEngine(theme) {
                 });
             });
 
-            // 處理敵人向中央進攻
             state.mage.enemies.forEach((e, idx) => {
                 let angle = Math.atan2(centerY - e.y, centerX - e.x);
                 e.x += Math.cos(angle) * e.speed;
@@ -4282,9 +4289,8 @@ function startSubGameEngine(theme) {
                 ctx.fillStyle = '#ff3366'; ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
                 ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText(`HP:${Math.floor(e.hp)}`, e.x - 15, e.y - 15);
 
-                // 撞到中央實體則扣血並消滅怪物
                 if (Math.hypot(centerX - e.x, centerY - e.y) < 30) {
-                    state.hp -= (10 + state.level * 2);
+                    state.hp -= (15 + state.level * 3);
                     state.mage.enemies.splice(idx, 1);
                 }
             });
@@ -4296,7 +4302,7 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【魔導士破魔】中央防衛戰 (關卡: ${state.level})：氣流集氣攻擊最近魔物`, 40, 30);
         }
 
-        // 🌿 4. 蒲公英快遞：嚴格落地墜毀判定
+        // 🌿 4. 蒲公英快遞 (落地觸地直接墜毀歸零)
         else if (theme === 'dandelion') {
             state.dandelion.distance++;
             if (state.dandelion.distance % 500 === 0) {
@@ -4315,32 +4321,29 @@ function startSubGameEngine(theme) {
                 obs.x -= 3;
                 ctx.fillStyle = '#e74c3c'; ctx.fillRect(obs.x, obs.y, 25, 25);
                 if (Math.hypot(180 - obs.x, state.dandelion.y - obs.y) < 25) {
-                    state.hp -= 15; state.dandelion.obstacles.splice(idx, 1);
+                    state.hp -= 20; state.dandelion.obstacles.splice(idx, 1);
                 }
                 if (obs.x < -50) state.dandelion.obstacles.splice(idx, 1);
             });
 
-            // 氣流高度計算
             let targetY = h - (pressure / 100 * (h - 120)) - 60;
             state.dandelion.y += (targetY - state.dandelion.y) * 0.1;
 
-            // 🛑 嚴格判定：如果氣流歸零導致落地（低於地面線上方 30 像素），直接判定墜毀扣血！
-            if (state.dandelion.y >= h - 50) {
-                state.hp -= 1; // 落地持續卡 Bug 會快速扣血
-                state.dandelion.y = h - 50;
+            // 🛑 嚴格落地判定：碰到地面直接瞬間扣血至死！
+            if (state.dandelion.y >= h - 55) {
+                state.hp -= 5; // 落地每幀扣 5 血，瞬間歸零
+                state.dandelion.y = h - 55;
             }
 
-            // 畫地板
             ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, h - 30, w, 30);
 
-            // 畫蒲公英
             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(180, state.dandelion.y, 16, 0, Math.PI*2); ctx.fill();
 
             ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
-            ctx.fillText(`【蒲公英快遞】嚴格落地判定：氣流過低觸地即墜毀扣血`, 40, 30);
+            ctx.fillText(`【蒲公英快遞】嚴格落地墜毀判定：氣流不足觸地即扣血至死`, 40, 30);
         }
 
-        // 💎 5. 玻璃心大師：100 關卡進階動態碎裂
+        // 💎 5. 玻璃心大師
         else if (theme === 'crystal') {
             ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
 
@@ -4354,7 +4357,7 @@ function startSubGameEngine(theme) {
             } else if (pressure > 2) {
                 state.crystal.cracksPercent += (0.5 + state.crystal.level * 0.05);
                 if (state.crystal.cracksPercent >= 100) {
-                    state.hp -= 15;
+                    state.hp -= 20;
                     state.crystal.cracksPercent = 0;
                     state.crystal.level = Math.min(100, state.crystal.level + 1);
                 }
@@ -4370,7 +4373,6 @@ function startSubGameEngine(theme) {
             ctx.moveTo(0, -90); ctx.lineTo(70, -20); ctx.lineTo(40, 80); ctx.lineTo(-40, 80); ctx.lineTo(-70, -20);
             ctx.closePath(); ctx.fill(); ctx.stroke();
 
-            // 碎裂紋路
             ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 3;
             if (state.crystal.cracksPercent > 25) {
                 ctx.beginPath(); ctx.moveTo(0, -90); ctx.lineTo(15, 20); ctx.lineTo(-20, 50); ctx.stroke();
@@ -4391,6 +4393,14 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【玻璃心大師】第 ${state.crystal.level}/100 關 (維持 ${targetMin}~${targetMax}) 碎裂度: ${Math.floor(state.crystal.cracksPercent)}%`, 40, 30);
         }
 
+        // 🛑 生命值歸零絕對判定觸發！
+        if (state.hp <= 0) {
+            state.hp = 0;
+            document.getElementById('subHudHp').innerText = `❤️ 生命值: 0%`;
+            triggerGameOver(themeNames[theme] + ' 陣亡墜毀');
+            return;
+        }
+
         // 左側氣流柱
         ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(20, 60, 20, 150);
         ctx.fillStyle = pressure > 80 ? '#e74c3c' : (pressure > 30 ? '#2ecc71' : '#3498db');
@@ -4399,7 +4409,7 @@ function startSubGameEngine(theme) {
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText('氣流', 18, 225);
 
         document.getElementById('subHudTitle').innerText = `⭐ ${themeNames[theme]}`;
-        document.getElementById('subHudHp').innerText = `❤️ 生命值: ${state.hp}%`;
+        document.getElementById('subHudHp').innerText = `❤️ 生命值: ${Math.max(0, Math.floor(state.hp))}%`;
 
         subGameAnimId = requestAnimationFrame(loop);
     }
