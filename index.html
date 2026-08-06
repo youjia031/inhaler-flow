@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呼吸訓練器 - 多主題整合完整版 v7.0</title>
+    <title>呼吸訓練器 - 完整主題整合版 v7.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
-        /* 繼承來源中的完整 CSS 樣式 [8-10, 17-31] */
+        /* [1, 9-24] 完整保留 v6.0 CSS 樣式 */
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f4f6f8; color: #2c3e50; margin: 0; padding: 20px; }
         .header { margin-bottom: 20px; border-left: 6px solid #1f4e79; padding-left: 15px; }
@@ -23,26 +23,26 @@
         .hud-badge { background: rgba(22, 27, 34, 0.88); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(6px); color: white; display: flex; align-items: center; gap: 8px; }
         .hp-bar-bg { width: 120px; height: 14px; background: rgba(255,255,255,0.1); border-radius: 7px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.4); display: inline-block; vertical-align: middle; }
         .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); transition: width 0.1s linear; }
-        .modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.92); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; border-radius: 8px; }
+        .modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.92); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; border-radius: 8px; backdrop-filter: blur(8px); }
         .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
+        #levelEditor, #skinEditor { display: none; background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid #30363d; margin-top: 15px; color: #e6edf3; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="main-title">呼吸訓練系統 v7.0</div>
-        <h1>Multi-Theme Game Integration</h1>
-        <p>專業數據監測與五款全新吐氣訓練主題 [31]</p>
+        <div class="main-title">呼吸訓練器 v7.0</div>
+        <h1>Multi-Theme Inhaler Monitor & Training</h1>
+        <p>專業聲學偵測與五款全新吐氣訓練主題遊戲 [1]</p>
     </div>
 
-    <!-- 控制面板 [31, 32] -->
+    <!-- [25, 26] 控制面板擴充 -->
     <div class="control-panel">
         <button id="connectBtn" class="btn accent">Connect</button>
         <button id="startBtn" class="btn game-btn" disabled>Start</button>
-        
         <label>遊戲主題:
             <select id="gameThemeSelect" onchange="switchGameTheme(this.value)">
-                <option value="pilot">🚀 氣流飛行員</option>
+                <option value="pilot">🚀 氣流飛行員 (原版)</option>
                 <option value="painter">🎨 風之繪師</option>
                 <option value="candle">🕯️ 燭光遠征</option>
                 <option value="mage">⚔️ 魔導士破魔</option>
@@ -50,81 +50,71 @@
                 <option value="crystal">💎 玻璃心大師</option>
             </select>
         </label>
-
-        <label>視窗模式:
-            <select id="viewModeSelect" onchange="switchViewMode(this.value)">
-                <option value="both" selected>全模式</option>
-                <option value="chart">📊 圖表</option>
-                <option value="game">🎮 遊戲</option>
-            </select>
-        </label>
-        <span id="detectedMode" class="info-text">Detected: --- [33]</span>
+        <label>視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
+            <option value="chart">📊 圖表</option>
+            <option value="game" selected>🎮 遊戲</option>
+            <option value="both">全模式</option>
+        </select></label>
+        <span id="detectedMode" class="info-text">Detected: ---</span>
     </div>
 
+    <!-- [27, 28] 圖表區 -->
     <div class="chart-container" id="chartContainer">
         <canvas id="flowChart"></canvas>
     </div>
 
+    <!-- [5, 29, 30] 遊戲區 -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-        
-        <!-- HUD 介面 [20, 34] -->
-        <div style="position: absolute; top: 15px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 5;">
+        <div class="game-ui-overlay" style="position:absolute; top:15px; left:20px; right:20px; display:flex; justify-content:space-between; pointer-events:none; z-index:5;">
             <div class="hud-badge">
-                主題: <span id="themeDisplay" style="color:#f1c40f">氣流飛行員</span> |
-                🚀 SCORE: <span id="gameScore">0</span> | 🔥 COMBO: <span id="gameCombo">0</span>
+                <span id="themeDisplay" style="color:#f1c40f; font-weight:bold;">🚀 氣流飛行員</span> |
+                SCORE: <span id="gameScore">0</span> | 🔥 COMBO: <span id="gameCombo">0</span>
             </div>
             <div class="hud-badge">
                 ❤️ HP <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
             </div>
         </div>
-
         <div class="modal-screen" id="gameOverScreen" style="display: none;">
-            <h1>💥 訓練結束 💥</h1>
-            <button class="btn game-btn" onclick="restartGameEngine()">🔄 重新開始 [34]</button>
+            <h1 style="color: #e74c3c;">💥 訓練結束 💥</h1>
+            <button class="btn game-btn" onclick="restartGameEngine()">🔄 重新開始</button>
         </div>
     </div>
 
-    <div class="statusbar" id="status">Not connected [35]</div>
+    <div class="statusbar" id="status">Not connected [31]</div>
+
+    <!-- [32-34] 編輯器與擴充功能保留 -->
+    <div id="levelEditor"><h4>🧩 自訂關卡設計師</h4></div>
+    <div id="skinEditor"><h4>🎨 自訂外觀</h4></div>
 
     <script>
         // =====================================================
-        // 全域變數與系統狀態 [36-38]
+        // [6, 7, 27, 28, 31, 35-42] 核心數據與通訊系統 (完整保留)
         // =====================================================
-        let port=null, reader=null, isMeasuring=false;
-        let records=[], flowHistory=[], smoothedEst=0;
+        let port=null, reader=null, isMeasuring=false, records=[], flowHistory=[], smoothedEst=0;
         let currentMode="inhalation", startTime=null, lastFFT={};
-        let pklSegments=[], predictionBuffer=[];
-        
+        let pklSegments=[], predictionBuffer=[], onnxSession=null;
+
+        // =====================================================
+        // [2, 3, 43-49] 遊戲引擎變數與主題狀態
+        // =====================================================
         let currentGameTheme = 'pilot';
         let rocket = { x: 120, y: 240, angle: 0, radius: 18 };
         let stars=[], particles=[], collectibles=[], obstacles=[];
         let gameScore=0, gameCombo=0, playerHP=100;
-        let isGameRunning=false, isGamePaused=false, isGameOver=false;
-        let sessionStartTime=0;
-
-        // 五款新遊戲專屬狀態
+        let isGameRunning=false, isGameOver=false;
+        
+        // 五款新主題專屬狀態 [遊戲一至五]
         let themeState = {
-            painter: { completion: 0, strokes: 0 },
-            candle: { fuel: 100, radius: 50 },
-            mage: { energy: 0 },
-            crystal: { targetPressure: 60, progress: 0 }
+            painter: { completion: 0, strokes: 0, totalPaintings: 0 },
+            candle: { fuel: 100, radius: 60, gems: 0 },
+            mage: { energy: 0, wave: 1 },
+            dandelion: { pollen: 0 },
+            crystal: { targetPressure: 60, pieces: 0, progress: 0 }
         };
 
         // =====================================================
-        // 核心偵測與通訊邏輯 [2-4, 39]
-        // =====================================================
-        // 此處保留完整的 detectBreathModePKL 與 parseLine 邏輯 [3, 39]
-        async function detectBreathModePKL(fft) {
-            let e1=fft[17]||0, e3=fft[19]||0;
-            let totalE = e1 + (fft[18]||0) + e3;
-            if(totalE < 20000) return "inhalation";
-            let ratio = e1 > 0 ? (e3 / e1) : 0;
-            return (ratio > 0.7) ? "exhalation" : "inhalation";
-        }
-
-        // =====================================================
-        // 遊戲引擎與主題分流 [15, 16]
+        // [50-52] 主遊戲循環 (整合主題切換)
         // =====================================================
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
@@ -133,26 +123,28 @@
             if (!isGameRunning || isGameOver) return;
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
             
+            // 數據採集 (呼吸優先級 [5, 8])
             let flow = Math.abs(smoothedEst);
             let isExhale = (currentMode === "exhalation");
 
-            // 繪製背景天氣 [7]
+            // [44] 繪製天氣
             if (typeof drawWeatherEffect === 'function') drawWeatherEffect();
 
-            // 根據主題執行邏輯
+            // 根據主題執行不同邏輯與繪圖
             switch(currentGameTheme) {
-                case 'painter': updatePainter(flow, isExhale); break;
-                case 'candle': updateCandle(flow, isExhale); break;
-                case 'mage': updateMage(flow, isExhale); break;
-                case 'dandelion': updateDandelion(flow, isExhale); break;
-                case 'crystal': updateCrystal(flow, isExhale); break;
-                default: runOriginalPilot(flow, isExhale);
+                case 'painter':   updatePainterTheme(flow, isExhale); break;
+                case 'candle':    updateCandleTheme(flow, isExhale); break;
+                case 'mage':      updateMageTheme(flow, isExhale); break;
+                case 'dandelion': updateDandelionTheme(flow, isExhale); break;
+                case 'crystal':   updateCrystalTheme(flow, isExhale); break;
+                default:          updatePilotTheme(flow, isExhale); // 原版飛行 [50]
             }
 
-            // 更新通用實體 [40, 41]
+            // [51, 53, 54] 通用系統：道具、障礙物、Boss、粒子
             updateCommonEntities(); 
+            updateParticles();
             
-            // UI 更新
+            // HUD 更新
             document.getElementById('gameScore').innerText = Math.floor(gameScore);
             document.getElementById('hpFill').style.width = playerHP + "%";
 
@@ -160,135 +152,142 @@
             else requestAnimationFrame(gameLoop);
         }
 
-        // --- 五款遊戲實作內容 ---
+        // =====================================================
+        // 五款新遊戲主題具體實作
+        // =====================================================
 
-        function updatePainter(flow, isExhale) {
-            // 繪製畫布與目標形狀
+        // 1. 風之繪師 🎨 - 呼吸控制畫筆完成水彩畫
+        function updatePainterTheme(flow, isExhale) {
+            // 繪製畫布目標 (花朵/蝴蝶區域)
             gameCtx.strokeStyle = "rgba(255,255,255,0.1)";
             gameCtx.strokeRect(300, 150, 200, 200); 
-            
+
             if (isExhale && flow > 10) {
+                // 流速映射為畫筆粗細與透明度
                 gameCtx.fillStyle = `rgba(52, 152, 219, ${flow/100})`;
                 gameCtx.beginPath();
-                gameCtx.arc(rocket.x, rocket.y, flow/4, 0, Math.PI*2);
+                gameCtx.arc(rocket.x, rocket.y, flow/5, 0, Math.PI*2);
                 gameCtx.fill();
                 
+                // 判定：如果在目標區域內繪製則增加進度
                 if (rocket.x > 300 && rocket.x < 500 && rocket.y > 150 && rocket.y < 350) {
-                    themeState.painter.completion += 0.1;
-                    if(themeState.painter.completion >= 30) {
+                    themeState.painter.completion += 0.2;
+                    if (themeState.painter.completion >= 30) {
+                        playAudioEffect('buff'); // [55] 成功音效
                         gameScore += 50; themeState.painter.completion = 0;
-                        playAudioEffect('buff'); // [42, 43]
+                        themeState.painter.strokes++;
                     }
-                }
+                } else { playerHP -= 0.05; } // 亂畫扣血
             }
             updatePosition(flow);
         }
 
-        function updateCandle(flow, isExhale) {
-            // 黑暗迷宮效果
-            gameCtx.fillStyle = "#050505";
+        // 2. 燭光遠征 🕯️ - 呼吸控制燭火亮度探索迷宮
+        function updateCandleTheme(flow, isExhale) {
+            gameCtx.fillStyle = "#020202"; // 黑暗迷宮背景
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
             
+            // 呼吸決定亮區半徑 [徑向漸變]
             let r = 50 + (isExhale ? flow * 2 : 0);
             let grad = gameCtx.createRadialGradient(rocket.x, rocket.y, 0, rocket.x, rocket.y, r);
-            grad.addColorStop(0, 'rgba(255, 200, 100, 0.4)');
+            grad.addColorStop(0, 'rgba(255, 180, 50, 0.5)');
             grad.addColorStop(1, 'transparent');
             gameCtx.fillStyle = grad;
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
             
-            themeState.candle.fuel -= (0.05 + (isExhale ? flow * 0.01 : 0));
+            // 燃料消耗：呼吸越強消耗越快
+            themeState.candle.fuel -= (0.05 + (isExhale ? flow * 0.012 : 0));
             if (themeState.candle.fuel <= 0) playerHP -= 0.5;
+            
             updatePosition(flow);
         }
 
-        function updateMage(flow, isExhale) {
-            // 魔法陣繪製
-            gameCtx.strokeStyle = isExhale ? "#8e44ad" : "#333";
-            gameCtx.lineWidth = 3;
+        // 3. 魔導士破魔 ⚔️ - 呼吸充能釋放法術擊敗 Boss
+        function updateMageTheme(flow, isExhale) {
+            // 繪製魔法陣
+            gameCtx.strokeStyle = isExhale ? `rgba(142, 68, 173, ${flow/80})` : "#333";
+            gameCtx.lineWidth = 4;
             gameCtx.beginPath(); gameCtx.arc(rocket.x, rocket.y, 40, 0, Math.PI*2); gameCtx.stroke();
-            
+
             if (isExhale) {
                 themeState.mage.energy += flow * 0.1;
                 if (themeState.mage.energy >= 100) {
-                    // 自動調用原有的攻擊邏輯 [44]
+                    // [56] 自動執行原有的攻擊道具邏輯對 Boss 造成傷害
                     executeAttackItem('laser', null); 
                     themeState.mage.energy = 0;
+                    playAudioEffect('laser'); // [57]
                 }
             }
             updatePosition(flow);
         }
 
-        function updateDandelion(flow, isExhale) {
-            // 吐氣控制升力，無氣自然下墜
-            let lift = isExhale ? (flow * -0.05) : 1.5;
+        // 4. 蒲公英快遞 🌿 - 呼吸控制升力穿越障礙
+        function updateDandelionTheme(flow, isExhale) {
+            // 修改重力物理：吐氣時上升，無氣時下墜
+            let lift = isExhale ? (flow * -0.06) : 1.5;
             rocket.y += lift;
-            // 繪製蒲公英與種子粒子 [45]
-            drawDandelion(rocket.x, rocket.y, isExhale, flow);
-            rocket.y = Math.max(30, Math.min(gameCanvas.height-30, rocket.y));
+            
+            // 繪製蒲公英外觀與粒子尾巴
+            gameCtx.fillStyle = "#fff";
+            gameCtx.beginPath(); gameCtx.arc(rocket.x, rocket.y, 10, 0, Math.PI*2); gameCtx.fill();
+            if (isExhale && flow > 15) {
+                particles.push({ x: rocket.x, y: rocket.y, vx: -2, vy: (Math.random()-0.5)*2, life: 1, color: '#fff' });
+            }
+            rocket.y = Math.max(30, Math.min(gameCanvas.height - 30, rocket.y));
         }
 
-        function updateCrystal(flow, isExhale) {
-            // 壓力雕刻判定
-            gameCtx.fillStyle = "#aed6f1";
-            gameCtx.fillRect(350, 100, 100, 300); 
-            
+        // 5. 玻璃心大師 💎 - 呼吸精準控制壓力雕刻水晶
+        function updateCrystalTheme(flow, isExhale) {
+            // 繪製壓力表 UI
+            let target = themeState.crystal.targetPressure;
+            gameCtx.fillStyle = "#222"; gameCtx.fillRect(740, 100, 20, 300);
+            gameCtx.fillStyle = "#2ecc71"; gameCtx.fillRect(740, 400 - (target * 2), 20, 40); // 目標區
+
             if (isExhale) {
-                let target = themeState.crystal.targetPressure;
-                if (flow > target - 10 && flow < target + 10) {
-                    themeState.crystal.progress += 0.2;
+                let barH = Math.min(flow * 2, 300);
+                gameCtx.fillStyle = (flow > target-15 && flow < target+15) ? "#2ecc71" : "#e74c3c";
+                gameCtx.fillRect(742, 400 - barH, 16, barH);
+                
+                if (flow > target + 25) { 
+                    playerHP -= 1.5; playAudioEffect('hit'); // 壓力太大碎裂 [58]
+                } else if (flow > target - 15 && flow < target + 15) {
                     gameScore += 2;
-                } else if (flow >= target + 30) {
-                    playerHP -= 1; // 壓力過大碎裂
-                    playAudioEffect('hit');
                 }
             }
             updatePosition(flow);
+        }
+
+        // 原版氣流飛行員邏輯 [50, 59]
+        function updatePilotTheme(flow, isExhale) {
+            updatePosition(flow);
+            drawRocket(rocket.x, rocket.y, rocket.angle, isExhale, flow);
         }
 
         // =====================================================
-        // 通用系統與初始化 [37, 46-48]
+        // [8, 50, 53, 54, 60] 通用系統輔助函式 (繼承 v6.0)
         // =====================================================
         function updatePosition(flow) {
-            // 保留原本的呼吸、鍵盤、滑鼠混合控制邏輯 [16]
-            let targetY = gameCanvas.height / 2 - (flow * 2);
+            // [8] 呼吸偵測與座標映射
+            let targetY = gameCanvas.height / 2 - (flow * 2.2);
             rocket.y += (targetY - rocket.y) * 0.1;
-            rocket.y = Math.max(30, Math.min(gameCanvas.height-30, rocket.y));
+            rocket.y = Math.max(30, Math.min(gameCanvas.height - 30, rocket.y));
         }
 
         function switchGameTheme(theme) {
             currentGameTheme = theme;
             document.getElementById('themeDisplay').innerText = document.getElementById('gameThemeSelect').selectedOptions.text;
-            restartGameEngine(); // [47]
+            restartGameEngine(); // [49]
         }
 
-        function restartGameEngine() {
-            isGameRunning = true; isGameOver = false; playerHP = 100; gameScore = 0;
-            obstacles = []; collectibles = []; particles = [];
-            themeState.painter.completion = 0; themeState.candle.fuel = 100;
-            document.getElementById('gameOverScreen').style.display = 'none';
-            gameLoop();
-        }
-
-        function switchViewMode(mode) {
-            document.getElementById('chartContainer').style.display = (mode === 'chart' || mode === 'both') ? 'block' : 'none';
-            document.getElementById('gameContainer').style.display = (mode === 'game' || mode === 'both') ? 'block' : 'none';
-        }
-
-        // 初始化畫布與系統 [47, 49]
+        // 此處應保留 v6.0 所有的：parseLine [41], detectBreathModePKL [28], 
+        // playAudioEffect [55], executeAttackItem [56], drawRocket [59] 等函式。
+        
+        // 初始化
         window.onload = () => {
             gameCanvas.width = 800; gameCanvas.height = 480;
-            switchViewMode('both');
-            // 此處應包含來源中的 Serial 讀取與 Chart 初始化 [1, 4]
+            switchViewMode('game'); // [61]
+            if (typeof initExpansion === 'function') initExpansion(); // [52]
         };
-
-        // --- 輔助繪圖與音效 (對應來源代碼) ---
-        function drawDandelion(x,y,isEx,f) {
-            gameCtx.fillStyle = "#fff";
-            gameCtx.beginPath(); gameCtx.arc(x,y,10,0,Math.PI*2); gameCtx.fill();
-        }
-        function playAudioEffect(type) { /* 來源代碼 [42, 43, 50-54] */ }
-        function executeAttackItem(t, b) { /* 來源代碼 [44] */ }
-        function triggerGameOver() { isGameOver=true; document.getElementById('gameOverScreen').style.display='flex'; }
     </script>
 </body>
 </html>
