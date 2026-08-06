@@ -3975,52 +3975,50 @@ window.showAchievements=showAchievements;
 </script>
 <script>
 // ============================================================
-// 🌟 五大獨立遊戲視窗與 100 關完整擴充模組
+// 🌟 六大獨立遊戲模式與獨立視窗完整管理系統
 // ============================================================
 
-// 1. 在頂部選單注入切換器
-setTimeout(() => {
-    const expansionControls = document.getElementById('expansionControls');
-    if (expansionControls && !document.getElementById('independentGameSelect')) {
-        expansionControls.insertAdjacentHTML('afterbegin', `
-            <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px; color:#f1c40f; font-weight:bold;">
-                遊戲視窗切換:
-                <select id="independentGameSelect" onchange="switchIndependentGame(this.value)" style="background:#161b22; color:#f1c40f; border:1px solid #f1c40f; border-radius:4px; padding:4px;">
-                    <option value="classic">🚀 氣流飛行家 (原版)</option>
-                    <option value="painter">🎨 風之繪師 (100關獨立視窗)</option>
-                    <option value="candle">🕯️ 燭光遠征 (100關獨立視窗)</option>
-                    <option value="mage">⚔️ 魔導士破魔 (100關獨立視窗)</option>
-                    <option value="dandelion">🌿 蒲公英快遞 (100關獨立視窗)</option>
-                    <option value="crystal">💎 玻璃心大師 (100關獨立視窗)</option>
-                </select>
-            </label>
-        `);
-    }
-}, 1000);
-
-// 2. 動態建立 5 個獨立遊戲的 HTML 容器與 Canvas
+// 1. 自動擴充頂部的「視窗下拉選單」，加入六大獨立遊戲
 document.addEventListener('DOMContentLoaded', () => {
+    const viewSelect = document.getElementById('viewModeSelect');
+    if (viewSelect && !document.getElementById('opt_painter')) {
+        viewSelect.innerHTML = `
+            <option value="chart">📊 專業圖表</option>
+            <option value="classic" selected>🚀 氣流飛行家 (獨立模式)</option>
+            <option value="painter" id="opt_painter">🎨 風之繪師 (100關獨立模式)</option>
+            <option value="candle" id="opt_candle">🕯️ 燭光遠征 (100關獨立模式)</option>
+            <option value="mage" id="opt_mage">⚔️ 魔導士破魔 (100關獨立模式)</option>
+            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (100關獨立模式)</option>
+            <option value="crystal" id="opt_crystal">💎 玻璃心大師 (100關獨立模式)</option>
+            <option value="both">全模式 (圖表+飛行家)</option>
+            <option value="intro">📖 介紹圖鑑</option>
+        `;
+    }
+
+    // 在原本的遊戲容器下方，為其他 5 款遊戲建立專屬的獨立 Canvas
     const mainGameContainer = document.getElementById('gameContainer');
-    if (mainGameContainer && mainGameContainer.parentNode) {
+    if (mainGameContainer && mainGameContainer.parentNode && !document.getElementById('subGameWrapper')) {
         const wrapper = document.createElement('div');
-        wrapper.id = 'independentGameContainersWrapper';
+        wrapper.id = 'subGameWrapper';
         wrapper.innerHTML = `
-            <div class="game-container" id="painterGameContainer" style="display:none;"><canvas id="painterCanvas"></canvas></div>
-            <div class="game-container" id="candleGameContainer" style="display:none;"><canvas id="candleCanvas"></canvas></div>
-            <div class="game-container" id="mageGameContainer" style="display:none;"><canvas id="mageCanvas"></canvas></div>
-            <div class="game-container" id="dandelionGameContainer" style="display:none;"><canvas id="dandelionCanvas"></canvas></div>
-            <div class="game-container" id="crystalGameContainer" style="display:none;"><canvas id="crystalCanvas"></canvas></div>
+            <div class="game-container" id="subGameContainer" style="display:none; position:relative;">
+                <canvas id="subGameCanvas" style="width:100%; height:100%; display:block;"></canvas>
+                <div class="game-ui-overlay" style="position:absolute; top:15px; left:20px; right:20px; display:flex; justify-content:space-between; color:#fff; font-family:'Segoe UI',monospace; font-size:15px; font-weight:600; pointer-events:none; z-index:5;">
+                    <div class="hud-badge" id="subHudTitle" style="background:rgba(22,27,34,0.88); padding:8px 16px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);">⭐ 模式: 載入中</div>
+                    <div class="hud-badge" id="subHudHp" style="background:rgba(22,27,34,0.88); padding:8px 16px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);">❤️ 生命值: 100%</div>
+                </div>
+            </div>
         `;
         mainGameContainer.parentNode.insertBefore(wrapper, mainGameContainer.nextSibling);
     }
 });
 
-let activeSubGameLoopId = null;
-let currentSubTheme = 'classic';
+let subGameAnimId = null;
+let currentActiveSubTheme = null;
 let subAudioInterval = null;
 
-// 🎵 專屬主題音樂合成器
-function playIndependentMusic(theme) {
+// 🎵 專屬音樂合成器
+function playSubThemeMusic(theme) {
     if (subAudioInterval) clearInterval(subAudioInterval);
     if (!document.getElementById('soundToggle')?.checked) return;
     try {
@@ -4044,12 +4042,12 @@ function playIndependentMusic(theme) {
     } catch(e) {}
 }
 
-function stopIndependentMusic() {
+function stopSubThemeMusic() {
     if (subAudioInterval) { clearInterval(subAudioInterval); subAudioInterval = null; }
 }
 
 // 取得呼吸氣流數值 (0~100)
-function getIndependentPressure() {
+function getSubPressureInput() {
     let pressure = 0;
     let active = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
     let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? Math.abs(smoothedEst) : 0;
@@ -4059,67 +4057,96 @@ function getIndependentPressure() {
     return Math.max(0, Math.min(100, pressure));
 }
 
-// 3. 切換獨立視窗主控邏輯
-window.switchIndependentGame = function(theme) {
-    currentSubTheme = theme;
-    
-    // 強制關閉原本的氣流飛行家
+// 2. 徹底覆蓋原有的 switchViewMode，實現選單獨立切換與完全不衝突
+window.switchViewMode = function(mode) {
+    const chartBox = document.querySelector('.chart-container');
+    const classicGameBox = document.getElementById('gameContainer');
+    const subGameBox = document.getElementById('subGameContainer');
+    const introBox = document.getElementById('introContainer');
+
+    // 關閉所有視窗與背景音樂
+    if (chartBox) chartBox.style.display = 'none';
+    if (classicGameBox) classicGameBox.style.display = 'none';
+    if (subGameBox) subGameBox.style.display = 'none';
+    if (introBox) introBox.style.display = 'none';
+
+    // 終止氣流飛行家引擎
     if (typeof stopGameEngine === 'function') stopGameEngine();
-    const classicContainer = document.getElementById('gameContainer');
-    if (classicContainer) classicContainer.style.display = 'none';
+    // 終止其他獨立遊戲迴圈與音效
+    if (subGameAnimId) { cancelAnimationFrame(subGameAnimId); subGameAnimId = null; }
+    stopSubThemeMusic();
 
-    // 關閉所有獨立遊戲迴圈與音效
-    if (activeSubGameLoopId) { cancelAnimationFrame(activeSubGameLoopId); activeSubGameLoopId = null; }
-    stopIndependentMusic();
+    currentActiveSubTheme = null;
 
-    ['painter', 'candle', 'mage', 'dandelion', 'crystal'].forEach(t => {
-        let box = document.getElementById(t + 'GameContainer');
-        if (box) box.style.display = 'none';
-    });
-
-    if (theme === 'classic') {
-        if (classicContainer) classicContainer.style.display = 'block';
-        if (typeof restartGameEngine === 'function') restartGameEngine();
-        return;
-    }
-
-    // 開啟對應視窗並啟動專屬 100 關獨立引擎
-    let targetBox = document.getElementById(theme + 'GameContainer');
-    let targetCanvas = document.getElementById(theme + 'Canvas');
-    if (targetBox && targetCanvas) {
-        targetBox.style.display = 'block';
-        targetCanvas.width = targetBox.clientWidth || 800;
-        targetCanvas.height = targetBox.clientHeight || 480;
-        playIndependentMusic(theme);
-        start100LevelEngine(theme, targetCanvas);
+    if (mode === 'chart') {
+        if (chartBox) chartBox.style.display = 'block';
+    } 
+    else if (mode === 'classic') {
+        // 🚀 獨立的氣流飛行家模式
+        if (classicGameBox) classicGameBox.style.display = 'block';
+        setTimeout(() => {
+            if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+            if (typeof restartGameEngine === 'function') restartGameEngine();
+        }, 100);
+    } 
+    else if (mode === 'both') {
+        if (chartBox) { chartBox.style.display = 'block'; chartBox.style.marginBottom = '15px'; }
+        if (classicGameBox) classicGameBox.style.display = 'block';
+        setTimeout(() => {
+            if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+            if (typeof restartGameEngine === 'function') restartGameEngine();
+        }, 100);
+    } 
+    else if (mode === 'intro') {
+        if (introBox) introBox.style.display = 'block';
+    } 
+    else {
+        // 🎨 另外五款獨立遊戲模式 (painter, candle, mage, dandelion, crystal)
+        currentActiveSubTheme = mode;
+        if (subGameBox) subGameBox.style.display = 'block';
+        playSubThemeMusic(mode);
+        startSubGameEngine(mode);
     }
 };
 
-// 4. 五大遊戲的 100 關獨立運行引擎
-function start100LevelEngine(theme, canvas) {
+// 3. 獨立遊戲專屬 100 關引擎
+function startSubGameEngine(theme) {
+    const canvas = document.getElementById('subGameCanvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    
+    // 設定畫布尺寸
+    canvas.width = canvas.parentElement.clientWidth || 800;
+    canvas.height = canvas.parentElement.clientHeight || 480;
+
     let state = {
         level: 1, hp: 100,
         painter: { progress: 0 },
         candle: { distance: 0 },
         mage: { mana: 0 },
-        dandelion: { y: 240, distance: 0 },
+        dandelion: { y: canvas.height/2, distance: 0 },
         crystal: { progress: 0, cracks: 0 }
     };
 
-    function subLoop() {
-        if (currentSubTheme !== theme) return;
+    const themeNames = {
+        painter: '🎨 風之繪師',
+        candle: '🕯️ 燭光遠征',
+        mage: '⚔️ 魔導士破魔',
+        dandelion: '🌿 蒲公英快遞',
+        crystal: '💎 玻璃心大師'
+    };
+
+    function loop() {
+        if (currentActiveSubTheme !== theme) return;
         let w = canvas.width, h = canvas.height;
-        let pressure = getIndependentPressure();
+        let pressure = getSubPressureInput();
 
         ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, w, h);
 
-        // 頂部 HUD 資訊
-        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, w, 40);
-        ctx.fillStyle = '#f1c40f'; ctx.font = 'bold 16px sans-serif';
-        ctx.fillText(`⭐ 模式: ${theme.toUpperCase()} | 關卡: ${state.level}/100`, 20, 25);
-        ctx.fillStyle = '#e74c3c'; ctx.fillText(`❤️ 生命值: ${state.hp}%`, w - 140, 25);
+        // 更新 HUD 顯示
+        document.getElementById('subHudTitle').innerText = `⭐ ${themeNames[theme]} | 關卡: ${state.level}/100`;
+        document.getElementById('subHudHp').innerText = `❤️ 生命值: ${state.hp}%`;
 
         // 左側氣流監控條
         ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(20, 60, 20, 150);
@@ -4128,10 +4155,10 @@ function start100LevelEngine(theme, canvas) {
         ctx.fillRect(20, 210 - ph, 20, ph);
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText('氣流', 18, 225);
 
-        // 各遊戲專屬機制
+        // 獨立遊戲核心玩法與 100 關遞進
         if (theme === 'painter') {
             ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
-            ctx.fillText(`【風之繪師】自動路徑筆畫 (關卡 ${state.level})`, 250, 25);
+            ctx.fillText('【風之繪師】依據氣流粗細自動描繪路徑', 250, 30);
             ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = Math.max(2, pressure * 0.4);
             ctx.beginPath(); ctx.arc(w/2, h/2, 100, 0, (pressure / 100) * Math.PI * 2); ctx.stroke();
             if (pressure > 20) {
@@ -4141,17 +4168,17 @@ function start100LevelEngine(theme, canvas) {
         } 
         else if (theme === 'candle') {
             ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
-            ctx.fillText(`【燭光遠征】氣流控制亮度與迷宮前進 (關卡 ${state.level})`, 250, 25);
+            ctx.fillText('【燭光遠征】氣流控制燭光亮度與地圖前進', 250, 30);
             let radius = Math.max(30, pressure * 2.5);
             let grad = ctx.createRadialGradient(w/2, h/2, 5, w/2, h/2, radius);
             grad.addColorStop(0, 'rgba(255, 200, 100, 0.9)'); grad.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
-            ctx.fillStyle = grad; ctx.fillRect(0, 40, w, h - 40);
+            ctx.fillStyle = grad; ctx.fillRect(0, 50, w, h - 50);
             state.candle.distance += 1;
             if (state.candle.distance % 300 === 0) state.level = Math.min(100, state.level + 1);
         }
         else if (theme === 'mage') {
             ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
-            ctx.fillText(`【魔導士破魔】氣流集氣，停氣自動反擊 (關卡 ${state.level})`, 250, 25);
+            ctx.fillText('【魔導士破魔】氣流集氣，停止吹氣自動釋放魔法反擊', 250, 30);
             if (pressure > 10) state.mage.mana = Math.min(100, state.mage.mana + 0.3);
             if (pressure < 2 && state.mage.mana > 20) {
                 state.mage.mana = 0;
@@ -4162,11 +4189,11 @@ function start100LevelEngine(theme, canvas) {
         }
         else if (theme === 'dandelion') {
             ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
-            ctx.fillText(`【蒲公英快遞】氣流歸零即墜毀 (關卡 ${state.level})`, 250, 25);
+            ctx.fillText('【蒲公英快遞】氣流支撐高度，歸零即墜毀', 250, 30);
             let active = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
             if (active && pressure < 2) {
                 state.hp -= 2;
-                if (state.hp <= 0) alert('蒲公英墜毀！遊戲結束');
+                if (state.hp <= 0) { state.hp = 0; }
             }
             state.dandelion.distance += 1;
             let targetY = h - (pressure / 100 * (h - 120)) - 60;
@@ -4176,7 +4203,7 @@ function start100LevelEngine(theme, canvas) {
         }
         else if (theme === 'crystal') {
             ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
-            ctx.fillText(`【玻璃心大師】穩定度雕刻 (關卡 ${state.level})`, 250, 25);
+            ctx.fillText('【玻璃心大師】精準維持 45~55 進行雕刻', 250, 30);
             if (pressure >= 45 && pressure <= 55) {
                 state.crystal.progress += 0.3;
                 if (state.crystal.progress >= 100) { state.level = Math.min(100, state.level + 1); state.crystal.progress = 0; }
@@ -4188,9 +4215,9 @@ function start100LevelEngine(theme, canvas) {
             ctx.fillStyle = '#2ecc71'; ctx.fillRect(w/2 - 100, h - 100, state.crystal.progress * 2, 20);
         }
 
-        activeSubGameLoopId = requestAnimationFrame(subLoop);
+        subGameAnimId = requestAnimationFrame(loop);
     }
-    subLoop();
+    loop();
 }
 </script>
 </body>
