@@ -1037,6 +1037,17 @@ function renderFlightGame() {
         gameCtx.fillRect(s.x, s.y, s.size, s.size);
     });
     
+    // 繪製道具
+    collectibles.forEach(c => drawItem(gameCtx, c.x, c.y, c.type, c.radius));
+    
+    // 繪製障礙物
+    obstacles.forEach(o => drawObstacle(gameCtx, o.x, o.y, o.type, o.radius));
+    
+    // 繪製Boss
+    if (bossActive && currentBoss) {
+        drawBoss(gameCtx, currentBoss.x, currentBoss.y, currentBoss);
+    }
+    
     // 繪製火箭
     drawRocket(rocket.x, rocket.y, rocket.angle);
 }
@@ -1102,7 +1113,6 @@ function drawItem(ctx, x, y, type, radius) {
     const color = item?.color || '#f1c40f';
     ctx.shadowColor = color;
     ctx.shadowBlur = 20;
-    // 發光圓環
     ctx.strokeStyle = `rgba(255,255,255,${0.1 + 0.1 * Math.sin(Date.now() / 300)})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1137,7 +1147,7 @@ function drawBoss(ctx, x, y, boss) {
 }
 
 // =====================================================
-// 風之繪師 - 完整遊戲 (含休息機制)
+// 風之繪師 - 完整遊戲 (含休息機制、放大圖案)
 // =====================================================
 const PainterGame = {
     level: 1,
@@ -1150,7 +1160,7 @@ const PainterGame = {
     
     brushX: 0,
     brushY: 0,
-    brushSize: 3,
+    brushSize: 4,
     brushAlpha: 0.8,
     brushColor: '#8B6914',
     
@@ -1176,10 +1186,9 @@ const PainterGame = {
     errors: 0,
     maxErrors: 5,
     
-    // 休息機制
     isResting: false,
     restTimer: 0,
-    restDuration: 90, // 1.5秒 (60fps * 1.5)
+    restDuration: 90,
     
     musicInterval: null,
     musicStep: 0,
@@ -1271,18 +1280,19 @@ const PainterGame = {
         if (!canvas) return;
         const w = canvas.width, h = canvas.height;
         const cx = w / 2, cy = h / 2;
-        const size = Math.min(w, h) * 0.22 * (1 + (this.level - 1) * 0.003);
+        // 放大圖案：從 0.22 改為 0.32
+        const size = Math.min(w, h) * 0.32 * (1 + (this.level - 1) * 0.002);
         const shapeCount = Math.min(Math.floor(this.level / 8) + 1, this.shapeTypes.length);
-        // 每次生成不同形狀 - 用 currentShapeIndex 確保變化
         const shapeType = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
-        this.shapePath = this.generateShapePoints(shapeType, cx, cy, Math.min(size, Math.min(w, h) * 0.35));
+        this.shapePath = this.generateShapePoints(shapeType, cx, cy, Math.min(size, Math.min(w, h) * 0.42));
         this.strokePoints = [];
         this.strokeProgress = 0;
         this.drawPoints = [];
         this.splitIntoStrokes();
-        // 更新形狀名稱
+        // 更新形狀名稱 - 同步更新
         const nameEl = document.getElementById('painterShapeName');
         if (nameEl) nameEl.textContent = this.shapeNames[shapeType] || '未知';
+        // 同時更新HUD中的名稱
         this.updateUI();
     },
     
@@ -1427,16 +1437,13 @@ const PainterGame = {
     update(breathFlow) {
         if (this.isPaused || this.isGameOver) return;
         
-        // 休息狀態處理
         if (this.isResting) {
             this.restTimer--;
-            // 顯示休息中的訊息
             if (this.restTimer % 30 === 0) {
                 showNotification(`⏳ 休息中... ${Math.ceil(this.restTimer / 60) + 1}s`);
             }
             if (this.restTimer <= 0) {
                 this.isResting = false;
-                // 生成下一幅畫
                 this.currentShapeIndex++;
                 this.generateShape();
                 showNotification('🎨 繼續作畫！');
@@ -1449,7 +1456,7 @@ const PainterGame = {
         
         if (isExhaling && flowMag > 3) {
             this.isDrawing = true;
-            this.brushSize = Math.min(3 + flowMag / 5, 20);
+            this.brushSize = Math.min(4 + flowMag / 4, 22);
             this.brushAlpha = Math.min(1, 0.3 + flowMag / 40);
             if (this.hasPalette) {
                 const hue = (Date.now() / 50 + this.level * 10) % 360;
@@ -1547,12 +1554,10 @@ const PainterGame = {
         this.level++;
         this.updateStrokeCount();
         
-        // 進入休息狀態
         this.isResting = true;
         this.restTimer = this.restDuration;
         showNotification(`🎨 完成第 ${this.paintingsCompleted} 幅畫！休息 1.5 秒`);
         
-        // 等級獎勵
         if (this.level % 10 === 0) {
             this.hp = Math.min(this.maxHp, this.hp + 20);
             showNotification(`🎉 第 ${this.level} 關！HP +20！`);
@@ -1579,6 +1584,12 @@ const PainterGame = {
         if (progressFill) progressFill.style.width = `${Math.min(this.strokeProgress * 100, 100)}%`;
         const strokesNeeded = document.getElementById('painterStrokesNeeded');
         if (strokesNeeded) strokesNeeded.textContent = this.strokesPerPainting;
+        // 確保形狀名稱同步
+        const nameEl = document.getElementById('painterShapeName');
+        if (nameEl && this.shapePath.length > 0) {
+            const type = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
+            nameEl.textContent = this.shapeNames[type] || '未知';
+        }
     },
     
     createSplashParticles(x, y, color) {
@@ -1690,15 +1701,16 @@ const PainterGame = {
             ctx.restore();
         }
         
-        // 已完成筆觸
+        // 已完成筆觸 - 放大筆觸
         for (const point of this.drawPoints) {
             ctx.save();
             ctx.globalAlpha = point.alpha || 0.8;
             ctx.fillStyle = point.color || '#8B6914';
             ctx.shadowColor = point.color || '#8B6914';
             ctx.shadowBlur = 8;
+            const size = Math.max(point.size || 4, 4);
             ctx.beginPath();
-            ctx.arc(point.x, point.y, point.size || 4, 0, Math.PI * 2);
+            ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
         }
@@ -1794,7 +1806,7 @@ const PainterGame = {
         ctx.fillText(`第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆  ${Math.round(pct * 100)}%`, w / 2, py - 6);
         ctx.restore();
         
-        // 頂部資訊
+        // 頂部資訊 - 顯示當前形狀名稱
         ctx.save();
         ctx.fillStyle = 'rgba(92, 61, 46, 0.25)';
         ctx.font = '12px Georgia, serif';
@@ -1841,7 +1853,6 @@ const CandleGame = {
         const w = gameCanvas.width, h = gameCanvas.height;
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, w, h);
-        // 燭光效果
         const glow = 30 + 15 * Math.sin(Date.now() / 500);
         const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, glow);
         grad.addColorStop(0, 'rgba(255, 200, 100, 0.2)');
@@ -1903,7 +1914,6 @@ const DandelionGame = {
             ctx.fillStyle = `rgba(76, 175, 80, ${0.05 + Math.random() * 0.1})`;
             ctx.fillRect(Math.random() * w, h - 20 - Math.random() * 30, 3, 10 + Math.random() * 20);
         }
-        // 蒲公英種子飄動
         for (let i = 0; i < 10; i++) {
             const x = (i * 73 + Date.now() * 0.02) % w;
             const y = (i * 47 + Date.now() * 0.03) % h;
@@ -2664,7 +2674,7 @@ function initExpansion() {
     
     console.log('✅ 所有功能已載入！');
     console.log('✈️ 氣流飛行員 - 完整可玩');
-    console.log('🎨 風之繪師 - 完整100關 (含休息機制)');
+    console.log('🎨 風之繪師 - 完整100關 (放大圖案+休息機制)');
     console.log('🕯️ 燭光遠征 - 開發中');
     console.log('⚔️ 魔導士破魔 - 開發中');
     console.log('🌿 蒲公英快遞 - 開發中');
