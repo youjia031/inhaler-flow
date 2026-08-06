@@ -3974,257 +3974,255 @@ window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
 </script>
 <!-- ============================================================ -->
-<!-- 🆕 風之繪師 - 獨立模式插件 -->
+<!-- 🆕 風之繪師 - 遊戲畫面替換插件 -->
 <!-- 請將這段完整程式碼加在您原有HTML的 </body> 之前 -->
 <!-- ============================================================ -->
 
 <style>
-/* 風之繪師 - 全螢幕模式樣式 */
-#painterFullContainer {
+/* 風之繪師 - 遊戲畫面樣式 (替換原本的遊戲容器) */
+#painterGameContainer {
     display: none;
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: #fdf6f0;
-    z-index: 99999;
-    flex-direction: column;
+    z-index: 2;
+    border-radius: 8px;
     overflow: hidden;
+    padding: 10px;
 }
-#painterFullContainer.active {
-    display: flex;
+#painterGameContainer.active {
+    display: block;
 }
-#painterFullContainer .painter-header {
-    padding: 12px 25px;
-    background: rgba(255,255,255,0.95);
-    border-bottom: 2px solid rgba(139,115,85,0.15);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    z-index: 10;
-}
-#painterFullContainer .painter-header .title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #5c3d2e;
-}
-#painterFullContainer .painter-header .title span { font-size: 24px; }
-#painterFullContainer .painter-header .close-btn {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 6px 18px;
+#painterGameContainer .painter-canvas-wrap {
+    width: 100%;
+    height: 100%;
+    position: relative;
     border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-}
-#painterFullContainer .painter-header .close-btn:hover { background: #c0392b; }
-#painterFullContainer .painter-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 12px 20px 20px 20px;
     overflow: hidden;
-    position: relative;
-}
-#painterFullContainer .painter-canvas-wrap {
-    flex: 1;
-    position: relative;
     background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.06);
-    overflow: hidden;
-    border: 2px solid rgba(139,115,85,0.1);
+    box-shadow: inset 0 0 30px rgba(212, 163, 115, 0.06);
 }
-#painterFullContainer .painter-canvas-wrap .watermark {
+#painterGameContainer .painter-canvas-wrap .watermark {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-image: radial-gradient(ellipse at 20% 50%, rgba(212,163,115,0.06) 0%, transparent 50%),
-                      radial-gradient(ellipse at 80% 50%, rgba(212,163,115,0.06) 0%, transparent 50%);
+    background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(212, 163, 115, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(212, 163, 115, 0.06) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }
-#painterFullContainer .painter-canvas-wrap .frame-border {
+#painterGameContainer .painter-canvas-wrap .frame-border {
     position: absolute;
-    top: 8px; left: 8px; right: 8px; bottom: 8px;
-    border: 3px solid rgba(139,115,85,0.08);
-    border-radius: 8px;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border: 2px solid rgba(139, 115, 85, 0.06);
+    border-radius: 4px;
     pointer-events: none;
     z-index: 0;
 }
-#painterFullCanvas {
+#painterGameCanvas {
     position: relative;
     z-index: 1;
     width: 100%;
     height: 100%;
     display: block;
 }
-#painterFullContainer .painter-hud {
+#painterGameContainer .painter-hud-overlay {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    right: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 10px;
-    margin-top: 10px;
-    flex-shrink: 0;
-    border: 1px solid rgba(139,115,85,0.1);
-    flex-wrap: wrap;
-    gap: 6px;
+    z-index: 5;
+    pointer-events: none;
 }
-#painterFullContainer .painter-hud .hud-item {
-    font-size: 13px;
+#painterGameContainer .painter-hud-overlay .hud-left {
+    display: flex;
+    gap: 12px;
+    background: rgba(255,255,255,0.85);
+    padding: 4px 14px;
+    border-radius: 16px;
+    backdrop-filter: blur(4px);
+    font-size: 12px;
     font-weight: 600;
     color: #5c3d2e;
+    pointer-events: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-#painterFullContainer .painter-hud .hud-item .value { color: #8B6914; }
-#painterFullContainer .painter-hud .hud-item .value.highlight { color: #e74c3c; }
-#painterFullContainer .painter-hud .hp-bar-wrap {
+#painterGameContainer .painter-hud-overlay .hud-left span {
+    margin: 0 2px;
+}
+#painterGameContainer .painter-hud-overlay .hud-left .val {
+    color: #8B6914;
+}
+#painterGameContainer .painter-hud-overlay .hud-left .val.highlight {
+    color: #e74c3c;
+}
+#painterGameContainer .painter-hud-overlay .hud-right {
     display: flex;
+    gap: 12px;
+    background: rgba(255,255,255,0.85);
+    padding: 4px 14px;
+    border-radius: 16px;
+    backdrop-filter: blur(4px);
+    font-size: 12px;
+    font-weight: 600;
+    color: #5c3d2e;
+    pointer-events: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     align-items: center;
-    gap: 6px;
 }
-#painterFullContainer .painter-hud .hp-bar-bg {
-    width: 100px;
-    height: 10px;
+#painterGameContainer .painter-hud-overlay .hp-bar-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+#painterGameContainer .painter-hud-overlay .hp-bar-mini .bg {
+    width: 50px;
+    height: 6px;
     background: rgba(0,0,0,0.08);
-    border-radius: 5px;
+    border-radius: 3px;
     overflow: hidden;
 }
-#painterFullContainer .painter-hud .hp-bar-fill {
+#painterGameContainer .painter-hud-overlay .hp-bar-mini .fill {
     height: 100%;
     background: linear-gradient(90deg, #e74c3c, #2ecc71);
     transition: width 0.15s;
-    border-radius: 5px;
+    border-radius: 3px;
     width: 100%;
 }
-#painterFullContainer .painter-hud .progress-bar-wrap {
-    display: flex;
+#painterGameContainer .painter-hud-overlay .progress-mini {
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    flex: 1;
-    min-width: 100px;
+    gap: 4px;
 }
-#painterFullContainer .painter-hud .progress-bar-bg {
-    flex: 1;
-    height: 8px;
+#painterGameContainer .painter-hud-overlay .progress-mini .bg {
+    width: 60px;
+    height: 6px;
     background: rgba(0,0,0,0.06);
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
-    min-width: 50px;
 }
-#painterFullContainer .painter-hud .progress-bar-fill {
+#painterGameContainer .painter-hud-overlay .progress-mini .fill {
     height: 100%;
     background: linear-gradient(90deg, #f1c40f, #e67e22);
     transition: width 0.1s;
-    border-radius: 4px;
+    border-radius: 3px;
     width: 1%;
 }
-#painterRestOverlay {
+#painterGameContainer .painter-hud-overlay .shape-name {
+    color: #8B6914;
+    font-weight: 700;
+}
+#painterGameRestOverlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.2);
     display: none;
     justify-content: center;
     align-items: center;
     z-index: 10;
     flex-direction: column;
-    border-radius: 12px;
+    border-radius: 6px;
 }
-#painterRestOverlay .rest-icon { font-size: 40px; margin-bottom: 8px; }
-#painterRestOverlay .rest-text { color: white; font-size: 24px; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-#painterRestOverlay .rest-timer { color: #f1c40f; font-size: 18px; margin-top: 6px; }
-.painter-control-hint {
+#painterGameRestOverlay .rest-text {
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+#painterGameRestOverlay .rest-timer {
+    color: #f1c40f;
+    font-size: 16px;
+    margin-top: 4px;
+}
+.painter-game-hint {
     position: absolute;
-    bottom: 80px;
+    bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
-    color: rgba(0,0,0,0.12);
-    font-size: 11px;
+    color: rgba(0,0,0,0.1);
+    font-size: 10px;
     pointer-events: none;
-    background: rgba(255,255,255,0.5);
-    padding: 3px 14px;
-    border-radius: 12px;
+    background: rgba(255,255,255,0.4);
+    padding: 2px 12px;
+    border-radius: 10px;
     z-index: 2;
     white-space: nowrap;
     backdrop-filter: blur(4px);
 }
 @media (max-width: 768px) {
-    #painterFullContainer .painter-hud .hud-item { font-size: 11px; }
-    #painterFullContainer .painter-hud .hp-bar-bg { width: 60px; }
-    #painterFullContainer .painter-header .title { font-size: 16px; }
-    #painterFullContainer .painter-body { padding: 8px 12px 12px 12px; }
-    .painter-control-hint { bottom: 70px; font-size: 9px; padding: 2px 10px; }
+    #painterGameContainer .painter-hud-overlay .hud-left { font-size: 10px; gap: 6px; padding: 3px 10px; }
+    #painterGameContainer .painter-hud-overlay .hud-right { font-size: 10px; gap: 6px; padding: 3px 10px; }
+    #painterGameContainer .painter-hud-overlay .hp-bar-mini .bg { width: 30px; }
+    #painterGameContainer .painter-hud-overlay .progress-mini .bg { width: 30px; }
+    .painter-game-hint { font-size: 8px; padding: 1px 8px; bottom: 10px; }
 }
 </style>
 
-<!-- ===== 風之繪師 HTML ===== -->
-<div id="painterFullContainer">
-    <div class="painter-header">
-        <div class="title"><span>🎨</span> 風之繪師</div>
-        <button class="close-btn" onclick="closePainterFull()">✕ 關閉</button>
-    </div>
-    <div class="painter-body">
-        <div class="painter-canvas-wrap">
-            <div class="watermark"></div>
-            <div class="frame-border"></div>
-            <canvas id="painterFullCanvas"></canvas>
-            <div id="painterRestOverlay">
-                <div class="rest-icon">⏳</div>
-                <div class="rest-text">休息中...</div>
-                <div class="rest-timer" id="painterRestTimer">2s</div>
-            </div>
-            <div class="painter-control-hint">🌬️ 吐氣繪畫 · 吸氣暫停 · ↑↓ 微調畫筆 · ESC 離開</div>
+<!-- ===== 風之繪師 HTML (替換遊戲畫面) ===== -->
+<div id="painterGameContainer">
+    <div class="painter-canvas-wrap">
+        <div class="watermark"></div>
+        <div class="frame-border"></div>
+        <canvas id="painterGameCanvas"></canvas>
+        <div id="painterGameRestOverlay">
+            <div class="rest-text">⏳ 休息中...</div>
+            <div class="rest-timer" id="painterGameRestTimer">2s</div>
         </div>
-        <div class="painter-hud">
-            <div class="hud-item">🏁 關卡: <span class="value" id="pLevel">1/100</span></div>
-            <div class="hud-item">🖼️ 畫作: <span class="value" id="pPaintings">0</span></div>
-            <div class="hud-item">🖌️ 筆觸: <span class="value" id="pStroke">0/1</span></div>
-            <div class="hud-item">❌ 失誤: <span class="value highlight" id="pErrors">0/5</span></div>
-            <div class="hud-item">🎯 形狀: <span class="value" id="pShapeName">圓形</span></div>
-            <div class="progress-bar-wrap">
-                <span style="font-size:11px;color:#8b949e;">進度</span>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="pProgressFill"></div>
-                </div>
-                <span style="font-size:11px;color:#8b949e;" id="pProgressText">0%</span>
-            </div>
-            <div class="hp-bar-wrap">
+        <div class="painter-game-hint">🌬️ 吐氣繪畫 · 吸氣暫停 · ↑↓ 微調畫筆</div>
+    </div>
+    <!-- HUD 覆蓋層 -->
+    <div class="painter-hud-overlay">
+        <div class="hud-left">
+            <span>🏁 <span class="val" id="pgLevel">1/100</span></span>
+            <span>🖼️ <span class="val" id="pgPaintings">0</span></span>
+            <span>🖌️ <span class="val" id="pgStroke">0/1</span></span>
+            <span>❌ <span class="val highlight" id="pgErrors">0/5</span></span>
+            <span class="shape-name" id="pgShapeName">⭕ 圓形</span>
+        </div>
+        <div class="hud-right">
+            <span class="progress-mini">
+                <span class="bg"><span class="fill" id="pgProgressFill"></span></span>
+                <span id="pgProgressText" style="font-size:10px;color:#8b949e;min-width:24px;">0%</span>
+            </span>
+            <span class="hp-bar-mini">
                 <span>❤️</span>
-                <div class="hp-bar-bg">
-                    <div class="hp-bar-fill" id="pHpFill"></div>
-                </div>
-            </div>
+                <span class="bg"><span class="fill" id="pgHpFill"></span></span>
+            </span>
         </div>
     </div>
 </div>
 
 <script>
 // ============================================================
-// 風之繪師 - 完整遊戲引擎
+// 風之繪師 - 遊戲畫面替換引擎
 // ============================================================
 (function() {
-    // 等待 DOM 載入
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPainter);
+        document.addEventListener('DOMContentLoaded', initPainterGame);
     } else {
-        initPainter();
+        initPainterGame();
     }
     
-    function initPainter() {
-        if (window._painterInited) return;
-        window._painterInited = true;
+    function initPainterGame() {
+        if (window._painterGameInited) return;
+        window._painterGameInited = true;
         
-        const container = document.getElementById('painterFullContainer');
-        const canvas = document.getElementById('painterFullCanvas');
-        const restOverlay = document.getElementById('painterRestOverlay');
-        const restTimerEl = document.getElementById('painterRestTimer');
+        const container = document.getElementById('painterGameContainer');
+        const canvas = document.getElementById('painterGameCanvas');
+        const restOverlay = document.getElementById('painterGameRestOverlay');
+        const restTimerEl = document.getElementById('painterGameRestTimer');
         if (!container || !canvas) return;
         
         const ctx = canvas.getContext('2d');
@@ -4444,16 +4442,16 @@ window.showAchievements=showAchievements;
         
         // --- 更新UI ---
         function updateUI() {
-            document.getElementById('pLevel').textContent = `${state.level}/${state.maxLevel}`;
-            document.getElementById('pPaintings').textContent = state.paintings;
-            document.getElementById('pStroke').textContent = `${state.currentStroke + 1}/${state.strokesPerPainting}`;
-            document.getElementById('pErrors').textContent = `${state.errors}/${state.maxErrors}`;
-            document.getElementById('pHpFill').style.width = `${(state.hp / state.maxHp) * 100}%`;
+            document.getElementById('pgLevel').textContent = `${state.level}/${state.maxLevel}`;
+            document.getElementById('pgPaintings').textContent = state.paintings;
+            document.getElementById('pgStroke').textContent = `${state.currentStroke + 1}/${state.strokesPerPainting}`;
+            document.getElementById('pgErrors').textContent = `${state.errors}/${state.maxErrors}`;
+            document.getElementById('pgHpFill').style.width = `${(state.hp / state.maxHp) * 100}%`;
             const pct = Math.min(state.strokeProgress * 100, 100);
-            document.getElementById('pProgressFill').style.width = pct + '%';
-            document.getElementById('pProgressText').textContent = Math.round(pct) + '%';
+            document.getElementById('pgProgressFill').style.width = pct + '%';
+            document.getElementById('pgProgressText').textContent = Math.round(pct) + '%';
             const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
-            document.getElementById('pShapeName').textContent = state.shapeNames[type] || '未知';
+            document.getElementById('pgShapeName').textContent = state.shapeNames[type] || '未知';
         }
         
         // --- 粒子特效 ---
@@ -4842,7 +4840,7 @@ window.showAchievements=showAchievements;
             
             // 頂部文字
             ctx.fillStyle = 'rgba(92, 61, 46, 0.2)';
-            ctx.font = '13px Georgia, serif';
+            ctx.font = '12px Georgia, serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
@@ -4872,11 +4870,16 @@ window.showAchievements=showAchievements;
         }
         
         // --- 公開方法 ---
-        window.PainterFull = {
+        window.PainterGameView = {
             open: function() {
-                // 顯示容器
+                // 隱藏原本的遊戲畫布
+                const gameCanvas = document.getElementById('gameCanvas');
+                const startPrompt = document.getElementById('startPrompt');
+                if (gameCanvas) gameCanvas.style.display = 'none';
+                if (startPrompt) startPrompt.style.display = 'none';
+                
+                // 顯示風之繪師容器
                 container.classList.add('active');
-                document.body.style.overflow = 'hidden';
                 
                 // 初始化
                 resizeCanvas();
@@ -4925,7 +4928,12 @@ window.showAchievements=showAchievements;
                     animId = null;
                 }
                 container.classList.remove('active');
-                document.body.style.overflow = '';
+                
+                // 顯示原本的遊戲畫布
+                const gameCanvas = document.getElementById('gameCanvas');
+                const startPrompt = document.getElementById('startPrompt');
+                if (gameCanvas) gameCanvas.style.display = 'block';
+                if (startPrompt) startPrompt.style.display = 'flex';
                 
                 if (typeof updateStatus === 'function') {
                     updateStatus('已關閉風之繪師');
@@ -4939,17 +4947,24 @@ window.showAchievements=showAchievements;
         
         // --- 視窗大小改變 ---
         window.addEventListener('resize', function() {
-            if (window.PainterFull && window.PainterFull.isOpen()) {
-                window.PainterFull.resize();
+            if (window.PainterGameView && window.PainterGameView.isOpen()) {
+                window.PainterGameView.resize();
             }
         });
         
         // --- 鍵盤事件 ---
         document.addEventListener('keydown', function(e) {
-            if (!window.PainterFull || !window.PainterFull.isOpen()) return;
+            if (!window.PainterGameView || !window.PainterGameView.isOpen()) return;
             
             if (e.key === 'Escape') {
-                closePainterFull();
+                // 切換回全模式
+                const viewSelect = document.getElementById('viewModeSelect');
+                if (viewSelect) {
+                    viewSelect.value = 'both';
+                    if (typeof switchViewMode === 'function') {
+                        switchViewMode('both');
+                    }
+                }
                 e.preventDefault();
             }
             
@@ -4969,97 +4984,32 @@ window.showAchievements=showAchievements;
             }
         });
         
-        console.log('🎨 風之繪師 已載入！');
-        console.log('📌 點擊「風之繪師」按鈕或選擇下拉選單開啟');
+        console.log('🎨 風之繪師 遊戲畫面已載入！');
     }
 })();
 
 // ============================================================
-// 開啟 / 關閉 風之繪師
+// 開啟 / 關閉 風之繪師 (遊戲畫面替換)
 // ============================================================
-function openPainterFull() {
-    if (window.PainterFull) {
-        // 如果遊戲正在運行，先停止
+function openPainterGameView() {
+    if (window.PainterGameView) {
         if (typeof stopGameEngine === 'function') {
             stopGameEngine();
         }
-        window.PainterFull.open();
+        window.PainterGameView.open();
     } else {
         alert('風之繪師 尚未載入，請重新整理頁面');
     }
 }
 
-function closePainterFull() {
-    if (window.PainterFull) {
-        window.PainterFull.close();
-        // 恢復原本的遊戲
+function closePainterGameView() {
+    if (window.PainterGameView) {
+        window.PainterGameView.close();
         if (typeof restartGameEngine === 'function') {
             setTimeout(restartGameEngine, 300);
         }
     }
 }
-
-// ============================================================
-// 在控制面板加入「風之繪師」按鈕和下拉選單
-// ============================================================
-(function() {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', addPainterControls);
-    } else {
-        addPainterControls();
-    }
-    
-    function addPainterControls() {
-        const panel = document.querySelector('.control-panel');
-        if (!panel) return;
-        if (document.getElementById('painterModeBtn')) return;
-        
-        // 在 expansionControls 內加入
-        const expansionControls = document.getElementById('expansionControls');
-        if (expansionControls) {
-            const html = `
-                <button id="painterModeBtn" class="btn purple-btn" onclick="openPainterFull()" style="padding:4px 14px;font-size:12px;">
-                    🎨 風之繪師
-                </button>
-                <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-                    🎮 遊戲:
-                    <select id="gameSelector" onchange="handleGameSelect(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                        <option value="flight">✈️ 氣流飛行員</option>
-                        <option value="painter">🎨 風之繪師</option>
-                    </select>
-                </label>
-            `;
-            expansionControls.insertAdjacentHTML('beforeend', html);
-        } else {
-            const html = `
-                <button id="painterModeBtn" class="btn purple-btn" onclick="openPainterFull()" style="padding:4px 14px;font-size:12px;">
-                    🎨 風之繪師
-                </button>
-                <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-                    🎮 遊戲:
-                    <select id="gameSelector" onchange="handleGameSelect(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                        <option value="flight">✈️ 氣流飛行員</option>
-                        <option value="painter">🎨 風之繪師</option>
-                    </select>
-                </label>
-            `;
-            panel.insertAdjacentHTML('beforeend', html);
-        }
-    }
-    
-    // 處理遊戲選擇
-    window.handleGameSelect = function(value) {
-        if (value === 'painter') {
-            openPainterFull();
-        } else {
-            if (window.PainterFull && window.PainterFull.isOpen()) {
-                closePainterFull();
-            }
-            const selector = document.getElementById('gameSelector');
-            if (selector) selector.value = 'flight';
-        }
-    };
-})();
 
 // ============================================================
 // 在視窗下拉選單中加入「🎨 風之繪師」
@@ -5081,6 +5031,7 @@ function closePainterFull() {
         option.value = 'painter';
         option.textContent = '🎨 風之繪師';
         viewSelect.appendChild(option);
+        console.log('✅ 已將「🎨 風之繪師」加入視窗選單');
     }
 })();
 
@@ -5093,15 +5044,15 @@ function closePainterFull() {
             const original = switchViewMode;
             window.switchViewMode = function(mode) {
                 if (mode === 'painter') {
-                    openPainterFull();
+                    openPainterGameView();
                     return;
                 }
-                if (window.PainterFull && window.PainterFull.isOpen()) {
-                    closePainterFull();
+                if (window.PainterGameView && window.PainterGameView.isOpen()) {
+                    closePainterGameView();
                 }
                 original(mode);
             };
-            console.log('✅ switchViewMode 已擴充');
+            console.log('✅ switchViewMode 已擴充，支援 painter 模式');
         } else {
             setTimeout(checkAndPatch, 200);
         }
@@ -5113,8 +5064,33 @@ function closePainterFull() {
     }
 })();
 
-console.log('✅ 風之繪師 插件已載入！');
-console.log('🎨 點擊「風之繪師」按鈕或選擇下拉選單開啟');
+// ============================================================
+// 在控制面板加入「🎨 風之繪師」按鈕
+// ============================================================
+(function() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addPainterButton);
+    } else {
+        addPainterButton();
+    }
+    
+    function addPainterButton() {
+        const panel = document.querySelector('.control-panel');
+        if (!panel) return;
+        if (document.getElementById('painterGameBtn')) return;
+        
+        const html = `
+            <button id="painterGameBtn" class="btn purple-btn" onclick="openPainterGameView()" style="padding:4px 14px;font-size:12px;">
+                🎨 風之繪師
+            </button>
+        `;
+        panel.insertAdjacentHTML('beforeend', html);
+        console.log('✅ 已加入「🎨 風之繪師」按鈕');
+    }
+})();
+
+console.log('✅ 風之繪師 遊戲畫面插件已載入！');
+console.log('🎨 從「視窗」下拉選單選擇「風之繪師」或點擊按鈕開啟');
 </script>
 <!-- ============================================================ -->
 <!-- 風之繪師 插件結束 -->
