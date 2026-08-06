@@ -3975,10 +3975,10 @@ window.showAchievements=showAchievements;
 </script>
 <script>
 // ============================================================
-// 🌟 六大獨立遊戲模式與獨立視窗完整管理系統
+// 🌟 六大獨立遊戲模式與後台完全淨空系統 (音效修正版)
 // ============================================================
 
-// 1. 自動擴充頂部的「視窗下拉選單」，加入六大獨立遊戲
+// 1. 自動擴充頂部的「視窗下拉選單」
 document.addEventListener('DOMContentLoaded', () => {
     const viewSelect = document.getElementById('viewModeSelect');
     if (viewSelect && !document.getElementById('opt_painter')) {
@@ -3995,7 +3995,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // 在原本的遊戲容器下方，為其他 5 款遊戲建立專屬的獨立 Canvas
     const mainGameContainer = document.getElementById('gameContainer');
     if (mainGameContainer && mainGameContainer.parentNode && !document.getElementById('subGameWrapper')) {
         const wrapper = document.createElement('div');
@@ -4046,7 +4045,6 @@ function stopSubThemeMusic() {
     if (subAudioInterval) { clearInterval(subAudioInterval); subAudioInterval = null; }
 }
 
-// 取得呼吸氣流數值 (0~100)
 function getSubPressureInput() {
     let pressure = 0;
     let active = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
@@ -4057,22 +4055,24 @@ function getSubPressureInput() {
     return Math.max(0, Math.min(100, pressure));
 }
 
-// 2. 徹底覆蓋原有的 switchViewMode，實現選單獨立切換與完全不衝突
+// 2. 升級版 switchViewMode：強制終止所有後台聲音與原版音樂
 window.switchViewMode = function(mode) {
     const chartBox = document.querySelector('.chart-container');
     const classicGameBox = document.getElementById('gameContainer');
     const subGameBox = document.getElementById('subGameContainer');
     const introBox = document.getElementById('introContainer');
 
-    // 關閉所有視窗與背景音樂
+    // 關閉所有視窗
     if (chartBox) chartBox.style.display = 'none';
     if (classicGameBox) classicGameBox.style.display = 'none';
     if (subGameBox) subGameBox.style.display = 'none';
     if (introBox) introBox.style.display = 'none';
 
-    // 終止氣流飛行家引擎
+    // 🛑 終極殺手鐧：強制關閉氣流飛行家的遊戲引擎與 BGM 音樂
     if (typeof stopGameEngine === 'function') stopGameEngine();
-    // 終止其他獨立遊戲迴圈與音效
+    if (typeof stopBGM === 'function') stopBGM(); // 確保原版飛行家的 BGM 絕對停止！
+    
+    // 終止其他獨立遊戲迴圈與音樂
     if (subGameAnimId) { cancelAnimationFrame(subGameAnimId); subGameAnimId = null; }
     stopSubThemeMusic();
 
@@ -4082,8 +4082,8 @@ window.switchViewMode = function(mode) {
         if (chartBox) chartBox.style.display = 'block';
     } 
     else if (mode === 'classic') {
-        // 🚀 獨立的氣流飛行家模式
         if (classicGameBox) classicGameBox.style.display = 'block';
+        if (typeof startBGM === 'function' && isMeasuring) startBGM();
         setTimeout(() => {
             if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
             if (typeof restartGameEngine === 'function') restartGameEngine();
@@ -4092,6 +4092,7 @@ window.switchViewMode = function(mode) {
     else if (mode === 'both') {
         if (chartBox) { chartBox.style.display = 'block'; chartBox.style.marginBottom = '15px'; }
         if (classicGameBox) classicGameBox.style.display = 'block';
+        if (typeof startBGM === 'function' && isMeasuring) startBGM();
         setTimeout(() => {
             if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
             if (typeof restartGameEngine === 'function') restartGameEngine();
@@ -4101,7 +4102,7 @@ window.switchViewMode = function(mode) {
         if (introBox) introBox.style.display = 'block';
     } 
     else {
-        // 🎨 另外五款獨立遊戲模式 (painter, candle, mage, dandelion, crystal)
+        // 🎨 另外五款獨立遊戲模式
         currentActiveSubTheme = mode;
         if (subGameBox) subGameBox.style.display = 'block';
         playSubThemeMusic(mode);
@@ -4115,7 +4116,6 @@ function startSubGameEngine(theme) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // 設定畫布尺寸
     canvas.width = canvas.parentElement.clientWidth || 800;
     canvas.height = canvas.parentElement.clientHeight || 480;
 
@@ -4144,18 +4144,15 @@ function startSubGameEngine(theme) {
         ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, w, h);
 
-        // 更新 HUD 顯示
         document.getElementById('subHudTitle').innerText = `⭐ ${themeNames[theme]} | 關卡: ${state.level}/100`;
         document.getElementById('subHudHp').innerText = `❤️ 生命值: ${state.hp}%`;
 
-        // 左側氣流監控條
         ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(20, 60, 20, 150);
         ctx.fillStyle = pressure > 80 ? '#e74c3c' : (pressure > 30 ? '#2ecc71' : '#3498db');
         let ph = (pressure / 100) * 150;
         ctx.fillRect(20, 210 - ph, 20, ph);
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText('氣流', 18, 225);
 
-        // 獨立遊戲核心玩法與 100 關遞進
         if (theme === 'painter') {
             ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
             ctx.fillText('【風之繪師】依據氣流粗細自動描繪路徑', 250, 30);
