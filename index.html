@@ -4004,6 +4004,54 @@ window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
 </script>
 <script>
+// ===== 終極強制靜音防護網 =====
+// 只要使用者切換到非遊戲模式（或任何時候），強制關閉所有聲音與計時器
+const originalSwitchViewMode = window.switchViewMode;
+window.switchViewMode = function(mode) {
+    // 1. 執行原本的切換
+    if (originalSwitchViewMode) originalSwitchViewMode(mode);
+
+    // 2. 如果不是遊戲模式，強制把所有音樂定時器清空、把聲音 Context 暫停
+    if (mode !== 'game' && mode !== 'both') {
+        if (typeof bgmInterval !== 'undefined' && bgmInterval) {
+            clearInterval(bgmInterval);
+            bgmInterval = null;
+        }
+        if (typeof customAudioSource !== 'undefined' && customAudioSource) {
+            try { customAudioSource.stop(); } catch(e) {}
+            customAudioSource = null;
+        }
+        try {
+            if (typeof audioCtx !== 'undefined' && audioCtx) {
+                audioCtx.suspend();
+            }
+        } catch(e) {}
+        console.log("🔇 已強制切斷所有背景音樂");
+    } else {
+        // 如果切回遊戲，且音效是開啟的，才恢復
+        try {
+            if (typeof audioCtx !== 'undefined' && audioCtx && document.getElementById('soundToggle')?.checked) {
+                audioCtx.resume();
+            }
+        } catch(e) {}
+    }
+};
+
+// 另外幫「音效勾選框」加上最強的防護
+document.addEventListener('DOMContentLoaded', () => {
+    const soundToggle = document.getElementById('soundToggle');
+    if (soundToggle) {
+        soundToggle.addEventListener('change', function() {
+            if (!this.checked) {
+                if (typeof bgmInterval !== 'undefined') clearInterval(bgmInterval);
+                if (typeof customAudioSource !== 'undefined' && customAudioSource) {
+                    try { customAudioSource.stop(); } catch(e) {}
+                }
+                try { if (typeof audioCtx !== 'undefined') audioCtx.suspend(); } catch(e) {}
+            }
+        });
+    }
+});
 </script>
 </body>
 </html>
