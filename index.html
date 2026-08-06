@@ -3974,298 +3974,259 @@ window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
 </script>
 <!-- ============================================================ -->
-<!-- 🆕 風之繪師 - 獨立模式 -->
+<!-- 🆕 風之繪師 - 視窗模式切換 -->
 <!-- 請將這段完整程式碼加在您原有HTML的 </body> 之前 -->
 <!-- ============================================================ -->
 
 <style>
-/* 風之繪師 - 全螢幕模式樣式 */
-#painterModeContainer {
+/* 風之繪師 - 視窗模式樣式 */
+#painterViewContainer {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
     background: #fdf6f0;
-    z-index: 99999;
-    flex-direction: column;
+    padding: 15px;
+    border-radius: 8px;
+    height: 480px;
+    position: relative;
     overflow: hidden;
+    border: 2px solid rgba(139, 115, 85, 0.15);
+    margin-top: 10px;
 }
-#painterModeContainer.active {
-    display: flex;
+#painterViewContainer.active {
+    display: block;
 }
-#painterModeContainer .painter-header {
-    padding: 15px 25px;
-    background: rgba(255,255,255,0.95);
-    border-bottom: 2px solid rgba(139, 115, 85, 0.15);
+#painterViewContainer .painter-view-header {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    right: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0;
-    z-index: 10;
+    z-index: 5;
+    pointer-events: none;
 }
-#painterModeContainer .painter-header .title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #5c3d2e;
-}
-#painterModeContainer .painter-header .title span {
-    font-size: 26px;
-}
-#painterModeContainer .painter-header .close-btn {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 6px;
-    cursor: pointer;
+#painterViewContainer .painter-view-header .title {
+    color: rgba(92, 61, 46, 0.3);
+    font-size: 13px;
     font-weight: 600;
-    font-size: 14px;
+    font-family: Georgia, serif;
 }
-#painterModeContainer .painter-header .close-btn:hover {
-    background: #c0392b;
-}
-#painterModeContainer .painter-body {
-    flex: 1;
+#painterViewContainer .painter-view-header .hud-info {
+    color: rgba(92, 61, 46, 0.4);
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Segoe UI', sans-serif;
     display: flex;
-    flex-direction: column;
-    padding: 15px 25px 25px 25px;
-    overflow: hidden;
-    position: relative;
+    gap: 15px;
+    align-items: center;
+    background: rgba(255,255,255,0.5);
+    padding: 4px 14px;
+    border-radius: 16px;
+    backdrop-filter: blur(4px);
+    pointer-events: auto;
 }
-#painterModeContainer .painter-canvas-wrap {
-    flex: 1;
+#painterViewContainer .painter-view-header .hud-info span {
+    margin: 0 2px;
+}
+#painterViewContainer .painter-view-header .hud-info .val {
+    color: #5c3d2e;
+    font-weight: 700;
+}
+#painterViewContainer .painter-view-header .hud-info .val.highlight {
+    color: #e74c3c;
+}
+#painterViewContainer .painter-view-header .hp-bar-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+#painterViewContainer .painter-view-header .hp-bar-mini .bg {
+    width: 50px;
+    height: 6px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+#painterViewContainer .painter-view-header .hp-bar-mini .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e74c3c, #2ecc71);
+    transition: width 0.15s;
+    border-radius: 3px;
+    width: 100%;
+}
+#painterViewContainer .painter-canvas-wrap {
+    width: 100%;
+    height: 100%;
     position: relative;
+    border-radius: 6px;
+    overflow: hidden;
     background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.06);
-    overflow: hidden;
-    border: 2px solid rgba(139, 115, 85, 0.1);
+    box-shadow: inset 0 0 30px rgba(212, 163, 115, 0.06);
 }
-#painterModeContainer .painter-canvas-wrap .watermark {
+#painterViewContainer .painter-canvas-wrap .watermark {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background-image: 
         radial-gradient(ellipse at 20% 50%, rgba(212, 163, 115, 0.06) 0%, transparent 50%),
         radial-gradient(ellipse at 80% 50%, rgba(212, 163, 115, 0.06) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }
-#painterModeContainer .painter-canvas-wrap .frame-border {
+#painterViewContainer .painter-canvas-wrap .frame-border {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    border: 3px solid rgba(139, 115, 85, 0.08);
-    border-radius: 8px;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border: 2px solid rgba(139, 115, 85, 0.06);
+    border-radius: 4px;
     pointer-events: none;
     z-index: 0;
 }
-#painterCanvas {
+#painterViewCanvas {
     position: relative;
     z-index: 1;
     width: 100%;
     height: 100%;
     display: block;
 }
-#painterModeContainer .painter-hud {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 10px;
-    margin-top: 12px;
-    flex-shrink: 0;
-    border: 1px solid rgba(139, 115, 85, 0.1);
-    flex-wrap: wrap;
-    gap: 8px;
-}
-#painterModeContainer .painter-hud .hud-item {
-    font-size: 14px;
-    font-weight: 600;
-    color: #5c3d2e;
-}
-#painterModeContainer .painter-hud .hud-item .value {
-    color: #8B6914;
-}
-#painterModeContainer .painter-hud .hud-item .value.highlight {
-    color: #e74c3c;
-}
-#painterModeContainer .painter-hud .hp-bar-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-#painterModeContainer .painter-hud .hp-bar-bg {
-    width: 120px;
-    height: 10px;
-    background: rgba(0,0,0,0.08);
-    border-radius: 5px;
-    overflow: hidden;
-}
-#painterModeContainer .painter-hud .hp-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #e74c3c, #2ecc71);
-    transition: width 0.15s;
-    border-radius: 5px;
-}
-#painterModeContainer .painter-hud .progress-bar-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 120px;
-}
-#painterModeContainer .painter-hud .progress-bar-bg {
-    flex: 1;
-    height: 8px;
-    background: rgba(0,0,0,0.06);
-    border-radius: 4px;
-    overflow: hidden;
-    min-width: 60px;
-}
-#painterModeContainer .painter-hud .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #f1c40f, #e67e22);
-    transition: width 0.1s;
-    border-radius: 4px;
-    width: 1%;
-}
-#painterRestOverlay {
+#painterViewRestOverlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.2);
     display: none;
     justify-content: center;
     align-items: center;
     z-index: 10;
     flex-direction: column;
-    border-radius: 12px;
+    border-radius: 6px;
 }
-#painterRestOverlay .rest-icon {
-    font-size: 48px;
-    margin-bottom: 10px;
-}
-#painterRestOverlay .rest-text {
+#painterViewRestOverlay .rest-text {
     color: white;
-    font-size: 28px;
+    font-size: 24px;
     font-weight: bold;
     text-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
-#painterRestOverlay .rest-timer {
+#painterViewRestOverlay .rest-timer {
     color: #f1c40f;
-    font-size: 20px;
-    margin-top: 8px;
+    font-size: 18px;
+    margin-top: 6px;
 }
-.painter-control-hint {
+.painter-view-hint {
     position: absolute;
-    bottom: 85px;
+    bottom: 18px;
     left: 50%;
     transform: translateX(-50%);
-    color: rgba(0,0,0,0.15);
-    font-size: 12px;
+    color: rgba(0,0,0,0.12);
+    font-size: 11px;
     pointer-events: none;
-    background: rgba(255,255,255,0.6);
-    padding: 4px 16px;
-    border-radius: 12px;
+    background: rgba(255,255,255,0.5);
+    padding: 2px 14px;
+    border-radius: 10px;
     z-index: 2;
     white-space: nowrap;
+    backdrop-filter: blur(4px);
+}
+#painterViewProgressFill {
+    width: 1%;
+    height: 100%;
+    background: linear-gradient(90deg, #f1c40f, #e67e22);
+    transition: width 0.1s;
+    border-radius: 3px;
+}
+#painterViewContainer .progress-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+#painterViewContainer .progress-mini .bg {
+    width: 60px;
+    height: 6px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+#painterViewContainer .progress-mini .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f1c40f, #e67e22);
+    transition: width 0.1s;
+    border-radius: 3px;
+    width: 1%;
 }
 @media (max-width: 768px) {
-    #painterModeContainer .painter-hud .hud-item {
-        font-size: 12px;
-    }
-    #painterModeContainer .painter-hud .hp-bar-bg {
-        width: 80px;
-    }
-    #painterModeContainer .painter-header .title {
-        font-size: 18px;
-    }
-    #painterModeContainer .painter-body {
-        padding: 10px 15px 15px 15px;
-    }
-    .painter-control-hint {
-        bottom: 75px;
+    #painterViewContainer .painter-view-header .hud-info {
         font-size: 10px;
-        padding: 2px 12px;
+        gap: 6px;
+        padding: 2px 10px;
+    }
+    #painterViewContainer .painter-view-header .hud-info .hp-bar-mini .bg {
+        width: 30px;
+    }
+    #painterViewContainer .painter-view-header .hud-info .progress-mini .bg {
+        width: 30px;
+    }
+    .painter-view-hint {
+        font-size: 9px;
+        padding: 1px 10px;
+        bottom: 12px;
     }
 }
 </style>
 
-<!-- ===== 風之繪師 獨立模式 HTML ===== -->
-<div id="painterModeContainer">
-    <!-- 頂部標題列 -->
-    <div class="painter-header">
-        <div class="title"><span>🎨</span> 風之繪師</div>
-        <button class="close-btn" onclick="closePainterMode()">✕ 關閉</button>
-    </div>
-    <!-- 主體 -->
-    <div class="painter-body">
-        <div class="painter-canvas-wrap">
-            <div class="watermark"></div>
-            <div class="frame-border"></div>
-            <canvas id="painterCanvas"></canvas>
-            <div id="painterRestOverlay">
-                <div class="rest-icon">⏳</div>
-                <div class="rest-text">休息中...</div>
-                <div class="rest-timer" id="painterRestTimer">2s</div>
-            </div>
-            <div class="painter-control-hint">🌬️ 吐氣繪畫 · 吸氣暫停 · ↑↓ 微調畫筆</div>
-        </div>
-        <!-- HUD -->
-        <div class="painter-hud">
-            <div class="hud-item">🏁 關卡: <span class="value" id="pLevel">1/100</span></div>
-            <div class="hud-item">🖼️ 畫作: <span class="value" id="pPaintings">0</span></div>
-            <div class="hud-item">🖌️ 筆觸: <span class="value" id="pStroke">0/1</span></div>
-            <div class="hud-item">❌ 失誤: <span class="value highlight" id="pErrors">0/5</span></div>
-            <div class="hud-item">🎯 形狀: <span class="value" id="pShapeName">圓形</span></div>
-            <div class="progress-bar-wrap">
-                <span style="font-size:12px;color:#8b949e;">進度</span>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="pProgressFill"></div>
-                </div>
-                <span style="font-size:12px;color:#8b949e;" id="pProgressText">0%</span>
-            </div>
-            <div class="hp-bar-wrap">
+<!-- ===== 風之繪師 視窗模式 HTML ===== -->
+<div id="painterViewContainer">
+    <div class="painter-view-header">
+        <div class="title">🎨 風之繪師</div>
+        <div class="hud-info">
+            <span>🏁 <span class="val" id="pvLevel">1/100</span></span>
+            <span>🖼️ <span class="val" id="pvPaintings">0</span></span>
+            <span>🖌️ <span class="val" id="pvStroke">0/1</span></span>
+            <span>❌ <span class="val highlight" id="pvErrors">0/5</span></span>
+            <span class="progress-mini">
+                <span class="bg"><span class="fill" id="pvProgressFill"></span></span>
+                <span id="pvProgressText" style="font-size:10px;color:#8b949e;min-width:28px;">0%</span>
+            </span>
+            <span class="hp-bar-mini">
                 <span>❤️</span>
-                <div class="hp-bar-bg">
-                    <div class="hp-bar-fill" id="pHpFill"></div>
-                </div>
-            </div>
+                <span class="bg"><span class="fill" id="pvHpFill"></span></span>
+            </span>
+            <span id="pvShapeName" style="color:#8B6914;font-weight:600;">⭕ 圓形</span>
         </div>
+    </div>
+    <div class="painter-canvas-wrap">
+        <div class="watermark"></div>
+        <div class="frame-border"></div>
+        <canvas id="painterViewCanvas"></canvas>
+        <div id="painterViewRestOverlay">
+            <div class="rest-text">⏳ 休息中...</div>
+            <div class="rest-timer" id="pvRestTimer">2s</div>
+        </div>
+        <div class="painter-view-hint">🌬️ 吐氣繪畫 · 吸氣暫停 · ↑↓ 微調畫筆</div>
     </div>
 </div>
 
 <script>
 // ============================================================
-// 風之繪師 - 獨立模式 完整遊戲引擎
+// 風之繪師 - 視窗模式 完整遊戲引擎
 // ============================================================
 (function() {
-    // --- 等待 DOM 載入 ---
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPainterMode);
+        document.addEventListener('DOMContentLoaded', initPainterView);
     } else {
-        initPainterMode();
+        initPainterView();
     }
     
-    function initPainterMode() {
-        if (window._painterModeInited) return;
-        window._painterModeInited = true;
+    function initPainterView() {
+        if (window._painterViewInited) return;
+        window._painterViewInited = true;
         
-        // --- DOM 元素 ---
-        const container = document.getElementById('painterModeContainer');
-        const canvas = document.getElementById('painterCanvas');
-        const restOverlay = document.getElementById('painterRestOverlay');
-        const restTimerEl = document.getElementById('painterRestTimer');
+        const container = document.getElementById('painterViewContainer');
+        const canvas = document.getElementById('painterViewCanvas');
+        const restOverlay = document.getElementById('painterViewRestOverlay');
+        const restTimerEl = document.getElementById('pvRestTimer');
         if (!container || !canvas) return;
         
         const ctx = canvas.getContext('2d');
@@ -4274,38 +4235,17 @@ window.showAchievements=showAchievements;
         let isPaused = false;
         let isGameOver = false;
         
-        // --- 遊戲狀態 ---
         const state = {
-            level: 1,
-            maxLevel: 100,
-            hp: 100,
-            maxHp: 100,
-            brushX: 0,
-            brushY: 0,
-            brushSize: 4,
-            brushAlpha: 0.8,
-            brushColor: '#8B6914',
-            isDrawing: false,
-            drawPoints: [],
-            strokeProgress: 0,
-            strokePoints: [],
-            strokesPerPainting: 1,
-            currentStroke: 0,
-            shapePath: [],
-            shapeIdx: 0,
-            shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
-            particles: [],
-            items: [],
-            hasPalette: false,
-            hasFineBrush: false,
-            paletteTimer: 0,
-            fineBrushTimer: 0,
-            paintings: 0,
-            errors: 0,
-            maxErrors: 5,
-            isResting: false,
-            restTimer: 0,
-            restDuration: 90,
+            level: 1, maxLevel: 100, hp: 100, maxHp: 100,
+            brushX: 0, brushY: 0, brushSize: 4, brushAlpha: 0.8, brushColor: '#8B6914',
+            isDrawing: false, drawPoints: [],
+            strokeProgress: 0, strokePoints: [], strokesPerPainting: 1, currentStroke: 0,
+            shapePath: [], shapeIdx: 0,
+            shapeTypes: ['circle','square','triangle','star','heart','flower','butterfly','diamond','moon','spiral'],
+            particles: [], items: [],
+            hasPalette: false, hasFineBrush: false, paletteTimer: 0, fineBrushTimer: 0,
+            paintings: 0, errors: 0, maxErrors: 5,
+            isResting: false, restTimer: 0, restDuration: 90,
             shapeNames: {
                 'circle': '⭕ 圓形', 'square': '⬜ 方形', 'triangle': '🔺 三角形',
                 'star': '⭐ 星星', 'heart': '❤️ 愛心', 'flower': '🌸 花朵',
@@ -4313,7 +4253,6 @@ window.showAchievements=showAchievements;
             }
         };
         
-        // --- 畫布大小 ---
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             const w = rect.width - 0;
@@ -4326,7 +4265,6 @@ window.showAchievements=showAchievements;
             state.brushY = canvas.height / 2;
         }
         
-        // --- 更新筆畫數 ---
         function updateStrokeCount() {
             const lv = state.level;
             if (lv <= 20) state.strokesPerPainting = 1;
@@ -4338,7 +4276,6 @@ window.showAchievements=showAchievements;
             state.strokeProgress = 0;
         }
         
-        // --- 生成形狀點 ---
         function generateShapePoints(type, cx, cy, size) {
             const points = [];
             const steps = 80 + Math.floor(state.level / 2);
@@ -4456,7 +4393,6 @@ window.showAchievements=showAchievements;
             return points;
         }
         
-        // --- 生成形狀 ---
         function generateShape() {
             const w = canvas.width, h = canvas.height;
             const cx = w / 2, cy = h / 2;
@@ -4483,21 +4419,19 @@ window.showAchievements=showAchievements;
             updateUI();
         }
         
-        // --- 更新UI ---
         function updateUI() {
-            document.getElementById('pLevel').textContent = `${state.level}/${state.maxLevel}`;
-            document.getElementById('pPaintings').textContent = state.paintings;
-            document.getElementById('pStroke').textContent = `${state.currentStroke + 1}/${state.strokesPerPainting}`;
-            document.getElementById('pErrors').textContent = `${state.errors}/${state.maxErrors}`;
-            document.getElementById('pHpFill').style.width = `${(state.hp / state.maxHp) * 100}%`;
+            document.getElementById('pvLevel').textContent = `${state.level}/${state.maxLevel}`;
+            document.getElementById('pvPaintings').textContent = state.paintings;
+            document.getElementById('pvStroke').textContent = `${state.currentStroke + 1}/${state.strokesPerPainting}`;
+            document.getElementById('pvErrors').textContent = `${state.errors}/${state.maxErrors}`;
+            document.getElementById('pvHpFill').style.width = `${(state.hp / state.maxHp) * 100}%`;
             const pct = Math.min(state.strokeProgress * 100, 100);
-            document.getElementById('pProgressFill').style.width = pct + '%';
-            document.getElementById('pProgressText').textContent = Math.round(pct) + '%';
+            document.getElementById('pvProgressFill').style.width = pct + '%';
+            document.getElementById('pvProgressText').textContent = Math.round(pct) + '%';
             const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
-            document.getElementById('pShapeName').textContent = state.shapeNames[type] || '未知';
+            document.getElementById('pvShapeName').textContent = state.shapeNames[type] || '未知';
         }
         
-        // --- 粒子特效 ---
         function splash(x, y, c) {
             for (let i = 0; i < 25; i++) {
                 const a = Math.random() * Math.PI * 2;
@@ -4524,18 +4458,11 @@ window.showAchievements=showAchievements;
             state.particles = state.particles.filter(p => p.life > 0);
         }
         
-        // --- 道具 ---
         function updateItems() {
             const w = canvas.width, h = canvas.height;
             if (Math.random() < 0.001) {
                 const type = Math.random() < 0.5 ? 'palette' : 'fineBrush';
-                state.items.push({
-                    type,
-                    x: 50 + Math.random() * (w - 100),
-                    y: 50 + Math.random() * (h - 100),
-                    radius: 20,
-                    life: 300
-                });
+                state.items.push({ type, x: 50 + Math.random() * (w - 100), y: 50 + Math.random() * (h - 100), radius: 20, life: 300 });
             }
             for (let item of state.items) {
                 item.life--;
@@ -4558,7 +4485,6 @@ window.showAchievements=showAchievements;
             state.items = state.items.filter(i => i.life > 0);
         }
         
-        // --- 完成筆畫 ---
         function finishStroke() {
             state.currentStroke++;
             state.strokeProgress = 0;
@@ -4575,7 +4501,6 @@ window.showAchievements=showAchievements;
             updateUI();
         }
         
-        // --- 完成一幅畫 ---
         function completePainting() {
             state.paintings++;
             state.currentStroke = 0;
@@ -4597,7 +4522,6 @@ window.showAchievements=showAchievements;
             playSound('special');
             state.level++;
             updateStrokeCount();
-            // 進入休息
             state.isResting = true;
             state.restTimer = state.restDuration;
             restOverlay.style.display = 'flex';
@@ -4610,11 +4534,8 @@ window.showAchievements=showAchievements;
             updateUI();
         }
         
-        // --- 更新遊戲 ---
         function update(breathFlow) {
             if (isPaused || isGameOver) return;
-            
-            // 休息狀態
             if (state.isResting) {
                 state.restTimer--;
                 const seconds = Math.ceil(state.restTimer / 60) + 1;
@@ -4628,10 +4549,8 @@ window.showAchievements=showAchievements;
                 }
                 return;
             }
-            
             const flow = Math.abs(breathFlow);
             const exhale = breathFlow < 0;
-            
             if (exhale && flow > 3) {
                 state.isDrawing = true;
                 state.brushSize = Math.min(4 + flow / 4, 22);
@@ -4691,7 +4610,6 @@ window.showAchievements=showAchievements;
             if (state.strokeProgress >= 1) finishStroke();
         }
         
-        // --- 音效 (複製原有音效函數) ---
         function playSound(type) {
             try {
                 if (typeof audioCtx === 'undefined') return;
@@ -4727,7 +4645,6 @@ window.showAchievements=showAchievements;
             } catch(e) {}
         }
         
-        // --- Toast 通知 ---
         function showToast(msg) {
             const status = document.getElementById('status');
             if (status) {
@@ -4741,7 +4658,6 @@ window.showAchievements=showAchievements;
             }
         }
         
-        // --- 遊戲結束 ---
         function triggerGameOver() {
             isGameOver = true;
             isRunning = false;
@@ -4759,29 +4675,20 @@ window.showAchievements=showAchievements;
             document.getElementById('winScreen').style.display = 'flex';
         }
         
-        // --- 渲染 ---
         function render() {
             const w = canvas.width, h = canvas.height;
-            
-            // 背景
             const grad = ctx.createLinearGradient(0, 0, w, h);
             grad.addColorStop(0, '#fdf6f0');
             grad.addColorStop(1, '#f5ece4');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, h);
-            
-            // 紙紋理
             for (let i = 0; i < 60; i++) {
                 ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
                 ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
             }
-            
-            // 畫框
             ctx.strokeStyle = 'rgba(139, 115, 85, 0.12)';
             ctx.lineWidth = 2;
             ctx.strokeRect(10, 10, w - 20, h - 20);
-            
-            // 目標形狀
             if (state.shapePath.length > 0) {
                 ctx.save();
                 const glow = 0.3 + 0.2 * Math.sin(Date.now() / 1000);
@@ -4800,8 +4707,6 @@ window.showAchievements=showAchievements;
                 ctx.setLineDash([]);
                 ctx.restore();
             }
-            
-            // 筆觸
             for (let p of state.drawPoints) {
                 ctx.save();
                 ctx.globalAlpha = p.alpha || 0.8;
@@ -4814,8 +4719,6 @@ window.showAchievements=showAchievements;
                 ctx.fill();
                 ctx.restore();
             }
-            
-            // 畫筆
             if (state.isDrawing) {
                 ctx.save();
                 ctx.shadowColor = state.brushColor;
@@ -4838,282 +4741,6 @@ window.showAchievements=showAchievements;
                 ctx.setLineDash([]);
                 ctx.restore();
             }
-            
-            // 粒子
-            for (let p of state.particles) {
-                ctx.save();
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur = 8;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-            
-            // 道具
-            for (let item of state.items) {
-                const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
-                ctx.save();
-                ctx.translate(item.x, item.y);
-                ctx.scale(pulse, pulse);
-                ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
-                ctx.shadowBlur = 20;
-                ctx.font = '28px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
-                ctx.restore();
-            }
-            
-            // 進度條（畫面上方）
-            const px = 40, py = h - 30, pw = w - 80, ph = 6;
-            ctx.fillStyle = 'rgba(139, 115, 85, 0.12)';
-            ctx.beginPath();
-            ctx.roundRect(px, py, pw, ph, 3);
-            ctx.fill();
-            const pct = state.strokeProgress;
-            ctx.fillStyle = '#8B6914';
-            ctx.beginPath();
-            ctx.roundRect(px, py, pw * pct, ph, 3);
-            ctx.fill();
-            
-            // 形狀名稱（畫面上方）
-            ctx.fillStyle = 'rgba(92, 61, 46, 0.2)';
-            ctx.font = '13px Georgia, serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
-            ctx.fillText(`🎨 ${state.shapeNames[type] || '繪畫'}  ·  第 ${state.currentStroke + 1}/${state.strokesPerPainting} 筆`, w / 2, 12);
-        }
-        
-        // --- 遊戲循環 ---
-        function gameLoop() {
-            if (!isRunning || isGameOver) {
-                if (isGameOver && animId) {
-                    cancelAnimationFrame(animId);
-                    animId = null;
-                }
-                return;
-            }
-            
-            // 取得呼吸數據
-            let breathFlow = 0;
-            if (typeof isMeasuring !== 'undefined' && isMeasuring && !isPaused && !isGameOver) {
-                breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-            }
-            
-            update(breathFlow);
-            render();
-            
-            animId = requestAnimationFrame(gameLoop);
-        }
-        
-        // --- 公開方法 ---
-        window.PainterMode = {
-            open: function() {
-                // 顯示容器
-                container.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                
-                // 初始化
-                resizeCanvas();
-                state.level = 1;
-                state.hp = state.maxHp;
-                state.paintings = 0;
-                state.errors = 0;
-                state.drawPoints = [];
-                state.particles = [];
-                state.items = [];
-                state.hasPalette = false;
-                state.hasFineBrush = false;
-                state.paletteTimer = 0;
-                state.fineBrushTimer = 0;
-                state.currentStroke = 0;
-                state.strokeProgress = 0;
-                state.shapeIdx = 0;
-                state.isResting = false;
-                isPaused = false;
-                isGameOver = false;
-                restOverlay.style.display = 'none';
-                document.getElementById('gameOverScreen').style.display = 'none';
-                document.getElementById('winScreen').style.display = 'none';
-                updateStrokeCount();
-                generateShape();
-                state.brushX = canvas.width / 2;
-                state.brushY = canvas.height / 2;
-                updateUI();
-                
-                // 啟動
-                if (animId) {
-                    cancelAnimationFrame(animId);
-                    animId = null;
-                }
-                isRunning = true;
-                gameLoop();
-                
-                if (typeof updateStatus === 'function') {
-                    updateStatus('🎨 風之繪師');
-                }
-            },
-            close: function() {
-                isRunning = false;
-                if (animId) {
-                    cancelAnimationFrame(animId);
-                    animId = null;
-                }
-                container.classList.remove('active');
-                document.body.style.overflow = '';
-                
-                if (typeof updateStatus === 'function') {
-                    updateStatus('已關閉風之繪師');
-                }
-            },
-            resize: resizeCanvas,
-            isOpen: function() {
-                return container.classList.contains('active');
-            }
-        };
-        
-        // --- 視窗大小改變 ---
-        window.addEventListener('resize', function() {
-            if (window.PainterMode && window.PainterMode.isOpen()) {
-                window.PainterMode.resize();
-            }
-        });
-        
-        // --- 鍵盤事件 ---
-        document.addEventListener('keydown', function(e) {
-            if (!window.PainterMode || !window.PainterMode.isOpen()) return;
-            
-            if (e.key === 'Escape') {
-                window.PainterMode.close();
-                e.preventDefault();
-            }
-            
-            if (e.key === ' ' || e.key === 'Space') {
-                e.preventDefault();
-                isPaused = !isPaused;
-                if (isPaused) {
-                    showToast('⏸ 已暫停');
-                } else {
-                    showToast('▶ 繼續');
-                }
-            }
-            
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                e.preventDefault();
-                state.brushY = Math.max(30, state.brushY - 12);
-            }
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-                e.preventDefault();
-                state.brushY = Math.min(canvas.height - 30, state.brushY + 12);
-            }
-        });
-        
-        console.log('🎨 風之繪師 獨立模式已載入！');
-        console.log('📌 點擊「風之繪師」按鈕或下拉選單開啟');
-    }
-})();
-
-// ============================================================
-// 開啟 / 關閉 風之繪師 獨立模式
-// ============================================================
-function openPainterMode() {
-    if (window.PainterMode) {
-        // 如果遊戲正在運行，先停止
-        if (typeof stopGameEngine === 'function') {
-            stopGameEngine();
-        }
-        window.PainterMode.open();
-    } else {
-        alert('風之繪師 尚未載入，請重新整理頁面');
-    }
-}
-
-function closePainterMode() {
-    if (window.PainterMode) {
-        window.PainterMode.close();
-        // 恢復原本的遊戲
-        if (typeof restartGameEngine === 'function') {
-            setTimeout(restartGameEngine, 300);
-        }
-    }
-}
-
-// ============================================================
-// 在控制面板加入「風之繪師」按鈕和下拉選單
-// ============================================================
-(function() {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', addPainterControls);
-    } else {
-        addPainterControls();
-    }
-    
-    function addPainterControls() {
-        const panel = document.querySelector('.control-panel');
-        if (!panel) return;
-        
-        // 檢查是否已存在
-        if (document.getElementById('painterModeBtn')) return;
-        
-        // 在 expansionControls 內加入
-        const expansionControls = document.getElementById('expansionControls');
-        if (expansionControls) {
-            const html = `
-                <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-                    🎮 遊戲:
-                    <select id="gameSelector" onchange="handleGameSelect(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                        <option value="flight">✈️ 氣流飛行員</option>
-                        <option value="painter">🎨 風之繪師</option>
-                    </select>
-                </label>
-                <button id="painterModeBtn" class="btn purple-btn" onclick="openPainterMode()" style="padding:4px 14px;font-size:12px;">
-                    🎨 風之繪師
-                </button>
-            `;
-            expansionControls.insertAdjacentHTML('beforeend', html);
-        } else {
-            // 如果沒有 expansionControls，直接加在面板最後
-            const html = `
-                <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-                    🎮 遊戲:
-                    <select id="gameSelector" onchange="handleGameSelect(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                        <option value="flight">✈️ 氣流飛行員</option>
-                        <option value="painter">🎨 風之繪師</option>
-                    </select>
-                </label>
-                <button id="painterModeBtn" class="btn purple-btn" onclick="openPainterMode()" style="padding:4px 14px;font-size:12px;">
-                    🎨 風之繪師
-                </button>
-            `;
-            panel.insertAdjacentHTML('beforeend', html);
-        }
-    }
-    
-    // 處理遊戲選擇
-    window.handleGameSelect = function(value) {
-        if (value === 'painter') {
-            openPainterMode();
-        } else {
-            // 關閉風之繪師，回到飛行員
-            if (window.PainterMode && window.PainterMode.isOpen()) {
-                closePainterMode();
-            }
-            // 重置選擇器
-            const selector = document.getElementById('gameSelector');
-            if (selector) selector.value = 'flight';
-        }
-    };
-})();
-
-console.log('✅ 風之繪師 獨立模式已就緒！');
-console.log('🎨 點擊「風之繪師」按鈕或選擇下拉選單開啟');
-</script>
-<!-- ============================================================ -->
-<!-- 風之繪師 新增結束 -->
-<!-- ============================================================ -->
+            for
 </body>
 </html>
