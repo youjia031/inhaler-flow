@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 多遊戲擴充版 v7.0</title>
+<title>呼吸訓練器 - 插件化架構</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <style>
+/* ===== 原有樣式保持不變（此處省略以節省空間，實際使用時保留完整） ===== */
 * { box-sizing: border-box; }
 body {
 font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -266,6 +267,7 @@ overflow-y: auto;
 border: 1px solid #30363d;
 margin-top: 15px;
 }
+#introContainer h2 { color: #f0f6fc; border-bottom: 2px solid #1f4e79; padding-bottom: 10px; }
 .intro-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
 .intro-card {
 background: #161b22;
@@ -620,11 +622,11 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="header">
 <div class="main-title">呼吸訓練器</div>
 <h1>Inhaler Flow Monitor</h1>
-<p>Acoustic inhaler flow visualization & Mini-Game Platform</p>
+<p>Acoustic inhaler flow visualization & Plugin Games</p>
 </div>
 
 <!-- ===== 控制面板 ===== -->
-<div class="control-panel">
+<div class="control-panel" id="mainControlPanel">
 <button id="connectBtn" class="btn accent">Connect</button>
 <button id="startBtn" class="btn" disabled>Start</button>
 <button id="segmentBtn" class="btn accent">PKL Index 切分</button>
@@ -644,7 +646,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 圖表 ===== -->
-<div class="chart-container">
+<div class="chart-container" id="chartContainer">
 <canvas id="flowChart"></canvas>
 </div>
 
@@ -657,21 +659,13 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 </div>
 <div class="game-ui-overlay">
-<div class="hud-badge">
-🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span>
-| 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
-<span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER 2X!</span>
-<span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️ SHIELD</span>
-<span id="magnetBadge" style="display:none; color:#f39c12;">🧲 MAGNET</span>
-<span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X SCORE</span>
-<span id="slowBadge" style="display:none; color:#e67e22;">🕸️ SLOWED</span>
-<span id="bossWarning" style="display:none; color:#e74c3c; font-weight:bold;">👹 BOSS!</span>
-<span id="skillWarning" style="display:none; color:#ff4444; font-weight:bold;">⚠️ 技能預警!</span>
+<div class="hud-badge" id="gameHUD">
+<!-- 由遊戲插件動態生成 -->
 </div>
 <div class="hud-badge">
 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕 🖥️</button>
 <button id="gamePauseBtn" class="btn game-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleGamePause()">暫停</button>
-<button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置分數</button>
+<button id="gameRestartBtn" class="btn danger-btn" style="padding:4px 10px; font-size:12px;" onclick="restartGameEngine()">重置</button>
 <span style="margin-left:5px;">❤️ HP</span>
 <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpFill"></div></div>
 </div>
@@ -679,9 +673,16 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="modal-screen" id="gameOverScreen" style="display: none;">
 <div class="modal-card">
 <h1 style="color: #e74c3c; margin-top:0; font-size: 36px;">💥 GAME OVER 💥</h1>
-<p style="color: #ccc; font-size: 16px;">血條已用盡，請重新準備！</p>
-<div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">最終得分: <span id="finalScore">0</span></div>
-<button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始遊戲</button>
+<p style="color: #ccc; font-size: 16px;" id="gameOverMessage">遊戲結束！</p>
+<div style="margin: 20px 0; font-size: 20px; color: #f1c40f;">分數: <span id="finalScore">0</span></div>
+<button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 重新開始</button>
+</div>
+</div>
+<div class="modal-screen" id="winScreen" style="display: none;">
+<div class="modal-card">
+<h1 style="color: #2ecc71; margin-top:0; font-size: 36px;">🎉 恭喜過關！🎉</h1>
+<p style="color: #ccc; font-size: 18px;" id="winMessage">你完成了所有挑戰！</p>
+<button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 再玩一次</button>
 </div>
 </div>
 <div class="modal-screen" id="restScreen" style="display: none;">
@@ -689,15 +690,8 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <h2 style="color: #2ecc71; margin-top:0;">🍵 換氣休息時間</h2>
 <p style="color: #ccc;">做的很好！請放鬆肌肉、深呼吸休息一下...</p>
 <h1 style="font-size: 48px; color: #f39c12; margin: 15px 0;" id="restCountdown">15</h1>
-<p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續遊戲</p>
+<p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續</p>
 </div>
-</div>
-<div id="finalBossOverlay">
-<div class="boss-title">👾 虛空領主 · 降臨</div>
-<div class="boss-subtitle">⚔️ 最終試煉 · 第 100 關 ⚔️</div>
-<video id="bossVideo" muted playsinline><source src="" type="video/mp4"></video>
-<audio id="bossAudio" loop></audio>
-<button class="boss-skip-btn" onclick="skipBossSequence()">⏭️ 跳過動畫</button>
 </div>
 
 <div class="control-hint" id="controlHint">
@@ -706,221 +700,25 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 🖱️ 滑鼠: <span id="hintMouse">移動</span>
 </div>
 
-<div class="boss-warning-text" id="bossWarningText">⚠️ 技能來襲！</div>
-
 <button class="help-btn" id="helpBtn" onclick="toggleControlGuide()" title="操控說明">❓</button>
 
 <div class="control-guide" id="controlGuide">
-    <h4>🎮 操控說明</h4>
-    <div class="key-row">
-        <span class="key primary">🌬️</span>
-        <span class="action">呼吸裝置 → 強度控制 <span class="highlight">(絕對優先)</span></span>
-    </div>
-    <div class="divider"></div>
-    <div class="key-row">
-        <span class="key secondary">↑</span>
-        <span class="key secondary">W</span>
-        <span class="action">增加強度 / 向上</span>
-    </div>
-    <div class="key-row">
-        <span class="key secondary">↓</span>
-        <span class="key secondary">S</span>
-        <span class="action">減少強度 / 向下</span>
-    </div>
-    <div class="key-row">
-        <span class="key special">Space</span>
-        <span class="action">暫停 / 繼續遊戲</span>
-    </div>
-    <div class="divider"></div>
-    <div class="mouse-row">
-        <span class="icon">🖱️</span>
-        <span class="action">移動滑鼠 → 強度跟隨</span>
-    </div>
-    <div class="priority-note warning">
-        ⚡ 當系統偵測到吐氣時，滑鼠與鍵盤將被禁用！
+    <h4 id="guideTitle">🎮 操控說明</h4>
+    <div id="guideContent">
+        <!-- 由遊戲插件動態生成 -->
     </div>
 </div>
-</div>
-
-<!-- ===== 介紹圖鑑 (更新支援下拉選單) ===== -->
-<div id="introContainer">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1f4e79; padding-bottom:10px;">
-        <h2 style="border:none; padding:0; margin:0;">🎬 遊戲圖鑑資料庫</h2>
-        <select id="introThemeSelect" onchange="buildIntroGrid()" style="padding:6px; border-radius:4px; font-weight:bold; background:#161b22; color:#f0f6fc;">
-            <option value="flight" selected>🚀 氣流飛行員</option>
-            <option value="painter">🎨 風之繪師</option>
-        </select>
-    </div>
-    <p style="color:#8b949e; margin-bottom:15px; margin-top:10px;">點擊卡片觀看詳細說明</p>
-    <div class="intro-grid" id="introGrid"></div>
-</div>
-
-<!-- ===== 示範影片 Modal ===== -->
-<div id="demoModal">
-<div class="modal-content">
-<h3 id="demoTitle">🎬 示範影片</h3>
-<canvas id="demoCanvas" width="500" height="200"></canvas>
-<div class="modal-info" id="demoInfo">點擊關閉按鈕或點擊外部關閉</div>
-<button class="close-btn" onclick="closeDemoModal()">❌ 關閉</button>
-</div>
-</div>
-
-<!-- ===== 自訂關卡編輯器 ===== -->
-<div id="levelEditor">
-<h4>🎮 自訂關卡設計師</h4>
-<p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">點擊按鈕切換開關，所有設定即時生效</p>
-<div class="setting-group">
-    <label>📊 基礎設定</label>
-    <div style="display:flex; flex-wrap:wrap; gap:10px;">
-        <div><label style="font-size:11px; color:#5a6a7a;">起始關卡</label>
-        <input type="number" id="customLevel" value="1" min="1" max="100" style="width:80px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">生成速度</label>
-        <select id="customSpawnRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-            <option value="0.005">極慢</option><option value="0.008">慢</option>
-            <option value="0.015" selected>普通</option><option value="0.025">快</option>
-            <option value="0.04">極快</option><option value="0.06">地獄</option>
-        </select></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">敵人速度</label>
-        <select id="customEnemySpeed" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-            <option value="0.5">極慢</option><option value="0.7">慢</option>
-            <option value="1.0" selected>普通</option><option value="1.3">快</option>
-            <option value="1.8">極快</option><option value="2.5">閃電</option>
-        </select></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">Boss 出現頻率</label>
-        <select id="customBossRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-            <option value="0.001">極少</option><option value="0.003" selected>普通</option>
-            <option value="0.006">多</option><option value="0.012">非常多</option>
-        </select></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">道具出現率</label>
-        <select id="customItemRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-            <option value="0.01">少</option><option value="0.025" selected>普通</option>
-            <option value="0.04">多</option><option value="0.06">氾濫</option>
-        </select></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">障礙物出現率</label>
-        <select id="customObstacleRate" style="background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;">
-            <option value="0.005">少</option><option value="0.015" selected>普通</option>
-            <option value="0.025">多</option><option value="0.04">氾濫</option>
-        </select></div>
-    </div>
-</div>
-<div class="setting-group">
-    <label>👹 Boss 技能（點擊切換）</label>
-    <div class="btn-group" id="skillCheckboxes"></div>
-</div>
-<div class="setting-group">
-    <label>🎁 道具（點擊切換）</label>
-    <div class="btn-group" id="itemCheckboxes"></div>
-</div>
-<div class="setting-group">
-    <label>🚧 障礙物（點擊切換）</label>
-    <div class="btn-group" id="obstacleCheckboxes"></div>
-</div>
-<div class="setting-group">
-    <label>👾 Boss 類型（點擊切換）</label>
-    <div class="btn-group" id="bossCheckboxes"></div>
-</div>
-<div class="setting-group">
-    <label>⚙️ 進階設定</label>
-    <div style="display:flex; flex-wrap:wrap; gap:10px;">
-        <div><label style="font-size:11px; color:#5a6a7a;">起始 HP</label>
-        <input type="number" id="customHP" value="100" min="10" max="500" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">金幣分數</label>
-        <input type="number" id="customCoinScore" value="50" min="10" max="500" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">Boss HP 倍率</label>
-        <input type="number" id="customBossHP" value="1" min="0.5" max="5" step="0.5" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">障礙物傷害倍率</label>
-        <input type="number" id="customDamageMult" value="1" min="0.5" max="3" step="0.5" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
-        <div><label style="font-size:11px; color:#5a6a7a;">升級所需分數</label>
-        <input type="number" id="customLevelUpScore" value="80" min="30" max="300" style="width:70px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:4px 8px;"></div>
-    </div>
-</div>
-<div class="editor-actions">
-    <button class="editor-btn save" onclick="applySimpleLevelConfig()">✅ 套用設定</button>
-    <button class="editor-btn close" onclick="toggleLevelEditor()">❌ 關閉</button>
-    <button class="editor-btn reset" onclick="resetToDefault()">🔄 恢復預設</button>
-    <button class="editor-btn export" onclick="exportLevelConfig()">📤 匯出設定檔</button>
-    <button class="editor-btn import" onclick="importLevelConfig()">📥 匯入設定檔</button>
-</div>
-<input type="file" id="importLevelFile" accept=".json" style="display:none;" onchange="handleLevelImport(event)">
-<p style="color:#5a6a7a; font-size:11px; margin-top:8px;">💡 綠色邊框 = 啟用 | 設定檔可匯出分享給朋友</p>
-</div>
-
-<!-- ===== 自訂外觀編輯器 ===== -->
-<div id="skinEditor">
-<h4>🎨 自訂外觀</h4>
-<p style="color:#5a6a7a; font-size:11px; margin:-6px 0 12px 0;">上傳圖片替換遊戲元素，支援 PNG / JPG</p>
-<div class="skin-group">
-    <label>🌌 遊戲背景</label>
-    <div class="skin-preview">
-        <div id="bgPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('bg', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('bg')">清除</button>
-    </div>
-</div>
-<div class="skin-group">
-    <label>🚀 飛船</label>
-    <div class="skin-preview">
-        <div id="rocketPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('rocket', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('rocket')">清除</button>
-    </div>
-</div>
-<div class="skin-group">
-    <label>🪙 金幣</label>
-    <div class="skin-preview">
-        <div id="coinPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('coin', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('coin')">清除</button>
-    </div>
-</div>
-<div class="skin-group">
-    <label>❤️ 治癒之心</label>
-    <div class="skin-preview">
-        <div id="heartPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('heart', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('heart')">清除</button>
-    </div>
-</div>
-<div class="skin-group">
-    <label>🛡️ 護盾</label>
-    <div class="skin-preview">
-        <div id="shieldPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('shield', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('shield')">清除</button>
-    </div>
-</div>
-<div class="skin-group">
-    <label>⛈️ 障礙物</label>
-    <div class="skin-preview">
-        <div id="cloudPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('cloud', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('cloud')">清除</button>
-    </div>
-</div>
-<div class="skin-group">
-    <label>👹 Boss</label>
-    <div class="skin-preview">
-        <div id="bossPreview" class="no-image">無圖片</div>
-        <label class="upload-btn">📤 上傳 <input type="file" accept="image/*" style="display:none;" onchange="uploadSkin('boss', this)"></label>
-        <button class="clear-btn" onclick="clearSkin('boss')">清除</button>
-    </div>
-</div>
-<div class="editor-actions" style="margin-top:8px;">
-    <button class="editor-btn close" onclick="toggleSkinEditor()">❌ 關閉</button>
-    <button class="editor-btn reset" onclick="resetAllSkins()">🔄 重置所有外觀</button>
-</div>
-<p style="color:#5a6a7a; font-size:11px; margin-top:8px;">💡 圖片會儲存在瀏覽器中，重新整理頁面不會消失</p>
 </div>
 
 <!-- ===== 狀態列 ===== -->
 <div class="statusbar" id="status">Not connected</div>
 
 <!-- ============================================================ -->
-<!-- JavaScript -->
+<!-- JavaScript - 核心系統 -->
 <!-- ============================================================ -->
 <script>
 // =====================================================
-// 教育引導線
+// 1. 核心系統 - 教育引導線
 // =====================================================
 const EDUCATION_PROGRAM = [
 ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
@@ -957,7 +755,7 @@ const inhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.inh[i]}));
 const exhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.exh[i]}));
 
 // =====================================================
-// 全域變數
+// 2. 核心系統 - 全域變數 (串口相關)
 // =====================================================
 let port=null,reader=null,isMeasuring=false;
 let records=[],flowHistory=[],windowHistory=[false,false,false];
@@ -969,7 +767,7 @@ let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
 
 // =====================================================
-// 鍵盤與滑鼠操控 (新增呼吸裝置鎖定)
+// 3. 核心系統 - 鍵盤與滑鼠操控
 // =====================================================
 let keyboardControlEnabled = true;
 let mouseControlEnabled = true;
@@ -979,81 +777,466 @@ let useKeyboardControl = false;
 let useMouseControl = false;
 let keyboardTimeout = null;
 
-document.addEventListener('keydown', function(e) {
-    let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
-    let flow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
-    if (activeMeasuring && flow > 0.5) return; // 🔒 如果有呼吸輸入，封鎖鍵盤
+// =====================================================
+// 4. 核心系統 - 遊戲相關全域變數
+// =====================================================
+const gameCanvas = document.getElementById('gameCanvas');
+const gameCtx = gameCanvas.getContext('2d');
+let gameAnimationId = null;
+let isGameRunning = false;
+let isGamePaused = false;
+let isGameOver = false;
+let isResting = false;
+let restTimer = null;
+let sessionStartTime = 0;
+let playerHP = 100;
 
-    if (!keyboardControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
-    const step = 15;
-    const gameHeight = gameCanvas?.height || 480;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-        e.preventDefault();
-        if (keyboardY === null) keyboardY = (MiniGameManager.activeGame === 'flight') ? rocket.y : (gameHeight/2);
-        keyboardY = Math.max(30, keyboardY - step);
-        useKeyboardControl = true;
-        document.getElementById('hintKeyboard').style.color = '#f1c40f';
-        document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
-        if (keyboardTimeout) clearTimeout(keyboardTimeout);
-        keyboardTimeout = setTimeout(() => {
-            if (useKeyboardControl) {
-                useKeyboardControl = false;
-                keyboardY = null;
-                document.getElementById('hintKeyboard').style.color = '';
-                document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
-            }
-        }, 5000);
-    } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-        e.preventDefault();
-        if (keyboardY === null) keyboardY = (MiniGameManager.activeGame === 'flight') ? rocket.y : (gameHeight/2);
-        keyboardY = Math.min(gameHeight - 30, keyboardY + step);
-        useKeyboardControl = true;
-        document.getElementById('hintKeyboard').style.color = '#f1c40f';
-        document.getElementById('hintKeyboard').textContent = '↑↓ 使用中';
-        if (keyboardTimeout) clearTimeout(keyboardTimeout);
-        keyboardTimeout = setTimeout(() => {
-            if (useKeyboardControl) {
-                useKeyboardControl = false;
-                keyboardY = null;
-                document.getElementById('hintKeyboard').style.color = '';
-                document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
-            }
-        }, 5000);
-    } else if (e.key === ' ' || e.key === 'Space') {
-        e.preventDefault();
-        if (isGameRunning && !isGameOver) toggleGamePause();
+// 當前選擇的遊戲ID
+let currentGameId = 'painter';
+
+// =====================================================
+// 5. 核心系統 - 音效
+// =====================================================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let bgmInterval = null;
+let bgmStep = 0;
+
+function playAudioEffect(type) {
+    if (!document.getElementById('soundToggle')?.checked) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (type === 'buff') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        } else if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(40, now + 0.2);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        } else if (type === 'special') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.setValueAtTime(880, now + 0.1);
+            osc.frequency.setValueAtTime(1320, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        } else if (type === 'coin') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(987.77, now);
+            osc.frequency.setValueAtTime(1318.51, now + 0.08);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        }
+        osc.start(now);
+        osc.stop(now + 0.3);
+    } catch(e) {}
+}
+
+function startBGM() {
+    // 由各遊戲插件自行實現
+}
+
+function stopBGM() {
+    if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+        bgmStep = 0;
     }
+}
+
+// =====================================================
+// 6. 核心系統 - 串口功能 (完整保留)
+// =====================================================
+async function loadPKLModel() {
+    try {
+        onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
+        updateStatus('✅ PKL 模型載入成功！');
+    } catch(err) {
+        console.warn("未檢測到 rf_model.onnx", err);
+    }
+}
+loadPKLModel();
+
+const customOverlayPlugin = {
+    id: 'customOverlayPlugin',
+    beforeDatasetsDraw(chart) {
+        if (pklSegments.length > 0) {
+            const { ctx, scales: { x, y } } = chart;
+            ctx.save();
+            pklSegments.forEach(seg => {
+                const startX = x.getPixelForValue(seg.start_time);
+                const endX = x.getPixelForValue(seg.end_time);
+                ctx.fillStyle = (seg.state === "Inspiration") ? "rgba(135,206,235,0.35)" : "rgba(240,128,128,0.35)";
+                ctx.fillRect(startX, y.top, endX - startX, y.bottom - y.top);
+            });
+            ctx.restore();
+        }
+    }
+};
+
+const ctx = document.getElementById('flowChart').getContext('2d');
+const flowChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        datasets: [
+            { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+            { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+            { label: 'Patient Flow', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
+        },
+        scales: {
+            x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
+            y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
+        }
+    },
+    plugins: [customOverlayPlugin]
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const canvas = document.getElementById('gameCanvas');
-    if (canvas) {
-        canvas.addEventListener('mousemove', function(e) {
-            let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
-            let flow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
-            if (activeMeasuring && flow > 0.5) return; // 🔒 如果有呼吸輸入，封鎖滑鼠
+async function detectBreathModePKL(fft) {
+    if (!fft) return "inhalation";
+    let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
+    let totalE = e1 + e2 + e3 + e4 + e5;
+    if (totalE < 20000) { predictionBuffer = []; lastConfirmedMode = "inhalation"; return "inhalation"; }
+    let rawMode = "inhalation";
+    let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
+    if (totalE < 250000) {
+        rawMode = (ratio_3to1 > 0.45) ? "exhalation" : "inhalation";
+    } else {
+        if (onnxSession) {
+            try {
+                const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
+                const results = await onnxSession.run({ float_input: inputTensor });
+                rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
+            } catch (e) {
+                rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
+            }
+        } else {
+            rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
+        }
+    }
+    predictionBuffer.push(rawMode);
+    if (predictionBuffer.length > 3) predictionBuffer.shift();
+    let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
+    let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
+    if (totalE < 300000 && lastConfirmedMode === "exhalation") {
+        if (predictionBuffer.filter(m => m === "inhalation").length < 3) { currentVote = "exhalation"; }
+    }
+    lastConfirmedMode = currentVote;
+    return currentVote;
+}
 
-            if (!mouseControlEnabled || !isGameRunning || isGamePaused || isGameOver) return;
-            const rect = canvas.getBoundingClientRect();
-            const scaleY = canvas.height / rect.height;
-            const mouseRelativeY = (e.clientY - rect.top) * scaleY;
-            mouseY = Math.max(30, Math.min(canvas.height - 30, mouseRelativeY));
-            useMouseControl = true;
-            document.getElementById('hintMouse').style.color = '#f1c40f';
-            document.getElementById('hintMouse').textContent = '🖱️ 使用中';
-        });
-        canvas.addEventListener('mouseleave', function() {
-            setTimeout(() => {
-                if (useMouseControl) {
-                    useMouseControl = false;
-                    mouseY = null;
-                    document.getElementById('hintMouse').style.color = '';
-                    document.getElementById('hintMouse').textContent = '移動';
-                }
-            }, 2000);
+async function runPKLIndexSegmentation() {
+    if (records.length === 0) { alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); return; }
+    updateStatus("正在進行 PKL Index 切分中...");
+    let predictions = [];
+    for (let i = 0; i < records.length; i++) {
+        let rec = records[i];
+        if (!rec.flowYes || Math.abs(rec.est) < 5.0) {
+            predictions.push(-1);
+        } else {
+            let mode = await detectBreathModePKL(rec.fft);
+            predictions.push(mode === "inhalation" ? 0 : 1);
+        }
+    }
+    pklSegments = [];
+    let currentS = predictions[0];
+    let startIdx = 0;
+    for (let i = 1; i < predictions.length; i++) {
+        if (predictions[i] !== currentS) {
+            if (currentS !== -1) {
+                pklSegments.push({
+                    state: (currentS === 0) ? "Inspiration" : "Expiration",
+                    start_index: startIdx,
+                    end_index: i - 1,
+                    start_time: records[startIdx].elapsed,
+                    end_time: records[i - 1].elapsed
+                });
+            }
+            currentS = predictions[i];
+            startIdx = i;
+        }
+    }
+    if (currentS !== -1) {
+        pklSegments.push({
+            state: (currentS === 0) ? "Inspiration" : "Expiration",
+            start_index: startIdx,
+            end_index: records.length - 1,
+            start_time: records[startIdx].elapsed,
+            end_time: records[records.length - 1].elapsed
         });
     }
+    updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
+    flowChart.update();
+}
+
+function detectFlowRate(mode, estFlow) {
+    let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
+    return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - estFlow) ? curr : prev);
+}
+
+function resetUIState() {
+    port = null;
+    reader = null;
+    isMeasuring = false;
+    document.getElementById('connectBtn').innerText = 'Connect';
+    document.getElementById('startBtn').innerText = 'Start';
+    document.getElementById('startBtn').disabled = true;
+    updateStatus('Disconnected / Ready to connect');
+}
+
+if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
+}
+window.addEventListener('beforeunload', async () => {
+    try { if (reader) await reader.cancel(); if (port) await port.close(); } catch (e) {}
 });
+document.getElementById('connectBtn').addEventListener('click', toggleConnection);
+document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
+document.getElementById('segmentBtn').addEventListener('click', runPKLIndexSegmentation);
+document.getElementById('clearBtn').addEventListener('click', clearPlot);
+document.getElementById('saveBtn').addEventListener('click', saveCSV);
+
+async function toggleConnection() {
+    if (!port) {
+        try {
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 });
+            document.getElementById('connectBtn').innerText = 'Disconnect';
+            document.getElementById('startBtn').disabled = false;
+            updateStatus('Connected. Press Start to begin.');
+            readLoop();
+        } catch (err) {
+            updateStatus('Connection failed: ' + err.message);
+            resetUIState();
+        }
+    } else {
+        try {
+            isMeasuring = false;
+            if (reader) await reader.cancel();
+            if (port) await port.close();
+        } catch (err) {} finally { resetUIState(); }
+    }
+}
+
+async function readLoop() {
+    if (!port || !port.readable) return;
+    const textDecoder = new TextDecoderStream();
+    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+    reader = textDecoder.readable.getReader();
+    let buffer = '';
+    try {
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += value;
+            let lines = buffer.split('\n');
+            buffer = lines.pop();
+            if (lines.length > 10) lines = lines.slice(-3);
+            for (let line of lines) {
+                line = line.trim();
+                if (isMeasuring) await parseLine(line);
+            }
+        }
+    } catch (err) {
+        console.warn("串口讀取中斷", err);
+    } finally {
+        try { reader.releaseLock(); } catch (e) {}
+        try { await readableStreamClosed.catch(() => {}); } catch (e) {}
+        if (!port) resetUIState();
+    }
+}
+
+async function parseLine(line) {
+    if (line.includes('[FFT]')) {
+        const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
+        for (const match of matches) {
+            lastFFT[match[1]] = parseFloat(match[2]);
+        }
+        return;
+    }
+    if (line.includes('[DETECT]')) {
+        const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
+        const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
+        const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
+        if (!flowMatch) return;
+        let flowYes = flowMatch[1].toUpperCase() === 'YES';
+        let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
+        let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
+        let isCandidate = false;
+        if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
+        if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
+        windowHistory.shift();
+        windowHistory.push(isCandidate);
+        let trueCount = windowHistory.filter(x => x === true).length;
+        if (trueCount >= 2) {
+            flowYes = true;
+            if (est === 0.0 && lowE > 1000000) est = 15.0;
+        } else {
+            flowYes = false;
+            est = 0.0;
+        }
+        if (startTime === null) startTime = Date.now();
+        let elapsed = (Date.now() - startTime) / 1000;
+        let manualMode = document.getElementById('modeSelect').value;
+        if (manualMode !== "auto") {
+            currentMode = manualMode;
+        } else {
+            currentMode = await detectBreathModePKL(lastFFT);
+        }
+        if (est > 0) {
+            let dFlow = detectFlowRate(currentMode, est);
+            document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${dFlow} L/min`;
+        } else {
+            document.getElementById('detectedMode').innerText = `Detected: Idle`;
+        }
+        if (currentMode === "exhalation") {
+            if (est === 0.0 && lowE > 800000) est = 30.0;
+            if (est > 0) est = -Math.abs(est);
+        } else if (currentMode === "inhalation" && est < 0) {
+            est = Math.abs(est);
+        }
+        flowHistory.push(est);
+        if (flowHistory.length > 5) flowHistory.shift();
+        smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
+        records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
+        document.getElementById('recordCount').innerText = `Records: ${records.length}`;
+        document.getElementById('saveBtn').disabled = false;
+        flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
+        let windowStart = Math.floor(elapsed / 20) * 20;
+        flowChart.options.scales.x.min = windowStart;
+        flowChart.options.scales.x.max = windowStart + 20;
+        let allFlows = records.map(r => Math.abs(r.est));
+        let maxPeak = Math.max(...allFlows, 0);
+        document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
+        flowChart.update('none');
+    }
+}
+
+function toggleMeasuring() {
+    isMeasuring = !isMeasuring;
+    if (isMeasuring) {
+        if (startTime === null) startTime = Date.now();
+        document.getElementById('startBtn').innerText = 'Stop';
+        updateStatus('Measuring...');
+    } else {
+        document.getElementById('startBtn').innerText = 'Start';
+        updateStatus('Measurement stopped (waveform frozen).');
+    }
+    if (isMeasuring) {
+        document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+        document.getElementById('hintBreath').style.color = '#2ecc71';
+    } else {
+        document.getElementById('hintBreath').textContent = '等待啟動';
+        document.getElementById('hintBreath').style.color = '';
+    }
+    // 通知當前遊戲插件測量狀態改變
+    if (currentPlugin && currentPlugin.onMeasureToggle) {
+        currentPlugin.onMeasureToggle(isMeasuring);
+    }
+}
+
+function clearPlot() {
+    startTime = null;
+    records = [];
+    flowHistory = [];
+    pklSegments = [];
+    predictionBuffer = [];
+    lastConfirmedMode = "inhalation";
+    smoothedEst = 0;
+    flowChart.data.datasets[2].data = [];
+    flowChart.options.scales.x.min = 0;
+    flowChart.options.scales.x.max = 20;
+    flowChart.update();
+    document.getElementById('recordCount').innerText = 'Records: 0';
+    document.getElementById('peakFlow').innerText = 'Peak: --- L/min';
+    document.getElementById('detectedMode').innerText = 'Detected: ---';
+    document.getElementById('saveBtn').disabled = true;
+}
+
+function saveCSV() {
+    let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
+    let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
+    for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
+    csvContent += "\n";
+    records.forEach(r => {
+        let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
+        for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
+        csvContent += row + "\n";
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `inhaler_data_${patientId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function updateStatus(msg) {
+    document.getElementById('status').innerText = msg;
+}
+
+// =====================================================
+// 7. 核心系統 - 視窗模式切換
+// =====================================================
+function switchViewMode(mode) {
+    const chartBox = document.getElementById('chartContainer');
+    const gameBox = document.getElementById('gameContainer');
+    if (chartBox) chartBox.style.display = (mode === 'chart' || mode === 'both') ? 'block' : 'none';
+    if (gameBox) gameBox.style.display = (mode === 'game' || mode === 'both') ? 'block' : 'none';
+    if (mode === 'game' || mode === 'both') {
+        setTimeout(resizeGameCanvas, 50);
+    }
+}
+
+function toggleFullscreen() {
+    const gameBox = document.getElementById('gameContainer');
+    if (!document.fullscreenElement && !gameBox.classList.contains('fullscreen')) {
+        if (gameBox.requestFullscreen) gameBox.requestFullscreen();
+        else gameBox.classList.add('fullscreen');
+    } else {
+        if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
+        gameBox.classList.remove('fullscreen');
+    }
+    setTimeout(resizeGameCanvas, 150);
+}
+
+document.addEventListener('fullscreenchange', () => {
+    const gameBox = document.getElementById('gameContainer');
+    if (!document.fullscreenElement) gameBox.classList.remove('fullscreen');
+    else gameBox.classList.add('fullscreen');
+    setTimeout(resizeGameCanvas, 150);
+});
+
+function resizeGameCanvas() {
+    if (gameCanvas && gameCanvas.parentElement) {
+        const w = gameCanvas.parentElement.clientWidth || 800;
+        const h = gameCanvas.parentElement.clientHeight || 480;
+        gameCanvas.width = w;
+        gameCanvas.height = h;
+        gameCanvas.style.width = w + 'px';
+        gameCanvas.style.height = h + 'px';
+        // 通知當前遊戲插件畫布大小改變
+        if (currentPlugin && currentPlugin.onResize) {
+            currentPlugin.onResize(w, h);
+        }
+    }
+}
 
 function toggleControlGuide() {
     const guide = document.getElementById('controlGuide');
@@ -1064,1443 +1247,1316 @@ function toggleControlGuide() {
         btn.textContent = guide.classList.contains('show') ? '✕' : '❓';
     }
 }
-function toggleKeyboardControl() {
-    keyboardControlEnabled = !keyboardControlEnabled;
-    if (!keyboardControlEnabled) {
-        keyboardY = null;
-        useKeyboardControl = false;
-        document.getElementById('hintKeyboard').style.color = '';
-        document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
-    }
-    updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
+
+// =====================================================
+// 8. 核心系統 - 擴充控制面板
+// =====================================================
+const controlPanel = document.getElementById('mainControlPanel');
+if (controlPanel) {
+    const html = `
+    <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+        視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
+            <option value="chart">📊 專業圖表</option>
+            <option value="game">🎮 遊戲模式</option>
+            <option value="both" selected>全模式</option>
+        </select>
+    </label>
+    <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
+    <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
+    <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
+    <label style="border-left:2px solid #ccc;padding-left:10px;">
+        🎮 遊戲:
+        <select id="gameSelector" onchange="switchGame(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
+            <option value="painter">🎨 風之繪師</option>
+            <option value="candle">🕯️ 燭光遠征</option>
+            <option value="wizard">⚔️ 魔導士破魔</option>
+            <option value="dandelion">🌿 蒲公英快遞</option>
+            <option value="crystal">💎 玻璃心大師</option>
+        </select>
+    </label>
+    <span id="gamePluginStatus" style="font-size:11px;color:#8b949e;">插件: 未載入</span>
+    `;
+    controlPanel.insertAdjacentHTML('beforeend', html);
 }
-function toggleMouseControl() {
-    mouseControlEnabled = !mouseControlEnabled;
-    if (!mouseControlEnabled) {
-        mouseY = null;
-        useMouseControl = false;
-        document.getElementById('hintMouse').style.color = '';
-        document.getElementById('hintMouse').textContent = '移動';
+
+function toggleSoundSetting(enabled) {
+    if (!enabled) stopBGM();
+    else if (currentPlugin && currentPlugin.onSoundToggle) {
+        currentPlugin.onSoundToggle(enabled);
     }
-    updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
 }
 
 // =====================================================
-// 🆕 通用輸入強度計算 (0 ~ 100%)
+// 9. 插件系統 - 核心架構
 // =====================================================
-function getPlayerIntensity() {
-    let intensity = 0;
-    let activeMeasuring = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
-    let flow = activeMeasuring ? Math.abs(typeof smoothedEst !== 'undefined' ? smoothedEst : 0) : 0;
-    
-    // 判斷是否正在使用呼吸裝置 (有氣流)
-    let usingBreathingDevice = (activeMeasuring && flow > 0.5);
+// 插件註冊表
+const pluginRegistry = {};
 
-    if (usingBreathingDevice) {
-        // 1. 呼吸裝置為最高優先：強制阻斷鍵盤與滑鼠
-        useKeyboardControl = false;
-        useMouseControl = false;
-        // 假設 90 L/min 為 100% 強度 (可依難度動態調整)
-        intensity = Math.min(100, (flow / 90) * 100);
-        
-        document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-        document.getElementById('hintBreath').style.color = '#2ecc71';
-        document.getElementById('hintKeyboard').style.color = '';
-        document.getElementById('hintMouse').style.color = '';
-    } else {
-        // 2. 只有在沒有呼吸輸入時，才允許鍵盤或滑鼠
-        document.getElementById('hintBreath').textContent = '等待呼吸';
-        document.getElementById('hintBreath').style.color = '';
+// 當前活動的插件
+let currentPlugin = null;
 
-        if (keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
-            intensity = Math.max(0, 100 - (keyboardY / gameCanvas.height) * 100);
-        } else if (mouseControlEnabled && useMouseControl && mouseY !== null) {
-            intensity = Math.max(0, 100 - (mouseY / gameCanvas.height) * 100);
+// 插件接口規範：
+// {
+//   id: 'painter',           // 唯一ID
+//   name: '風之繪師',         // 顯示名稱
+//   emoji: '🎨',             // 圖示
+//   version: '1.0.0',        // 版本
+//   description: '...',      // 描述
+//   author: '...',           // 作者
+//   
+//   // 生命週期方法
+//   init: function(core) {},              // 初始化，傳入核心API
+//   destroy: function() {},                // 銷毀
+//   onMeasureToggle: function(isOn) {},   // 測量開關切換時
+//   onSoundToggle: function(isOn) {},     // 音效開關切換時
+//   onResize: function(w, h) {},          // 畫布大小改變時
+//   onPause: function() {},               // 暫停時
+//   onResume: function() {},              // 繼續時
+//   
+//   // 核心方法
+//   update: function(breathFlow) {},      // 更新遊戲邏輯
+//   render: function(ctx) {},             // 渲染遊戲畫面
+//   getHUD: function() {},                // 返回HUD HTML
+//   getGuide: function() {},              // 返回操控說明 HTML
+//   getTitle: function() {},              // 返回標題
+//   
+//   // 事件
+//   onGameOver: function() {},            // 遊戲結束
+//   onWin: function() {},                 // 過關
+// }
+
+// 核心API，提供給插件使用
+const coreAPI = {
+    // 取得呼吸數據
+    getBreathFlow: function() {
+        return isMeasuring ? smoothedEst : 0;
+    },
+    getIsMeasuring: function() {
+        return isMeasuring;
+    },
+    // 音效
+    playSound: function(type) {
+        playAudioEffect(type);
+    },
+    // 狀態顯示
+    showStatus: function(msg) {
+        updateStatus(msg);
+    },
+    showNotification: function(msg) {
+        const status = document.getElementById('status');
+        if (status) {
+            const orig = status.innerText;
+            status.innerText = `🎯 ${msg}`;
+            status.style.background = '#8e44ad';
+            setTimeout(() => {
+                status.innerText = orig;
+                status.style.background = '#1f4e79';
+            }, 2500);
         }
+    },
+    // 遊戲狀態
+    getGameState: function() {
+        return { isRunning: isGameRunning, isPaused: isGamePaused, isOver: isGameOver };
+    },
+    setGameOver: function(score, msg) {
+        document.getElementById('finalScore').innerText = score || 0;
+        document.getElementById('gameOverMessage').innerText = msg || '遊戲結束！';
+        document.getElementById('gameOverScreen').style.display = 'flex';
+        isGameOver = true;
+        isGameRunning = false;
+        stopBGM();
+    },
+    setWin: function(msg) {
+        document.getElementById('winMessage').innerText = msg || '你贏了！';
+        document.getElementById('winScreen').style.display = 'flex';
+        isGameOver = true;
+        isGameRunning = false;
+        stopBGM();
+    },
+    // HUD控制
+    setHUD: function(html) {
+        document.getElementById('gameHUD').innerHTML = html;
+    },
+    setGuide: function(title, html) {
+        document.getElementById('guideTitle').innerText = title || '操控說明';
+        document.getElementById('guideContent').innerHTML = html || '';
+    },
+    // HP控制
+    setHP: function(hp, maxHp) {
+        playerHP = hp || 100;
+        const pct = Math.max(0, Math.min(100, (playerHP / (maxHp || 100)) * 100));
+        document.getElementById('hpFill').style.width = pct + '%';
+    },
+    getHP: function() {
+        return playerHP;
+    },
+    // 畫布
+    getCanvas: function() {
+        return gameCanvas;
+    },
+    getContext: function() {
+        return gameCtx;
+    },
+    // 遊戲循環控制
+    startLoop: function() {
+        if (!isGameRunning) {
+            isGameRunning = true;
+            isGameOver = false;
+            gameLoop();
+        }
+    },
+    stopLoop: function() {
+        isGameRunning = false;
+        if (gameAnimationId) {
+            cancelAnimationFrame(gameAnimationId);
+            gameAnimationId = null;
+        }
+    },
+    // 暫停控制
+    pause: function() {
+        isPaused = true;
+        document.getElementById('gamePauseBtn').innerText = '繼續';
+        document.getElementById('gamePauseBtn').style.backgroundColor = '#f39c12';
+        if (currentPlugin && currentPlugin.onPause) currentPlugin.onPause();
+    },
+    resume: function() {
+        isPaused = false;
+        document.getElementById('gamePauseBtn').innerText = '暫停';
+        document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
+        if (currentPlugin && currentPlugin.onResume) currentPlugin.onResume();
     }
-    return intensity;
-}
-
-// =====================================================
-// 原有函式 (ONNX 與 繪圖)
-// =====================================================
-async function loadPKLModel(){
-try{onnxSession=await ort.InferenceSession.create('./rf_model.onnx');updateStatus('✅ PKL 模型載入成功！');}catch(err){console.warn("未檢測到 rf_model.onnx",err);}
-}
-loadPKLModel();
-
-const customOverlayPlugin={
-id:'customOverlayPlugin',
-beforeDatasetsDraw(chart){
-if(pklSegments.length>0){
-const{ctx,scales:{x,y}}=chart;ctx.save();
-pklSegments.forEach(seg=>{
-const startX=x.getPixelForValue(seg.start_time);
-const endX=x.getPixelForValue(seg.end_time);
-ctx.fillStyle=(seg.state==="Inspiration")?"rgba(135,206,235,0.35)":"rgba(240,128,128,0.35)";
-ctx.fillRect(startX,y.top,endX-startX,y.bottom-y.top);
-});
-ctx.restore();
-}
-}
 };
-const ctx=document.getElementById('flowChart').getContext('2d');
-const flowChart=new Chart(ctx,{
-type:'line',
-data:{datasets:[
-{label:'Inhale guide',data:inhaleGuidePoints,borderColor:'#2e7d32',borderWidth:1.8,borderDash:[5,5],fill:false,pointRadius:0,tension:0.4},
-{label:'Exhale guide',data:exhaleGuidePoints,borderColor:'#1565c0',borderWidth:1.8,borderDash:[5,5],fill:false,pointRadius:0,tension:0.4},
-{label:'Patient Flow',data:[],borderColor:'#c0392b',borderWidth:2.4,fill:false,pointRadius:0,tension:0.4}
-]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Inhaler Flow Profile',font:{size:16,weight:'bold'},color:'#1f4e79'}},scales:{x:{type:'linear',min:0,max:20,title:{display:true,text:'Time (secs)'}},y:{min:-120,max:120,title:{display:true,text:'Flow (L/min)'}}}},
-plugins:[customOverlayPlugin]
-});
 
-async function detectBreathModePKL(fft){
-if(!fft)return"inhalation";
-let e1=fft[1]||0,e2=fft[2]||0,e3=fft[3]||0,e4=fft[4]||0,e5=fft[5]||0;
-let totalE=e1+e2+e3+e4+e5;
-if(totalE<20000){predictionBuffer=[];lastConfirmedMode="inhalation";return"inhalation";}
-let rawMode="inhalation";
-let ratio_3to1=e1>0?(e3/e1):0;
-if(totalE<250000){rawMode=(ratio_3to1>0.45)?"exhalation":"inhalation";}else{
-if(onnxSession){try{const inputTensor=new ort.Tensor('float32',new Float32Array([e1,e2,e3,e4,e5]),[1,5]);const results=await onnxSession.run({float_input:inputTensor});rawMode=(results.label.data[0]===0)?"inhalation":"exhalation";}catch(e){rawMode=(ratio_3to1>0.7)?"exhalation":"inhalation";}}else{rawMode=(ratio_3to1>0.7)?"exhalation":"inhalation";}
-}
-predictionBuffer.push(rawMode);if(predictionBuffer.length>3)predictionBuffer.shift();
-let exhCount=predictionBuffer.filter(m=>m==="exhalation").length;
-let currentVote=(exhCount>=2)?"exhalation":"inhalation";
-if(totalE<300000&&lastConfirmedMode==="exhalation"){if(predictionBuffer.filter(m=>m==="inhalation").length<3){currentVote="exhalation";}}
-lastConfirmedMode=currentVote;
-return currentVote;
-}
-
-async function runPKLIndexSegmentation(){
-if(records.length===0){alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");return;}
-updateStatus("正在進行 PKL Index 切分中...");
-let predictions=[];
-for(let i=0;i<records.length;i++){let rec=records[i];if(!rec.flowYes||Math.abs(rec.est)<5.0){predictions.push(-1);}else{let mode=await detectBreathModePKL(rec.fft);predictions.push(mode==="inhalation"?0:1);}}
-pklSegments=[];
-let currentS=predictions[0];
-let startIdx=0;
-for(let i=1;i<predictions.length;i++){if(predictions[i]!==currentS){if(currentS!==-1){pklSegments.push({state:(currentS===0)?"Inspiration":"Expiration",start_index:startIdx,end_index:i-1,start_time:records[startIdx].elapsed,end_time:records[i-1].elapsed});}currentS=predictions[i];startIdx=i;}}
-if(currentS!==-1){pklSegments.push({state:(currentS===0)?"Inspiration":"Expiration",start_index:startIdx,end_index:records.length-1,start_time:records[startIdx].elapsed,end_time:records[records.length-1].elapsed});}
-updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
-flowChart.update();
-}
-
-function detectFlowRate(mode,estFlow){let presets=(mode==="inhalation")?[30,60,90]:[60,90,120];return presets.reduce((prev,curr)=>Math.abs(curr-estFlow)<Math.abs(prev-estFlow)?curr:prev);}
-function resetUIState(){port=null;reader=null;isMeasuring=false;document.getElementById('connectBtn').innerText='Connect';document.getElementById('startBtn').innerText='Start';document.getElementById('startBtn').disabled=true;updateStatus('Disconnected / Ready to connect');if(typeof updateGameMeasurementState==='function')updateGameMeasurementState(false);}
-if('serial' in navigator){navigator.serial.addEventListener('disconnect',()=>{resetUIState();});}
-window.addEventListener('beforeunload',async()=>{try{if(reader)await reader.cancel();if(port)await port.close();}catch(e){}});
-document.getElementById('connectBtn').addEventListener('click',toggleConnection);
-document.getElementById('startBtn').addEventListener('click',toggleMeasuring);
-document.getElementById('segmentBtn').addEventListener('click',runPKLIndexSegmentation);
-document.getElementById('clearBtn').addEventListener('click',clearPlot);
-document.getElementById('saveBtn').addEventListener('click',saveCSV);
-
-async function toggleConnection(){
-if(!port){try{port=await navigator.serial.requestPort();await port.open({baudRate:115200});document.getElementById('connectBtn').innerText='Disconnect';document.getElementById('startBtn').disabled=false;updateStatus('Connected. Press Start to begin.');readLoop();}catch(err){updateStatus('Connection failed: '+err.message);resetUIState();}}else{try{isMeasuring=false;if(reader)await reader.cancel();if(port)await port.close();}catch(err){}finally{resetUIState();}}
-}
-
-async function readLoop(){
-if(!port||!port.readable)return;
-const textDecoder=new TextDecoderStream();
-const readableStreamClosed=port.readable.pipeTo(textDecoder.writable);
-reader=textDecoder.readable.getReader();
-let buffer='';
-try{while(true){const{value,done}=await reader.read();if(done)break;buffer+=value;let lines=buffer.split('\n');buffer=lines.pop();if(lines.length>10)lines=lines.slice(-3);for(let line of lines){line=line.trim();if(isMeasuring)await parseLine(line);}}}catch(err){console.warn("串口讀取中斷",err);}finally{try{reader.releaseLock();}catch(e){}try{await readableStreamClosed.catch(()=>{});}catch(e){}if(!port)resetUIState();}
-}
-
-async function parseLine(line){
-if(line.includes('[FFT]')){const matches=line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);for(const match of matches){lastFFT[match[1]]=parseFloat(match[2]);}return;}
-if(line.includes('[DETECT]')){
-const flowMatch=line.match(/Flow\s*=\s*(YES|no)/i);
-const estMatch=line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
-const lowMatch=line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
-if(!flowMatch)return;
-let flowYes=flowMatch[1].toUpperCase()==='YES';
-let est=estMatch?parseFloat(estMatch[1]):0.0;
-let lowE=lowMatch?parseInt(lowMatch[1]):0;
-let isCandidate=false;
-if(flowYes||(lowE>800000&&est>0.0))isCandidate=true;
-if(lastFFT[1]>800000&&lastFFT[8]<5000)isCandidate=false;
-windowHistory.shift();windowHistory.push(isCandidate);
-let trueCount=windowHistory.filter(x=>x===true).length;
-if(trueCount>=2){flowYes=true;if(est===0.0&&lowE>1000000)est=15.0;}else{flowYes=false;est=0.0;}
-if(startTime===null)startTime=Date.now();
-let elapsed=(Date.now()-startTime)/1000;
-let manualMode=document.getElementById('modeSelect').value;
-if(manualMode!=="auto"){currentMode=manualMode;}else{currentMode=await detectBreathModePKL(lastFFT);}
-if(est>0){let dFlow=detectFlowRate(currentMode,est);document.getElementById('detectedMode').innerText=`Detected: ${currentMode} @ ${dFlow} L/min`;}else{document.getElementById('detectedMode').innerText=`Detected: Idle`;}
-if(currentMode==="exhalation"){if(est===0.0&&lowE>800000)est=30.0;if(est>0)est=-Math.abs(est);}else if(currentMode==="inhalation"&&est<0){est=Math.abs(est);}
-flowHistory.push(est);if(flowHistory.length>5)flowHistory.shift();
-smoothedEst=flowHistory.reduce((a,b)=>a+b,0)/flowHistory.length;
-records.push({elapsed,flowYes,est:smoothedEst,lowE,fft:{...lastFFT}});
-document.getElementById('recordCount').innerText=`Records: ${records.length}`;
-document.getElementById('saveBtn').disabled=false;
-flowChart.data.datasets[2].data.push({x:elapsed,y:smoothedEst});
-let windowStart=Math.floor(elapsed/20)*20;
-flowChart.options.scales.x.min=windowStart;
-flowChart.options.scales.x.max=windowStart+20;
-let allFlows=records.map(r=>Math.abs(r.est));
-let maxPeak=Math.max(...allFlows,0);
-document.getElementById('peakFlow').innerText=`Peak: ${maxPeak.toFixed(1)} L/min`;
-flowChart.update('none');
-}
-}
-
-function toggleMeasuring(){
-isMeasuring=!isMeasuring;
-if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Start';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
-if(typeof updateGameMeasurementState==='function'){updateGameMeasurementState(isMeasuring);}
-if (isMeasuring) {
-    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-    document.getElementById('hintBreath').style.color = '#2ecc71';
-} else {
-    document.getElementById('hintBreath').textContent = '等待啟動';
-    document.getElementById('hintBreath').style.color = '';
-}
-}
-
-function clearPlot(){
-startTime=null;records=[];flowHistory=[];pklSegments=[];predictionBuffer=[];
-lastConfirmedMode="inhalation";smoothedEst=0;
-flowChart.data.datasets[2].data=[];
-flowChart.options.scales.x.min=0;flowChart.options.scales.x.max=20;
-flowChart.update();
-document.getElementById('recordCount').innerText='Records: 0';
-document.getElementById('peakFlow').innerText='Peak: --- L/min';
-document.getElementById('detectedMode').innerText='Detected: ---';
-document.getElementById('saveBtn').disabled=true;
-}
-
-function saveCSV(){
-let patientId=document.getElementById('patientId').value.trim()||'inhaler_data';
-let csvContent="data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
-for(let i=1;i<=20;i++)csvContent+=`,${i}kHz`;
-csvContent+="\n";
-records.forEach(r=>{
-let row=`${patientId},${r.elapsed.toFixed(2)},${r.flowYes?'YES':'no'},${r.est.toFixed(1)},${r.lowE}`;
-for(let i=1;i<=20;i++){row+=`,${r.fft[i]||''}`;}
-csvContent+=row+"\n";
-});
-const encodedUri=encodeURI(csvContent);
-const link=document.createElement("a");
-link.setAttribute("href",encodedUri);
-link.setAttribute("download",`inhaler_data_${patientId}.csv`);
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-}
-
-function updateStatus(msg){document.getElementById('status').innerText=msg;}
-
-// ============================================================
-// 控制面板擴充 + 音效系統
-// ============================================================
-const controlPanel=document.querySelector('.control-panel');
-if(controlPanel){
-const html=`
-<label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
-<option value="chart">📊 專業圖表</option>
-<option value="game">🎮 遊戲模式</option>
-<option value="both" selected>全模式</option>
-<option value="intro">📖 介紹圖鑑</option>
-</select>
-</label>
-<label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-🎮 遊戲主題:
-<select id="gameThemeSelect" onchange="switchGameTheme(this.value)" style="background:#f1c40f; color:#2c3e50; font-weight:bold; border:none; padding:4px 8px; border-radius:4px;">
-<option value="flight" selected>🚀 氣流飛行員 (經典)</option>
-<option value="painter">🎨 風之繪師 (水彩)</option>
-<option value="candle" disabled>🕯️ 燭光遠征 (開發中)</option>
-<option value="mage" disabled>⚔️ 魔導士破魔 (開發中)</option>
-<option value="dandelion" disabled>🌿 蒲公英快遞 (開發中)</option>
-<option value="crystal" disabled>💎 玻璃心大師 (開發中)</option>
-</select>
-</label>
-<label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
-<label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
-<label class="music-upload-btn">🎵 自選音樂 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
-<span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
-<label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
-<span id="expansionControls">
-<span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
-<label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
-<span class="control-toggle">
-<input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
-<label for="keyboardToggle">⌨️ 鍵盤</label>
-<input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
-<label for="mouseToggle">🖱️ 滑鼠</label>
-</span>
-<span id="devControls" style="display:flex;gap:6px;align-items:center;">
-<button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
-<span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
-</span>
-<span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
-<button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
-<button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
-<button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
-<button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
-</span>
-</span>
-`;
-controlPanel.insertAdjacentHTML('beforeend',html);
-}
-
-// ===== 音效系統 =====
-const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-let bgmInterval=null,bgmStep=0,customAudioBuffer=null,customAudioSource=null,audioAnalyser=null,audioDataArray=null,isUsingCustomMusic=false;
-
-function handleCustomMusicUpload(event){
-const file=event.target.files[0];if(!file)return;
-const reader=new FileReader();updateStatus(`正在解析自選音樂: ${file.name}...`);
-reader.onload=function(e){audioCtx.decodeAudioData(e.target.result,(buffer)=>{customAudioBuffer=buffer;isUsingCustomMusic=true;document.getElementById('musicStatus').innerText=`🎶 自選: ${file.name.substring(0,10)}...`;updateStatus(`✅ 音樂解析成功！`);if(isMeasuring)startBGM();},()=>{alert("音訊檔案解析失敗，請上傳標準 MP3 或 WAV 格式。");});};
-reader.readAsArrayBuffer(file);
-}
-const C4=261.63,E4=329.63,G4=392.00,C5=523.25,D5=587.33,E5=659.25;
-const pilotTheme=[C4,E4,G4,C5,G4,E4,G4,C5,D5,C5,E5,C5,G4,E4,C4,G4];
-
-function playAudioEffect(type){
-if(!document.getElementById('soundToggle')?.checked)return;
-if(audioCtx.state==='suspended')audioCtx.resume();
-try{let now=audioCtx.currentTime;
-if(type==='coin'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sine';osc.frequency.setValueAtTime(987.77,now);osc.frequency.setValueAtTime(1318.51,now+0.08);gain.gain.setValueAtTime(0.35,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.25);osc.start();osc.stop(now+0.25);}
-else if(type==='buff'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='triangle';osc.frequency.setValueAtTime(523.25,now);osc.frequency.exponentialRampToValueAtTime(1046.50,now+0.3);gain.gain.setValueAtTime(0.4,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start();osc.stop(now+0.3);}
-else if(type==='hit'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(200,now);osc.frequency.linearRampToValueAtTime(40,now+0.2);gain.gain.setValueAtTime(0.4,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.2);osc.start();osc.stop(now+0.2);}
-else if(type==='boss'){for(let i=0;i<3;i++){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(150+i*50,now+i*0.15);gain.gain.setValueAtTime(0.15,now+i*0.15);gain.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.2);osc.start(now+i*0.15);osc.stop(now+i*0.15+0.2);}}
-else if(type==='warning'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(880,now);osc.frequency.setValueAtTime(660,now+0.1);osc.frequency.setValueAtTime(440,now+0.2);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
-else if(type==='boss_attack'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(100,now);osc.frequency.exponentialRampToValueAtTime(50,now+0.4);gain.gain.setValueAtTime(0.3,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.4);osc.start(now);osc.stop(now+0.4);}
-else if(type==='attack'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(600,now);osc.frequency.setValueAtTime(800,now+0.05);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.15);osc.start(now);osc.stop(now+0.15);}
-else if(type==='missile'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(800,now);osc.frequency.exponentialRampToValueAtTime(1200,now+0.1);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.12);osc.start(now);osc.stop(now+0.12);}
-else if(type==='bomb'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(80,now);gain.gain.setValueAtTime(0.3,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
-else if(type==='laser'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sine';osc.frequency.setValueAtTime(1000,now);gain.gain.setValueAtTime(0.1,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.08);osc.start(now);osc.stop(now+0.08);}
-else if(type==='freeze'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='triangle';osc.frequency.setValueAtTime(400,now);osc.frequency.exponentialRampToValueAtTime(200,now+0.15);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.15);osc.start(now);osc.stop(now+0.15);}
-else if(type==='poison'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sawtooth';osc.frequency.setValueAtTime(200,now);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.2);osc.start(now);osc.stop(now+0.2);}
-else if(type==='thunder'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';osc.frequency.setValueAtTime(150,now);osc.frequency.setValueAtTime(300,now+0.05);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.1);osc.start(now);osc.stop(now+0.1);}
-else if(type==='dart'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sine';osc.frequency.setValueAtTime(1200,now);gain.gain.setValueAtTime(0.1,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.06);osc.start(now);osc.stop(now+0.06);}
-else if(type==='special'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='sine';osc.frequency.setValueAtTime(440,now);osc.frequency.setValueAtTime(880,now+0.1);osc.frequency.setValueAtTime(1320,now+0.2);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
-else if(type==='weather'){const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.type='triangle';osc.frequency.setValueAtTime(300,now);osc.frequency.linearRampToValueAtTime(600,now+0.2);gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.2);osc.start(now);osc.stop(now+0.2);}
-}catch(e){}
-}
-
-function startBGM(){
-stopBGM();if(!document.getElementById('soundToggle')?.checked)return;
-if(isUsingCustomMusic&&customAudioBuffer){customAudioSource=audioCtx.createBufferSource();customAudioSource.buffer=customAudioBuffer;customAudioSource.loop=true;audioAnalyser=audioCtx.createAnalyser();audioAnalyser.fftSize=64;audioDataArray=new Uint8Array(audioAnalyser.frequencyBinCount);customAudioSource.connect(audioAnalyser);audioAnalyser.connect(audioCtx.destination);customAudioSource.start(0);}
-else{bgmInterval=setInterval(()=>{if(audioCtx.state==='suspended')audioCtx.resume();try{let now=audioCtx.currentTime;let idx=bgmStep%pilotTheme.length;const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type='sawtooth';osc.frequency.setValueAtTime(pilotTheme[idx],now);gain.gain.setValueAtTime(0.18,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.16);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+0.16);bgmStep++;}catch(e){}},180);}
-}
-
-function stopBGM(){if(bgmInterval){clearInterval(bgmInterval);bgmInterval=null;}if(customAudioSource){try{customAudioSource.stop();customAudioSource.disconnect();}catch(e){}customAudioSource=null;}}
-function toggleSoundSetting(enabled){if(!enabled)stopBGM();else startBGM();}
-
-// ===== 視窗模式切換 =====
-function switchViewMode(mode){
-const chartBox=document.querySelector('.chart-container');
-const gameBox=document.getElementById('gameContainer');
-const introBox=document.getElementById('introContainer');
-if(chartBox)chartBox.style.display='none';
-if(gameBox)gameBox.style.display='none';
-if(introBox)introBox.style.display='none';
-if(mode==='both'){if(chartBox){chartBox.style.display='block';chartBox.style.marginBottom='15px';}if(gameBox)gameBox.style.display='block';if(typeof stopGameEngine==='function')stopGameEngine();setTimeout(()=>{if(typeof resizeGameCanvas==='function')resizeGameCanvas();if(typeof restartGameEngine==='function'&&!window.isGameRunning)restartGameEngine();},100);}
-else if(mode==='game'){if(gameBox)gameBox.style.display='block';if(typeof stopGameEngine==='function')stopGameEngine();setTimeout(()=>{if(typeof resizeGameCanvas==='function')resizeGameCanvas();if(typeof restartGameEngine==='function'&&!window.isGameRunning)restartGameEngine();},100);}
-else if(mode==='chart'){if(chartBox)chartBox.style.display='block';}
-else if(mode==='intro'){if(introBox)introBox.style.display='block';if(typeof stopGameEngine==='function')stopGameEngine();if(typeof buildIntroGrid==='function')buildIntroGrid();}
-}
-setTimeout(()=>{switchViewMode('both');},100);
-function updateGameMeasurementState(measuring){document.getElementById('gameStartPrompt').style.display=measuring?'none':'flex';if(measuring)startBGM();else stopBGM();}
-function toggleFullscreen(){
-const gameBox=document.getElementById('gameContainer');
-if(!document.fullscreenElement&&!gameBox.classList.contains('fullscreen')){if(gameBox.requestFullscreen)gameBox.requestFullscreen();else gameBox.classList.add('fullscreen');}
-else{if(document.exitFullscreen&&document.fullscreenElement)document.exitFullscreen();gameBox.classList.remove('fullscreen');}
-setTimeout(resizeGameCanvas,150);
-}
-document.addEventListener('fullscreenchange',()=>{const gameBox=document.getElementById('gameContainer');if(!document.fullscreenElement)gameBox.classList.remove('fullscreen');else gameBox.classList.add('fullscreen');setTimeout(resizeGameCanvas,150);});
-
-// ============================================================
-// 迷你遊戲平台管理器 (管理多個遊戲)
-// ============================================================
-const MiniGameManager = {
-    activeGame: 'flight', 
-    games: {
-        painter: {
-            paintingsDone: 0,
-            targetPaintings: 5,
-            progress: 0, 
-            errorCount: 0,
-            targetIntensity: 50,
-            targetPhase: 0,
-            particles: [],
-            items: [], 
-            activeBuff: null,
-            buffTimer: 0,
-            
-            init: function() {
-                this.paintingsDone = 0;
-                this.progress = 0;
-                this.errorCount = 0;
-                this.particles = [];
-                this.items = [];
-                this.activeBuff = null;
-                playerHP = 100;
-                gameScore = 0;
-                showNotification("🎨 風之繪師：請用平穩吐氣控制水彩筆觸！");
-                playAudioEffect('buff');
-            },
-            
-            update: function(intensity) {
-                this.targetPhase += 0.02;
-                this.targetIntensity = 50 + Math.sin(this.targetPhase) * 30; 
-
-                let diff = Math.abs(intensity - this.targetIntensity);
-                let tolerance = this.activeBuff === 'fine_brush' ? 30 : 15; 
-
-                if (intensity > 5) {
-                    if (diff <= tolerance) {
-                        let speed = this.activeBuff === 'palette' ? 0.3 : 0.15; 
-                        this.progress += speed;
-                        
-                        if (Math.random() < 0.2) {
-                            this.particles.push({
-                                x: gameCanvas.width/2 + (Math.random()-0.5)*100,
-                                y: gameCanvas.height/2 + (Math.random()-0.5)*100,
-                                size: Math.random()*8+2,
-                                color: `hsl(${this.progress * 3.6}, 70%, 60%)`,
-                                life: 1.0,
-                                vx: (Math.random()-0.5)*2,
-                                vy: (Math.random()-0.5)*2
-                            });
-                        }
-                    } else {
-                        this.errorCount += 0.05;
-                        if (this.errorCount >= 1) {
-                            this.errorCount = 0;
-                            playerHP -= 20; 
-                            playAudioEffect('hit');
-                            showNotification("❌ 筆觸偏移！請跟隨發光圈的大小吐氣！");
-                            if (playerHP <= 0) triggerGameOver();
-                        }
-                    }
-                } else {
-                    this.progress = Math.max(0, this.progress - 0.05);
+// =====================================================
+// 10. 遊戲插件 - 風之繪師 (完整實作)
+// =====================================================
+const PainterPlugin = {
+    id: 'painter',
+    name: '風之繪師',
+    emoji: '🎨',
+    version: '1.0.0',
+    description: '以呼吸控制畫筆完成水彩畫作',
+    author: 'System',
+    
+    // 遊戲狀態
+    state: {
+        level: 1,
+        maxLevel: 100,
+        hp: 100,
+        maxHp: 100,
+        brushX: 0,
+        brushY: 0,
+        brushSize: 4,
+        brushAlpha: 0.8,
+        brushColor: '#8B6914',
+        isDrawing: false,
+        drawPoints: [],
+        strokeProgress: 0,
+        strokePoints: [],
+        strokesPerPainting: 1,
+        currentStroke: 0,
+        shapePath: [],
+        shapeIdx: 0,
+        shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
+        shapeNames: { circle: '圓形', square: '方形', triangle: '三角形', star: '星星', heart: '愛心', flower: '花朵', butterfly: '蝴蝶', diamond: '鑽石', moon: '月亮', spiral: '螺旋' },
+        particles: [],
+        items: [],
+        hasPalette: false,
+        hasFineBrush: false,
+        paletteTimer: 0,
+        fineBrushTimer: 0,
+        paintings: 0,
+        errors: 0,
+        maxErrors: 5,
+        musicTimer: null,
+        musicStep: 0,
+        musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319]
+    },
+    
+    // 核心API引用
+    core: null,
+    
+    init: function(core) {
+        this.core = core;
+        const s = this.state;
+        s.level = 1;
+        s.hp = s.maxHp;
+        s.paintings = 0;
+        s.errors = 0;
+        s.drawPoints = [];
+        s.particles = [];
+        s.items = [];
+        s.hasPalette = false;
+        s.hasFineBrush = false;
+        s.paletteTimer = 0;
+        s.fineBrushTimer = 0;
+        s.currentStroke = 0;
+        s.strokeProgress = 0;
+        s.shapeIdx = 0;
+        this.updateStrokeCount();
+        this.generateShape();
+        const canvas = core.getCanvas();
+        s.brushX = canvas.width / 2;
+        s.brushY = canvas.height / 2;
+        this.updateUI();
+        this.startMusic();
+        core.showStatus('🎨 風之繪師 已載入');
+    },
+    
+    destroy: function() {
+        this.stopMusic();
+        if (this.core) {
+            this.core.stopLoop();
+        }
+    },
+    
+    updateStrokeCount: function() {
+        const s = this.state;
+        const lv = s.level;
+        if (lv <= 20) s.strokesPerPainting = 1;
+        else if (lv <= 40) s.strokesPerPainting = 2;
+        else if (lv <= 60) s.strokesPerPainting = 3;
+        else if (lv <= 80) s.strokesPerPainting = 4;
+        else s.strokesPerPainting = 5;
+        s.currentStroke = 0;
+        s.strokeProgress = 0;
+    },
+    
+    generateShape: function() {
+        const s = this.state;
+        const canvas = this.core.getCanvas();
+        const w = canvas.width, h = canvas.height;
+        const cx = w / 2, cy = h / 2;
+        const size = Math.min(w, h) * 0.2 * (1 + (s.level - 1) * 0.004);
+        const cnt = Math.min(Math.floor(s.level / 8) + 1, s.shapeTypes.length);
+        const type = s.shapeTypes[s.shapeIdx % cnt];
+        s.shapePath = this.genShapePoints(type, cx, cy, Math.min(size, Math.min(w, h) * 0.33));
+        s.strokePoints = [];
+        s.drawPoints = [];
+        s.strokeProgress = 0;
+        s.currentStroke = 0;
+        const total = s.shapePath.length;
+        const per = Math.floor(total / s.strokesPerPainting);
+        for (let i = 0; i < s.strokesPerPainting; i++) {
+            const start = i * per;
+            const end = (i === s.strokesPerPainting - 1) ? total : (i + 1) * per;
+            s.strokePoints.push(s.shapePath.slice(start, end));
+        }
+        const remain = total - s.strokesPerPainting * per;
+        if (remain > 0 && s.strokePoints.length > 0) {
+            const last = s.strokePoints[s.strokePoints.length - 1];
+            for (let i = total - remain; i < total; i++) last.push(s.shapePath[i]);
+        }
+        this.updateUI();
+    },
+    
+    genShapePoints: function(type, cx, cy, size) {
+        const pts = [];
+        const steps = 80 + Math.floor(this.state.level / 2);
+        switch(type) {
+            case 'circle':
+                for (let i = 0; i < steps; i++) {
+                    const a = i / steps * Math.PI * 2;
+                    pts.push({ x: cx + size * Math.cos(a), y: cy + size * Math.sin(a) });
                 }
-
-                if (this.progress >= 100) {
-                    this.progress = 0;
-                    this.paintingsDone++;
-                    gameScore += 500;
-                    playAudioEffect('coin');
-                    showNotification(`🎉 完成第 ${this.paintingsDone} 幅畫作！`);
-                    
-                    if (this.paintingsDone >= this.targetPaintings) {
-                        showNotification("🏆 過關！晉級下一階段！");
-                        this.paintingsDone = 0;
-                        if(typeof window.advanceLevel === 'function') window.advanceLevel();
-                    }
-                }
-
-                if (Math.random() < 0.005) {
-                    let isPalette = Math.random() > 0.5;
-                    this.items.push({
-                        type: isPalette ? 'palette' : 'fine_brush',
-                        emoji: isPalette ? '🎨' : '🖌️',
-                        x: Math.random() * (gameCanvas.width - 100) + 50,
-                        y: -30,
-                        vy: 1.5
+                break;
+            case 'square': {
+                const hs = size * 0.7;
+                for (let i = 0; i < steps; i++) {
+                    const p = i / steps;
+                    const c = Math.floor(p * 4);
+                    const cp = (p * 4) - c;
+                    const a = (c / 4) * Math.PI * 2;
+                    const na = ((c + 1) / 4) * Math.PI * 2;
+                    pts.push({
+                        x: cx + hs * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
+                        y: cy + hs * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
                     });
                 }
-                
-                this.items.forEach(item => {
-                    item.y += item.vy;
-                    if (intensity > 40) {
-                        let dx = gameCanvas.width/2 - item.x;
-                        let dy = gameCanvas.height/2 - item.y;
-                        item.x += dx * 0.02;
-                        item.y += dy * 0.02;
-                    }
-                    if (Math.hypot(item.x - gameCanvas.width/2, item.y - gameCanvas.height/2) < 50 + intensity/2) {
-                        item.collected = true;
-                        this.activeBuff = item.type;
-                        this.buffTimer = 300; 
-                        playAudioEffect('buff');
-                        showNotification(`獲得道具：${item.emoji}`);
-                    }
-                });
-                this.items = this.items.filter(i => !i.collected && i.y < gameCanvas.height + 50);
-
-                if (this.buffTimer > 0) {
-                    this.buffTimer--;
-                    if (this.buffTimer <= 0) this.activeBuff = null;
+                break;
+            }
+            case 'triangle': {
+                for (let i = 0; i < steps; i++) {
+                    const p = i / steps;
+                    const c = Math.floor(p * 3);
+                    const cp = (p * 3) - c;
+                    const a = (c / 3) * Math.PI * 2 - Math.PI / 2;
+                    const na = ((c + 1) / 3) * Math.PI * 2 - Math.PI / 2;
+                    pts.push({
+                        x: cx + size * 0.7 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
+                        y: cy + size * 0.7 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
+                    });
                 }
-                this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; });
-                this.particles = this.particles.filter(p => p.life > 0);
-            },
-            
-            draw: function(ctx, canvas) {
-                ctx.fillStyle = '#f4eadd';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = '#8b5a2b';
-                ctx.fillRect(canvas.width/2 - 150, canvas.height - 40, 300, 40); 
-                ctx.fillRect(canvas.width/2 - 160, 20, 320, 20); 
-                
-                ctx.fillStyle = '#2c3e50';
-                ctx.font = '20px sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText(`完成進度: ${Math.floor(this.progress)}% | 畫作: ${this.paintingsDone}/${this.targetPaintings}`, 20, 35);
-                
-                let targetRadius = 30 + this.targetIntensity * 1.2;
+                break;
+            }
+            case 'star':
+                for (let i = 0; i < steps; i++) {
+                    const p = i / steps;
+                    const a = p * Math.PI * 2 - Math.PI / 2;
+                    const r = (Math.floor(p * 10) % 2 === 0) ? size : size * 0.4;
+                    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+                }
+                break;
+            case 'heart':
+                for (let i = 0; i < steps; i++) {
+                    const t = i / steps * Math.PI * 2;
+                    pts.push({
+                        x: cx + size * 0.6 * 16 * Math.pow(Math.sin(t), 3),
+                        y: cy - size * 0.6 * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
+                    });
+                }
+                break;
+            case 'flower': {
+                const petals = 5 + Math.floor(this.state.level / 15);
+                for (let i = 0; i < steps; i++) {
+                    const a = i / steps * Math.PI * 2;
+                    const r = size * (0.6 + 0.4 * Math.sin(petals * a));
+                    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+                }
+                break;
+            }
+            case 'butterfly':
+                for (let i = 0; i < steps; i++) {
+                    const t = i / steps * Math.PI * 2;
+                    const r = size * (0.7 + 0.3 * Math.sin(3 * t));
+                    pts.push({ x: cx + r * Math.cos(t) * 0.7, y: cy + r * Math.sin(t) * 0.5 });
+                }
+                break;
+            case 'diamond': {
+                for (let i = 0; i < steps; i++) {
+                    const p = i / steps;
+                    const c = Math.floor(p * 4);
+                    const cp = (p * 4) - c;
+                    const a = (c / 4) * Math.PI * 2 + Math.PI / 4;
+                    const na = ((c + 1) / 4) * Math.PI * 2 + Math.PI / 4;
+                    pts.push({
+                        x: cx + size * 0.8 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
+                        y: cy + size * 0.8 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
+                    });
+                }
+                break;
+            }
+            case 'moon':
+                for (let i = 0; i < steps; i++) {
+                    const a = i / steps * Math.PI * 2;
+                    const r = size * (0.5 + 0.5 * Math.sin(a));
+                    pts.push({ x: cx + r * Math.cos(a) * 0.8, y: cy + r * Math.sin(a) * 0.8 });
+                }
+                break;
+            case 'spiral': {
+                const turns = 2 + Math.floor(this.state.level / 20);
+                for (let i = 0; i < steps * 2; i++) {
+                    const p = i / (steps * 2);
+                    const a = p * Math.PI * 2 * turns;
+                    const r = size * 0.1 + size * 0.8 * p;
+                    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+                }
+                break;
+            }
+            default:
+                for (let i = 0; i < steps; i++) {
+                    const a = i / steps * Math.PI * 2;
+                    pts.push({ x: cx + size * Math.cos(a), y: cy + size * Math.sin(a) });
+                }
+        }
+        return pts;
+    },
+    
+    update: function(breathFlow) {
+        const s = this.state;
+        if (isPaused || isGameOver) return;
+        const flow = Math.abs(breathFlow);
+        const exhale = breathFlow < 0;
+        
+        if (exhale && flow > 3) {
+            s.isDrawing = true;
+            s.brushSize = Math.min(4 + flow / 5, 22);
+            s.brushAlpha = Math.min(1, 0.3 + flow / 45);
+            if (s.hasPalette) {
+                const hue = (Date.now() / 50 + s.level * 10) % 360;
+                s.brushColor = `hsl(${hue}, 70%, 55%)`;
+            } else {
+                const colors = ['#8B6914', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#D35400'];
+                s.brushColor = colors[Math.floor((s.level - 1) / 15) % colors.length];
+            }
+            this.drawAlongPath(flow);
+        } else {
+            s.isDrawing = false;
+        }
+        this.updateParticles();
+        this.updateItems();
+        if (s.paletteTimer > 0) s.paletteTimer--;
+        if (s.fineBrushTimer > 0) s.fineBrushTimer--;
+        if (s.hp <= 0) {
+            this.core.setGameOver(s.paintings, `到達第 ${s.level} 關`);
+            this.stopMusic();
+        }
+        this.updateUI();
+    },
+    
+    drawAlongPath: function(flow) {
+        const s = this.state;
+        if (s.currentStroke >= s.strokesPerPainting) return;
+        const pts = s.strokePoints[s.currentStroke];
+        if (!pts || pts.length === 0) { s.currentStroke++; s.strokeProgress = 0; return; }
+        const speed = Math.min(0.8 + flow / 40, 3.0);
+        s.strokeProgress += speed / pts.length;
+        const toDraw = Math.floor(s.strokeProgress * pts.length);
+        for (let i = s.drawPoints.length; i < toDraw && i < pts.length; i++) {
+            const p = pts[i];
+            if (p) {
+                s.drawPoints.push({
+                    x: p.x, y: p.y,
+                    size: s.brushSize,
+                    alpha: s.brushAlpha,
+                    color: s.brushColor
+                });
+                s.brushX = p.x;
+                s.brushY = p.y;
+            }
+        }
+        if (Math.random() < 0.2 && s.drawPoints.length > 0) {
+            const last = s.drawPoints[s.drawPoints.length - 1];
+            s.particles.push({
+                x: last.x + (Math.random() - 0.5) * 8,
+                y: last.y + (Math.random() - 0.5) * 8,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5 - 0.5,
+                size: 1 + Math.random() * 3,
+                color: s.brushColor,
+                life: 1,
+                decay: 0.01 + Math.random() * 0.02
+            });
+        }
+        if (s.strokeProgress >= 1) this.finishStroke();
+    },
+    
+    finishStroke: function() {
+        const s = this.state;
+        s.currentStroke++;
+        s.strokeProgress = 0;
+        if (s.drawPoints.length > 0) {
+            const last = s.drawPoints[s.drawPoints.length - 1];
+            this.splash(last.x, last.y, s.brushColor);
+        }
+        this.core.playSound('buff');
+        if (s.currentStroke >= s.strokesPerPainting) {
+            this.completePainting();
+        } else {
+            this.core.showNotification(`🖌️ 第 ${s.currentStroke + 1}/${s.strokesPerPainting} 筆`);
+        }
+        this.updateUI();
+    },
+    
+    completePainting: function() {
+        const s = this.state;
+        s.paintings++;
+        s.currentStroke = 0;
+        s.strokeProgress = 0;
+        s.drawPoints = [];
+        for (let i = 0; i < 50; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const sp = 2 + Math.random() * 6;
+            s.particles.push({
+                x: s.brushX, y: s.brushY,
+                vx: Math.cos(a) * sp,
+                vy: Math.sin(a) * sp - 1,
+                size: 2 + Math.random() * 5,
+                color: ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#8e44ad'][Math.floor(Math.random() * 5)],
+                life: 1,
+                decay: 0.005 + Math.random() * 0.015
+            });
+        }
+        this.core.playSound('special');
+        s.level++;
+        this.updateStrokeCount();
+        s.shapeIdx++;
+        this.generateShape();
+        if (s.level % 10 === 0) {
+            s.hp = Math.min(s.maxHp, s.hp + 20);
+            this.core.showNotification(`🎉 第${s.level}關！HP+20`);
+        }
+        if (s.level > s.maxLevel) {
+            this.core.setWin(`🎉 你完成了所有 ${s.maxLevel} 關！`);
+            this.stopMusic();
+            return;
+        }
+        this.core.showNotification(`🎨 完成第${s.paintings}幅畫！第${s.level}關`);
+        this.updateUI();
+    },
+    
+    splash: function(x, y, c) {
+        const s = this.state;
+        for (let i = 0; i < 25; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const sp = 2 + Math.random() * 5;
+            s.particles.push({
+                x, y,
+                vx: Math.cos(a) * sp,
+                vy: Math.sin(a) * sp - 1,
+                size: 2 + Math.random() * 4,
+                color: c,
+                life: 1,
+                decay: 0.008 + Math.random() * 0.015
+            });
+        }
+    },
+    
+    updateParticles: function() {
+        const s = this.state;
+        for (let p of s.particles) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05;
+            p.life -= p.decay;
+        }
+        s.particles = s.particles.filter(p => p.life > 0);
+    },
+    
+    updateItems: function() {
+        const s = this.state;
+        const canvas = this.core.getCanvas();
+        if (Math.random() < 0.001) {
+            const w = canvas.width, h = canvas.height;
+            const type = Math.random() < 0.5 ? 'palette' : 'fineBrush';
+            s.items.push({
+                type,
+                x: 50 + Math.random() * (w - 100),
+                y: 50 + Math.random() * (h - 100),
+                radius: 20,
+                life: 300
+            });
+        }
+        for (let item of s.items) {
+            item.life--;
+            const d = Math.hypot(item.x - s.brushX, item.y - s.brushY);
+            if (d < item.radius + 15) {
+                if (item.type === 'palette') {
+                    s.hasPalette = true;
+                    s.paletteTimer = 600;
+                    this.core.playSound('buff');
+                    this.core.showNotification('🎨 調色盤！顏色變得更豐富！');
+                } else if (item.type === 'fineBrush') {
+                    s.hasFineBrush = true;
+                    s.fineBrushTimer = 600;
+                    this.core.playSound('buff');
+                    this.core.showNotification('🖌️ 細筆！失誤懲罰降低！');
+                }
+                item.life = 0;
+            }
+        }
+        s.items = s.items.filter(i => i.life > 0);
+    },
+    
+    updateUI: function() {
+        const s = this.state;
+        const el = document.getElementById('painterLevel');
+        if (el) el.textContent = `${s.level}/${s.maxLevel}`;
+        const el2 = document.getElementById('painterPaintings');
+        if (el2) el2.textContent = s.paintings;
+        const el3 = document.getElementById('painterStroke');
+        if (el3) el3.textContent = `${s.currentStroke + 1}/${s.strokesPerPainting}`;
+        const el4 = document.getElementById('painterErrors');
+        if (el4) el4.textContent = `${s.errors}/${s.maxErrors}`;
+        this.core.setHP(s.hp, s.maxHp);
+        const pct = s.strokeProgress * 100;
+        const fill = document.getElementById('painterProgressFill');
+        if (fill) fill.style.width = `${Math.min(pct, 100)}%`;
+        const nameEl = document.getElementById('painterShapeName');
+        if (nameEl) {
+            const type = s.shapeTypes[s.shapeIdx % s.shapeTypes.length];
+            nameEl.textContent = s.shapeNames[type] || '未知';
+        }
+        const needEl = document.getElementById('painterStrokesNeeded');
+        if (needEl) needEl.textContent = s.strokesPerPainting;
+    },
+    
+    render: function(ctx) {
+        const s = this.state;
+        const canvas = this.core.getCanvas();
+        const w = canvas.width, h = canvas.height;
+        
+        // 背景
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#fdf6f0');
+        grad.addColorStop(1, '#f5ece4');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        
+        // 紙紋理
+        for (let i = 0; i < 60; i++) {
+            ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
+            ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
+        }
+        
+        // 邊框
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(15, 15, w - 30, h - 30);
+        
+        // 目標形狀
+        if (s.shapePath.length > 0) {
+            ctx.save();
+            ctx.shadowColor = '#8B6914';
+            ctx.shadowBlur = 15 * (0.3 + 0.2 * Math.sin(Date.now() / 1000));
+            ctx.strokeStyle = `rgba(139, 105, 20, ${0.2 + 0.1 * Math.sin(Date.now() / 1500)})`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 8]);
+            ctx.beginPath();
+            ctx.moveTo(s.shapePath[0].x, s.shapePath[0].y);
+            for (let i = 1; i < s.shapePath.length; i++) {
+                ctx.lineTo(s.shapePath[i].x, s.shapePath[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+        
+        // 未完成筆畫提示
+        if (s.currentStroke < s.strokesPerPainting) {
+            const next = s.strokePoints[s.currentStroke];
+            if (next && next.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(139, 105, 20, 0.08)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 8]);
                 ctx.beginPath();
-                ctx.arc(canvas.width/2, canvas.height/2, targetRadius, 0, Math.PI*2);
-                ctx.strokeStyle = 'rgba(241, 196, 15, 0.5)';
-                ctx.lineWidth = 4;
-                ctx.setLineDash([10, 10]);
+                const start = Math.floor(s.strokeProgress * next.length);
+                if (start < next.length) {
+                    ctx.moveTo(next[start].x, next[start].y);
+                    for (let i = start + 1; i < next.length; i++) {
+                        ctx.lineTo(next[i].x, next[i].y);
+                    }
+                }
                 ctx.stroke();
                 ctx.setLineDash([]);
-                
-                let currentIntensity = getPlayerIntensity();
-                if (currentIntensity > 5) {
-                    let brushRadius = 30 + currentIntensity * 1.2;
-                    ctx.beginPath();
-                    ctx.arc(canvas.width/2, canvas.height/2, brushRadius, 0, Math.PI*2);
-                    let brushColor = this.activeBuff === 'palette' ? `hsl(${Date.now()%360}, 80%, 50%)` : '#3498db';
-                    ctx.fillStyle = brushColor;
-                    ctx.globalAlpha = 0.4;
-                    ctx.fill();
-                    ctx.globalAlpha = 1.0;
-                }
-
-                this.particles.forEach(p => {
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                    ctx.fillStyle = p.color;
-                    ctx.globalAlpha = p.life;
-                    ctx.fill();
-                });
-                ctx.globalAlpha = 1.0;
-
-                this.items.forEach(item => {
-                    ctx.font = '30px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(item.emoji, item.x, item.y);
-                });
-
-                if (this.errorCount > 0) {
-                    ctx.strokeStyle = `rgba(231, 76, 60, ${this.errorCount})`;
-                    ctx.lineWidth = 10;
-                    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-                }
+                ctx.restore();
             }
         }
-    }
-};
-
-// UI 切換遊戲主題事件
-function switchGameTheme(theme) {
-    MiniGameManager.activeGame = theme;
-    if (theme !== 'flight' && MiniGameManager.games[theme]) {
-        MiniGameManager.games[theme].init();
-    }
-    let introSelect = document.getElementById('introThemeSelect');
-    if(introSelect) {
-        introSelect.value = theme;
-        if(typeof buildIntroGrid === 'function') buildIntroGrid();
-    }
-    if(typeof restartGameEngine === 'function') restartGameEngine();
-}
-
-
-// ============================================================
-// 遊戲引擎
-// ============================================================
-const gameCanvas=document.getElementById('gameCanvas');
-const gameCtx=gameCanvas.getContext('2d');
-let gameAnimationId=null;
-let isGameRunning=false,isGamePaused=false,isGameOver=false;
-let rocket={x:120,y:240,angle:0,radius:18};
-let stars=[],particles=[],collectibles=[],obstacles=[];
-let gameScore=0,gameCombo=0,playerHP=100;
-let hasShield=false,feverTimer=0,magnetTimer=0,doubleScoreTimer=0,slowDebuffTimer=0;
-let restTimer=null,isResting=false,sessionStartTime=0;
-let bossActive=false,currentBoss=null;
-let bossSkillWarning = null;
-let bossSkillType = null;
-let bossWarningActive = false;
-let poisonTimer = 0;
-let poisonDamage = 0;
-let freezeTimer = 0;
-let attackCooldown = 0;
-let shieldCharges = 0;
-let invincibleActive = false;
-let invincibleTimer = 0;
-
-// ===== 日誌系統 =====
-async function sendVercelLog(message, level = 'INFO', data = null, type = null) {}
-// ===== 獲取統計資料 =====
-async function getStats() { return null; }
-// ===== 提交分數到排行榜 =====
-async function submitScore(playerName, score, level, mode) {}
-// ===== 獲取排行榜 =====
-async function getLeaderboard(limit = 10) { return { leaderboard: [], total: 0 }; }
-// ===== 成就系統 =====
-async function getAchievements() { return { achievements: {} }; }
-// ===== 挑戰系統 =====
-async function updateChallenge(challengeId, progress) {}
-
-let playerProfile = { name: '', totalScore: 0, gamesPlayed: 0, achievements: [], stats: { totalBosses: 0, totalItems: 0, maxCombo: 0, bestScore: 0, perfectGames: 0 } };
-let dailyChallengeTimer = 0;
-let challengeActive = false;
-let comboMultiplier = 1;
-let currentComboStreak = 0;
-let maxComboStreak = 0;
-let timeFreezeActive = false;
-let timeFreezeTimer = 0;
-let companionActive = false;
-let companionType = 'none';
-let companionTimer = 0;
-let weatherType = 'clear';
-let weatherTimer = 0;
-
-const GAME_MODES = { STANDARD: 'standard', HARDCORE: 'hardcore', SURVIVAL: 'survival', CHALLENGE: 'challenge' };
-let currentGameMode = GAME_MODES.STANDARD;
-
-const SPECIAL_ITEMS = [
-    { type: 'time_freeze', emoji: '⏸️', label: '時間暫停', duration: 300, effect: 'freeze', desc: '暫停所有敵人移動 5 秒' },
-    { type: 'companion', emoji: '🪁', label: '夥伴', duration: 600, effect: 'companion', desc: '召喚夥伴自動收集道具 10 秒' },
-    { type: 'mega_shield', emoji: '🛡️⭐', label: '超級護盾', duration: 180, effect: 'mega_shield', desc: '抵擋 3 次傷害' },
-    { type: 'score_x5', emoji: '💎💎', label: '5倍積分', duration: 300, effect: 'x5', desc: '5 倍積分持續 5 秒' },
-    { type: 'invincible', emoji: '🌟', label: '無敵', duration: 120, effect: 'invincible', desc: '無敵狀態 2 秒' }
-];
-
-const WEATHER_TYPES = [
-    { type: 'clear', label: '☀️ 晴朗', effect: 'none' },
-    { type: 'rain', label: '🌧️ 下雨', effect: 'slow' },
-    { type: 'storm', label: '⛈️ 暴風', effect: 'chaos' },
-    { type: 'fog', label: '🌫️ 濃霧', effect: 'fog' },
-    { type: 'aurora', label: '🌌 極光', effect: 'bonus' }
-];
-
-function drawWeatherEffect() {
-    if (!gameCtx) return;
-    switch(weatherType) {
-        case 'rain':
-            gameCtx.save();
-            gameCtx.fillStyle = 'rgba(100, 150, 255, 0.1)';
-            for (let i = 0; i < 50; i++) {
-                const x = (i * 37 + Date.now() * 0.5) % gameCanvas.width;
-                const y = (i * 53 + Date.now() * 2) % gameCanvas.height;
-                gameCtx.fillRect(x, y, 2, 8);
-            }
-            gameCtx.restore();
-            break;
-        case 'storm':
-            gameCtx.save();
-            gameCtx.fillStyle = 'rgba(50, 50, 80, 0.15)';
-            const flash = Math.sin(Date.now() / 1000) > 0.9;
-            if (flash) gameCtx.fillStyle = 'rgba(255, 255, 200, 0.3)';
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-            gameCtx.restore();
-            break;
-        case 'fog':
-            gameCtx.save();
-            gameCtx.fillStyle = `rgba(200, 200, 200, ${0.1 + Math.sin(Date.now() / 5000) * 0.05})`;
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-            gameCtx.restore();
-            break;
-        case 'aurora':
-            gameCtx.save();
-            const gradient = gameCtx.createLinearGradient(0, 0, gameCanvas.width, 0);
-            gradient.addColorStop(0, 'rgba(0, 255, 100, 0.05)');
-            gradient.addColorStop(0.3, 'rgba(0, 100, 255, 0.08)');
-            gradient.addColorStop(0.6, 'rgba(200, 0, 255, 0.05)');
-            gradient.addColorStop(1, 'rgba(0, 255, 100, 0.05)');
-            gameCtx.fillStyle = gradient;
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-            gameCtx.restore();
-            break;
-    }
-}
-
-function spawnSpecialItem() {
-    if (Math.random() > 0.008) return;
-    const item = SPECIAL_ITEMS[Math.floor(Math.random() * SPECIAL_ITEMS.length)];
-    collectibles.push({
-        ...item,
-        x: gameCanvas.width + 20,
-        y: Math.random() * (gameCanvas.height - 100) + 50,
-        radius: 16,
-        baseSpeed: 2.5,
-        collected: false,
-        isSpecial: true
-    });
-}
-
-function handleSpecialItem(item) {
-    switch(item.effect) {
-        case 'freeze':
-            timeFreezeActive = true; timeFreezeTimer = item.duration;
-            playAudioEffect('special'); showNotification('⏸️ 時間暫停！'); break;
-        case 'companion':
-            companionActive = true; companionTimer = item.duration; companionType = 'drone';
-            playAudioEffect('special'); showNotification('🪁 夥伴加入！'); break;
-        case 'mega_shield':
-            hasShield = true; shieldCharges = 3;
-            document.getElementById('shieldBadge').style.display = 'inline';
-            document.getElementById('shieldBadge').textContent = '🛡️⭐ 超級護盾 x3';
-            playAudioEffect('special'); showNotification('🛡️⭐ 超級護盾啟動！'); break;
-        case 'x5':
-            doubleScoreTimer = item.duration;
-            document.getElementById('doubleBadge').style.display = 'inline';
-            document.getElementById('doubleBadge').textContent = '💎💎 5x 積分';
-            playAudioEffect('special'); showNotification('💎💎 5倍積分！'); break;
-        case 'invincible':
-            invincibleActive = true; invincibleTimer = item.duration;
-            playAudioEffect('special'); showNotification('🌟 無敵模式！'); break;
-    }
-}
-
-function updateWeather() {
-    weatherTimer--;
-    if (weatherTimer <= 0) {
-        const newWeather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
-        weatherType = newWeather.type;
-        weatherTimer = 300 + Math.random() * 300;
-        playAudioEffect('weather');
-        showNotification(`🌤️ 天氣變化：${newWeather.label}`);
-    }
-}
-
-function updateComboSystem() {
-    if (gameCombo > 0) {
-        currentComboStreak = gameCombo;
-        maxComboStreak = Math.max(maxComboStreak, currentComboStreak);
-        if (gameCombo >= 10) comboMultiplier = 1.5;
-        if (gameCombo >= 25) comboMultiplier = 2.0;
-        if (gameCombo >= 50) comboMultiplier = 3.0;
-        if (gameCombo >= 100) comboMultiplier = 5.0;
-        if (gameCombo % 10 === 0 && gameCombo > 0) {
-            showNotification(`🔥 ${gameCombo} Combo！x${comboMultiplier}`);
-            playAudioEffect('buff');
-        }
-    } else { comboMultiplier = 1; currentComboStreak = 0; }
-}
-
-function spawnBossLoot(boss) {
-    for (let i = 0; i < 5; i++) {
-        setTimeout(() => {
-            const item = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
-            collectibles.push({
-                ...item,
-                x: boss.x + (Math.random() - 0.5) * 100,
-                y: boss.y + (Math.random() - 0.5) * 100,
-                radius: 12,
-                baseSpeed: 1,
-                collected: false
-            });
-        }, i * 200);
-    }
-    const bonus = 100 + Math.floor(Math.random() * 200);
-    gameScore += bonus;
-    showNotification(`🎊 擊敗 Boss！獎勵 ${bonus} 分！`);
-}
-
-function checkChallenges() {
-    if (challengeActive) {
-        const progress = Math.min(EXP?.currentLevel || 0, 5);
-        updateChallenge('daily_1', progress);
-    }
-}
-
-function drawCompanion() {
-    if (!companionActive || !gameCtx) return;
-    companionTimer--;
-    if (companionTimer <= 0) { companionActive = false; companionType = 'none'; return; }
-    const cx = rocket.x - 30;
-    const cy = rocket.y + Math.sin(Date.now() / 500) * 10;
-    gameCtx.save();
-    gameCtx.translate(cx, cy);
-    gameCtx.shadowColor = '#00d2d3';
-    gameCtx.shadowBlur = 20;
-    gameCtx.fillStyle = '#00d2d3';
-    gameCtx.font = '24px sans-serif';
-    gameCtx.textAlign = 'center';
-    gameCtx.textBaseline = 'middle';
-    gameCtx.fillText('🪁', 0, 0);
-    gameCtx.restore();
-
-    collectibles.forEach(c => {
-        const dist = Math.hypot(c.x - cx, c.y - cy);
-        if (dist < c.radius + 20 && !c.collected) {
-            c.x += (cx - c.x) * 0.1;
-            c.y += (cy - c.y) * 0.1;
-            if (dist < 15) { c.collected = true; gameScore += 10; playAudioEffect('coin'); }
-        }
-    });
-}
-
-function applyTimeFreeze() {
-    if (!timeFreezeActive) return;
-    timeFreezeTimer--;
-    if (timeFreezeTimer <= 0) { timeFreezeActive = false; showNotification('⏸️ 時間暫停結束'); return; }
-    obstacles.forEach(o => o.x -= 0.1);
-    collectibles.forEach(c => c.x -= 0.1);
-    if (bossActive && currentBoss) currentBoss.x -= 0.05;
-    gameCtx.save();
-    gameCtx.fillStyle = 'rgba(100, 200, 255, 0.05)';
-    gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-    gameCtx.restore();
-}
-
-function drawItem(ctx, x, y, type, radius) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = radius || 14;
-    const specialItem = SPECIAL_ITEMS.find(i => i.type === type);
-    const item = ITEM_TYPES.find(i => i.type === type);
-    const emoji = specialItem?.emoji || item?.emoji || '?';
-    const category = item?.category || '';
-    const color = item?.color || '#8b949e';
-    
-    if (specialItem) {
-        const pulse = 1 + Math.sin(Date.now() / 300) * 0.08;
-        ctx.scale(pulse, pulse);
-        ctx.shadowColor = '#f1c40f';
-        ctx.shadowBlur = 30;
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(241, 196, 15, 0.15)';
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        for (let i = 0; i < 3; i++) {
-            const angle = Date.now() / 500 + i * 2.094;
-            const dist = r * 0.9 + Math.sin(Date.now() / 400 + i) * 5;
-            ctx.fillStyle = `rgba(241, 196, 15, ${0.2 + Math.sin(Date.now() / 300 + i) * 0.1})`;
+        
+        // 已畫筆觸
+        for (let p of s.drawPoints) {
+            ctx.globalAlpha = p.alpha || 0.8;
+            ctx.fillStyle = p.color || '#8B6914';
+            ctx.shadowColor = p.color || '#8B6914';
+            ctx.shadowBlur = 8;
             ctx.beginPath();
-            ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 4, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size || 4, 0, Math.PI * 2);
             ctx.fill();
         }
-    } else if (category === 'attack') {
-        const pulse = 1 + Math.sin(Date.now() / 250) * 0.06;
-        ctx.scale(pulse, pulse);
-        ctx.shadowColor = '#ff4444';
-        ctx.shadowBlur = 35;
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 68, 68, 0.1)';
-        ctx.fill();
+        ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
-        ctx.fillStyle = '#ff6b6b';
-        ctx.font = '8px sans-serif';
+        
+        // 畫筆
+        if (s.isDrawing) {
+            ctx.save();
+            ctx.shadowColor = s.brushColor;
+            ctx.shadowBlur = 30;
+            ctx.globalAlpha = s.brushAlpha;
+            ctx.fillStyle = s.brushColor;
+            ctx.beginPath();
+            ctx.arc(s.brushX, s.brushY, s.brushSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        } else {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(92, 61, 46, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            const pulse = 15 + 5 * Math.sin(Date.now() / 500);
+            ctx.beginPath();
+            ctx.arc(s.brushX, s.brushY, pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+        
+        // 粒子
+        for (let p of s.particles) {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        
+        // 道具
+        for (let item of s.items) {
+            const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
+            ctx.save();
+            ctx.translate(item.x, item.y);
+            ctx.scale(pulse, pulse);
+            ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
+            ctx.shadowBlur = 20;
+            ctx.font = '28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
+            ctx.restore();
+        }
+        
+        // 進度條
+        const px = 50, py = h - 35, pw = w - 100, ph = 8;
+        ctx.fillStyle = 'rgba(139, 115, 85, 0.15)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, pw, ph, 4);
+        else { ctx.rect(px, py, pw, ph); }
+        ctx.fill();
+        const pct = s.strokeProgress;
+        ctx.fillStyle = '#8B6914';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, pw * pct, ph, 4);
+        else { ctx.rect(px, py, pw * pct, ph); }
+        ctx.fill();
+        ctx.fillStyle = 'rgba(92, 61, 46, 0.4)';
+        ctx.font = '10px Georgia, serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('⚔', 0, -r * 0.5);
-    } else if (category === 'positive') {
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 15;
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.fill();
-        ctx.shadowBlur = 0;
-    }
+        ctx.fillText(`第${s.currentStroke + 1}/${s.strokesPerPainting}筆 ${Math.round(pct * 100)}%`, w / 2, py - 4);
+        
+        // 頂部標題
+        ctx.fillStyle = 'rgba(92, 61, 46, 0.25)';
+        ctx.font = '12px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const type = s.shapeTypes[s.shapeIdx % s.shapeTypes.length];
+        ctx.fillText(`🎨 ${s.shapeNames[type] || '繪畫'}  Lv.${s.level}  筆畫${s.strokesPerPainting}`, w / 2, 18);
+    },
     
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = 'white';
-    ctx.font = `${r * 1.5}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(emoji, 0, 1);
-    ctx.shadowBlur = 0;
-    ctx.restore();
-}
-
-const BOSS_SKILL_INFO = {
-    '火焰吐息': { type: '主動', damage: 15, desc: '噴射火焰彈幕，對玩家造成傷害', visual: '🔥' },
-    '烈焰護盾': { type: '被動', damage: 0, desc: '減少受到的傷害 30%', visual: '🛡️' },
-    '冰凍光環': { type: '主動', damage: 0, desc: '冰凍周圍，使玩家減速 50% 持續 3 秒', visual: '🧊' },
-    '寒冰之牆': { type: '被動', damage: 0, desc: '召喚冰牆抵擋攻擊，並減速靠近的敵人', visual: '❄️' },
-    '暗影突襲': { type: '主動', damage: 20, desc: '瞬間移動到玩家附近發動突襲', visual: '🌑' },
-    '隱身': { type: '被動', damage: 0, desc: '短暫隱身，躲避攻擊', visual: '👻' },
-    '閃電風暴': { type: '主動', damage: 12, desc: '召喚閃電彈幕攻擊', visual: '⚡' },
-    '復活': { type: '被動', damage: 0, desc: '死亡時復活並恢復 15% HP', visual: '💚' },
-    '地震': { type: '主動', damage: 10, desc: '引發地震，造成全畫面震動和落石', visual: '🌍' },
-    '岩石護甲': { type: '被動', damage: 0, desc: '增加護甲，減少受到的傷害', visual: '🪨' },
-    '龍捲風': { type: '主動', damage: 12, desc: '召喚龍捲風彈幕攻擊', visual: '🌪️' },
-    '風牆': { type: '被動', damage: 0, desc: '召喚風牆抵擋正面攻擊', visual: '💨' },
-    '召喚骷髏': { type: '主動', damage: 8, desc: '召喚骷髏兵攻擊玩家', visual: '💀' },
-    '詛咒': { type: '主動', damage: 25, desc: '對玩家施加詛咒，直接造成傷害', visual: '🔮' },
-    '蛛網': { type: '主動', damage: 0, desc: '噴射蛛網，使玩家減速 50% 持續 3 秒', visual: '🕸️' },
-    '毒素': { type: '主動', damage: 25, desc: '釋放毒素，直接造成傷害', visual: '🧪' }
-};
-
-const BOSS_TYPES = [
-    { type: 'boss_fire', name: '🔥 火龍', emoji: '🐉', color: '#e74c3c', hp: 200, speed: 1.2, radius: 30, skills: ['火焰吐息', '烈焰護盾'], skillInfo: '🔥 火焰吐息 | 🛡️ 烈焰護盾' },
-    { type: 'boss_ice', name: '❄️ 冰霜巨人', emoji: '🧊', color: '#3498db', hp: 300, speed: 0.8, radius: 35, skills: ['冰凍光環', '寒冰之牆'], skillInfo: '🧊 冰凍光環 | ❄️ 寒冰之牆' },
-    { type: 'boss_shadow', name: '🌑 暗影刺客', emoji: '🗡️', color: '#8e44ad', hp: 150, speed: 2.0, radius: 22, skills: ['暗影突襲', '隱身'], skillInfo: '🌑 暗影突襲 | 👻 隱身' },
-    { type: 'boss_thunder', name: '⚡ 雷霆鳳凰', emoji: '🦅', color: '#f1c40f', hp: 180, speed: 1.5, radius: 28, skills: ['閃電風暴', '復活'], skillInfo: '⚡ 閃電風暴 | 💚 復活' },
-    { type: 'boss_rock', name: '🪨 岩石泰坦', emoji: '🗿', color: '#7f8c8d', hp: 400, speed: 0.5, radius: 40, skills: ['地震', '岩石護甲'], skillInfo: '🌍 地震 | 🪨 岩石護甲' },
-    { type: 'boss_storm', name: '🌪️ 風暴領主', emoji: '🌪️', color: '#1abc9c', hp: 220, speed: 1.8, radius: 26, skills: ['龍捲風', '風牆'], skillInfo: '🌪️ 龍捲風 | 💨 風牆' },
-    { type: 'boss_necromancer', name: '💀 死靈法師', emoji: '🧙', color: '#2c3e50', hp: 160, speed: 1.0, radius: 25, skills: ['召喚骷髏', '詛咒'], skillInfo: '💀 召喚骷髏 | 🔮 詛咒' },
-    { type: 'boss_spider', name: '🕷️ 蜘蛛女王', emoji: '🕷️', color: '#6c3483', hp: 250, speed: 1.3, radius: 32, skills: ['蛛網', '毒素'], skillInfo: '🕸️ 蛛網 | 🧪 毒素' }
-];
-
-const ITEM_TYPES = [
-    {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
-    {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
-    {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
-    {type:'magnet', emoji:'🧲', color:'#e74c3c', label:'磁鐵', category:'positive'},
-    {type:'double', emoji:'💎', color:'#9b59b6', label:'雙倍積分', category:'positive'},
-    {type:'fever', emoji:'⚡', color:'#e67e22', label:'FEVER', category:'positive'},
-    {type:'star', emoji:'⭐', color:'#f1c40f', label:'星星', score:100, category:'positive'},
-    {type:'wing', emoji:'🪶', color:'#1abc9c', label:'翅膀', speed:1.5, category:'positive'},
-    {type:'clock', emoji:'⏰', color:'#95a5a6', label:'時鐘', extraTime:30, category:'positive'},
-    {type:'key', emoji:'🔑', color:'#f1c40f', label:'鑰匙', unlock:true, category:'positive'},
-    {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', desc:'對 Boss 造成 30 傷害', category:'attack'},
-    {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', desc:'對 Boss 造成 50 傷害', category:'attack'},
-    {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', desc:'對 Boss 造成 25 傷害', category:'attack'},
-    {type:'freeze', emoji:'🧊', color:'#3498db', label:'冰凍彈', attack:0, attackType:'freeze', desc:'冰凍 Boss 2 秒', category:'attack'},
-    {type:'poison', emoji:'🧪', color:'#2ecc71', label:'毒藥', attack:5, attackType:'poison', desc:'持續傷害 5 秒', category:'attack'},
-    {type:'thunder', emoji:'⚡', color:'#f1c40f', label:'閃電', attack:40, attackType:'thunder', desc:'對 Boss 造成 40 傷害', category:'attack'},
-    {type:'dart', emoji:'🎯', color:'#e74c3c', label:'飛鏢', attack:15, attackType:'dart', desc:'對 Boss 造成 15 傷害', category:'attack'},
-    {type:'curse', emoji:'💀', color:'#2c3e50', label:'詛咒寶石', category:'negative'},
-];
-
-const OBSTACLE_TYPES=[
-    {type:'cloud', emoji:'⛈️', color:'#34495e', label:'雷暴雲', damage:25},
-    {type:'poison', emoji:'🟣', color:'#8e44ad', label:'毒霧', damage:40},
-    {type:'mud', emoji:'🕸️', color:'#d35400', label:'黏液', damage:0, slow:true},
-    {type:'spike', emoji:'🔺', color:'#e74c3c', label:'尖刺', damage:30},
-    {type:'fire', emoji:'🔥', color:'#e67e22', label:'火焰', damage:35},
-    {type:'ice', emoji:'❄️', color:'#3498db', label:'冰塊', damage:20, slow:true},
-    {type:'thorn', emoji:'🌿', color:'#27ae60', label:'荊棘', damage:15},
-    {type:'void', emoji:'🌌', color:'#2c3e50', label:'虛空', damage:50},
-    {type:'mirror', emoji:'🪞', color:'#95a5a6', label:'鏡像', damage:10, mirror:true},
-    {type:'chain', emoji:'⛓️', color:'#95a5a6', label:'鎖鏈', damage:20, slow:true},
-];
-
-let customSkins = {bg:null,rocket:null,coin:null,heart:null,shield:null,cloud:null,boss:null};
-function loadSkins(){try{const saved=localStorage.getItem('customSkins');if(saved){const parsed=JSON.parse(saved);Object.keys(parsed).forEach(key=>{if(customSkins.hasOwnProperty(key)&&parsed[key]){customSkins[key]=parsed[key];updateSkinPreview(key);}});}}catch(e){}}
-function saveSkins(){try{localStorage.setItem('customSkins',JSON.stringify(customSkins));}catch(e){}}
-function updateSkinPreview(key){const preview=document.getElementById(`${key}Preview`);if(!preview)return;if(customSkins[key]){preview.innerHTML=`<img src="${customSkins[key]}" style="max-width:80px;max-height:80px;border-radius:6px;">`;preview.className='skin-preview-img';}else{preview.innerHTML='無圖片';preview.className='no-image';}}
-function uploadSkin(key,input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(e){customSkins[key]=e.target.result;saveSkins();updateSkinPreview(key);updateStatus(`✅ ${key} 外觀已更新！`);};reader.readAsDataURL(file);}
-function clearSkin(key){customSkins[key]=null;saveSkins();updateSkinPreview(key);updateStatus(`已清除 ${key} 外觀`);}
-function resetAllSkins(){if(!confirm('確定要清除所有自訂外觀嗎？'))return;Object.keys(customSkins).forEach(key=>{customSkins[key]=null;updateSkinPreview(key);});saveSkins();updateStatus('✅ 所有外觀已重置');}
-function toggleSkinEditor(){const editor=document.getElementById('skinEditor');if(editor){editor.style.display=editor.style.display==='none'?'block':'none';if(editor.style.display==='block')loadSkins();}}
-
-const QUALITY_SETTINGS={ultra:{scale:1.0,particles:80,effects:true,shadows:true,glow:true},high:{scale:1.0,particles:50,effects:true,shadows:true,glow:true},medium:{scale:0.75,particles:30,effects:true,shadows:false,glow:true},low:{scale:0.5,particles:15,effects:false,shadows:false,glow:false},potato:{scale:0.3,particles:5,effects:false,shadows:false,glow:false}};
-let currentQuality='high';
-let customQuality=null;
-function setQuality(val){currentQuality=val;const settings=customQuality||QUALITY_SETTINGS[val]||QUALITY_SETTINGS.high;window.__qualitySettings=settings;if(typeof resizeGameCanvas==='function')resizeGameCanvas();updateStatus(`🖥️ 畫質: ${val} (粒子:${settings.particles})`);}
-function openCustomQuality(){const current=customQuality||QUALITY_SETTINGS[currentQuality];const val=prompt('自訂畫質參數:\n\n當前值: '+JSON.stringify(current),JSON.stringify(current,null,2));if(val){try{const parsed=JSON.parse(val);customQuality=parsed;window.__qualitySettings=parsed;setQuality('custom');updateStatus('✅ 自訂畫質已套用');}catch(e){alert('❌ JSON 格式錯誤');}}}
-
-function initStars(){const count=window.__qualitySettings?.particles||50;stars=[];let w=gameCanvas.width||800,h=gameCanvas.height||480;for(let i=0;i<count;i++){stars.push({x:Math.random()*w,y:Math.random()*h,size:Math.random()*2+1,baseSpeed:Math.random()*2+0.5});}}
-function resizeGameCanvas(){const settings=window.__qualitySettings||QUALITY_SETTINGS.high;if(gameCanvas&&gameCanvas.parentElement){const w=gameCanvas.parentElement.clientWidth||800;const h=gameCanvas.parentElement.clientHeight||480;gameCanvas.width=w*settings.scale;gameCanvas.height=h*settings.scale;gameCanvas.style.width=w+'px';gameCanvas.style.height=h+'px';if(isNaN(rocket.y)||rocket.y<=0)rocket.y=gameCanvas.height/2;initStars();}}
-window.addEventListener('resize',resizeGameCanvas);
-
-function restartGameEngine(){
-stopGameEngine();
-isGameRunning=true;isGamePaused=false;isGameOver=false;
-playerHP=100;gameScore=0;gameCombo=0;
-hasShield=false;feverTimer=0;magnetTimer=0;doubleScoreTimer=0;slowDebuffTimer=0;
-poisonTimer=0;freezeTimer=0;shieldCharges=0;invincibleActive=false;invincibleTimer=0;
-particles=[];collectibles=[];obstacles=[];bgmStep=0;
-bossActive=false;currentBoss=null;
-bossSkillWarning=null;bossSkillType=null;
-keyboardY=null;mouseY=null;useKeyboardControl=false;useMouseControl=false;
-let h=gameCanvas.height||480;
-rocket.x=120;rocket.y=h/2;rocket.angle=0;
-sessionStartTime=Date.now();
-document.getElementById('gamePauseBtn').innerText="暫停";
-document.getElementById('gamePauseBtn').style.backgroundColor="#27ae60";
-document.getElementById('restScreen').style.display='none';
-document.getElementById('gameOverScreen').style.display='none';
-document.getElementById('hpFill').style.width='100%';
-document.getElementById('feverBadge').style.display='none';
-document.getElementById('shieldBadge').style.display='none';
-document.getElementById('magnetBadge').style.display='none';
-document.getElementById('doubleBadge').style.display='none';
-document.getElementById('slowBadge').style.display='none';
-document.getElementById('bossWarning').style.display='none';
-document.getElementById('skillWarning').style.display='none';
-document.getElementById('bossWarningText').style.display='none';
-
-if (MiniGameManager.activeGame !== 'flight' && MiniGameManager.games[MiniGameManager.activeGame]) {
-    MiniGameManager.games[MiniGameManager.activeGame].init();
-}
-
-if (isMeasuring) {
-    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-    document.getElementById('hintBreath').style.color = '#2ecc71';
-} else {
-    document.getElementById('hintBreath').textContent = '等待啟動';
-    document.getElementById('hintBreath').style.color = '';
-}
-document.getElementById('hintKeyboard').style.color='';
-document.getElementById('hintKeyboard').textContent='↑↓ / W S';
-document.getElementById('hintMouse').style.color='';
-document.getElementById('hintMouse').textContent='移動';
-document.getElementById('controlGuide').classList.remove('show');
-document.getElementById('helpBtn').textContent='❓';
-document.getElementById('helpBtn').classList.remove('active');
-updateGameMeasurementState(typeof isMeasuring!=='undefined'?isMeasuring:false);
-gameLoop();
-}
-
-function toggleGamePause(){if(!isGameRunning||isGameOver)return;isGamePaused=!isGamePaused;const btn=document.getElementById('gamePauseBtn');if(isGamePaused){btn.innerText="繼續";btn.style.backgroundColor="#f39c12";stopBGM();}else{btn.innerText="暫停";btn.style.backgroundColor="#27ae60";startBGM();}}
-function triggerGameOver(){isGameOver=true;stopBGM();playAudioEffect('hit');document.getElementById('finalScore').innerText=gameScore;document.getElementById('gameOverScreen').style.display='flex';stopGameEngine();}
-function stopGameEngine(){isGameRunning=false;if(gameAnimationId){cancelAnimationFrame(gameAnimationId);gameAnimationId=null;}}
-
-function drawObstacle(ctx, x, y, type, radius) {
-    ctx.save(); ctx.translate(x, y); const r = radius || 14; const obs = OBSTACLE_TYPES.find(o => o.type === type);
-    const emoji = obs?.emoji || '💥'; const color = obs?.color || '#e74c3c';
-    ctx.shadowColor = color; ctx.shadowBlur = 15; ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fill(); ctx.shadowBlur = 0; ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 6; ctx.fillStyle = 'white'; ctx.font = `${r * 1.2}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(emoji, 0, 1); ctx.shadowBlur = 0; ctx.restore();
-}
-
-function drawBossWithWarning(ctx, x, y, boss, warning, skillType) {
-    ctx.save(); ctx.translate(x, y); const r = boss.radius || 30; const color = boss.color || '#8e44ad';
-    if (freezeTimer > 0) {
-        ctx.shadowColor = '#3498db'; ctx.shadowBlur = 50; ctx.strokeStyle = 'rgba(52, 152, 219, 0.5)';
-        ctx.lineWidth = 4; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-        for (let i = 0; i < 5; i++) {
-            const angle = Date.now() / 500 + i * 1.256; const dist = r * 0.8 + Math.sin(Date.now() / 300 + i) * r * 0.2;
-            ctx.fillStyle = 'rgba(174, 214, 241, 0.6)'; ctx.beginPath(); ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 4, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.shadowBlur = 0; ctx.fillStyle = '#aed6f1'; ctx.font = '16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('🧊', 0, -r * 1.3);
-    }
-    if (poisonTimer > 0) {
-        for (let i = 0; i < 6; i++) {
-            const angle = Date.now() / 400 + i * 1.047; const dist = r * 0.9 + Math.sin(Date.now() / 300 + i) * r * 0.2;
-            ctx.fillStyle = `rgba(46, 204, 113, ${0.15 + Math.sin(Date.now() / 500 + i) * 0.1})`;
-            ctx.beginPath(); ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 6 + Math.sin(Date.now() / 400 + i) * 2, 0, Math.PI * 2); ctx.fill();
-        }
-    }
-    if (warning !== null && warning > 0) {
-        const progress = 1 - (warning / 60); const pulseRadius = r * 1.3 + progress * r * 0.8;
-        ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 30 + progress * 40; ctx.strokeStyle = `rgba(255, 68, 68, ${0.3 + progress * 0.5})`;
-        ctx.lineWidth = 2 + progress * 4; ctx.beginPath(); ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2); ctx.stroke();
-        if (Math.floor(warning / 5) % 2 === 0) {
-            ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(255, 255, 0, ${0.4 + progress * 0.3})`; ctx.lineWidth = 3; ctx.setLineDash([6, 6]);
-            ctx.beginPath(); ctx.arc(0, 0, r * 1.15 + progress * r * 0.15, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-        }
-        ctx.shadowBlur = 0; const countdown = Math.ceil(warning / 30); ctx.fillStyle = '#ff4444';
-        ctx.font = `bold ${16 + progress * 8}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(`⚠️ ${countdown}`, 0, -r * 1.5 - 10); ctx.fillStyle = '#ffcc00'; ctx.font = 'bold 14px sans-serif';
-        ctx.textBaseline = 'top'; ctx.fillText(skillType || '???', 0, -r * 1.5 + 4);
-    }
-    ctx.shadowColor = freezeTimer > 0 ? '#3498db' : color; ctx.shadowBlur = (warning !== null && warning > 0) ? 50 : 40;
-    const bodyColor = freezeTimer > 0 ? '#85c1e9' : color;
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = bodyColor; ctx.fill();
-    ctx.shadowBlur = 0; ctx.fillStyle = 'white'; ctx.font = `${r * 0.7}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boss.emoji || '👹', 0, 0);
-    ctx.restore();
-}
-
-function executeBossSkill(boss, skill) {
-    if (!boss || !skill) return;
-    if (freezeTimer > 0) { showNotification(`🧊 Boss 被冰凍，無法發動技能！`); return; }
-    const skillInfo = BOSS_SKILL_INFO[skill] || { type: '未知', damage: 0, desc: '未知技能' };
-    showNotification(`💥 ${boss.name} 發動 ${skill}！${skillInfo.desc}`);
-    playAudioEffect('boss_attack');
-    document.getElementById('skillWarning').style.display = 'none';
-
-    if (skill === '火焰吐息' || skill === '閃電風暴' || skill === '龍捲風') {
-        const count = 12 + Math.floor(Math.random() * 6);
-        for (let i = 0; i < count; i++) {
-            const angle = (i / count) * Math.PI * 2 + Math.random() * 0.2;
-            const speed = 2 + Math.random() * 2;
-            obstacles.push({ type: 'boss_shot', x: boss.x, y: boss.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: 6 + Math.random() * 4, damage: skillInfo.damage || 12, hit: false, baseSpeed: speed, color: skill === '火焰吐息' ? '#ff6b35' : '#ffdd00' });
-        }
-    } else if (skill === '暗影突襲') {
-        const attackX = rocket.x + (Math.random() - 0.5) * 60; const attackY = rocket.y + (Math.random() - 0.5) * 60;
-        const dist = Math.hypot(attackX - rocket.x, attackY - rocket.y);
-        if (dist < 50) { playerHP = Math.max(0, playerHP - (skillInfo.damage || 20)); playAudioEffect('hit'); if (playerHP <= 0) { triggerGameOver(); return; } }
-    }
-}
-
-function executeAttackItem(itemType, boss) {
-    const item = ITEM_TYPES.find(i => i.type === itemType); if (!item) return;
-    playAudioEffect('attack');
-    if (boss) {
-        if(itemType==='missile') boss.hp = Math.max(0, boss.hp - 30);
-        else if(itemType==='bomb') boss.hp = Math.max(0, boss.hp - 50);
-        else if(itemType==='laser') boss.hp = Math.max(0, boss.hp - 25);
-        else if(itemType==='freeze') freezeTimer = 120;
-        else if(itemType==='poison') { poisonTimer = 150; poisonDamage = 25; }
-        else if(itemType==='thunder') boss.hp = Math.max(0, boss.hp - 40);
-        else if(itemType==='dart') boss.hp = Math.max(0, boss.hp - 15);
-    }
-    if (boss && boss.hp <= 0) {
-        boss.hp = 0; bossActive = false; document.getElementById('bossWarning').style.display = 'none';
-        showNotification(`💥 ${boss.name} 已被擊敗！`); gameScore += 200; spawnBossLoot(boss);
-    }
-}
-
-// ===== 遊戲主迴圈 =====
-function gameLoop(){
-if(!isGameRunning||isGameOver)return;
-
-// 背景與天氣
-gameCtx.globalAlpha=1.0;
-if(customSkins.bg){
-try{const img=new Image();img.src=customSkins.bg;if(img.complete&&img.naturalWidth>0){gameCtx.drawImage(img,0,0,gameCanvas.width,gameCanvas.height);}else{gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}}catch(e){gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}
-}else{gameCtx.fillStyle='#0d1117';gameCtx.fillRect(0,0,gameCanvas.width,gameCanvas.height);}
-
-drawWeatherEffect();
-
-// =================================================================
-// 🆕 遊戲分流閘門：如果是新遊戲，交給 MiniGameManager 處理並提早 return
-// =================================================================
-if (MiniGameManager.activeGame !== 'flight') {
-    let currentIntensity = getPlayerIntensity(); 
-    let gameObj = MiniGameManager.games[MiniGameManager.activeGame];
+    // 音樂
+    startMusic: function() {
+        this.stopMusic();
+        if (!document.getElementById('soundToggle')?.checked) return;
+        const s = this.state;
+        s.musicTimer = setInterval(() => {
+            if (isPaused || isGameOver) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(s.musicNotes[s.musicStep % s.musicNotes.length], now);
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+                s.musicStep++;
+            } catch(e) {}
+        }, 380);
+    },
     
-    if (gameObj) {
-        gameObj.update(currentIntensity);
-        gameObj.draw(gameCtx, gameCanvas);
-    }
-    
-    // 更新 UI 狀態條
-    document.getElementById('gameScore').innerText = gameScore;
-    document.getElementById('hpFill').style.width = `${playerHP}%`;
-    
-    gameAnimationId = requestAnimationFrame(gameLoop);
-    return; 
-}
-// =================================================================
-
-let diff=document.getElementById('gameDifficultySelect')?.value||'normal';
-let speedMultByDiff=(diff==='hard')?1.3:(diff==='easy'?0.85:1.0);
-let baseSpeedMult=parseFloat(document.getElementById('gameSpeedSelect')?.value||'1.0')*speedMultByDiff;
-let userSpeedMult=(slowDebuffTimer>0)?(baseSpeedMult*0.5):baseSpeedMult;
-
-gameCtx.fillStyle='rgba(255,255,255,0.3)';
-stars.forEach(s=>{s.x-=s.baseSpeed*userSpeedMult;if(s.x<0)s.x=gameCanvas.width;gameCtx.fillRect(s.x,s.y,s.size,s.size);});
-
-let activeMeasuring=typeof isMeasuring!=='undefined'?isMeasuring:false;
-
-if(activeMeasuring&&!isGamePaused&&!isResting&&!isGameOver){
-    let flow=(typeof smoothedEst!=='undefined'&&!isNaN(smoothedEst))?smoothedEst:0;
-    let flowMag=Math.abs(flow);
-
-    let targetY = null;
-    let hasBreathData = activeMeasuring && Math.abs(flow) > 0.5;
-
-    if (hasBreathData) {
-        let sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard' ? 0.8 : 1.2);
-        targetY = gameCanvas.height / 2 - (flow * 2.2 * sensitivity);
-        document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-        document.getElementById('hintBreath').style.color = '#2ecc71';
-        document.getElementById('hintKeyboard').style.color = '';
-        document.getElementById('hintKeyboard').textContent = '↑↓ / W S';
-        document.getElementById('hintMouse').style.color = '';
-        document.getElementById('hintMouse').textContent = '移動';
-        useKeyboardControl = false;
-        useMouseControl = false;
-        keyboardY = null;
-        mouseY = null;
-    }
-    if (targetY === null && keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
-        targetY = keyboardY;
-    }
-    if (targetY === null && mouseControlEnabled && useMouseControl && mouseY !== null) {
-        targetY = mouseY;
-    }
-    if (targetY === null) {
-        targetY = gameCanvas.height / 2;
-    }
-
-    targetY = Math.max(30, Math.min(gameCanvas.height - 30, targetY));
-    let dy = targetY - rocket.y;
-    if (isNaN(dy)) dy = 0;
-    let rocketSpeedFactor = (slowDebuffTimer > 0) ? 0.04 : 0.1;
-    rocket.y += dy * Math.min(0.25, rocketSpeedFactor * userSpeedMult);
-    rocket.angle = Math.atan2(dy, 25);
-
-    if(feverTimer>0){feverTimer--;if(feverTimer===0)document.getElementById('feverBadge').style.display='none';}
-    if(magnetTimer>0){magnetTimer--;if(magnetTimer===0)document.getElementById('magnetBadge').style.display='none';}
-    if(doubleScoreTimer>0){doubleScoreTimer--;if(doubleScoreTimer===0)document.getElementById('doubleBadge').style.display='none';}
-    if(slowDebuffTimer>0){slowDebuffTimer--;if(slowDebuffTimer===0)document.getElementById('slowBadge').style.display='none';}
-    if(invincibleTimer>0){invincibleTimer--;if(invincibleTimer===0){invincibleActive=false;showNotification('🌟 無敵效果結束');}}
-
-    if (poisonTimer > 0 && bossActive && currentBoss) {
-        poisonTimer--;
-        if (poisonTimer % 30 === 0) {
-            const poisonDmg = Math.floor(poisonDamage / 5);
-            currentBoss.hp = Math.max(0, currentBoss.hp - poisonDmg);
-            if (currentBoss.hp <= 0) {
-                currentBoss.hp = 0; bossActive = false;
-                document.getElementById('bossWarning').style.display = 'none';
-                gameScore += 200; spawnBossLoot(currentBoss); showNotification(`💥 ${currentBoss.name} 被毒死！`);
-            }
+    stopMusic: function() {
+        const s = this.state;
+        if (s.musicTimer) {
+            clearInterval(s.musicTimer);
+            s.musicTimer = null;
+            s.musicStep = 0;
         }
-    }
-
-    if (freezeTimer > 0) { freezeTimer--; }
-    if (attackCooldown > 0) attackCooldown--;
-
-    let spawnY=Math.random()*(gameCanvas.height-100)+50;
-
-    const bossRate = parseFloat(document.getElementById('customBossRate')?.value || '0.008');
-    if (!bossActive && Math.random() < bossRate * userSpeedMult) {
-        const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
-        const boss = BOSS_TYPES[bossIdx];
-        currentBoss = {
-            ...boss, x: gameCanvas.width + 50, y: spawnY,
-            hp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
-            maxHp: boss.hp + (EXP?.currentLevel || 1) * 5 * parseFloat(document.getElementById('customBossHP')?.value || 1),
-            skillTimer: 0, active: true
-        };
-        bossActive = true; document.getElementById('bossWarning').style.display = 'inline';
-        playAudioEffect('boss'); showNotification(`👹 ${boss.name} 出現！`);
-    }
-
-    if(bossActive&&currentBoss){
-        currentBoss.x-=(currentBoss.speed||1)*userSpeedMult;
-        currentBoss.skillTimer++;
-
-        if (freezeTimer <= 0 && currentBoss.skillTimer > 100 && Math.random() < 0.02 && bossSkillWarning === null) {
-            const skill = currentBoss.skills[Math.floor(Math.random() * currentBoss.skills.length)];
-            bossSkillType = skill; bossSkillWarning = 60; currentBoss.skillTimer = 0;
-            playAudioEffect('warning'); document.getElementById('skillWarning').style.display = 'inline';
-            document.getElementById('bossWarningText').style.display = 'block';
-            document.getElementById('bossWarningText').textContent = `⚠️ 準備使用 ${skill}！`;
-        }
-        if (bossSkillWarning !== null) {
-            bossSkillWarning--;
-            if (bossSkillWarning <= 0) {
-                executeBossSkill(currentBoss, bossSkillType);
-                bossSkillWarning = null; bossSkillType = null; document.getElementById('bossWarningText').style.display = 'none';
-            }
-        }
-
-        drawBossWithWarning(gameCtx, currentBoss.x, currentBoss.y, currentBoss, bossSkillWarning, bossSkillType);
-
-        const hpPct = currentBoss.hp / currentBoss.maxHp;
-        gameCtx.fillStyle='rgba(0,0,0,0.7)'; gameCtx.fillRect(currentBoss.x-30,currentBoss.y-currentBoss.radius-12,60,6);
-        gameCtx.fillStyle=hpPct>0.5?'#2ecc71':hpPct>0.25?'#f39c12':'#e74c3c'; gameCtx.fillRect(currentBoss.x-30,currentBoss.y-currentBoss.radius-12,60*hpPct,6);
-
-        const bossDist=Math.hypot(currentBoss.x-rocket.x,currentBoss.y-rocket.y);
-        if(bossDist<currentBoss.radius+rocket.radius){
-            if(hasShield && shieldCharges > 0){
-                shieldCharges--; document.getElementById('shieldBadge').textContent = `🛡️⭐ 超級護盾 x${shieldCharges}`;
-                if(shieldCharges <= 0){ hasShield = false; document.getElementById('shieldBadge').style.display = 'none'; }
-                playAudioEffect('hit');
-            } else if(invincibleActive){} else {
-                playerHP=Math.max(0,playerHP-15); playAudioEffect('hit'); if(playerHP<=0){triggerGameOver();return;}
-            }
-        }
-        if(currentBoss.x<-50){bossActive=false;currentBoss=null;document.getElementById('bossWarning').style.display='none';}
-    }
-
-    const itemRate=parseFloat(document.getElementById('customItemRate')?.value||'0.025');
-    const unlockedItems=EXP?.unlockedItems||['coin','heart','shield'];
-    const itemPool=ITEM_TYPES.filter(i=>unlockedItems.includes(i.type));
-    if(itemPool.length>0&&Math.random()<itemRate*userSpeedMult){
-        const item=itemPool[Math.floor(Math.random()*itemPool.length)];
-        collectibles.push({...item,x:gameCanvas.width+20,y:spawnY,radius:12,baseSpeed:3,collected:false});
-    }
-
-    const obstacleRate=parseFloat(document.getElementById('customObstacleRate')?.value||'0.015');
-    const unlockedObstacles=EXP?.unlockedObstacles||['cloud','poison','mud'];
-    const obstaclePool=OBSTACLE_TYPES.filter(o=>unlockedObstacles.includes(o.type));
-    if(obstaclePool.length>0&&Math.random()<obstacleRate*userSpeedMult){
-        const obs=obstaclePool[Math.floor(Math.random()*obstaclePool.length)];
-        obstacles.push({...obs,x:gameCanvas.width+30,y:spawnY,radius:14,baseSpeed:4,damage:obs.damage,hit:false,slow:obs.slow||false});
-    }
-
-    collectibles.forEach(c=>{
-        c.x-=c.baseSpeed*userSpeedMult;
-        drawItem(gameCtx,c.x,c.y,c.type,c.radius);
-        let dist=Math.hypot(c.x-rocket.x,c.y-rocket.y);
-        if(dist<c.radius+rocket.radius){
-            if (c.isSpecial) { handleSpecialItem(c); c.collected = true; return; }
-            const attackItem = ITEM_TYPES.find(i => i.type === c.type && i.attack !== undefined);
-            if (attackItem) { executeAttackItem(c.type, currentBoss); c.collected = true; }
-            else if (c.type==='coin'){ gameScore+=50; gameCombo++; playAudioEffect('coin'); }
-            else if (c.type==='heart'){ playerHP=Math.min(100,playerHP+25); playAudioEffect('buff'); }
-            c.collected=true;
-        }
-    });
-
-    obstacles.forEach(o=>{
-        o.x-=o.baseSpeed*userSpeedMult;
-        drawObstacle(gameCtx,o.x,o.y,o.type,o.radius);
-        let dist=Math.hypot(o.x-rocket.x,o.y-rocket.y);
-        if(dist<o.radius+rocket.radius){
-            if(hasShield && shieldCharges > 0){ shieldCharges--; playAudioEffect('hit'); }
-            else if(invincibleActive){} 
-            else { playerHP=Math.max(0,playerHP-o.damage); playAudioEffect('hit'); }
-            o.hit=true; if(playerHP<=0){triggerGameOver();return;}
-        }
-    });
-
-    collectibles=collectibles.filter(c=>c.x>-20&&!c.collected);
-    obstacles=obstacles.filter(o=>o.x>-20&&!o.hit);
-
-    let elapsedSession=(Date.now()-sessionStartTime)/1000;
-    if(elapsedSession>90)triggerRestStop();
-
-}else{
-    let centerTarget=gameCanvas.height/2;
-    if(isNaN(rocket.y))rocket.y=centerTarget;
-    rocket.y+=(centerTarget-rocket.y)*0.05;
-    rocket.angle=0;
-}
-
-particles.forEach(p=>{p.x+=p.vx*userSpeedMult;p.y+=p.vy;p.life-=0.04;if(p.life>0){gameCtx.beginPath();gameCtx.arc(p.x,p.y,Math.max(0.1,p.size*p.life),0,Math.PI*2);gameCtx.fillStyle=p.color;gameCtx.globalAlpha=Math.max(0,p.life);gameCtx.fill();}});
-particles=particles.filter(p=>p.life>0);
-gameCtx.globalAlpha=1.0;
-
-let activeFlow=activeMeasuring?Math.abs(typeof smoothedEst!=='undefined'?smoothedEst:0):0;
-let activeMode=(typeof currentMode!=='undefined')?currentMode:"inhalation";
-drawRocket(rocket.x,rocket.y,rocket.angle,activeMode==="exhalation",activeFlow);
-
-document.getElementById('gameScore').innerText=gameScore;
-document.getElementById('gameCombo').innerText=gameCombo;
-document.getElementById('hpFill').style.width=`${playerHP}%`;
-
-gameAnimationId=requestAnimationFrame(gameLoop);
-}
-
-function drawRocket(x,y,angle,isExhale,flowMagnitude){
-if(isNaN(x)||isNaN(y)||isNaN(angle)){rocket.x=120;rocket.y=(gameCanvas.height||480)/2;rocket.angle=0;return;}
-gameCtx.save();gameCtx.globalAlpha=1.0;gameCtx.translate(x,y);gameCtx.rotate(angle);
-if(hasShield){gameCtx.beginPath();gameCtx.arc(0,0,28,0,Math.PI*2);gameCtx.strokeStyle='#00d2d3';gameCtx.lineWidth=3;gameCtx.stroke();}
-gameCtx.fillStyle='#ecf0f1';gameCtx.beginPath();gameCtx.moveTo(20,0);gameCtx.lineTo(-12,-10);gameCtx.lineTo(-8,0);gameCtx.lineTo(-12,10);gameCtx.closePath();gameCtx.fill();
-gameCtx.fillStyle=isExhale?'#e74c3c':'#3498db';gameCtx.beginPath();gameCtx.moveTo(-4,-6);gameCtx.lineTo(-14,-14);gameCtx.lineTo(-8,0);gameCtx.lineTo(-14,14);gameCtx.lineTo(-4,6);gameCtx.closePath();gameCtx.fill();
-gameCtx.restore();
-}
-
-function triggerRestStop(){
-isResting=true;stopBGM();
-const restScreen=document.getElementById('restScreen');
-const countdownEl=document.getElementById('restCountdown');
-let countdown=15;
-restScreen.style.display='flex';
-restTimer=setInterval(()=>{countdown--;countdownEl.innerText=countdown;if(countdown<=0){clearInterval(restTimer);restScreen.style.display='none';isResting=false;sessionStartTime=Date.now();startBGM();}},1000);
-}
-
-// ============================================================
-// 關卡系統
-// ============================================================
-const EXP={
-currentLevel:1,maxLevel:100,bossSkills:[],
-unlockedItems:['coin','heart','shield','magnet','double','fever','missile','bomb','laser','freeze','poison','thunder','dart'],
-unlockedObstacles:['cloud','poison','mud','spike','fire','ice'],
-isFinalBossActive:false,bossSequencePlaying:false,
-customLevelActive:false,customConfig:null,isRecordingPaused:false,
-currentSpawnRate:0.015,currentSpeedBonus:1.0,
-bossDefeated:0
-};
-window.__expansion=EXP;
-
-function showNotification(msg){const status=document.getElementById('status');if(status){const orig=status.innerText;status.innerText=`🎯 ${msg}`;status.style.background='#8e44ad';setTimeout(()=>{status.innerText=orig;status.style.background='#1f4e79';},3000);}}
-function updateLevelDisplay(){
-const display=document.getElementById('levelDisplay');
-const progress=document.getElementById('levelProgressFill');
-if(display)display.innerText=EXP.currentLevel;
-if(progress){const pct=(EXP.currentLevel/EXP.maxLevel)*100;progress.style.width=Math.min(pct,100)+'%';}
-}
-
-// ============================================================
-// 動態圖鑑系統
-// ============================================================
-const INTRO_DATA = [
-    {type:'coin', emoji:'🪙', label:'金幣', cat:'positive', catLabel:'正面道具', desc:'+50分，FEVER/雙倍時加倍'},
-    {type:'heart', emoji:'❤️', label:'治癒之心', cat:'positive', catLabel:'正面道具', desc:'恢復 HP +25'},
-    {type:'missile', emoji:'🚀', label:'飛彈', cat:'attack', catLabel:'攻擊道具', desc:'對 Boss 造成 30 傷害'},
-    {type:'cloud', emoji:'⛈️', label:'雷暴雲', cat:'obstacle', catLabel:'障礙物', desc:'傷害：10/25/35'},
-    {type:'boss_fire', emoji:'🐉', label:'🔥 火龍', cat:'boss', catLabel:'Boss', desc:'🔥 火焰吐息 | 🛡️ 烈焰護盾', color:'#e74c3c'},
-    {type:'time_freeze', emoji:'⏸️', label:'時間暫停', cat:'special', catLabel:'特殊道具', desc:'暫停所有敵人移動 5 秒'},
-];
-
-// 🆕 《風之繪師》專屬圖鑑資料
-const PAINTER_INTRO_DATA = [
-    {type:'palette', emoji:'🎨', label:'調色盤', cat:'positive', catLabel:'增益道具', desc:'繪畫進度增加速度變成 2 倍，且筆觸變為彩色！', color:'#f1c40f'},
-    {type:'fine_brush', emoji:'🖌️', label:'細筆', cat:'positive', catLabel:'增益道具', desc:'大幅增加繪畫時的呼吸容錯率，不易失誤。', color:'#3498db'},
-    {type:'target_circle', emoji:'⭕', label:'引導光圈', cat:'special', catLabel:'機制說明', desc:'必須跟隨虛線光圈的大小來控制呼吸強度，太強太弱都會失誤。', color:'#2ecc71'},
-    {type:'error_frame', emoji:'🩸', label:'失誤警告', cat:'negative', catLabel:'危險', desc:'呼吸亂吹導致失誤時，邊框會閃紅，累積5次直接扣除一條命(20HP)。', color:'#e74c3c'}
-];
-
-function buildIntroGrid() {
-    const grid = document.getElementById('introGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
+    },
     
-    let currentTheme = document.getElementById('introThemeSelect')?.value || 'flight';
-    let dataToUse = currentTheme === 'flight' ? INTRO_DATA : PAINTER_INTRO_DATA;
+    // 插件接口方法
+    onMeasureToggle: function(isOn) {
+        if (isOn && !isGameRunning && !isGameOver) {
+            this.core.startLoop();
+        }
+    },
     
-    if (currentTheme === 'flight') {
-        const cats=[
-            {key:'positive',label:'🎁 正面道具'}, {key:'attack',label:'🗡️ 攻擊道具'},
-            {key:'negative',label:'⚠️ 負面道具'}, {key:'obstacle',label:'🚧 障礙物'},
-            {key:'boss',label:'👹 Boss 類型'}, {key:'final',label:'🏆 最終 Boss'},
-            {key:'special',label:'⭐ 特殊道具'}, {key:'weather',label:'🌤️ 天氣系統'},
-            {key:'mode',label:'🎮 遊戲模式'}
-        ];
-        cats.forEach(cat => renderIntroCategory(grid, cat, dataToUse));
-    } else {
-        const cats=[
-            {key:'positive',label:'🎁 畫室道具'},
-            {key:'special',label:'⚙️ 核心機制'},
-            {key:'negative',label:'⚠️ 懲罰機制'}
-        ];
-        cats.forEach(cat => renderIntroCategory(grid, cat, dataToUse));
-    }
-}
-
-function renderIntroCategory(grid, cat, dataset) {
-    const items = dataset.filter(item => item.cat === cat.key);
-    if(items.length === 0) return;
+    onSoundToggle: function(isOn) {
+        if (isOn && !isPaused && !isGameOver) {
+            this.startMusic();
+        } else {
+            this.stopMusic();
+        }
+    },
     
-    const header = document.createElement('div');
-    header.style.cssText = 'width:100%;margin:10px 0 5px 0;padding:8px 12px;background:#1a1a2e;border-radius:6px;border-left:4px solid #1f4e79;';
-    header.innerHTML = `<span style="color:#f0f6fc;font-weight:bold;font-size:14px;">${cat.label}</span>`;
-    grid.appendChild(header);
+    onResize: function(w, h) {
+        const s = this.state;
+        s.brushX = Math.min(s.brushX, w - 10);
+        s.brushY = Math.min(s.brushY, h - 10);
+        this.generateShape();
+    },
     
-    items.forEach((item, idx) => {
-        const card = document.createElement('div');
-        card.className = `intro-card ${item.cat}`;
-        if(item.color) { card.style.borderLeftColor = item.color; card.style.borderLeftWidth = '4px'; }
-        card.innerHTML = `
-            <span class="category-tag ${item.cat}" style="background:${item.color||'#3498db'}33; border-color:${item.color||'#3498db'}">${item.catLabel}</span>
-            <span class="icon">${item.emoji}</span>
-            <h4>${item.label}</h4>
-            <p>${item.desc}</p>
+    onPause: function() {
+        this.stopMusic();
+    },
+    
+    onResume: function() {
+        if (document.getElementById('soundToggle')?.checked) {
+            this.startMusic();
+        }
+    },
+    
+    getHUD: function() {
+        return `
+            🎨 關卡: <span id="painterLevel">1/100</span>
+            | 🖼️ 畫作: <span id="painterPaintings">0</span>
+            | 🖌️ 筆觸: <span id="painterStroke">0/1</span>
+            | ❌ 失誤: <span id="painterErrors">0/5</span>
+            | <span class="level-progress"><span class="level-progress-fill" id="painterProgressFill" style="width:1%;"></span></span>
+            | <span id="painterShapeName">圓形</span>
+            | <span id="painterStrokesNeeded" style="display:none;">1</span>
         `;
-        grid.appendChild(card);
+    },
+    
+    getGuide: function() {
+        return `
+            <div class="key-row">
+                <span class="key primary">🌬️</span>
+                <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
+            </div>
+            <div class="key-row">
+                <span class="key primary">🌬️</span>
+                <span class="action">吸氣 → 暫停繪畫</span>
+            </div>
+            <div class="divider"></div>
+            <div class="key-row">
+                <span class="key secondary">↑↓</span>
+                <span class="action">微調畫筆位置</span>
+            </div>
+            <div class="key-row">
+                <span class="key special">Space</span>
+                <span class="action">暫停 / 繼續</span>
+            </div>
+            <div class="divider"></div>
+            <div class="priority-note">
+                ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
+            </div>
+            <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
+                🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
+            </div>
+        `;
+    },
+    
+    getTitle: function() {
+        return '🎨 風之繪師 操控說明';
+    }
+};
+
+// =====================================================
+// 11. 遊戲插件 - 燭光遠征 (骨架)
+// =====================================================
+const CandlePlugin = {
+    id: 'candle',
+    name: '燭光遠征',
+    emoji: '🕯️',
+    version: '0.5.0',
+    description: '控制燭火亮度在黑暗迷宮中尋找出口',
+    author: 'System',
+    
+    core: null,
+    
+    init: function(core) {
+        this.core = core;
+        core.showStatus('🕯️ 燭光遠征 開發中');
+        core.setHUD(`🕯️ 燭光遠征 - 開發中`);
+        core.setGuide('🕯️ 燭光遠征', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
+        core.startLoop();
+    },
+    
+    destroy: function() {},
+    
+    update: function(breathFlow) {},
+    
+    render: function(ctx) {
+        const canvas = this.core.getCanvas();
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#f5e6ca';
+        ctx.font = '24px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('🕯️ 燭光遠征', canvas.width/2, canvas.height/2 - 20);
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
+    },
+    
+    getHUD: function() {
+        return `🕯️ 燭光遠征 - 開發中`;
+    },
+    
+    getGuide: function() {
+        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
+    },
+    
+    getTitle: function() {
+        return '🕯️ 燭光遠征';
+    }
+};
+
+// =====================================================
+// 12. 遊戲插件 - 魔導士破魔 (骨架)
+// =====================================================
+const WizardPlugin = {
+    id: 'wizard',
+    name: '魔導士破魔',
+    emoji: '⚔️',
+    version: '0.5.0',
+    description: '呼吸充能釋放法術擊敗敵人',
+    author: 'System',
+    
+    core: null,
+    
+    init: function(core) {
+        this.core = core;
+        core.showStatus('⚔️ 魔導士破魔 開發中');
+        core.setHUD(`⚔️ 魔導士破魔 - 開發中`);
+        core.setGuide('⚔️ 魔導士破魔', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
+        core.startLoop();
+    },
+    
+    destroy: function() {},
+    
+    update: function(breathFlow) {},
+    
+    render: function(ctx) {
+        const canvas = this.core.getCanvas();
+        ctx.fillStyle = '#0d0a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#f0e6ff';
+        ctx.font = '24px Verdana, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚔️ 魔導士破魔', canvas.width/2, canvas.height/2 - 20);
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
+    },
+    
+    getHUD: function() {
+        return `⚔️ 魔導士破魔 - 開發中`;
+    },
+    
+    getGuide: function() {
+        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
+    },
+    
+    getTitle: function() {
+        return '⚔️ 魔導士破魔';
+    }
+};
+
+// =====================================================
+// 13. 遊戲插件 - 蒲公英快遞 (骨架)
+// =====================================================
+const DandelionPlugin = {
+    id: 'dandelion',
+    name: '蒲公英快遞',
+    emoji: '🌿',
+    version: '0.5.0',
+    description: '控制蒲公英飛行運送花粉',
+    author: 'System',
+    
+    core: null,
+    
+    init: function(core) {
+        this.core = core;
+        core.showStatus('🌿 蒲公英快遞 開發中');
+        core.setHUD(`🌿 蒲公英快遞 - 開發中`);
+        core.setGuide('🌿 蒲公英快遞', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
+        core.startLoop();
+    },
+    
+    destroy: function() {},
+    
+    update: function(breathFlow) {},
+    
+    render: function(ctx) {
+        const canvas = this.core.getCanvas();
+        ctx.fillStyle = '#e8f5e9';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#1b5e20';
+        ctx.font = '24px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🌿 蒲公英快遞', canvas.width/2, canvas.height/2 - 20);
+        ctx.fillStyle = '#4a7a4a';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
+    },
+    
+    getHUD: function() {
+        return `🌿 蒲公英快遞 - 開發中`;
+    },
+    
+    getGuide: function() {
+        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
+    },
+    
+    getTitle: function() {
+        return '🌿 蒲公英快遞';
+    }
+};
+
+// =====================================================
+// 14. 遊戲插件 - 玻璃心大師 (骨架)
+// =====================================================
+const CrystalPlugin = {
+    id: 'crystal',
+    name: '玻璃心大師',
+    emoji: '💎',
+    version: '0.5.0',
+    description: '呼吸控制壓力雕刻水晶',
+    author: 'System',
+    
+    core: null,
+    
+    init: function(core) {
+        this.core = core;
+        core.showStatus('💎 玻璃心大師 開發中');
+        core.setHUD(`💎 玻璃心大師 - 開發中`);
+        core.setGuide('💎 玻璃心大師', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
+        core.startLoop();
+    },
+    
+    destroy: function() {},
+    
+    update: function(breathFlow) {},
+    
+    render: function(ctx) {
+        const canvas = this.core.getCanvas();
+        ctx.fillStyle = '#e3f2fd';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0d47a1';
+        ctx.font = '24px Tahoma, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('💎 玻璃心大師', canvas.width/2, canvas.height/2 - 20);
+        ctx.fillStyle = '#4a7a9a';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
+    },
+    
+    getHUD: function() {
+        return `💎 玻璃心大師 - 開發中`;
+    },
+    
+    getGuide: function() {
+        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
+    },
+    
+    getTitle: function() {
+        return '💎 玻璃心大師';
+    }
+};
+
+// =====================================================
+// 15. 插件註冊與切換
+// =====================================================
+// 註冊所有插件
+pluginRegistry['painter'] = PainterPlugin;
+pluginRegistry['candle'] = CandlePlugin;
+pluginRegistry['wizard'] = WizardPlugin;
+pluginRegistry['dandelion'] = DandelionPlugin;
+pluginRegistry['crystal'] = CrystalPlugin;
+
+function switchGame(gameId) {
+    // 停止當前遊戲
+    if (gameAnimationId) {
+        cancelAnimationFrame(gameAnimationId);
+        gameAnimationId = null;
+    }
+    isGameRunning = false;
+    isGameOver = false;
+    isPaused = false;
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('winScreen').style.display = 'none';
+    document.getElementById('gamePauseBtn').innerText = '暫停';
+    document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
+    
+    // 銷毀當前插件
+    if (currentPlugin && currentPlugin.destroy) {
+        currentPlugin.destroy();
+    }
+    
+    // 更新狀態顯示
+    document.getElementById('gamePluginStatus').textContent = `插件: ${gameId}`;
+    
+    // 載入新插件
+    const PluginClass = pluginRegistry[gameId];
+    if (!PluginClass) {
+        updateStatus(`❌ 找不到遊戲: ${gameId}`);
+        return;
+    }
+    
+    // 創建插件實例
+    currentPlugin = Object.create(PluginClass);
+    
+    // 初始化
+    if (currentPlugin.init) {
+        currentPlugin.init(coreAPI);
+    }
+    
+    // 更新HUD
+    if (currentPlugin.getHUD) {
+        document.getElementById('gameHUD').innerHTML = currentPlugin.getHUD();
+    }
+    
+    // 更新操控說明
+    if (currentPlugin.getGuide && currentPlugin.getTitle) {
+        document.getElementById('guideTitle').innerText = currentPlugin.getTitle();
+        document.getElementById('guideContent').innerHTML = currentPlugin.getGuide();
+    }
+    
+    // 更新遊戲標題
+    document.getElementById('gameStartPrompt').style.display = 'none';
+    
+    // 開始遊戲循環
+    if (!isGameRunning) {
+        isGameRunning = true;
+        gameLoop();
+    }
+    
+    updateStatus(`🎮 切換至 ${currentPlugin.name || gameId}`);
+    console.log(`✅ 插件載入: ${gameId}`);
+}
+
+// =====================================================
+// 16. 主遊戲循環
+// =====================================================
+function gameLoop() {
+    if (!isGameRunning || isGameOver) {
+        // 如果遊戲結束但循環還在跑，停止
+        if (isGameOver) {
+            if (gameAnimationId) {
+                cancelAnimationFrame(gameAnimationId);
+                gameAnimationId = null;
+            }
+        }
+        return;
+    }
+    
+    // 取得呼吸數據
+    let breathFlow = 0;
+    if (isMeasuring && !isPaused && !isGameOver) {
+        breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+    }
+    
+    // 更新當前插件
+    if (currentPlugin && currentPlugin.update) {
+        currentPlugin.update(breathFlow);
+    }
+    
+    // 渲染
+    if (currentPlugin && currentPlugin.render) {
+        currentPlugin.render(gameCtx);
+    } else {
+        // 預設渲染
+        gameCtx.fillStyle = '#0d1117';
+        gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        gameCtx.fillStyle = '#f0f6fc';
+        gameCtx.font = '24px sans-serif';
+        gameCtx.textAlign = 'center';
+        gameCtx.fillText('🎮 遊戲載入中...', gameCanvas.width/2, gameCanvas.height/2);
+    }
+    
+    // 繼續循環
+    gameAnimationId = requestAnimationFrame(gameLoop);
+}
+
+// =====================================================
+// 17. 遊戲控制函數
+// =====================================================
+function restartGameEngine() {
+    // 重置遊戲
+    if (currentPlugin && currentPlugin.destroy) {
+        currentPlugin.destroy();
+    }
+    
+    isGameRunning = false;
+    isGameOver = false;
+    isPaused = false;
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('winScreen').style.display = 'none';
+    document.getElementById('gamePauseBtn').innerText = '暫停';
+    document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
+    document.getElementById('hpFill').style.width = '100%';
+    
+    // 重新初始化當前插件
+    if (currentPlugin && currentPlugin.init) {
+        currentPlugin.init(coreAPI);
+    }
+    
+    // 更新HUD
+    if (currentPlugin && currentPlugin.getHUD) {
+        document.getElementById('gameHUD').innerHTML = currentPlugin.getHUD();
+    }
+    
+    isGameRunning = true;
+    gameLoop();
+}
+
+function toggleGamePause() {
+    if (!isGameRunning || isGameOver) return;
+    isPaused = !isPaused;
+    const btn = document.getElementById('gamePauseBtn');
+    if (isPaused) {
+        btn.innerText = '繼續';
+        btn.style.backgroundColor = '#f39c12';
+        if (currentPlugin && currentPlugin.onPause) {
+            currentPlugin.onPause();
+        }
+    } else {
+        btn.innerText = '暫停';
+        btn.style.backgroundColor = '#27ae60';
+        if (currentPlugin && currentPlugin.onResume) {
+            currentPlugin.onResume();
+        }
+    }
+}
+
+// =====================================================
+// 18. 初始化
+// =====================================================
+function initExpansion() {
+    // 設定視窗模式
+    document.getElementById('viewModeSelect').value = 'both';
+    switchViewMode('both');
+    
+    // 設定遊戲選擇器
+    document.getElementById('gameSelector').value = 'painter';
+    
+    // 初始化遊戲
+    setTimeout(() => {
+        switchGame('painter');
+    }, 100);
+    
+    // 註冊事件
+    document.getElementById('gamePauseBtn').addEventListener('click', toggleGamePause);
+    document.getElementById('gameRestartBtn').addEventListener('click', restartGameEngine);
+    document.getElementById('gameSelector').addEventListener('change', function() {
+        switchGame(this.value);
     });
+    document.getElementById('viewModeSelect').addEventListener('change', function() {
+        switchViewMode(this.value);
+    });
+    
+    console.log('✅ 插件系統已初始化');
+    console.log('📦 已載入插件:');
+    for (let id in pluginRegistry) {
+        console.log(`   - ${pluginRegistry[id].emoji} ${pluginRegistry[id].name} (${id})`);
+    }
 }
 
-function closeDemoModal(){const modal=document.getElementById('demoModal');modal.style.display='none';}
-
-// ============================================================
-// 初始化
-// ============================================================
-function initExpansion(){
-    setQuality('high');
-    buildIntroGrid();
-    updateLevelDisplay();
-    loadSkins();
-    window.devModeEnabled = true;
-    console.log('✅ 多遊戲平台架構已載入，風之繪師實裝完成！');
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initExpansion);
+} else {
+    initExpansion();
 }
 
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initExpansion);}else{initExpansion();}
-
-window.restartGameEngine=restartGameEngine;
-window.toggleGamePause=toggleGamePause;
-window.toggleFullscreen=toggleFullscreen;
-window.setQuality=setQuality;
-window.openCustomQuality=openCustomQuality;
-window.closeDemoModal=closeDemoModal;
-window.toggleLevelEditor=toggleLevelEditor;
-window.toggleSkinEditor=toggleSkinEditor;
+// 暴露全局變量
+window.switchGame = switchGame;
+window.restartGameEngine = restartGameEngine;
+window.toggleGamePause = toggleGamePause;
+window.toggleFullscreen = toggleFullscreen;
+window.switchViewMode = switchViewMode;
+window.toggleControlGuide = toggleControlGuide;
+window.resizeGameCanvas = resizeGameCanvas;
+window.pluginRegistry = pluginRegistry;
 </script>
 </body>
 </html>
