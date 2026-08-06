@@ -4055,7 +4055,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script>
 // ============================================================
-// 🌟 五大獨立遊戲模式：地板高度修正與全域音效隔離版
+// 🌟 五大獨立遊戲模式：蒲公英重生定位與精準死因回報版
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -4067,7 +4067,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="painter" id="opt_painter">🎨 風之繪師 (自由穩定訓練)</option>
             <option value="candle" id="opt_candle">🕯️ 燭光遠征 (動態分岔迷宮)</option>
             <option value="mage" id="opt_mage">⚔️ 魔導士破魔 (中央防衛戰)</option>
-            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (可見地板與墜毀)</option>
+            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (空中起飛與嚴格墜毀)</option>
             <option value="crystal" id="opt_crystal">💎 玻璃心大師 (100關進階雕刻)</option>
             <option value="both">全模式 (圖表+飛行家)</option>
             <option value="intro">📖 介紹圖鑑</option>
@@ -4130,7 +4130,6 @@ function getSubPressureInput() {
     return Math.max(0, Math.min(100, pressure));
 }
 
-// 🛑 徹底隔離原版飛行家 BGM 與音效的全面升級版 switchViewMode
 window.switchViewMode = function(mode) {
     const chartBox = document.querySelector('.chart-container');
     const classicGameBox = document.getElementById('gameContainer');
@@ -4142,15 +4141,9 @@ window.switchViewMode = function(mode) {
     if (subGameBox) subGameBox.style.display = 'none';
     if (introBox) introBox.style.display = 'none';
 
-    // 強制停止原版飛行家引擎與強制關閉全域 BGM 音樂
     if (typeof stopGameEngine === 'function') stopGameEngine();
     if (typeof stopBGM === 'function') stopBGM();
     
-    // 額外保險：如果原版有全域音訊變數或計時器，直接暴力歸零
-    try {
-        if (typeof bgmInterval !== 'undefined') clearInterval(bgmInterval);
-    } catch(e) {}
-
     if (subGameAnimId) { cancelAnimationFrame(subGameAnimId); subGameAnimId = null; }
     stopSubThemeMusic();
 
@@ -4180,7 +4173,6 @@ window.switchViewMode = function(mode) {
         if (introBox) introBox.style.display = 'block';
     } 
     else {
-        // 切換到五大獨立遊戲模式時，絕對禁止任何原版音樂啟動
         currentActiveSubTheme = mode;
         if (subGameBox) subGameBox.style.display = 'block';
         playSubThemeMusic(mode);
@@ -4189,7 +4181,7 @@ window.switchViewMode = function(mode) {
 };
 
 // ============================================================
-// 🎮 遊戲核心引擎
+// 🎮 遊戲核心引擎 (含精準死因同步與蒲公英空中安全起飛)
 // ============================================================
 function startSubGameEngine(theme) {
     const canvas = document.getElementById('subGameCanvas');
@@ -4226,6 +4218,7 @@ function startSubGameEngine(theme) {
     function triggerGameOver(reason) {
         state.isGameOver = true;
         alert(`💥 遊戲結束！\n📌 失敗模式：${themeNames[theme]}\n💀 致命死因：${reason}`);
+        // 重置狀態重新開始
         state.hp = 100;
         state.level = 1;
         state.score = 0;
@@ -4233,7 +4226,7 @@ function startSubGameEngine(theme) {
         state.mage.enemies = [];
         state.candle.obstacles = [];
         state.dandelion.obstacles = [];
-        state.dandelion.y = canvas.height / 2;
+        state.dandelion.y = canvas.height / 2; // 重置回空中中心
     }
 
     function loop() {
@@ -4395,7 +4388,7 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【魔導士破魔】中央防衛戰 (關卡: ${state.level})：氣流集氣攻擊最近魔物`, 40, 30);
         }
 
-        // 🌿 4. 蒲公英快遞 (修復地板高度，觸地即死)
+        // 🌿 4. 蒲公英快遞 (空中完美起飛與嚴格墜地判定)
         else if (theme === 'dandelion') {
             state.dandelion.distance++;
             if (state.dandelion.distance % 500 === 0) {
@@ -4407,7 +4400,7 @@ function startSubGameEngine(theme) {
             ctx.fillRect(0, 0, w, h);
 
             if (state.frame % 70 === 0) {
-                state.dandelion.obstacles.push({ x: w + 50, y: Math.random() * (h - 140) + 40 });
+                state.dandelion.obstacles.push({ x: w + 50, y: Math.random() * (h - 120) + 50 });
             }
 
             state.dandelion.obstacles.forEach((obs, idx) => {
@@ -4420,26 +4413,26 @@ function startSubGameEngine(theme) {
                 if (obs.x < -50) state.dandelion.obstacles.splice(idx, 1);
             });
 
-            // 氣流高度計算 (將可見地板拉高到畫面下方 80 像素處)
-            let groundLevel = h - 80;
-            let targetY = groundLevel - (pressure / 100 * (groundLevel - 80));
+            // 氣流高度計算
+            let targetY = h - (pressure / 100 * (h - 120)) - 60;
             state.dandelion.y += (targetY - state.dandelion.y) * 0.1;
 
-            // 🛑 觸地判定：一碰到地面立刻判定墜毀死亡
-            if (state.dandelion.y >= groundLevel - 15) {
+            // 🛑 嚴格落地判定：觸地直接扣至血量歸零並回報死因
+            let groundLevel = h - 45;
+            if (state.dandelion.y >= groundLevel) {
+                state.hp = 0;
                 triggerGameOver('氣流完全中斷，蒲公英重摔落地墜毀');
                 return;
             }
 
-            // 畫出清晰可見的地面
-            ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, groundLevel, w, 80);
-            ctx.fillStyle = '#27ae60'; ctx.fillRect(0, groundLevel, w, 10); // 草皮
+            // 畫地板
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, h - 30, w, 30);
 
             // 畫空中蒲公英
             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(180, state.dandelion.y, 16, 0, Math.PI*2); ctx.fill();
 
             ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
-            ctx.fillText(`【蒲公英快遞】可見地面與嚴格墜毀：氣流不足觸地即死`, 40, 30);
+            ctx.fillText(`【蒲公英快遞】空中起飛：氣流不足觸地即判定墜毀`, 40, 30);
         }
 
         // 💎 5. 玻璃心大師
