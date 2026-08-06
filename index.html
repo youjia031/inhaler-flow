@@ -3973,9 +3973,8 @@ window.showStats=showStats;
 window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
 </script>
-<script>
-// ============================================================
-// 🌟 五大獨立遊戲模式：生命值與墜毀終結防護版
+<script>// ============================================================
+// 🌟 五大獨立遊戲模式：蒲公英重生定位與精準死因回報版
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3987,7 +3986,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="painter" id="opt_painter">🎨 風之繪師 (自由穩定訓練)</option>
             <option value="candle" id="opt_candle">🕯️ 燭光遠征 (動態分岔迷宮)</option>
             <option value="mage" id="opt_mage">⚔️ 魔導士破魔 (中央防衛戰)</option>
-            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (嚴格落地墜毀)</option>
+            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (空中起飛與嚴格墜毀)</option>
             <option value="crystal" id="opt_crystal">💎 玻璃心大師 (100關進階雕刻)</option>
             <option value="both">全模式 (圖表+飛行家)</option>
             <option value="intro">📖 介紹圖鑑</option>
@@ -4101,7 +4100,7 @@ window.switchViewMode = function(mode) {
 };
 
 // ============================================================
-// 🎮 遊戲核心引擎 (含生命值絕對終結防護)
+// 🎮 遊戲核心引擎 (含精準死因同步與蒲公英空中安全起飛)
 // ============================================================
 function startSubGameEngine(theme) {
     const canvas = document.getElementById('subGameCanvas');
@@ -4116,16 +4115,16 @@ function startSubGameEngine(theme) {
         painter: { cursorX: canvas.width/2, cursorY: canvas.height/2, lines: [] },
         candle: { pathX: canvas.width / 2, angle: 0, obstacles: [], items: [], distance: 0 },
         mage: { spells: [], enemies: [], chargeTime: 0 },
-        dandelion: { y: canvas.height / 2, weather: 'sunny', obstacles: [], items: [], distance: 0 },
+        dandelion: { y: canvas.height / 2, weather: 'sunny', obstacles: [], distance: 0 },
         crystal: { cracksPercent: 0, level: 1 }
     };
 
     const themeNames = {
-        painter: '🎨 風之繪師 (自由穩定訓練)',
-        candle: '🕯️ 燭光遠征 (動態分岔迷宮)',
-        mage: '⚔️ 魔導士破魔 (中央防衛戰)',
-        dandelion: '🌿 蒲公英快遞 (嚴格落地墜毀)',
-        crystal: '💎 玻璃心大師 (100關進階雕刻)'
+        painter: '🎨 風之繪師',
+        candle: '🕯️ 燭光遠征',
+        mage: '⚔️ 魔導士破魔',
+        dandelion: '🌿 蒲公英快遞',
+        crystal: '💎 玻璃心大師'
     };
 
     let mousePos = { x: canvas.width/2, y: canvas.height/2 };
@@ -4137,8 +4136,8 @@ function startSubGameEngine(theme) {
 
     function triggerGameOver(reason) {
         state.isGameOver = true;
-        alert(`💥 遊戲結束！(${reason})`);
-        // 重置遊戲狀態
+        alert(`💥 遊戲結束！\n📌 失敗模式：${themeNames[theme]}\n💀 致命死因：${reason}`);
+        // 重置狀態重新開始
         state.hp = 100;
         state.level = 1;
         state.score = 0;
@@ -4146,6 +4145,7 @@ function startSubGameEngine(theme) {
         state.mage.enemies = [];
         state.candle.obstacles = [];
         state.dandelion.obstacles = [];
+        state.dandelion.y = canvas.height / 2; // 重置回空中中心
     }
 
     function loop() {
@@ -4202,7 +4202,8 @@ function startSubGameEngine(theme) {
                 obs.y -= 3;
                 ctx.fillStyle = '#ff3366'; ctx.fillRect(obs.x - 12, obs.y - 12, 24, 24);
                 if (Math.hypot(state.candle.pathX - obs.x, h/2 - obs.y) < 25) {
-                    state.hp -= 12; state.candle.obstacles.splice(idx, 1);
+                    state.hp -= 15; state.candle.obstacles.splice(idx, 1);
+                    if (state.hp <= 0) { triggerGameOver('燭光碰撞障礙物，光源熄滅'); return; }
                 }
                 if (obs.y < -40) state.candle.obstacles.splice(idx, 1);
             });
@@ -4225,7 +4226,7 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【燭光遠征】動態轉彎與分岔迷宮：控制視野尋找燈油`, 40, 30);
         }
 
-        // ⚔️ 3. 魔導士破魔 (血量歸零絕對觸發遊戲結束)
+        // ⚔️ 3. 魔導士破魔
         else if (theme === 'mage') {
             ctx.fillStyle = '#110c1d'; ctx.fillRect(0, 0, w, h);
             let centerX = w / 2, centerY = h / 2;
@@ -4292,6 +4293,10 @@ function startSubGameEngine(theme) {
                 if (Math.hypot(centerX - e.x, centerY - e.y) < 30) {
                     state.hp -= (15 + state.level * 3);
                     state.mage.enemies.splice(idx, 1);
+                    if (state.hp <= 0) {
+                        triggerGameOver('中央防衛結界被大量暗黑魔物攻破，魔導士陣亡');
+                        return;
+                    }
                 }
             });
 
@@ -4302,7 +4307,7 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【魔導士破魔】中央防衛戰 (關卡: ${state.level})：氣流集氣攻擊最近魔物`, 40, 30);
         }
 
-        // 🌿 4. 蒲公英快遞 (落地觸地直接墜毀歸零)
+        // 🌿 4. 蒲公英快遞 (空中完美起飛與嚴格墜地判定)
         else if (theme === 'dandelion') {
             state.dandelion.distance++;
             if (state.dandelion.distance % 500 === 0) {
@@ -4322,25 +4327,31 @@ function startSubGameEngine(theme) {
                 ctx.fillStyle = '#e74c3c'; ctx.fillRect(obs.x, obs.y, 25, 25);
                 if (Math.hypot(180 - obs.x, state.dandelion.y - obs.y) < 25) {
                     state.hp -= 20; state.dandelion.obstacles.splice(idx, 1);
+                    if (state.hp <= 0) { triggerGameOver('蒲公英飛行途中撞擊障礙物墜毀'); return; }
                 }
                 if (obs.x < -50) state.dandelion.obstacles.splice(idx, 1);
             });
 
+            // 氣流高度計算
             let targetY = h - (pressure / 100 * (h - 120)) - 60;
             state.dandelion.y += (targetY - state.dandelion.y) * 0.1;
 
-            // 🛑 嚴格落地判定：碰到地面直接瞬間扣血至死！
-            if (state.dandelion.y >= h - 55) {
-                state.hp -= 5; // 落地每幀扣 5 血，瞬間歸零
-                state.dandelion.y = h - 55;
+            // 🛑 嚴格落地判定：觸地直接扣至血量歸零並回報死因
+            let groundLevel = h - 45;
+            if (state.dandelion.y >= groundLevel) {
+                state.hp = 0;
+                triggerGameOver('氣流完全中斷，蒲公英重摔落地墜毀');
+                return;
             }
 
+            // 畫地板
             ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, h - 30, w, 30);
 
+            // 畫空中蒲公英
             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(180, state.dandelion.y, 16, 0, Math.PI*2); ctx.fill();
 
             ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
-            ctx.fillText(`【蒲公英快遞】嚴格落地墜毀判定：氣流不足觸地即扣血至死`, 40, 30);
+            ctx.fillText(`【蒲公英快遞】空中起飛：氣流不足觸地即判定墜毀`, 40, 30);
         }
 
         // 💎 5. 玻璃心大師
@@ -4360,6 +4371,7 @@ function startSubGameEngine(theme) {
                     state.hp -= 20;
                     state.crystal.cracksPercent = 0;
                     state.crystal.level = Math.min(100, state.crystal.level + 1);
+                    if (state.hp <= 0) { triggerGameOver('水晶雕刻過度碎裂崩塌，大師心態炸裂'); return; }
                 }
             }
 
@@ -4391,14 +4403,6 @@ function startSubGameEngine(theme) {
 
             ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
             ctx.fillText(`【玻璃心大師】第 ${state.crystal.level}/100 關 (維持 ${targetMin}~${targetMax}) 碎裂度: ${Math.floor(state.crystal.cracksPercent)}%`, 40, 30);
-        }
-
-        // 🛑 生命值歸零絕對判定觸發！
-        if (state.hp <= 0) {
-            state.hp = 0;
-            document.getElementById('subHudHp').innerText = `❤️ 生命值: 0%`;
-            triggerGameOver(themeNames[theme] + ' 陣亡墜毀');
-            return;
         }
 
         // 左側氣流柱
