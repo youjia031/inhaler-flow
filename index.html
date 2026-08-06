@@ -3974,7 +3974,7 @@ window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
 </script>
 <!-- ============================================================ -->
-<!-- 🆕 風之繪師 - 視窗模式切換 -->
+<!-- 🆕 風之繪師 - 加入「視窗」下拉選單 -->
 <!-- 請將這段完整程式碼加在您原有HTML的 </body> 之前 -->
 <!-- ============================================================ -->
 
@@ -4741,6 +4741,248 @@ window.showAchievements=showAchievements;
                 ctx.setLineDash([]);
                 ctx.restore();
             }
-            for
+            for (let p of state.particles) {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            for (let item of state.items) {
+                const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                ctx.scale(pulse, pulse);
+                ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
+                ctx.shadowBlur = 20;
+                ctx.font = '28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
+                ctx.restore();
+            }
+            const px = 40, py = h - 30, pw = w - 80, ph = 6;
+            ctx.fillStyle = 'rgba(139, 115, 85, 0.12)';
+            ctx.beginPath();
+            ctx.roundRect(px, py, pw, ph, 3);
+            ctx.fill();
+            const pct = state.strokeProgress;
+            ctx.fillStyle = '#8B6914';
+            ctx.beginPath();
+            ctx.roundRect(px, py, pw * pct, ph, 3);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(92, 61, 46, 0.2)';
+            ctx.font = '13px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
+            ctx.fillText(`🎨 ${state.shapeNames[type] || '繪畫'}  ·  第 ${state.currentStroke + 1}/${state.strokesPerPainting} 筆`, w / 2, 12);
+        }
+        
+        function gameLoop() {
+            if (!isRunning || isGameOver) {
+                if (isGameOver && animId) {
+                    cancelAnimationFrame(animId);
+                    animId = null;
+                }
+                return;
+            }
+            let breathFlow = 0;
+            if (typeof isMeasuring !== 'undefined' && isMeasuring && !isPaused && !isGameOver) {
+                breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+            }
+            update(breathFlow);
+            render();
+            animId = requestAnimationFrame(gameLoop);
+        }
+        
+        // --- 公開方法 ---
+        window.PainterView = {
+            open: function() {
+                container.classList.add('active');
+                resizeCanvas();
+                state.level = 1;
+                state.hp = state.maxHp;
+                state.paintings = 0;
+                state.errors = 0;
+                state.drawPoints = [];
+                state.particles = [];
+                state.items = [];
+                state.hasPalette = false;
+                state.hasFineBrush = false;
+                state.paletteTimer = 0;
+                state.fineBrushTimer = 0;
+                state.currentStroke = 0;
+                state.strokeProgress = 0;
+                state.shapeIdx = 0;
+                state.isResting = false;
+                isPaused = false;
+                isGameOver = false;
+                restOverlay.style.display = 'none';
+                document.getElementById('gameOverScreen').style.display = 'none';
+                document.getElementById('winScreen').style.display = 'none';
+                updateStrokeCount();
+                generateShape();
+                state.brushX = canvas.width / 2;
+                state.brushY = canvas.height / 2;
+                updateUI();
+                if (animId) { cancelAnimationFrame(animId); animId = null; }
+                isRunning = true;
+                gameLoop();
+                if (typeof updateStatus === 'function') {
+                    updateStatus('🎨 風之繪師');
+                }
+            },
+            close: function() {
+                isRunning = false;
+                if (animId) {
+                    cancelAnimationFrame(animId);
+                    animId = null;
+                }
+                container.classList.remove('active');
+                if (typeof updateStatus === 'function') {
+                    updateStatus('已關閉風之繪師');
+                }
+            },
+            resize: resizeCanvas,
+            isOpen: function() {
+                return container.classList.contains('active');
+            }
+        };
+        
+        window.addEventListener('resize', function() {
+            if (window.PainterView && window.PainterView.isOpen()) {
+                window.PainterView.resize();
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (!window.PainterView || !window.PainterView.isOpen()) return;
+            if (e.key === 'Escape') {
+                // 切換回全模式
+                const viewSelect = document.getElementById('viewModeSelect');
+                if (viewSelect) {
+                    viewSelect.value = 'both';
+                    if (typeof switchViewMode === 'function') {
+                        switchViewMode('both');
+                    }
+                }
+                e.preventDefault();
+            }
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                isPaused = !isPaused;
+                showToast(isPaused ? '⏸ 已暫停' : '▶ 繼續');
+            }
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                e.preventDefault();
+                state.brushY = Math.max(30, state.brushY - 12);
+            }
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                e.preventDefault();
+                state.brushY = Math.min(canvas.height - 30, state.brushY + 12);
+            }
+        });
+        
+        console.log('🎨 風之繪師 視窗模式已載入！');
+    }
+})();
+
+// ============================================================
+// 修改 switchViewMode 函數 - 加入風之繪師選項
+// ============================================================
+(function() {
+    // 等待 switchViewMode 函數存在
+    const checkAndPatch = function() {
+        if (typeof switchViewMode === 'function') {
+            // 保存原函數
+            const originalSwitchViewMode = switchViewMode;
+            
+            // 覆蓋
+            window.switchViewMode = function(mode) {
+                if (mode === 'painter') {
+                    // 開啟風之繪師
+                    const chartBox = document.querySelector('.chart-container');
+                    const gameBox = document.getElementById('gameContainer');
+                    const painterContainer = document.getElementById('painterViewContainer');
+                    const introBox = document.getElementById('introContainer');
+                    if (chartBox) chartBox.style.display = 'none';
+                    if (gameBox) gameBox.style.display = 'none';
+                    if (introBox) introBox.style.display = 'none';
+                    if (painterContainer) {
+                        if (window.PainterView) {
+                            window.PainterView.open();
+                        } else {
+                            painterContainer.classList.add('active');
+                        }
+                    }
+                    if (typeof updateStatus === 'function') {
+                        updateStatus('🎨 風之繪師');
+                    }
+                    return;
+                }
+                
+                // 關閉風之繪師
+                if (window.PainterView && window.PainterView.isOpen()) {
+                    window.PainterView.close();
+                }
+                const painterContainer = document.getElementById('painterViewContainer');
+                if (painterContainer) painterContainer.classList.remove('active');
+                
+                // 呼叫原函數
+                originalSwitchViewMode(mode);
+            };
+            
+            console.log('✅ switchViewMode 已擴充，支援 painter 模式');
+        } else {
+            // 如果 switchViewMode 還不存在，等待
+            setTimeout(checkAndPatch, 100);
+        }
+    };
+    
+    // 等 DOM 載入後執行
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkAndPatch);
+    } else {
+        checkAndPatch();
+    }
+})();
+
+// ============================================================
+// 在視窗下拉選單中加入「🎨 風之繪師」選項
+// ============================================================
+(function() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addPainterToViewMenu);
+    } else {
+        addPainterToViewMenu();
+    }
+    
+    function addPainterToViewMenu() {
+        const viewSelect = document.getElementById('viewModeSelect');
+        if (!viewSelect) return;
+        
+        // 檢查是否已存在
+        for (let option of viewSelect.options) {
+            if (option.value === 'painter') return;
+        }
+        
+        // 新增選項
+        const option = document.createElement('option');
+        option.value = 'painter';
+        option.textContent = '🎨 風之繪師';
+        viewSelect.appendChild(option);
+        
+        console.log('✅ 已將「🎨 風之繪師」加入視窗選單');
+    }
+})();
+</script>
+<!-- ============================================================ -->
+<!-- 風之繪師 新增結束 -->
+<!-- ============================================================ -->
 </body>
 </html>
