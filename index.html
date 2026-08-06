@@ -3972,9 +3972,11 @@ window.switchGameMode=switchGameMode;
 window.showStats=showStats;
 window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
-// ============================================================
-// 🌟 終極擴充模組：多主題系統 (直接貼在 </script> 上方即可)
-// ============================================================
+</script>
+<!-- 👇 從這裡開始複製：獨立的新遊戲擴充包 👇 -->
+<script>
+console.log("擴充模組啟動中...");
+
 let currentTheme = 'classic'; 
 
 const ThemeState = {
@@ -4007,7 +4009,6 @@ setTimeout(() => {
 
 window.switchGameTheme = function(theme) {
     currentTheme = theme;
-    // 重置新遊戲的數值
     ThemeState.painter = { progress: 0, mistakes: 0, hue: 0 };
     ThemeState.candle = { fuel: 100, wind: 0 };
     ThemeState.mage = { charge: 0 };
@@ -4033,18 +4034,18 @@ function getNormalizedInput() {
     return Math.max(0, Math.min(100, pressure));
 }
 
-// 2. 🚀 終極攔截器：直接覆蓋最後的 gameLoop 🚀
+// 2. 🚀 終極攔截器：直接覆蓋最後的 gameLoop
 if (typeof gameLoop !== 'undefined') {
-    const baseGameLoop = gameLoop; // 儲存你原本一千多行的心血
+    const baseGameLoop = gameLoop; 
     
-    gameLoop = function() {
+    window.gameLoop = function() {
         if (!isGameRunning || isGameOver) return;
         
         if (currentTheme === 'classic') {
-            baseGameLoop(); // 如果是經典模式，跑原本的飛行家
+            baseGameLoop(); 
         } else {
-            runAlternativeTheme(); // 如果是新模式，跑新遊戲
-            gameAnimationId = requestAnimationFrame(gameLoop);
+            runAlternativeTheme(); 
+            gameAnimationId = requestAnimationFrame(window.gameLoop);
         }
     };
 }
@@ -4174,5 +4175,7 @@ function renderCrystal(ctx, w, h, pressure) {
     ctx.fillStyle = '#fff'; ctx.fillText(`雕刻進度: ${Math.floor(s.progress)}% | 裂紋: ${Math.floor(s.cracks)}%`, w/2, h - 30); ctx.textAlign = 'left';
 }
 </script>
+<!-- 👆 複製到這裡結束 👆 -->
+
 </body>
 </html>
