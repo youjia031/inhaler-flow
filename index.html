@@ -3972,781 +3972,1015 @@ window.switchGameMode=switchGameMode;
 window.showStats=showStats;
 window.showLeaderboard=showLeaderboard;
 window.showAchievements=showAchievements;
-// ============================================================
-// 🆕 插件系統 - 風之繪師 (新增遊戲)
-// 請將這段程式碼加入您原有程式碼的 </script> 之前
-// ============================================================
+</script>
+<!-- ============================================================ -->
+<!-- 🆕 風之繪師 - 新增遊戲 (插件方式，不影響原有程式碼) -->
+<!-- 請將這段程式碼加在您原有HTML的 </body> 之前 -->
+<!-- ============================================================ -->
 
-// ============================================================
-// 1. 遊戲選擇器 - 加入控制面板
-// ============================================================
-(function addGameSelector() {
-    const panel = document.querySelector('.control-panel');
-    if (!panel) return;
-    
-    // 檢查是否已存在遊戲選擇器
-    if (document.getElementById('gameSelector')) return;
-    
-    const html = `
-        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-            🎮 遊戲:
-            <select id="gameSelector" onchange="switchGameMode(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                <option value="flight">✈️ 氣流飛行員</option>
-                <option value="painter">🎨 風之繪師</option>
-            </select>
-        </label>
-    `;
-    panel.insertAdjacentHTML('beforeend', html);
-})();
+<!-- ===== 風之繪師專屬樣式 ===== -->
+<style>
+/* 風之繪師專屬樣式 - 不影響原有樣式 */
+.painter-active .painter-canvas-area {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #fdf6f0;
+    border-radius: 8px;
+    margin: 10px;
+    padding: 20px;
+    box-shadow: inset 0 0 30px rgba(212, 163, 115, 0.2);
+}
+.painter-active .watercolor-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(212, 163, 115, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(212, 163, 115, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+.painter-active .easel-frame {
+    position: absolute;
+    top: -15px; left: -15px; right: -15px; bottom: -15px;
+    border: 8px solid #8B7355;
+    border-radius: 12px;
+    background: #d4a373;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
+}
+#painterProgressFill {
+    width: 1%;
+    height: 100%;
+    background: linear-gradient(90deg, #f1c40f, #e67e22);
+    transition: width 0.1s;
+    border-radius: 3px;
+}
+</style>
 
-// ============================================================
-// 2. 遊戲模式變數
-// ============================================================
-let currentGameMode = 'flight'; // 'flight' 或 'painter'
-let painterGameRunning = false;
-let painterAnimId = null;
-
-// ============================================================
-// 3. 風之繪師 - 完整遊戲引擎 (新增)
-// ============================================================
-const PainterGame = {
-    // --- 狀態 ---
-    level: 1,
-    maxLevel: 100,
-    hp: 100,
-    maxHp: 100,
-    isPlaying: false,
-    isPaused: false,
-    isGameOver: false,
+<!-- ===== 風之繪師專屬HTML ===== -->
+<!-- 在遊戲容器內新增風之繪師的專屬元素 -->
+<script>
+(function() {
+    // 等待 DOM 載入完成
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPainterPlugin);
+    } else {
+        initPainterPlugin();
+    }
     
-    brushX: 0,
-    brushY: 0,
-    brushSize: 4,
-    brushAlpha: 0.8,
-    brushColor: '#8B6914',
-    isDrawing: false,
-    drawPoints: [],
-    strokeProgress: 0,
-    strokePoints: [],
-    strokesPerPainting: 1,
-    currentStroke: 0,
-    shapePath: [],
-    shapeIdx: 0,
-    shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
-    particles: [],
-    items: [],
-    hasPalette: false,
-    hasFineBrush: false,
-    paletteTimer: 0,
-    fineBrushTimer: 0,
-    paintings: 0,
-    errors: 0,
-    maxErrors: 5,
-    isResting: false,
-    restTimer: 0,
-    restDuration: 90,
-    musicTimer: null,
-    musicStep: 0,
-    musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319],
-    shapeNames: {
-        'circle': '⭕ 圓形', 'square': '⬜ 方形', 'triangle': '🔺 三角形',
-        'star': '⭐ 星星', 'heart': '❤️ 愛心', 'flower': '🌸 花朵',
-        'butterfly': '🦋 蝴蝶', 'diamond': '💎 鑽石', 'moon': '🌙 月亮', 'spiral': '🌀 螺旋'
-    },
-    
-    // --- 初始化 ---
-    init() {
-        this.level = 1;
-        this.hp = this.maxHp;
-        this.isPlaying = false;
-        this.isPaused = false;
-        this.isGameOver = false;
-        this.drawPoints = [];
-        this.particles = [];
-        this.items = [];
-        this.paintings = 0;
-        this.errors = 0;
-        this.maxErrors = 5;
-        this.hasPalette = false;
-        this.hasFineBrush = false;
-        this.paletteTimer = 0;
-        this.fineBrushTimer = 0;
-        this.strokeProgress = 0;
-        this.currentStroke = 0;
-        this.isResting = false;
-        this.restTimer = 0;
-        this.shapeIdx = 0;
+    function initPainterPlugin() {
+        // 檢查是否已存在
+        if (document.getElementById('painterPluginContainer')) return;
         
-        this.updateStrokeCount();
-        this.generateShape();
+        // 在 gameHUD 後方插入風之繪師的專屬容器
+        const gameHUD = document.getElementById('gameHUD');
+        if (!gameHUD) return;
         
-        const canvas = document.getElementById('gameCanvas');
-        if (canvas) {
-            this.brushX = canvas.width / 2;
-            this.brushY = canvas.height / 2;
-        }
-        this.updateUI();
-        this.startMusic();
-    },
-    
-    // --- 音樂 ---
-    startMusic() {
-        this.stopMusic();
-        if (!document.getElementById('soundToggle')?.checked) return;
-        this.musicTimer = setInterval(() => {
-            if (this.isPaused || this.isGameOver) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            try {
-                const now = audioCtx.currentTime;
-                const note = this.musicNotes[this.musicStep % this.musicNotes.length];
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(note, now);
-                gain.gain.setValueAtTime(0.04, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.3);
-                this.musicStep++;
-            } catch(e) {}
-        }, 380);
-    },
-    
-    stopMusic() {
-        if (this.musicTimer) {
-            clearInterval(this.musicTimer);
-            this.musicTimer = null;
-            this.musicStep = 0;
-        }
-    },
-    
-    // --- 筆畫數 ---
-    updateStrokeCount() {
-        const lv = this.level;
-        if (lv <= 20) this.strokesPerPainting = 1;
-        else if (lv <= 40) this.strokesPerPainting = 2;
-        else if (lv <= 60) this.strokesPerPainting = 3;
-        else if (lv <= 80) this.strokesPerPainting = 4;
-        else this.strokesPerPainting = 5;
-        this.currentStroke = 0;
-        this.strokeProgress = 0;
-    },
-    
-    // --- 生成形狀 ---
-    generateShape() {
-        const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
-        const w = canvas.width, h = canvas.height;
-        const cx = w / 2, cy = h / 2;
-        const size = Math.min(w, h) * 0.32 * (1 + (this.level - 1) * 0.002);
-        const cnt = Math.min(Math.floor(this.level / 8) + 1, this.shapeTypes.length);
-        const type = this.shapeTypes[this.shapeIdx % this.shapeTypes.length];
-        this.shapePath = this.generateShapePoints(type, cx, cy, Math.min(size, Math.min(w, h) * 0.42));
-        this.strokePoints = [];
-        this.drawPoints = [];
-        this.strokeProgress = 0;
-        this.currentStroke = 0;
-        const total = this.shapePath.length;
-        const per = Math.floor(total / this.strokesPerPainting);
-        for (let i = 0; i < this.strokesPerPainting; i++) {
-            const start = i * per;
-            const end = (i === this.strokesPerPainting - 1) ? total : (i + 1) * per;
-            this.strokePoints.push(this.shapePath.slice(start, end));
-        }
-        const remain = total - this.strokesPerPainting * per;
-        if (remain > 0 && this.strokePoints.length > 0) {
-            const last = this.strokePoints[this.strokePoints.length - 1];
-            for (let i = total - remain; i < total; i++) last.push(this.shapePath[i]);
-        }
-        // 更新形狀名稱
-        const nameEl = document.getElementById('painterShapeName');
-        if (nameEl) nameEl.textContent = this.shapeNames[type] || '未知';
-        this.updateUI();
-    },
-    
-    generateShapePoints(type, cx, cy, size) {
-        const points = [];
-        const steps = 80 + Math.floor(this.level / 2);
-        switch(type) {
-            case 'circle':
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    points.push({x: cx + size * Math.cos(a), y: cy + size * Math.sin(a)});
-                }
-                break;
-            case 'square': {
-                const hs = size * 0.7;
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const c = Math.floor(p * 4);
-                    const cp = (p * 4) - c;
-                    const a = (c / 4) * Math.PI * 2;
-                    const na = ((c + 1) / 4) * Math.PI * 2;
-                    points.push({
-                        x: cx + hs * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
-                        y: cy + hs * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
-                    });
-                }
-                break;
-            }
-            case 'triangle': {
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const c = Math.floor(p * 3);
-                    const cp = (p * 3) - c;
-                    const a = (c / 3) * Math.PI * 2 - Math.PI / 2;
-                    const na = ((c + 1) / 3) * Math.PI * 2 - Math.PI / 2;
-                    points.push({
-                        x: cx + size * 0.7 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
-                        y: cy + size * 0.7 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
-                    });
-                }
-                break;
-            }
-            case 'star': {
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const a = p * Math.PI * 2 - Math.PI / 2;
-                    const r = (Math.floor(p * 10) % 2 === 0) ? size : size * 0.4;
-                    points.push({x: cx + r * Math.cos(a), y: cy + r * Math.sin(a)});
-                }
-                break;
-            }
-            case 'heart': {
-                for (let i = 0; i < steps; i++) {
-                    const t = i / steps * Math.PI * 2;
-                    points.push({
-                        x: cx + size * 0.6 * 16 * Math.pow(Math.sin(t), 3),
-                        y: cy - size * 0.6 * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
-                    });
-                }
-                break;
-            }
-            case 'flower': {
-                const petals = 5 + Math.floor(this.level / 15);
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    const r = size * (0.6 + 0.4 * Math.sin(petals * a));
-                    points.push({x: cx + r * Math.cos(a), y: cy + r * Math.sin(a)});
-                }
-                break;
-            }
-            case 'butterfly': {
-                for (let i = 0; i < steps; i++) {
-                    const t = i / steps * Math.PI * 2;
-                    const r = size * (0.7 + 0.3 * Math.sin(3 * t));
-                    points.push({x: cx + r * Math.cos(t) * 0.7, y: cy + r * Math.sin(t) * 0.5});
-                }
-                break;
-            }
-            case 'diamond': {
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const c = Math.floor(p * 4);
-                    const cp = (p * 4) - c;
-                    const a = (c / 4) * Math.PI * 2 + Math.PI / 4;
-                    const na = ((c + 1) / 4) * Math.PI * 2 + Math.PI / 4;
-                    points.push({
-                        x: cx + size * 0.8 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
-                        y: cy + size * 0.8 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
-                    });
-                }
-                break;
-            }
-            case 'moon': {
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    const r = size * (0.5 + 0.5 * Math.sin(a));
-                    points.push({x: cx + r * Math.cos(a) * 0.8, y: cy + r * Math.sin(a) * 0.8});
-                }
-                break;
-            }
-            case 'spiral': {
-                const turns = 2 + Math.floor(this.level / 20);
-                for (let i = 0; i < steps * 2; i++) {
-                    const p = i / (steps * 2);
-                    const a = p * Math.PI * 2 * turns;
-                    const r = size * 0.1 + size * 0.8 * p;
-                    points.push({x: cx + r * Math.cos(a), y: cy + r * Math.sin(a)});
-                }
-                break;
-            }
-            default: {
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    points.push({x: cx + size * Math.cos(a), y: cy + size * Math.sin(a)});
-                }
-            }
-        }
-        return points;
-    },
-    
-    // --- 更新 ---
-    update(breathFlow) {
-        if (this.isPaused || this.isGameOver) return;
+        // 建立風之繪師的專屬容器 (預設隱藏)
+        const container = document.createElement('div');
+        container.id = 'painterPluginContainer';
+        container.style.display = 'none';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.position = 'relative';
+        container.innerHTML = `
+            <div class="painter-canvas-area" style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;background:#fdf6f0;border-radius:8px;padding:20px;">
+                <div class="watercolor-bg"></div>
+                <div class="easel-frame"></div>
+                <canvas id="painterCanvas" style="border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.1);background:#ffffff;width:100%;height:100%;"></canvas>
+            </div>
+        `;
         
-        // 休息狀態
-        if (this.isResting) {
-            this.restTimer--;
-            if (this.restTimer <= 0) {
-                this.isResting = false;
-                this.shapeIdx++;
-                this.generateShape();
-                showNotification('🎨 繼續作畫！');
-            }
-            return;
-        }
-        
-        const flow = Math.abs(breathFlow);
-        const exhale = breathFlow < 0;
-        
-        if (exhale && flow > 3) {
-            this.isDrawing = true;
-            this.brushSize = Math.min(4 + flow / 4, 22);
-            this.brushAlpha = Math.min(1, 0.3 + flow / 40);
-            if (this.hasPalette) {
-                const hue = (Date.now() / 50 + this.level * 10) % 360;
-                this.brushColor = `hsl(${hue}, 70%, 55%)`;
+        // 找到 gameContainer 並插入
+        const gameContainer = document.getElementById('gameContainer');
+        if (gameContainer) {
+            // 在 start-prompt-overlay 後面插入
+            const prompt = document.getElementById('gameStartPrompt');
+            if (prompt) {
+                prompt.parentNode.insertBefore(container, prompt.nextSibling);
             } else {
-                const colors = ['#8B6914', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#D35400'];
-                this.brushColor = colors[Math.floor((this.level - 1) / 15) % colors.length];
+                gameContainer.appendChild(container);
             }
-            this.drawAlongPath(flow);
-        } else {
-            this.isDrawing = false;
-        }
-        this.updateParticles();
-        this.updateItems();
-        if (this.paletteTimer > 0) this.paletteTimer--;
-        if (this.fineBrushTimer > 0) this.fineBrushTimer--;
-        if (this.hp <= 0) this.triggerGameOver();
-        this.updateUI();
-    },
-    
-    drawAlongPath(flow) {
-        if (this.currentStroke >= this.strokesPerPainting) return;
-        const pts = this.strokePoints[this.currentStroke];
-        if (!pts || pts.length === 0) { this.currentStroke++; this.strokeProgress = 0; return; }
-        const speed = Math.min(0.8 + flow / 40, 3.0);
-        this.strokeProgress += speed / pts.length;
-        const toDraw = Math.floor(this.strokeProgress * pts.length);
-        for (let i = this.drawPoints.length; i < toDraw && i < pts.length; i++) {
-            const p = pts[i];
-            if (p) {
-                this.drawPoints.push({
-                    x: p.x, y: p.y,
-                    size: this.brushSize,
-                    alpha: this.brushAlpha,
-                    color: this.brushColor
-                });
-                this.brushX = p.x;
-                this.brushY = p.y;
-            }
-        }
-        if (Math.random() < 0.2 && this.drawPoints.length > 0) {
-            const last = this.drawPoints[this.drawPoints.length - 1];
-            this.particles.push({
-                x: last.x + (Math.random() - 0.5) * 8,
-                y: last.y + (Math.random() - 0.5) * 8,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5 - 0.5,
-                size: 1 + Math.random() * 3,
-                color: this.brushColor,
-                life: 1,
-                decay: 0.01 + Math.random() * 0.02
-            });
-        }
-        if (this.strokeProgress >= 1) this.finishStroke();
-    },
-    
-    finishStroke() {
-        this.currentStroke++;
-        this.strokeProgress = 0;
-        if (this.drawPoints.length > 0) {
-            const last = this.drawPoints[this.drawPoints.length - 1];
-            this.splash(last.x, last.y, this.brushColor);
-        }
-        playSound('buff');
-        if (this.currentStroke >= this.strokesPerPainting) {
-            this.completePainting();
-        } else {
-            showNotification(`🖌️ 第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆`);
-        }
-        this.updateUI();
-    },
-    
-    completePainting() {
-        this.paintings++;
-        this.currentStroke = 0;
-        this.strokeProgress = 0;
-        this.drawPoints = [];
-        for (let i = 0; i < 50; i++) {
-            const a = Math.random() * Math.PI * 2;
-            const sp = 2 + Math.random() * 6;
-            this.particles.push({
-                x: this.brushX, y: this.brushY,
-                vx: Math.cos(a) * sp,
-                vy: Math.sin(a) * sp - 1,
-                size: 2 + Math.random() * 5,
-                color: ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#8e44ad'][Math.floor(Math.random() * 5)],
-                life: 1,
-                decay: 0.005 + Math.random() * 0.015
-            });
-        }
-        playSound('special');
-        this.level++;
-        this.updateStrokeCount();
-        // 進入休息
-        this.isResting = true;
-        this.restTimer = this.restDuration;
-        showNotification(`🎨 完成第 ${this.paintings} 幅畫！休息 1.5 秒`);
-        if (this.level % 10 === 0) {
-            this.hp = Math.min(this.maxHp, this.hp + 20);
-            showNotification(`🎉 第 ${this.level} 關！HP +20！`);
-        }
-        if (this.level > this.maxLevel) { this.triggerWin(); return; }
-        this.updateUI();
-    },
-    
-    splash(x, y, c) {
-        for (let i = 0; i < 25; i++) {
-            const a = Math.random() * Math.PI * 2;
-            const sp = 2 + Math.random() * 5;
-            this.particles.push({
-                x, y,
-                vx: Math.cos(a) * sp,
-                vy: Math.sin(a) * sp - 1,
-                size: 2 + Math.random() * 4,
-                color: c,
-                life: 1,
-                decay: 0.008 + Math.random() * 0.015
-            });
-        }
-    },
-    
-    updateParticles() {
-        for (let p of this.particles) {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.05;
-            p.life -= p.decay;
-        }
-        this.particles = this.particles.filter(p => p.life > 0);
-    },
-    
-    updateItems() {
-        const canvas = document.getElementById('gameCanvas');
-        const w = canvas?.width || 800, h = canvas?.height || 450;
-        if (Math.random() < 0.001) {
-            const type = Math.random() < 0.5 ? 'palette' : 'fineBrush';
-            this.items.push({
-                type,
-                x: 50 + Math.random() * (w - 100),
-                y: 50 + Math.random() * (h - 100),
-                radius: 20,
-                life: 300
-            });
-        }
-        for (let item of this.items) {
-            item.life--;
-            const d = Math.hypot(item.x - this.brushX, item.y - this.brushY);
-            if (d < item.radius + 15) {
-                if (item.type === 'palette') {
-                    this.hasPalette = true;
-                    this.paletteTimer = 600;
-                    playSound('buff');
-                    showNotification('🎨 調色盤！');
-                } else if (item.type === 'fineBrush') {
-                    this.hasFineBrush = true;
-                    this.fineBrushTimer = 600;
-                    playSound('buff');
-                    showNotification('🖌️ 細筆！');
-                }
-                item.life = 0;
-            }
-        }
-        this.items = this.items.filter(i => i.life > 0);
-    },
-    
-    updateUI() {
-        const el1 = document.getElementById('painterLevel');
-        if (el1) el1.textContent = `${this.level}/${this.maxLevel}`;
-        const el2 = document.getElementById('painterPaintings');
-        if (el2) el2.textContent = this.paintings;
-        const el3 = document.getElementById('painterStroke');
-        if (el3) el3.textContent = `${this.currentStroke + 1}/${this.strokesPerPainting}`;
-        const el4 = document.getElementById('painterErrors');
-        if (el4) el4.textContent = `${this.errors}/${this.maxErrors}`;
-        const hpFill = document.getElementById('hpFill');
-        if (hpFill) hpFill.style.width = `${(this.hp / this.maxHp) * 100}%`;
-        const fill = document.getElementById('painterProgressFill');
-        if (fill) fill.style.width = `${Math.min(this.strokeProgress * 100, 100)}%`;
-        const need = document.getElementById('painterStrokesNeeded');
-        if (need) need.textContent = this.strokesPerPainting;
-        // 更新形狀名稱
-        const nameEl = document.getElementById('painterShapeName');
-        if (nameEl && this.shapePath.length > 0) {
-            const type = this.shapeTypes[this.shapeIdx % this.shapeTypes.length];
-            nameEl.textContent = this.shapeNames[type] || '未知';
-        }
-    },
-    
-    // --- 渲染 ---
-    render() {
-        const canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
-        const w = canvas.width, h = canvas.height;
-        
-        // 背景
-        const grad = canvas.getContext('2d').createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, '#fdf6f0');
-        grad.addColorStop(1, '#f5ece4');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-        
-        // 紙紋理
-        for (let i = 0; i < 60; i++) {
-            ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
-            ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
-        }
-        
-        // 畫框
-        ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(15, 15, w - 30, h - 30);
-        
-        // 目標形狀
-        if (this.shapePath.length > 0) {
-            ctx.save();
-            const glow = 0.3 + 0.2 * Math.sin(Date.now() / 1000);
-            ctx.shadowColor = '#8B6914';
-            ctx.shadowBlur = 20 * glow;
-            ctx.strokeStyle = `rgba(139, 105, 20, ${0.2 + 0.1 * Math.sin(Date.now() / 1500)})`;
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([6, 8]);
-            ctx.beginPath();
-            ctx.moveTo(this.shapePath[0].x, this.shapePath[0].y);
-            for (let i = 1; i < this.shapePath.length; i++) {
-                ctx.lineTo(this.shapePath[i].x, this.shapePath[i].y);
-            }
-            ctx.closePath();
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-        }
-        
-        // 筆觸
-        for (let p of this.drawPoints) {
-            ctx.save();
-            ctx.globalAlpha = p.alpha || 0.8;
-            ctx.fillStyle = p.color || '#8B6914';
-            ctx.shadowColor = p.color || '#8B6914';
-            ctx.shadowBlur = 8;
-            const size = Math.max(p.size || 4, 4);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-        
-        // 畫筆
-        if (this.isDrawing) {
-            ctx.save();
-            ctx.shadowColor = this.brushColor;
-            ctx.shadowBlur = 30;
-            ctx.globalAlpha = this.brushAlpha;
-            ctx.fillStyle = this.brushColor;
-            ctx.beginPath();
-            ctx.arc(this.brushX, this.brushY, this.brushSize, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        } else {
-            ctx.save();
-            ctx.strokeStyle = 'rgba(92, 61, 46, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]);
-            const pulse = 15 + 5 * Math.sin(Date.now() / 500);
-            ctx.beginPath();
-            ctx.arc(this.brushX, this.brushY, pulse, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-        }
-        
-        // 粒子
-        for (let p of this.particles) {
-            ctx.save();
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-        
-        // 道具
-        for (let item of this.items) {
-            const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
-            ctx.save();
-            ctx.translate(item.x, item.y);
-            ctx.scale(pulse, pulse);
-            ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
-            ctx.shadowBlur = 20;
-            ctx.font = '28px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
-            ctx.restore();
-        }
-        
-        // 休息狀態
-        if (this.isResting) {
-            ctx.save();
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 32px Georgia, serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('⏳ 休息中...', w/2, h/2 - 20);
-            ctx.font = '16px Georgia, serif';
-            ctx.fillStyle = '#f1c40f';
-            ctx.fillText(`${Math.ceil(this.restTimer / 60) + 1}s`, w/2, h/2 + 40);
-            ctx.restore();
-        }
-        
-        // 進度條
-        const px = 50, py = h - 35, pw = w - 100, ph = 8;
-        ctx.fillStyle = 'rgba(139, 115, 85, 0.15)';
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(px, py, pw, ph, 4);
-        else { ctx.rect(px, py, pw, ph); }
-        ctx.fill();
-        const pct = this.strokeProgress;
-        ctx.fillStyle = '#8B6914';
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(px, py, pw * pct, ph, 4);
-        else { ctx.rect(px, py, pw * pct, ph); }
-        ctx.fill();
-        ctx.fillStyle = 'rgba(92, 61, 46, 0.4)';
-        ctx.font = '10px Georgia, serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`第${this.currentStroke + 1}/${this.strokesPerPainting}筆 ${Math.round(pct * 100)}%`, w / 2, py - 4);
-        
-        // 頂部標題
-        ctx.fillStyle = 'rgba(92, 61, 46, 0.25)';
-        ctx.font = '12px Georgia, serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        const type = this.shapeTypes[this.shapeIdx % this.shapeTypes.length];
-        ctx.fillText(`🎨 ${this.shapeNames[type] || '繪畫'}  |  關卡 ${this.level}  |  筆畫 ${this.strokesPerPainting}`, w / 2, 18);
-    },
-    
-    // --- 遊戲結束 ---
-    triggerGameOver() {
-        this.isGameOver = true;
-        this.isPlaying = false;
-        this.stopMusic();
-        playSound('hit');
-        document.getElementById('finalScore').textContent = this.paintings;
-        document.getElementById('gameOverMessage').textContent = `到達第 ${this.level} 關`;
-        document.getElementById('gameOverScreen').style.display = 'flex';
-        isGameOver = true;
-        isGameRunning = false;
-    },
-    
-    triggerWin() {
-        this.isGameOver = true;
-        this.isPlaying = false;
-        this.stopMusic();
-        playSound('special');
-        document.getElementById('winMessage').textContent = `🎉 你完成了所有 ${this.maxLevel} 關！`;
-        document.getElementById('winScreen').style.display = 'flex';
-        isGameOver = true;
-        isGameRunning = false;
-    }
-};
-
-// ============================================================
-// 4. 遊戲切換函數
-// ============================================================
-function switchGameMode(mode) {
-    // 停止風之繪師的音樂
-    PainterGame.stopMusic();
-    
-    // 如果正在運行風之繪師的動畫循環，停止它
-    if (painterAnimId) {
-        cancelAnimationFrame(painterAnimId);
-        painterAnimId = null;
-    }
-    painterGameRunning = false;
-    
-    currentGameMode = mode;
-    
-    if (mode === 'painter') {
-        // ===== 切換到風之繪師 =====
-        console.log('🎨 切換到風之繪師');
-        
-        // 更新HUD
-        const hud = document.getElementById('gameHUD');
-        if (hud) {
-            hud.innerHTML = `
-                🎨 關卡: <span id="painterLevel">1/100</span>
-                | 🖼️ 畫作: <span id="painterPaintings">0</span>
-                | 🖌️ 筆觸: <span id="painterStroke">0/1</span>
-                | ❌ 失誤: <span id="painterErrors">0/5</span>
-                | <span class="level-progress"><span class="level-progress-fill" id="painterProgressFill" style="width:1%;"></span></span>
-                | <span id="painterShapeName">⭕ 圓形</span>
-                | <span id="painterStrokesNeeded" style="display:none;">1</span>
-            `;
-        }
-        
-        // 更新操控說明
-        const guideTitle = document.getElementById('guideTitle');
-        if (guideTitle) guideTitle.textContent = '🎨 風之繪師 操控說明';
-        const guideContent = document.getElementById('guideContent');
-        if (guideContent) {
-            guideContent.innerHTML = `
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">吸氣 → 暫停繪畫</span>
-                </div>
-                <div class="divider"></div>
-                <div class="key-row">
-                    <span class="key secondary">↑↓</span>
-                    <span class="action">微調畫筆位置</span>
-                </div>
-                <div class="key-row">
-                    <span class="key special">Space</span>
-                    <span class="action">暫停 / 繼續</span>
-                </div>
-                <div class="divider"></div>
-                <div class="priority-note">
-                    ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
-                </div>
-                <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
-                    🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
-                </div>
-                <div class="priority-note" style="border-top-color:#2ecc71; color:#2ecc71;">
-                    ⏳ 每完成一幅畫休息1.5秒
-                </div>
-            `;
         }
         
         // 初始化風之繪師
-        PainterGame.init();
-        PainterGame.isPlaying = true;
+        initPainterGame();
+    }
+    
+    // ============================================================
+    // 風之繪師 - 遊戲引擎
+    // ============================================================
+    function initPainterGame() {
+        // 獲取畫布
+        const canvas = document.getElementById('painterCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         
-        // 重置
+        // 遊戲狀態
+        const state = {
+            level: 1,
+            maxLevel: 100,
+            hp: 100,
+            maxHp: 100,
+            isPlaying: false,
+            isPaused: false,
+            isGameOver: false,
+            brushX: 0,
+            brushY: 0,
+            brushSize: 4,
+            brushAlpha: 0.8,
+            brushColor: '#8B6914',
+            isDrawing: false,
+            drawPoints: [],
+            strokeProgress: 0,
+            strokePoints: [],
+            strokesPerPainting: 1,
+            currentStroke: 0,
+            shapePath: [],
+            shapeIdx: 0,
+            shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
+            particles: [],
+            items: [],
+            hasPalette: false,
+            hasFineBrush: false,
+            paletteTimer: 0,
+            fineBrushTimer: 0,
+            paintings: 0,
+            errors: 0,
+            maxErrors: 5,
+            isResting: false,
+            restTimer: 0,
+            restDuration: 90,
+            musicTimer: null,
+            musicStep: 0,
+            musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319],
+            shapeNames: {
+                'circle': '⭕ 圓形', 'square': '⬜ 方形', 'triangle': '🔺 三角形',
+                'star': '⭐ 星星', 'heart': '❤️ 愛心', 'flower': '🌸 花朵',
+                'butterfly': '🦋 蝴蝶', 'diamond': '💎 鑽石', 'moon': '🌙 月亮', 'spiral': '🌀 螺旋'
+            },
+            animId: null
+        };
+        
+        // --- 初始化 ---
+        function init() {
+            state.level = 1;
+            state.hp = state.maxHp;
+            state.isPlaying = false;
+            state.isPaused = false;
+            state.isGameOver = false;
+            state.drawPoints = [];
+            state.particles = [];
+            state.items = [];
+            state.paintings = 0;
+            state.errors = 0;
+            state.maxErrors = 5;
+            state.hasPalette = false;
+            state.hasFineBrush = false;
+            state.paletteTimer = 0;
+            state.fineBrushTimer = 0;
+            state.strokeProgress = 0;
+            state.currentStroke = 0;
+            state.isResting = false;
+            state.restTimer = 0;
+            state.shapeIdx = 0;
+            
+            resizeCanvas();
+            updateStrokeCount();
+            generateShape();
+            state.brushX = canvas.width / 2;
+            state.brushY = canvas.height / 2;
+            updateUI();
+            startMusic();
+        }
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            if (container) {
+                const w = container.clientWidth - 40;
+                const h = container.clientHeight - 40;
+                canvas.width = w || 600;
+                canvas.height = h || 400;
+                canvas.style.width = (w || 600) + 'px';
+                canvas.style.height = (h || 400) + 'px';
+            }
+        }
+        
+        // --- 筆畫數 ---
+        function updateStrokeCount() {
+            const lv = state.level;
+            if (lv <= 20) state.strokesPerPainting = 1;
+            else if (lv <= 40) state.strokesPerPainting = 2;
+            else if (lv <= 60) state.strokesPerPainting = 3;
+            else if (lv <= 80) state.strokesPerPainting = 4;
+            else state.strokesPerPainting = 5;
+            state.currentStroke = 0;
+            state.strokeProgress = 0;
+        }
+        
+        // --- 生成形狀 ---
+        function generateShape() {
+            const w = canvas.width, h = canvas.height;
+            const cx = w / 2, cy = h / 2;
+            const size = Math.min(w, h) * 0.32 * (1 + (state.level - 1) * 0.002);
+            const cnt = Math.min(Math.floor(state.level / 8) + 1, state.shapeTypes.length);
+            const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
+            state.shapePath = generateShapePoints(type, cx, cy, Math.min(size, Math.min(w, h) * 0.42));
+            state.strokePoints = [];
+            state.drawPoints = [];
+            state.strokeProgress = 0;
+            state.currentStroke = 0;
+            const total = state.shapePath.length;
+            const per = Math.floor(total / state.strokesPerPainting);
+            for (let i = 0; i < state.strokesPerPainting; i++) {
+                const start = i * per;
+                const end = (i === state.strokesPerPainting - 1) ? total : (i + 1) * per;
+                state.strokePoints.push(state.shapePath.slice(start, end));
+            }
+            const remain = total - state.strokesPerPainting * per;
+            if (remain > 0 && state.strokePoints.length > 0) {
+                const last = state.strokePoints[state.strokePoints.length - 1];
+                for (let i = total - remain; i < total; i++) last.push(state.shapePath[i]);
+            }
+            // 更新形狀名稱
+            const nameEl = document.getElementById('painterShapeName');
+            if (nameEl) nameEl.textContent = state.shapeNames[type] || '未知';
+            updateUI();
+        }
+        
+        function generateShapePoints(type, cx, cy, size) {
+            const points = [];
+            const steps = 80 + Math.floor(state.level / 2);
+            switch(type) {
+                case 'circle':
+                    for (let i = 0; i < steps; i++) {
+                        const a = i / steps * Math.PI * 2;
+                        points.push({x: cx + size * Math.cos(a), y: cy + size * Math.sin(a)});
+                    }
+                    break;
+                case 'square': {
+                    const hs = size * 0.7;
+                    for (let i = 0; i < steps; i++) {
+                        const p = i / steps;
+                        const c = Math.floor(p * 4);
+                        const cp = (p * 4) - c;
+                        const a = (c / 4) * Math.PI * 2;
+                        const na = ((c + 1) / 4) * Math.PI * 2;
+                        points.push({
+                            x: cx + hs * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
+                            y: cy + hs * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
+                        });
+                    }
+                    break;
+                }
+                case 'triangle': {
+                    for (let i = 0; i < steps; i++) {
+                        const p = i / steps;
+                        const c = Math.floor(p * 3);
+                        const cp = (p * 3) - c;
+                        const a = (c / 3) * Math.PI * 2 - Math.PI / 2;
+                        const na = ((c + 1) / 3) * Math.PI * 2 - Math.PI / 2;
+                        points.push({
+                            x: cx + size * 0.7 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
+                            y: cy + size * 0.7 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
+                        });
+                    }
+                    break;
+                }
+                case 'star': {
+                    for (let i = 0; i < steps; i++) {
+                        const p = i / steps;
+                        const a = p * Math.PI * 2 - Math.PI / 2;
+                        const r = (Math.floor(p * 10) % 2 === 0) ? size : size * 0.4;
+                        points.push({x: cx + r * Math.cos(a), y: cy + r * Math.sin(a)});
+                    }
+                    break;
+                }
+                case 'heart': {
+                    for (let i = 0; i < steps; i++) {
+                        const t = i / steps * Math.PI * 2;
+                        points.push({
+                            x: cx + size * 0.6 * 16 * Math.pow(Math.sin(t), 3),
+                            y: cy - size * 0.6 * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
+                        });
+                    }
+                    break;
+                }
+                case 'flower': {
+                    const petals = 5 + Math.floor(state.level / 15);
+                    for (let i = 0; i < steps; i++) {
+                        const a = i / steps * Math.PI * 2;
+                        const r = size * (0.6 + 0.4 * Math.sin(petals * a));
+                        points.push({x: cx + r * Math.cos(a), y: cy + r * Math.sin(a)});
+                    }
+                    break;
+                }
+                case 'butterfly': {
+                    for (let i = 0; i < steps; i++) {
+                        const t = i / steps * Math.PI * 2;
+                        const r = size * (0.7 + 0.3 * Math.sin(3 * t));
+                        points.push({x: cx + r * Math.cos(t) * 0.7, y: cy + r * Math.sin(t) * 0.5});
+                    }
+                    break;
+                }
+                case 'diamond': {
+                    for (let i = 0; i < steps; i++) {
+                        const p = i / steps;
+                        const c = Math.floor(p * 4);
+                        const cp = (p * 4) - c;
+                        const a = (c / 4) * Math.PI * 2 + Math.PI / 4;
+                        const na = ((c + 1) / 4) * Math.PI * 2 + Math.PI / 4;
+                        points.push({
+                            x: cx + size * 0.8 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
+                            y: cy + size * 0.8 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
+                        });
+                    }
+                    break;
+                }
+                case 'moon': {
+                    for (let i = 0; i < steps; i++) {
+                        const a = i / steps * Math.PI * 2;
+                        const r = size * (0.5 + 0.5 * Math.sin(a));
+                        points.push({x: cx + r * Math.cos(a) * 0.8, y: cy + r * Math.sin(a) * 0.8});
+                    }
+                    break;
+                }
+                case 'spiral': {
+                    const turns = 2 + Math.floor(state.level / 20);
+                    for (let i = 0; i < steps * 2; i++) {
+                        const p = i / (steps * 2);
+                        const a = p * Math.PI * 2 * turns;
+                        const r = size * 0.1 + size * 0.8 * p;
+                        points.push({x: cx + r * Math.cos(a), y: cy + r * Math.sin(a)});
+                    }
+                    break;
+                }
+                default: {
+                    for (let i = 0; i < steps; i++) {
+                        const a = i / steps * Math.PI * 2;
+                        points.push({x: cx + size * Math.cos(a), y: cy + size * Math.sin(a)});
+                    }
+                }
+            }
+            return points;
+        }
+        
+        // --- 更新 ---
+        function update(breathFlow) {
+            if (state.isPaused || state.isGameOver) return;
+            
+            // 休息狀態
+            if (state.isResting) {
+                state.restTimer--;
+                if (state.restTimer <= 0) {
+                    state.isResting = false;
+                    state.shapeIdx++;
+                    generateShape();
+                    showNotification('🎨 繼續作畫！');
+                }
+                return;
+            }
+            
+            const flow = Math.abs(breathFlow);
+            const exhale = breathFlow < 0;
+            
+            if (exhale && flow > 3) {
+                state.isDrawing = true;
+                state.brushSize = Math.min(4 + flow / 4, 22);
+                state.brushAlpha = Math.min(1, 0.3 + flow / 40);
+                if (state.hasPalette) {
+                    const hue = (Date.now() / 50 + state.level * 10) % 360;
+                    state.brushColor = `hsl(${hue}, 70%, 55%)`;
+                } else {
+                    const colors = ['#8B6914', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#D35400'];
+                    state.brushColor = colors[Math.floor((state.level - 1) / 15) % colors.length];
+                }
+                drawAlongPath(flow);
+            } else {
+                state.isDrawing = false;
+            }
+            updateParticles();
+            updateItems();
+            if (state.paletteTimer > 0) state.paletteTimer--;
+            if (state.fineBrushTimer > 0) state.fineBrushTimer--;
+            if (state.hp <= 0) triggerGameOver();
+            updateUI();
+        }
+        
+        function drawAlongPath(flow) {
+            if (state.currentStroke >= state.strokesPerPainting) return;
+            const pts = state.strokePoints[state.currentStroke];
+            if (!pts || pts.length === 0) { state.currentStroke++; state.strokeProgress = 0; return; }
+            const speed = Math.min(0.8 + flow / 40, 3.0);
+            state.strokeProgress += speed / pts.length;
+            const toDraw = Math.floor(state.strokeProgress * pts.length);
+            for (let i = state.drawPoints.length; i < toDraw && i < pts.length; i++) {
+                const p = pts[i];
+                if (p) {
+                    state.drawPoints.push({
+                        x: p.x, y: p.y,
+                        size: state.brushSize,
+                        alpha: state.brushAlpha,
+                        color: state.brushColor
+                    });
+                    state.brushX = p.x;
+                    state.brushY = p.y;
+                }
+            }
+            if (Math.random() < 0.2 && state.drawPoints.length > 0) {
+                const last = state.drawPoints[state.drawPoints.length - 1];
+                state.particles.push({
+                    x: last.x + (Math.random() - 0.5) * 8,
+                    y: last.y + (Math.random() - 0.5) * 8,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5 - 0.5,
+                    size: 1 + Math.random() * 3,
+                    color: state.brushColor,
+                    life: 1,
+                    decay: 0.01 + Math.random() * 0.02
+                });
+            }
+            if (state.strokeProgress >= 1) finishStroke();
+        }
+        
+        function finishStroke() {
+            state.currentStroke++;
+            state.strokeProgress = 0;
+            if (state.drawPoints.length > 0) {
+                const last = state.drawPoints[state.drawPoints.length - 1];
+                splash(last.x, last.y, state.brushColor);
+            }
+            if (typeof playAudioEffect === 'function') playAudioEffect('buff');
+            if (state.currentStroke >= state.strokesPerPainting) {
+                completePainting();
+            } else {
+                showNotification(`🖌️ 第 ${state.currentStroke + 1}/${state.strokesPerPainting} 筆`);
+            }
+            updateUI();
+        }
+        
+        function completePainting() {
+            state.paintings++;
+            state.currentStroke = 0;
+            state.strokeProgress = 0;
+            state.drawPoints = [];
+            for (let i = 0; i < 50; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const sp = 2 + Math.random() * 6;
+                state.particles.push({
+                    x: state.brushX, y: state.brushY,
+                    vx: Math.cos(a) * sp,
+                    vy: Math.sin(a) * sp - 1,
+                    size: 2 + Math.random() * 5,
+                    color: ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#8e44ad'][Math.floor(Math.random() * 5)],
+                    life: 1,
+                    decay: 0.005 + Math.random() * 0.015
+                });
+            }
+            if (typeof playAudioEffect === 'function') playAudioEffect('special');
+            state.level++;
+            updateStrokeCount();
+            // 進入休息
+            state.isResting = true;
+            state.restTimer = state.restDuration;
+            showNotification(`🎨 完成第 ${state.paintings} 幅畫！休息 1.5 秒`);
+            if (state.level % 10 === 0) {
+                state.hp = Math.min(state.maxHp, state.hp + 20);
+                showNotification(`🎉 第 ${state.level} 關！HP +20！`);
+            }
+            if (state.level > state.maxLevel) { triggerWin(); return; }
+            updateUI();
+        }
+        
+        function splash(x, y, c) {
+            for (let i = 0; i < 25; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const sp = 2 + Math.random() * 5;
+                state.particles.push({
+                    x, y,
+                    vx: Math.cos(a) * sp,
+                    vy: Math.sin(a) * sp - 1,
+                    size: 2 + Math.random() * 4,
+                    color: c,
+                    life: 1,
+                    decay: 0.008 + Math.random() * 0.015
+                });
+            }
+        }
+        
+        function updateParticles() {
+            for (let p of state.particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= p.decay;
+            }
+            state.particles = state.particles.filter(p => p.life > 0);
+        }
+        
+        function updateItems() {
+            const w = canvas.width, h = canvas.height;
+            if (Math.random() < 0.001) {
+                const type = Math.random() < 0.5 ? 'palette' : 'fineBrush';
+                state.items.push({
+                    type,
+                    x: 50 + Math.random() * (w - 100),
+                    y: 50 + Math.random() * (h - 100),
+                    radius: 20,
+                    life: 300
+                });
+            }
+            for (let item of state.items) {
+                item.life--;
+                const d = Math.hypot(item.x - state.brushX, item.y - state.brushY);
+                if (d < item.radius + 15) {
+                    if (item.type === 'palette') {
+                        state.hasPalette = true;
+                        state.paletteTimer = 600;
+                        if (typeof playAudioEffect === 'function') playAudioEffect('buff');
+                        showNotification('🎨 調色盤！');
+                    } else if (item.type === 'fineBrush') {
+                        state.hasFineBrush = true;
+                        state.fineBrushTimer = 600;
+                        if (typeof playAudioEffect === 'function') playAudioEffect('buff');
+                        showNotification('🖌️ 細筆！');
+                    }
+                    item.life = 0;
+                }
+            }
+            state.items = state.items.filter(i => i.life > 0);
+        }
+        
+        function updateUI() {
+            const el1 = document.getElementById('painterLevel');
+            if (el1) el1.textContent = `${state.level}/${state.maxLevel}`;
+            const el2 = document.getElementById('painterPaintings');
+            if (el2) el2.textContent = state.paintings;
+            const el3 = document.getElementById('painterStroke');
+            if (el3) el3.textContent = `${state.currentStroke + 1}/${state.strokesPerPainting}`;
+            const el4 = document.getElementById('painterErrors');
+            if (el4) el4.textContent = `${state.errors}/${state.maxErrors}`;
+            const hpFill = document.getElementById('hpFill');
+            if (hpFill) hpFill.style.width = `${(state.hp / state.maxHp) * 100}%`;
+            const fill = document.getElementById('painterProgressFill');
+            if (fill) fill.style.width = `${Math.min(state.strokeProgress * 100, 100)}%`;
+            const need = document.getElementById('painterStrokesNeeded');
+            if (need) need.textContent = state.strokesPerPainting;
+            const nameEl = document.getElementById('painterShapeName');
+            if (nameEl && state.shapePath.length > 0) {
+                const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
+                nameEl.textContent = state.shapeNames[type] || '未知';
+            }
+        }
+        
+        // --- 音樂 ---
+        function startMusic() {
+            stopMusic();
+            if (!document.getElementById('soundToggle')?.checked) return;
+            if (typeof audioCtx === 'undefined') return;
+            state.musicTimer = setInterval(() => {
+                if (state.isPaused || state.isGameOver) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                try {
+                    const now = audioCtx.currentTime;
+                    const note = state.musicNotes[state.musicStep % state.musicNotes.length];
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(note, now);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                    state.musicStep++;
+                } catch(e) {}
+            }, 380);
+        }
+        
+        function stopMusic() {
+            if (state.musicTimer) {
+                clearInterval(state.musicTimer);
+                state.musicTimer = null;
+                state.musicStep = 0;
+            }
+        }
+        
+        // --- 渲染 ---
+        function render() {
+            const w = canvas.width, h = canvas.height;
+            
+            // 背景
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#fdf6f0');
+            grad.addColorStop(1, '#f5ece4');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+            
+            // 紙紋理
+            for (let i = 0; i < 60; i++) {
+                ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
+                ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
+            }
+            
+            // 畫框
+            ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(15, 15, w - 30, h - 30);
+            
+            // 目標形狀
+            if (state.shapePath.length > 0) {
+                ctx.save();
+                const glow = 0.3 + 0.2 * Math.sin(Date.now() / 1000);
+                ctx.shadowColor = '#8B6914';
+                ctx.shadowBlur = 20 * glow;
+                ctx.strokeStyle = `rgba(139, 105, 20, ${0.2 + 0.1 * Math.sin(Date.now() / 1500)})`;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 8]);
+                ctx.beginPath();
+                ctx.moveTo(state.shapePath[0].x, state.shapePath[0].y);
+                for (let i = 1; i < state.shapePath.length; i++) {
+                    ctx.lineTo(state.shapePath[i].x, state.shapePath[i].y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+            
+            // 筆觸
+            for (let p of state.drawPoints) {
+                ctx.save();
+                ctx.globalAlpha = p.alpha || 0.8;
+                ctx.fillStyle = p.color || '#8B6914';
+                ctx.shadowColor = p.color || '#8B6914';
+                ctx.shadowBlur = 8;
+                const size = Math.max(p.size || 4, 4);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // 畫筆
+            if (state.isDrawing) {
+                ctx.save();
+                ctx.shadowColor = state.brushColor;
+                ctx.shadowBlur = 30;
+                ctx.globalAlpha = state.brushAlpha;
+                ctx.fillStyle = state.brushColor;
+                ctx.beginPath();
+                ctx.arc(state.brushX, state.brushY, state.brushSize, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(92, 61, 46, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                const pulse = 15 + 5 * Math.sin(Date.now() / 500);
+                ctx.beginPath();
+                ctx.arc(state.brushX, state.brushY, pulse, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+            
+            // 粒子
+            for (let p of state.particles) {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // 道具
+            for (let item of state.items) {
+                const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                ctx.scale(pulse, pulse);
+                ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
+                ctx.shadowBlur = 20;
+                ctx.font = '28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
+                ctx.restore();
+            }
+            
+            // 休息狀態
+            if (state.isResting) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 32px Georgia, serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('⏳ 休息中...', w/2, h/2 - 20);
+                ctx.font = '16px Georgia, serif';
+                ctx.fillStyle = '#f1c40f';
+                ctx.fillText(`${Math.ceil(state.restTimer / 60) + 1}s`, w/2, h/2 + 40);
+                ctx.restore();
+            }
+            
+            // 進度條
+            const px = 50, py = h - 35, pw = w - 100, ph = 8;
+            ctx.fillStyle = 'rgba(139, 115, 85, 0.15)';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(px, py, pw, ph, 4);
+            else { ctx.rect(px, py, pw, ph); }
+            ctx.fill();
+            const pct = state.strokeProgress;
+            ctx.fillStyle = '#8B6914';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(px, py, pw * pct, ph, 4);
+            else { ctx.rect(px, py, pw * pct, ph); }
+            ctx.fill();
+            ctx.fillStyle = 'rgba(92, 61, 46, 0.4)';
+            ctx.font = '10px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(`第${state.currentStroke + 1}/${state.strokesPerPainting}筆 ${Math.round(pct * 100)}%`, w / 2, py - 4);
+            
+            // 頂部標題
+            ctx.fillStyle = 'rgba(92, 61, 46, 0.25)';
+            ctx.font = '12px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const type = state.shapeTypes[state.shapeIdx % state.shapeTypes.length];
+            ctx.fillText(`🎨 ${state.shapeNames[type] || '繪畫'}  |  關卡 ${state.level}  |  筆畫 ${state.strokesPerPainting}`, w / 2, 18);
+        }
+        
+        // --- 遊戲循環 ---
+        function gameLoop() {
+            if (!state.isPlaying || state.isGameOver) {
+                if (state.isGameOver && state.animId) {
+                    cancelAnimationFrame(state.animId);
+                    state.animId = null;
+                }
+                return;
+            }
+            
+            // 取得呼吸數據
+            let breathFlow = 0;
+            if (typeof isMeasuring !== 'undefined' && isMeasuring && !state.isPaused && !state.isGameOver) {
+                breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+            }
+            
+            update(breathFlow);
+            render();
+            
+            state.animId = requestAnimationFrame(gameLoop);
+        }
+        
+        // --- 遊戲控制 ---
+        function startGame() {
+            if (state.animId) {
+                cancelAnimationFrame(state.animId);
+                state.animId = null;
+            }
+            state.isPlaying = true;
+            state.isPaused = false;
+            state.isGameOver = false;
+            gameLoop();
+        }
+        
+        function stopGame() {
+            state.isPlaying = false;
+            if (state.animId) {
+                cancelAnimationFrame(state.animId);
+                state.animId = null;
+            }
+        }
+        
+        function pauseGame() {
+            state.isPaused = !state.isPaused;
+            if (state.isPaused) {
+                stopMusic();
+            } else {
+                startMusic();
+            }
+        }
+        
+        function triggerGameOver() {
+            state.isGameOver = true;
+            state.isPlaying = false;
+            stopMusic();
+            if (typeof playAudioEffect === 'function') playAudioEffect('hit');
+            document.getElementById('finalScore').textContent = state.paintings;
+            document.getElementById('gameOverMessage').textContent = `到達第 ${state.level} 關`;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            if (typeof isGameOver !== 'undefined') isGameOver = true;
+            if (typeof isGameRunning !== 'undefined') isGameRunning = false;
+        }
+        
+        function triggerWin() {
+            state.isGameOver = true;
+            state.isPlaying = false;
+            stopMusic();
+            if (typeof playAudioEffect === 'function') playAudioEffect('special');
+            document.getElementById('winMessage').textContent = `🎉 你完成了所有 ${state.maxLevel} 關！`;
+            document.getElementById('winScreen').style.display = 'flex';
+            if (typeof isGameOver !== 'undefined') isGameOver = true;
+            if (typeof isGameRunning !== 'undefined') isGameRunning = false;
+        }
+        
+        function showNotification(msg) {
+            const status = document.getElementById('status');
+            if (status) {
+                const orig = status.innerText;
+                status.innerText = `🎯 ${msg}`;
+                status.style.background = '#8e44ad';
+                setTimeout(() => {
+                    status.innerText = orig;
+                    status.style.background = '#1f4e79';
+                }, 2500);
+            }
+        }
+        
+        // --- 對外接口 ---
+        window.PainterGame = {
+            init: init,
+            start: startGame,
+            stop: stopGame,
+            pause: pauseGame,
+            resize: resizeCanvas,
+            getState: function() { return state; },
+            isRunning: function() { return state.isPlaying; }
+        };
+        
+        // 初始化
+        init();
+        
+        console.log('🎨 風之繪師 已載入！');
+    }
+})();
 </script>
+
+<!-- ===== 遊戲切換器 - 加入控制面板 ===== -->
+<script>
+(function() {
+    // 等待 DOM 載入
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addGameSelector);
+    } else {
+        addGameSelector();
+    }
+    
+    function addGameSelector() {
+        const panel = document.querySelector('.control-panel');
+        if (!panel) return;
+        if (document.getElementById('gameSelector')) return;
+        
+        const html = `
+            <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+                🎮 遊戲:
+                <select id="gameSelector" onchange="switchGameMode(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
+                    <option value="flight">✈️ 氣流飛行員</option>
+                    <option value="painter">🎨 風之繪師</option>
+                </select>
+            </label>
+        `;
+        panel.insertAdjacentHTML('beforeend', html);
+    }
+    
+    // 遊戲切換函數
+    window.switchGameMode = function(mode) {
+        // 停止風之繪師
+        if (window.PainterGame) {
+            window.PainterGame.stop();
+        }
+        
+        const container = document.getElementById('painterPluginContainer');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const startPrompt = document.getElementById('gameStartPrompt');
+        const hud = document.getElementById('gameHUD');
+        const guideTitle = document.getElementById('guideTitle');
+        const guideContent = document.getElementById('guideContent');
+        
+        if (mode === 'painter') {
+            // === 風之繪師 ===
+            console.log('🎨 切換到風之繪師');
+            
+            // 隱藏原有遊戲畫布，顯示風之繪師容器
+            if (gameCanvas) gameCanvas.style.display = 'none';
+            if (startPrompt) startPrompt.style.display = 'none';
+            if (container) container.style.display = 'block';
+            
+            // 更新HUD
+            if (hud) {
+                hud.innerHTML = `
+                    🎨 關卡: <span id="painterLevel">1/100</span>
+                    | 🖼️ 畫作: <span id="painterPaintings">0</span>
+                    | 🖌️ 筆觸: <span id="painterStroke">0/1</span>
+                    | ❌ 失誤: <span id="painterErrors">0/5</span>
+                    | <span class="level-progress"><span class="level-progress-fill" id="painterProgressFill" style="width:1%;"></span></span>
+                    | <span id="painterShapeName">⭕ 圓形</span>
+                    | <span id="painterStrokesNeeded" style="display:none;">1</span>
+                `;
+            }
+            
+            // 更新操控說明
+            if (guideTitle) guideTitle.textContent = '🎨 風之繪師 操控說明';
+            if (guideContent) {
+                guideContent.innerHTML = `
+                    <div class="key-row">
+                        <span class="key primary">🌬️</span>
+                        <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
+                    </div>
+                    <div class="key-row">
+                        <span class="key primary">🌬️</span>
+                        <span class="action">吸氣 → 暫停繪畫</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="key-row">
+                        <span class="key secondary">↑↓</span>
+                        <span class="action">微調畫筆位置</span>
+                    </div>
+                    <div class="key-row">
+                        <span class="key special">Space</span>
+                        <span class="action">暫停 / 繼續</span>
+                    </div>
+                    <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
+                        🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
+                    </div>
+                    <div class="priority-note" style="border-top-color:#2ecc71; color:#2ecc71;">
+                        ⏳ 每完成一幅畫休息1.5秒
+                    </div>
+                `;
+            }
+            
+            // 啟動風之繪師
+            if (window.PainterGame) {
+                window.PainterGame.init();
+                window.PainterGame.start();
+            }
+            
+            if (typeof updateStatus === 'function') {
+                updateStatus('🎨 風之繪師');
+            }
+            
+        } else {
+            // === 氣流飛行員 (原有遊戲) ===
+            console.log('✈️ 切換到氣流飛行員');
+            
+            // 顯示原有遊戲畫布，隱藏風之繪師容器
+            if (gameCanvas) gameCanvas.style.display = 'block';
+            if (startPrompt) startPrompt.style.display = 'flex';
+            if (container) container.style.display = 'none';
+            
+            // 恢復原有的HUD (由原有程式碼管理)
+            // 觸發重啟遊戲
+            if (typeof restartGameEngine === 'function') {
+                restartGameEngine();
+            }
+            
+            if (typeof updateStatus === 'function') {
+                updateStatus('✈️ 氣流飛行員');
+            }
+        }
+    };
+    
+    // 監聽視窗大小變化，調整風之繪師畫布
+    window.addEventListener('resize', function() {
+        if (window.PainterGame && window.PainterGame.resize) {
+            window.PainterGame.resize();
+        }
+    });
+    
+    // 監聽測量開關
+    const origToggleMeasure = window.toggleMeasuring;
+    if (origToggleMeasure) {
+        window.toggleMeasuring = function() {
+            origToggleMeasure();
+            // 通知風之繪師
+            if (window.PainterGame && window.PainterGame.isRunning()) {
+                // 測量開啟時確保遊戲運行
+                if (isMeasuring && !window.PainterGame.getState().isPlaying) {
+                    window.PainterGame.start();
+                }
+            }
+        };
+    }
+    
+    console.log('✅ 風之繪師 插件已載入！');
+    console.log('🎮 使用遊戲切換器在「氣流飛行員」和「風之繪師」間切換');
+})();
+</script>
+<!-- ============================================================ -->
+<!-- 風之繪師 新增結束 -->
+<!-- ============================================================ -->
 </body>
 </html>
