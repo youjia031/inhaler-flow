@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <style>
-/* ===== 所有原有樣式保持不變 ===== */
+/* ===== 所有樣式保持不變（省略以節省空間） ===== */
 * { box-sizing: border-box; }
 body {
 font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -727,7 +727,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <!-- ============================================================ -->
 <script>
 // =====================================================
-// 教育引導線
+// 教育引導線 (完整保留)
 // =====================================================
 const EDUCATION_PROGRAM = [
 ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
@@ -800,42 +800,35 @@ let restTimer = null;
 let sessionStartTime = 0;
 
 // =====================================================
-// 遊戲模式定義 - 包含氣流飛行員
+// 遊戲模式定義
 // =====================================================
 const GAME_MODES = {
-    FLIGHT: 'flight',      // 原有的氣流飛行員
-    PAINTER: 'painter',    // 風之繪師
-    CANDLE: 'candle',      // 燭光遠征
-    WIZARD: 'wizard',      // 魔導士破魔
-    DANDELION: 'dandelion',// 蒲公英快遞
-    CRYSTAL: 'crystal'     // 玻璃心大師
+    FLIGHT: 'flight',
+    PAINTER: 'painter',
+    CANDLE: 'candle',
+    WIZARD: 'wizard',
+    DANDELION: 'dandelion',
+    CRYSTAL: 'crystal'
 };
 
-let currentGameMode = GAME_MODES.FLIGHT; // 預設為氣流飛行員
+let currentGameMode = GAME_MODES.FLIGHT;
 
 // =====================================================
-// 氣流飛行員 - 原有的遊戲 (完整保留)
+// 氣流飛行員 - 完整的原有遊戲
 // =====================================================
 let rocket={x:120,y:240,angle:0,radius:18};
 let stars=[], particles=[], collectibles=[], obstacles=[];
 let gameScore=0, gameCombo=0, playerHP=100;
 let hasShield=false, feverTimer=0, magnetTimer=0, doubleScoreTimer=0, slowDebuffTimer=0;
 let bossActive=false, currentBoss=null;
-let bossSkillWarning=null, bossSkillType=null;
-let poisonTimer=0, poisonDamage=0, freezeTimer=0, attackCooldown=0;
-let shieldCharges=0, invincibleActive=false, invincibleTimer=0;
 
-// 原有道具、障礙物、Boss定義
 const ITEM_TYPES = [
-    {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
-    {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
-    {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
-    {type:'magnet', emoji:'🧲', color:'#e74c3c', label:'磁鐵', category:'positive'},
-    {type:'double', emoji:'💎', color:'#9b59b6', label:'雙倍積分', category:'positive'},
-    {type:'fever', emoji:'⚡', color:'#e67e22', label:'FEVER', category:'positive'},
-    {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', category:'attack'},
-    {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', category:'attack'},
-    {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', category:'attack'},
+    {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50},
+    {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25},
+    {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾'},
+    {type:'magnet', emoji:'🧲', color:'#e74c3c', label:'磁鐵'},
+    {type:'double', emoji:'💎', color:'#9b59b6', label:'雙倍積分'},
+    {type:'fever', emoji:'⚡', color:'#e67e22', label:'FEVER'},
 ];
 
 const OBSTACLE_TYPES = [
@@ -846,9 +839,9 @@ const OBSTACLE_TYPES = [
 ];
 
 const BOSS_TYPES = [
-    {type:'boss_fire', name:'🔥 火龍', emoji:'🐉', color:'#e74c3c', hp:200, speed:1.2, radius:30, skills:['火焰吐息']},
-    {type:'boss_ice', name:'❄️ 冰霜巨人', emoji:'🧊', color:'#3498db', hp:300, speed:0.8, radius:35, skills:['冰凍光環']},
-    {type:'boss_shadow', name:'🌑 暗影刺客', emoji:'🗡️', color:'#8e44ad', hp:150, speed:2.0, radius:22, skills:['暗影突襲']},
+    {type:'boss_fire', name:'🔥 火龍', emoji:'🐉', color:'#e74c3c', hp:200, speed:1.2, radius:30},
+    {type:'boss_ice', name:'❄️ 冰霜巨人', emoji:'🧊', color:'#3498db', hp:300, speed:0.8, radius:35},
+    {type:'boss_shadow', name:'🌑 暗影刺客', emoji:'🗡️', color:'#8e44ad', hp:150, speed:2.0, radius:22},
 ];
 
 function initFlightGame() {
@@ -871,6 +864,7 @@ function initFlightGame() {
     particles = [];
     stars = [];
     initStars();
+    updateFlightHUD();
 }
 
 function initStars() {
@@ -883,94 +877,24 @@ function initStars() {
     }
 }
 
-function drawRocket(x, y, angle) {
-    if (isNaN(x) || isNaN(y) || isNaN(angle)) { return; }
-    gameCtx.save();
-    gameCtx.translate(x, y);
-    gameCtx.rotate(angle);
-    gameCtx.fillStyle = '#ecf0f1';
-    gameCtx.beginPath();
-    gameCtx.moveTo(20, 0);
-    gameCtx.lineTo(-12, -10);
-    gameCtx.lineTo(-8, 0);
-    gameCtx.lineTo(-12, 10);
-    gameCtx.closePath();
-    gameCtx.fill();
-    gameCtx.fillStyle = '#3498db';
-    gameCtx.beginPath();
-    gameCtx.moveTo(-4, -6);
-    gameCtx.lineTo(-14, -14);
-    gameCtx.lineTo(-8, 0);
-    gameCtx.lineTo(-14, 14);
-    gameCtx.lineTo(-4, 6);
-    gameCtx.closePath();
-    gameCtx.fill();
-    gameCtx.restore();
+function updateFlightHUD() {
+    document.getElementById('gameScore').textContent = gameScore;
+    document.getElementById('gameCombo').textContent = gameCombo;
+    document.getElementById('hpFill').style.width = `${playerHP}%`;
+    document.getElementById('feverBadge').style.display = feverTimer > 0 ? 'inline' : 'none';
+    document.getElementById('shieldBadge').style.display = hasShield ? 'inline' : 'none';
+    document.getElementById('magnetBadge').style.display = magnetTimer > 0 ? 'inline' : 'none';
+    document.getElementById('doubleBadge').style.display = doubleScoreTimer > 0 ? 'inline' : 'none';
+    document.getElementById('slowBadge').style.display = slowDebuffTimer > 0 ? 'inline' : 'none';
+    document.getElementById('bossWarning').style.display = bossActive ? 'inline' : 'none';
 }
 
-function drawObstacle(ctx, x, y, type, radius) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = radius || 14;
-    const obs = OBSTACLE_TYPES.find(o => o.type === type);
-    const emoji = obs?.emoji || '💥';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = 'white';
-    ctx.font = `${r * 1.2}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(emoji, 0, 1);
-    ctx.shadowBlur = 0;
-    ctx.restore();
-}
-
-function drawItem(ctx, x, y, type, radius) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = radius || 14;
-    const item = ITEM_TYPES.find(i => i.type === type);
-    const emoji = item?.emoji || '?';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = 'white';
-    ctx.font = `${r * 1.5}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(emoji, 0, 1);
-    ctx.shadowBlur = 0;
-    ctx.restore();
-}
-
-function drawBoss(ctx, x, y, boss) {
-    ctx.save();
-    ctx.translate(x, y);
-    const r = boss.radius || 30;
-    ctx.shadowColor = boss.color || '#8e44ad';
-    ctx.shadowBlur = 40;
-    ctx.fillStyle = boss.color || '#8e44ad';
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'white';
-    ctx.font = `${r * 0.7}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(boss.emoji || '👹', 0, 0);
-    ctx.restore();
-}
-
-// =====================================================
-// 氣流飛行員 - 更新與渲染
-// =====================================================
 function updateFlightGame(breathFlow) {
     if (isPaused || isGameOver) return;
     
     const w = gameCanvas.width || 800;
     const h = gameCanvas.height || 480;
     const flowMag = Math.abs(breathFlow);
-    const isExhaling = breathFlow < 0;
     const speedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
     const diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
     const diffMult = (diff === 'hard') ? 1.3 : (diff === 'easy' ? 0.85 : 1.0);
@@ -1019,10 +943,19 @@ function updateFlightGame(breathFlow) {
     // 更新道具
     collectibles.forEach(c => {
         c.x -= c.baseSpeed * userSpeedMult;
+        if (magnetTimer > 0) {
+            let d = Math.hypot(rocket.x - c.x, rocket.y - c.y);
+            if (d < 200) { c.x += (rocket.x - c.x) * 0.08; c.y += (rocket.y - c.y) * 0.08; }
+        }
         drawItem(gameCtx, c.x, c.y, c.type, c.radius);
         let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
         if (dist < c.radius + rocket.radius) {
-            if (c.type === 'coin') { gameScore += 50; gameCombo++; playAudioEffect('coin'); }
+            if (c.type === 'coin') { 
+                let bonus = (doubleScoreTimer > 0) ? 2 : 1;
+                gameScore += 50 * bonus; 
+                gameCombo++; 
+                playAudioEffect('coin'); 
+            }
             else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff'); }
             else if (c.type === 'shield') { hasShield = true; playAudioEffect('buff'); }
             else if (c.type === 'magnet') { magnetTimer = 350; playAudioEffect('buff'); }
@@ -1040,7 +973,11 @@ function updateFlightGame(breathFlow) {
         let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
         if (dist < o.radius + rocket.radius) {
             if (hasShield) { hasShield = false; }
-            else { playerHP = Math.max(0, playerHP - (o.damage || 10)); }
+            else { 
+                let dmg = (diff === 'easy') ? Math.floor((o.damage || 10) * 0.6) : (diff === 'hard' ? Math.floor((o.damage || 10) * 1.5) : (o.damage || 10));
+                playerHP = Math.max(0, playerHP - dmg); 
+                gameCombo = 0;
+            }
             o.hit = true;
             playAudioEffect('hit');
         }
@@ -1051,7 +988,7 @@ function updateFlightGame(breathFlow) {
     if (!bossActive && Math.random() < 0.002 * userSpeedMult) {
         const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
         const boss = BOSS_TYPES[bossIdx];
-        currentBoss = {...boss, x: w + 50, y: Math.random() * (h - 100) + 50, hp: boss.hp, maxHp: boss.hp, skillTimer: 0};
+        currentBoss = {...boss, x: w + 50, y: Math.random() * (h - 100) + 50, hp: boss.hp, maxHp: boss.hp};
         bossActive = true;
         playAudioEffect('boss');
     }
@@ -1079,19 +1016,10 @@ function updateFlightGame(breathFlow) {
     if (doubleScoreTimer > 0) doubleScoreTimer--;
     if (slowDebuffTimer > 0) slowDebuffTimer--;
     
-    // 更新UI
-    document.getElementById('gameScore').textContent = gameScore;
-    document.getElementById('gameCombo').textContent = gameCombo;
-    document.getElementById('hpFill').style.width = `${playerHP}%`;
-    document.getElementById('feverBadge').style.display = feverTimer > 0 ? 'inline' : 'none';
-    document.getElementById('shieldBadge').style.display = hasShield ? 'inline' : 'none';
-    document.getElementById('magnetBadge').style.display = magnetTimer > 0 ? 'inline' : 'none';
-    document.getElementById('doubleBadge').style.display = doubleScoreTimer > 0 ? 'inline' : 'none';
-    document.getElementById('slowBadge').style.display = slowDebuffTimer > 0 ? 'inline' : 'none';
-    document.getElementById('bossWarning').style.display = bossActive ? 'inline' : 'none';
+    updateFlightHUD();
     
     if (playerHP <= 0) {
-        triggerGameOver('氣流飛行員');
+        triggerGameOver('氣流飛行員', gameScore);
     }
 }
 
@@ -1113,8 +1041,103 @@ function renderFlightGame() {
     drawRocket(rocket.x, rocket.y, rocket.angle);
 }
 
+function drawRocket(x, y, angle) {
+    if (isNaN(x) || isNaN(y) || isNaN(angle)) { return; }
+    gameCtx.save();
+    gameCtx.translate(x, y);
+    gameCtx.rotate(angle);
+    // 機身
+    gameCtx.fillStyle = '#ecf0f1';
+    gameCtx.shadowColor = 'rgba(255,255,255,0.2)';
+    gameCtx.shadowBlur = 15;
+    gameCtx.beginPath();
+    gameCtx.moveTo(22, 0);
+    gameCtx.lineTo(-12, -10);
+    gameCtx.lineTo(-8, 0);
+    gameCtx.lineTo(-12, 10);
+    gameCtx.closePath();
+    gameCtx.fill();
+    // 尾焰
+    gameCtx.shadowBlur = 0;
+    gameCtx.fillStyle = '#3498db';
+    gameCtx.beginPath();
+    gameCtx.moveTo(-4, -6);
+    gameCtx.lineTo(-16, -14);
+    gameCtx.lineTo(-8, 0);
+    gameCtx.lineTo(-16, 14);
+    gameCtx.lineTo(-4, 6);
+    gameCtx.closePath();
+    gameCtx.fill();
+    // 駕駛艙
+    gameCtx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+    gameCtx.beginPath();
+    gameCtx.arc(6, 0, 6, 0, Math.PI * 2);
+    gameCtx.fill();
+    gameCtx.restore();
+}
+
+function drawObstacle(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 14;
+    const obs = OBSTACLE_TYPES.find(o => o.type === type);
+    const emoji = obs?.emoji || '💥';
+    ctx.shadowColor = 'rgba(255,0,0,0.3)';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 1.2}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 1);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+function drawItem(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 14;
+    const item = ITEM_TYPES.find(i => i.type === type);
+    const emoji = item?.emoji || '?';
+    const color = item?.color || '#f1c40f';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 20;
+    // 發光圓環
+    ctx.strokeStyle = `rgba(255,255,255,${0.1 + 0.1 * Math.sin(Date.now() / 300)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 1.5}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 1);
+    ctx.restore();
+}
+
+function drawBoss(ctx, x, y, boss) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = boss.radius || 30;
+    ctx.shadowColor = boss.color || '#8e44ad';
+    ctx.shadowBlur = 40;
+    ctx.fillStyle = boss.color || '#8e44ad';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 0.8}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(boss.emoji || '👹', 0, 0);
+    ctx.restore();
+}
+
 // =====================================================
-// 風之繪師 - 遊戲 (完整版)
+// 風之繪師 - 完整遊戲 (含休息機制)
 // =====================================================
 const PainterGame = {
     level: 1,
@@ -1153,6 +1176,11 @@ const PainterGame = {
     errors: 0,
     maxErrors: 5,
     
+    // 休息機制
+    isResting: false,
+    restTimer: 0,
+    restDuration: 90, // 1.5秒 (60fps * 1.5)
+    
     musicInterval: null,
     musicStep: 0,
     musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319],
@@ -1181,6 +1209,8 @@ const PainterGame = {
         this.fineBrushTimer = 0;
         this.strokeProgress = 0;
         this.currentStroke = 0;
+        this.isResting = false;
+        this.restTimer = 0;
         
         this.updateStrokeCount();
         this.generateShape();
@@ -1207,12 +1237,12 @@ const PainterGame = {
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(note, now);
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start(now);
-                osc.stop(now + 0.35);
+                osc.stop(now + 0.3);
                 this.musicStep++;
             } catch(e) {}
         }, 380);
@@ -1243,12 +1273,16 @@ const PainterGame = {
         const cx = w / 2, cy = h / 2;
         const size = Math.min(w, h) * 0.22 * (1 + (this.level - 1) * 0.003);
         const shapeCount = Math.min(Math.floor(this.level / 8) + 1, this.shapeTypes.length);
-        const shapeType = this.shapeTypes[this.currentShapeIndex % shapeCount];
+        // 每次生成不同形狀 - 用 currentShapeIndex 確保變化
+        const shapeType = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
         this.shapePath = this.generateShapePoints(shapeType, cx, cy, Math.min(size, Math.min(w, h) * 0.35));
         this.strokePoints = [];
         this.strokeProgress = 0;
         this.drawPoints = [];
         this.splitIntoStrokes();
+        // 更新形狀名稱
+        const nameEl = document.getElementById('painterShapeName');
+        if (nameEl) nameEl.textContent = this.shapeNames[shapeType] || '未知';
         this.updateUI();
     },
     
@@ -1392,6 +1426,24 @@ const PainterGame = {
     
     update(breathFlow) {
         if (this.isPaused || this.isGameOver) return;
+        
+        // 休息狀態處理
+        if (this.isResting) {
+            this.restTimer--;
+            // 顯示休息中的訊息
+            if (this.restTimer % 30 === 0) {
+                showNotification(`⏳ 休息中... ${Math.ceil(this.restTimer / 60) + 1}s`);
+            }
+            if (this.restTimer <= 0) {
+                this.isResting = false;
+                // 生成下一幅畫
+                this.currentShapeIndex++;
+                this.generateShape();
+                showNotification('🎨 繼續作畫！');
+            }
+            return;
+        }
+        
         const flowMag = Math.abs(breathFlow);
         const isExhaling = breathFlow < 0;
         
@@ -1494,14 +1546,22 @@ const PainterGame = {
         playAudioEffect('special');
         this.level++;
         this.updateStrokeCount();
-        this.currentShapeIndex++;
-        this.generateShape();
+        
+        // 進入休息狀態
+        this.isResting = true;
+        this.restTimer = this.restDuration;
+        showNotification(`🎨 完成第 ${this.paintingsCompleted} 幅畫！休息 1.5 秒`);
+        
+        // 等級獎勵
         if (this.level % 10 === 0) {
             this.hp = Math.min(this.maxHp, this.hp + 20);
             showNotification(`🎉 第 ${this.level} 關！HP +20！`);
         }
-        if (this.level > this.maxLevel) { this.triggerWin(); return; }
-        showNotification(`🎨 完成第 ${this.paintingsCompleted} 幅畫！進入第 ${this.level} 關`);
+        if (this.level > this.maxLevel) { 
+            this.triggerWin(); 
+            return; 
+        }
+        this.updateUI();
     },
     
     updateUI() {
@@ -1517,11 +1577,6 @@ const PainterGame = {
         if (hpFill) hpFill.style.width = `${(this.hp / this.maxHp) * 100}%`;
         const progressFill = document.getElementById('painterProgressFill');
         if (progressFill) progressFill.style.width = `${Math.min(this.strokeProgress * 100, 100)}%`;
-        const shapeName = document.getElementById('painterShapeName');
-        if (shapeName) {
-            const type = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
-            shapeName.textContent = this.shapeNames[type] || '未知';
-        }
         const strokesNeeded = document.getElementById('painterStrokesNeeded');
         if (strokesNeeded) strokesNeeded.textContent = this.strokesPerPainting;
     },
@@ -1592,17 +1647,20 @@ const PainterGame = {
         if (!canvas) return;
         const w = canvas.width, h = canvas.height;
         
+        // 背景 - 水彩紙
         const grad = ctx.createLinearGradient(0, 0, w, h);
         grad.addColorStop(0, '#fdf6f0');
         grad.addColorStop(1, '#f5ece4');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
         
+        // 紙紋理
         for (let i = 0; i < 80; i++) {
             ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
             ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
         }
         
+        // 復古畫框
         ctx.save();
         ctx.strokeStyle = 'rgba(139, 115, 85, 0.2)';
         ctx.lineWidth = 4;
@@ -1612,6 +1670,7 @@ const PainterGame = {
         ctx.strokeRect(20, 20, w - 40, h - 40);
         ctx.restore();
         
+        // 目標形狀 - 發光虛線
         if (this.shapePath.length > 0) {
             ctx.save();
             const glow = 0.3 + 0.2 * Math.sin(Date.now() / 1000);
@@ -1631,27 +1690,7 @@ const PainterGame = {
             ctx.restore();
         }
         
-        if (this.currentStroke < this.strokesPerPainting) {
-            const nextPoints = this.strokePoints[this.currentStroke];
-            if (nextPoints && nextPoints.length > 0) {
-                ctx.save();
-                ctx.strokeStyle = 'rgba(139, 105, 20, 0.1)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 8]);
-                ctx.beginPath();
-                const startIdx = Math.floor(this.strokeProgress * nextPoints.length);
-                if (startIdx < nextPoints.length) {
-                    ctx.moveTo(nextPoints[startIdx].x, nextPoints[startIdx].y);
-                    for (let i = startIdx + 1; i < nextPoints.length; i++) {
-                        ctx.lineTo(nextPoints[i].x, nextPoints[i].y);
-                    }
-                    ctx.stroke();
-                }
-                ctx.setLineDash([]);
-                ctx.restore();
-            }
-        }
-        
+        // 已完成筆觸
         for (const point of this.drawPoints) {
             ctx.save();
             ctx.globalAlpha = point.alpha || 0.8;
@@ -1664,6 +1703,7 @@ const PainterGame = {
             ctx.restore();
         }
         
+        // 畫筆
         if (this.isDrawing) {
             ctx.save();
             ctx.shadowColor = this.brushColor;
@@ -1676,7 +1716,7 @@ const PainterGame = {
             ctx.restore();
         } else {
             ctx.save();
-            ctx.strokeStyle = 'rgba(92, 61, 46, 0.4)';
+            ctx.strokeStyle = 'rgba(92, 61, 46, 0.3)';
             ctx.lineWidth = 2;
             ctx.setLineDash([4, 4]);
             const pulse = 15 + 5 * Math.sin(Date.now() / 500);
@@ -1691,6 +1731,7 @@ const PainterGame = {
             ctx.restore();
         }
         
+        // 粒子
         for (const p of this.particles) {
             ctx.save();
             ctx.globalAlpha = p.life;
@@ -1703,6 +1744,7 @@ const PainterGame = {
             ctx.restore();
         }
         
+        // 道具
         for (const item of this.items) {
             const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
             ctx.save();
@@ -1717,6 +1759,23 @@ const PainterGame = {
             ctx.restore();
         }
         
+        // 休息狀態顯示
+        if (this.isResting) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 36px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⏳ 休息中...', w/2, h/2 - 20);
+            ctx.font = '18px Georgia, serif';
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillText(`${Math.ceil(this.restTimer / 60) + 1}s`, w/2, h/2 + 40);
+            ctx.restore();
+        }
+        
+        // 進度條
         const px = 60, py = h - 40, pw = w - 120, ph = 10;
         ctx.save();
         ctx.fillStyle = 'rgba(139, 115, 85, 0.2)';
@@ -1735,13 +1794,15 @@ const PainterGame = {
         ctx.fillText(`第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆  ${Math.round(pct * 100)}%`, w / 2, py - 6);
         ctx.restore();
         
+        // 頂部資訊
         ctx.save();
-        ctx.fillStyle = 'rgba(92, 61, 46, 0.3)';
-        ctx.font = '13px Georgia, serif';
+        ctx.fillStyle = 'rgba(92, 61, 46, 0.25)';
+        ctx.font = '12px Georgia, serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        const currentShape = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
-        ctx.fillText(`🎨 ${this.shapeNames[currentShape] || '繪畫'}  |  關卡 ${this.level}  |  筆畫 ${this.strokesPerPainting}`, w / 2, 20);
+        const type = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
+        const name = this.shapeNames[type] || '繪畫';
+        ctx.fillText(`🎨 ${name}  |  關卡 ${this.level}  |  筆畫 ${this.strokesPerPainting}`, w / 2, 18);
         ctx.restore();
     },
     
@@ -1770,16 +1831,22 @@ const PainterGame = {
 };
 
 // =====================================================
-// 其他遊戲的佔位符 (燭光遠征、魔導士破魔、蒲公英快遞、玻璃心大師)
+// 其他遊戲佔位符
 // =====================================================
 const CandleGame = {
-    name: '燭光遠征',
-    emoji: '🕯️',
+    name: '燭光遠征', emoji: '🕯️',
     init() { showNotification('🕯️ 燭光遠征 開發中'); },
     update(flow) {},
     render(ctx) {
         const w = gameCanvas.width, h = gameCanvas.height;
         ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, w, h);
+        // 燭光效果
+        const glow = 30 + 15 * Math.sin(Date.now() / 500);
+        const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, glow);
+        grad.addColorStop(0, 'rgba(255, 200, 100, 0.2)');
+        grad.addColorStop(1, 'rgba(255, 200, 100, 0)');
+        ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
         ctx.fillStyle = '#f5e6ca';
         ctx.font = '24px "Courier New", monospace';
@@ -1788,28 +1855,19 @@ const CandleGame = {
         ctx.fillStyle = '#8b949e';
         ctx.font = '14px sans-serif';
         ctx.fillText('🚧 開發中，敬請期待！', w/2, h/2 + 30);
-        // 顯示燭光效果
-        const glow = 20 + 10 * Math.sin(Date.now() / 500);
-        const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, glow);
-        grad.addColorStop(0, 'rgba(255, 200, 100, 0.15)');
-        grad.addColorStop(1, 'rgba(255, 200, 100, 0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
     },
     getHUD() { return '🕯️ 燭光遠征 - 開發中'; },
     getGuide() { return '<div class="priority-note">🚧 此遊戲正在開發中</div>'; }
 };
 
 const WizardGame = {
-    name: '魔導士破魔',
-    emoji: '⚔️',
+    name: '魔導士破魔', emoji: '⚔️',
     init() { showNotification('⚔️ 魔導士破魔 開發中'); },
     update(flow) {},
     render(ctx) {
         const w = gameCanvas.width, h = gameCanvas.height;
         ctx.fillStyle = '#0d0a1a';
         ctx.fillRect(0, 0, w, h);
-        // 魔法陣效果
         ctx.save();
         ctx.translate(w/2, h/2);
         for (let i = 0; i < 3; i++) {
@@ -1834,18 +1892,25 @@ const WizardGame = {
 };
 
 const DandelionGame = {
-    name: '蒲公英快遞',
-    emoji: '🌿',
+    name: '蒲公英快遞', emoji: '🌿',
     init() { showNotification('🌿 蒲公英快遞 開發中'); },
     update(flow) {},
     render(ctx) {
         const w = gameCanvas.width, h = gameCanvas.height;
         ctx.fillStyle = '#e8f5e9';
         ctx.fillRect(0, 0, w, h);
-        // 草地和蒲公英效果
         for (let i = 0; i < 20; i++) {
             ctx.fillStyle = `rgba(76, 175, 80, ${0.05 + Math.random() * 0.1})`;
             ctx.fillRect(Math.random() * w, h - 20 - Math.random() * 30, 3, 10 + Math.random() * 20);
+        }
+        // 蒲公英種子飄動
+        for (let i = 0; i < 10; i++) {
+            const x = (i * 73 + Date.now() * 0.02) % w;
+            const y = (i * 47 + Date.now() * 0.03) % h;
+            ctx.fillStyle = `rgba(255,255,255,${0.2 + 0.2 * Math.sin(Date.now() / 1000 + i)})`;
+            ctx.beginPath();
+            ctx.arc(x, y, 2 + Math.sin(Date.now() / 500 + i) * 1, 0, Math.PI * 2);
+            ctx.fill();
         }
         ctx.fillStyle = '#1b5e20';
         ctx.font = '24px Arial, sans-serif';
@@ -1860,15 +1925,13 @@ const DandelionGame = {
 };
 
 const CrystalGame = {
-    name: '玻璃心大師',
-    emoji: '💎',
+    name: '玻璃心大師', emoji: '💎',
     init() { showNotification('💎 玻璃心大師 開發中'); },
     update(flow) {},
     render(ctx) {
         const w = gameCanvas.width, h = gameCanvas.height;
         ctx.fillStyle = '#e3f2fd';
         ctx.fillRect(0, 0, w, h);
-        // 水晶效果
         ctx.save();
         ctx.translate(w/2, h/2);
         for (let i = 0; i < 6; i++) {
@@ -1900,7 +1963,6 @@ const CrystalGame = {
 // 遊戲切換函數
 // =====================================================
 function switchGame(mode) {
-    // 停止當前遊戲
     if (gameAnimationId) {
         cancelAnimationFrame(gameAnimationId);
         gameAnimationId = null;
@@ -1913,7 +1975,6 @@ function switchGame(mode) {
     document.getElementById('gamePauseBtn').innerText = '暫停';
     document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
     
-    // 停止音樂
     PainterGame.stopMusic();
     stopBGM();
     
@@ -1922,11 +1983,10 @@ function switchGame(mode) {
     const guideTitle = document.getElementById('guideTitle');
     const guideContent = document.getElementById('guideContent');
     const startPrompt = document.getElementById('gameStartPrompt');
+    startPrompt.style.display = 'none';
     
     switch(mode) {
         case GAME_MODES.FLIGHT:
-            // ===== 氣流飛行員 =====
-            startPrompt.style.display = 'none';
             hud.innerHTML = `
                 🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span>
                 | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
@@ -1939,36 +1999,12 @@ function switchGame(mode) {
             `;
             guideTitle.textContent = '✈️ 氣流飛行員 操控說明';
             guideContent.innerHTML = `
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">呼吸裝置 → 飛船升降 <span class="highlight">(最優先)</span></span>
-                </div>
-                <div class="divider"></div>
-                <div class="key-row">
-                    <span class="key secondary">↑</span>
-                    <span class="key secondary">W</span>
-                    <span class="action">飛船 <span class="highlight">向上</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key secondary">↓</span>
-                    <span class="key secondary">S</span>
-                    <span class="action">飛船 <span class="highlight">向下</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key special">Space</span>
-                    <span class="action">暫停 / 繼續遊戲</span>
-                </div>
-                <div class="divider"></div>
-                <div class="mouse-row">
-                    <span class="icon">🖱️</span>
-                    <span class="action">移動滑鼠 → 飛船跟隨</span>
-                </div>
-                <div class="priority-note">
-                    ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
-                </div>
-                <div class="priority-note warning">
-                    ⚠️ Boss 技能有 2 秒預警！
-                </div>
+                <div class="key-row"><span class="key primary">🌬️</span><span class="action">呼吸 → 飛船升降 <span class="highlight">(最優先)</span></span></div>
+                <div class="key-row"><span class="key secondary">↑↓</span><span class="action">飛船上下移動</span></div>
+                <div class="key-row"><span class="key special">Space</span><span class="action">暫停/繼續</span></div>
+                <div class="mouse-row"><span class="icon">🖱️</span><span class="action">滑鼠移動 → 飛船跟隨</span></div>
+                <div class="priority-note">⚡ 優先級：呼吸 ＞ 鍵盤 ＞ 滑鼠</div>
+                <div class="priority-note warning">⚠️ 收集金幣，躲避障礙！</div>
             `;
             initFlightGame();
             isGameRunning = true;
@@ -1977,8 +2013,6 @@ function switchGame(mode) {
             break;
             
         case GAME_MODES.PAINTER:
-            // ===== 風之繪師 =====
-            startPrompt.style.display = 'none';
             hud.innerHTML = `
                 🎨 關卡: <span id="painterLevel">1/100</span>
                 | 🖼️ 畫作: <span id="painterPaintings">0</span>
@@ -1990,29 +2024,16 @@ function switchGame(mode) {
             `;
             guideTitle.textContent = '🎨 風之繪師 操控說明';
             guideContent.innerHTML = `
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
-                </div>
-                <div class="key-row">
-                    <span class="key primary">🌬️</span>
-                    <span class="action">吸氣 → 暫停繪畫</span>
-                </div>
-                <div class="divider"></div>
-                <div class="key-row">
-                    <span class="key secondary">↑↓</span>
-                    <span class="action">微調畫筆位置</span>
-                </div>
-                <div class="key-row">
-                    <span class="key special">Space</span>
-                    <span class="action">暫停 / 繼續</span>
-                </div>
-                <div class="divider"></div>
-                <div class="priority-note">
-                    ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
-                </div>
+                <div class="key-row"><span class="key primary">🌬️</span><span class="action">吐氣強度 → 筆觸粗細 <span class="highlight">(最優先)</span></span></div>
+                <div class="key-row"><span class="key primary">🌬️</span><span class="action">吸氣 → 暫停繪畫</span></div>
+                <div class="key-row"><span class="key secondary">↑↓</span><span class="action">微調畫筆位置</span></div>
+                <div class="key-row"><span class="key special">Space</span><span class="action">暫停/繼續</span></div>
+                <div class="priority-note">⚡ 優先級：呼吸 ＞ 鍵盤 ＞ 滑鼠</div>
                 <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
                     🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
+                </div>
+                <div class="priority-note" style="border-top-color:#2ecc71; color:#2ecc71;">
+                    ⏳ 每完成一幅畫休息1.5秒
                 </div>
             `;
             PainterGame.init();
@@ -2023,7 +2044,6 @@ function switchGame(mode) {
             break;
             
         case GAME_MODES.CANDLE:
-            startPrompt.style.display = 'none';
             hud.innerHTML = '🕯️ 燭光遠征 - 開發中';
             guideTitle.textContent = '🕯️ 燭光遠征';
             guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
@@ -2034,7 +2054,6 @@ function switchGame(mode) {
             break;
             
         case GAME_MODES.WIZARD:
-            startPrompt.style.display = 'none';
             hud.innerHTML = '⚔️ 魔導士破魔 - 開發中';
             guideTitle.textContent = '⚔️ 魔導士破魔';
             guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
@@ -2045,7 +2064,6 @@ function switchGame(mode) {
             break;
             
         case GAME_MODES.DANDELION:
-            startPrompt.style.display = 'none';
             hud.innerHTML = '🌿 蒲公英快遞 - 開發中';
             guideTitle.textContent = '🌿 蒲公英快遞';
             guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
@@ -2056,7 +2074,6 @@ function switchGame(mode) {
             break;
             
         case GAME_MODES.CRYSTAL:
-            startPrompt.style.display = 'none';
             hud.innerHTML = '💎 玻璃心大師 - 開發中';
             guideTitle.textContent = '💎 玻璃心大師';
             guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
@@ -2073,22 +2090,18 @@ function switchGame(mode) {
 // =====================================================
 function gameLoop() {
     if (!isGameRunning || isGameOver) {
-        if (isGameOver) {
-            if (gameAnimationId) {
-                cancelAnimationFrame(gameAnimationId);
-                gameAnimationId = null;
-            }
+        if (isGameOver && gameAnimationId) {
+            cancelAnimationFrame(gameAnimationId);
+            gameAnimationId = null;
         }
         return;
     }
     
-    // 取得呼吸數據
     let breathFlow = 0;
     if (isMeasuring && !isPaused && !isGameOver) {
         breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
     }
     
-    // 根據當前遊戲模式更新
     switch(currentGameMode) {
         case GAME_MODES.FLIGHT:
             updateFlightGame(breathFlow);
@@ -2116,7 +2129,6 @@ function gameLoop() {
             break;
     }
     
-    // 繼續循環
     gameAnimationId = requestAnimationFrame(gameLoop);
 }
 
@@ -2170,31 +2182,27 @@ function toggleGamePause() {
     if (isPaused) {
         btn.innerText = '繼續';
         btn.style.backgroundColor = '#f39c12';
-        if (currentGameMode === GAME_MODES.PAINTER) {
-            PainterGame.stopMusic();
-        }
+        if (currentGameMode === GAME_MODES.PAINTER) PainterGame.stopMusic();
         stopBGM();
     } else {
         btn.innerText = '暫停';
         btn.style.backgroundColor = '#27ae60';
-        if (currentGameMode === GAME_MODES.PAINTER) {
-            PainterGame.startMusic();
-        }
+        if (currentGameMode === GAME_MODES.PAINTER) PainterGame.startMusic();
         startBGM();
     }
 }
 
-function triggerGameOver(gameName) {
+function triggerGameOver(gameName, score) {
     isGameOver = true;
     isGameRunning = false;
     if (gameAnimationId) {
         cancelAnimationFrame(gameAnimationId);
         gameAnimationId = null;
     }
+    document.getElementById('finalScore').textContent = score || 0;
+    document.getElementById('gameOverMessage').textContent = `${gameName || '遊戲'} 結束！`;
     document.getElementById('gameOverScreen').style.display = 'flex';
-    if (currentGameMode === GAME_MODES.PAINTER) {
-        PainterGame.stopMusic();
-    }
+    if (currentGameMode === GAME_MODES.PAINTER) PainterGame.stopMusic();
     stopBGM();
 }
 
@@ -2434,10 +2442,7 @@ function playAudioEffect(type) {
     } catch(e) {}
 }
 
-function startBGM() {
-    // 由各遊戲自行實現
-}
-
+function startBGM() {}
 function stopBGM() {
     if (bgmInterval) {
         clearInterval(bgmInterval);
@@ -2447,16 +2452,14 @@ function stopBGM() {
 }
 
 // =====================================================
-// 核心系統 - 視窗模式切換
+// 核心系統 - 視窗控制
 // =====================================================
 function switchViewMode(mode) {
     const chartBox = document.querySelector('.chart-container');
     const gameBox = document.getElementById('gameContainer');
     if (chartBox) chartBox.style.display = (mode === 'chart' || mode === 'both') ? 'block' : 'none';
     if (gameBox) gameBox.style.display = (mode === 'game' || mode === 'both') ? 'block' : 'none';
-    if (mode === 'game' || mode === 'both') {
-        setTimeout(resizeGameCanvas, 50);
-    }
+    if (mode === 'game' || mode === 'both') setTimeout(resizeGameCanvas, 50);
 }
 
 function toggleFullscreen() {
@@ -2486,9 +2489,7 @@ function resizeGameCanvas() {
         gameCanvas.height = h;
         gameCanvas.style.width = w + 'px';
         gameCanvas.style.height = h + 'px';
-        if (currentGameMode === GAME_MODES.FLIGHT) {
-            initStars();
-        }
+        if (currentGameMode === GAME_MODES.FLIGHT) initStars();
     }
 }
 
@@ -2569,39 +2570,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 2000);
         });
-        gameCanvas.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            if (!mouseControlEnabled || !isGameRunning || isPaused || isGameOver) return;
-            const touch = e.touches[0];
-            const rect = gameCanvas.getBoundingClientRect();
-            const scaleY = gameCanvas.height / rect.height;
-            const touchRelativeY = (touch.clientY - rect.top) * scaleY;
-            mouseY = Math.max(30, Math.min(gameCanvas.height - 30, touchRelativeY));
-            useMouseControl = true;
-        }, { passive: false });
     }
 });
 
 function toggleKeyboardControl() {
     keyboardControlEnabled = !keyboardControlEnabled;
-    if (!keyboardControlEnabled) {
-        keyboardY = null;
-        useKeyboardControl = false;
-    }
+    if (!keyboardControlEnabled) { keyboardY = null; useKeyboardControl = false; }
     updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
 }
 
 function toggleMouseControl() {
     mouseControlEnabled = !mouseControlEnabled;
-    if (!mouseControlEnabled) {
-        mouseY = null;
-        useMouseControl = false;
-    }
+    if (!mouseControlEnabled) { mouseY = null; useMouseControl = false; }
     updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
 }
 
 // =====================================================
-// 擴充 roundRect 方法
+// 擴充 roundRect
 // =====================================================
 if (!CanvasRenderingContext2D.prototype.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
@@ -2636,40 +2621,18 @@ if (mainPanel) {
     </label>
     <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
     <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
-    <label class="music-upload-btn">🎵 自選音樂 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
-    <span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
     <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
-    <span id="expansionControls">
-        <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
-        <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
-        <span class="control-toggle">
-            <input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
-            <label for="keyboardToggle">⌨️ 鍵盤</label>
-            <input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
-            <label for="mouseToggle">🖱️ 滑鼠</label>
-        </span>
-        <span id="devControls" style="display:flex;gap:6px;align-items:center;">
-            <button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
-            <span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
-        </span>
-        <span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
-            <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
-            <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
-            <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
-            <button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
-        </span>
-        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
-            🎮 遊戲:
-            <select id="gameSelector" onchange="switchGame(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-                <option value="flight">✈️ 氣流飛行員</option>
-                <option value="painter">🎨 風之繪師</option>
-                <option value="candle">🕯️ 燭光遠征</option>
-                <option value="wizard">⚔️ 魔導士破魔</option>
-                <option value="dandelion">🌿 蒲公英快遞</option>
-                <option value="crystal">💎 玻璃心大師</option>
-            </select>
-        </label>
-    </span>
+    <label style="border-left:2px solid #ccc;padding-left:10px;">
+        🎮 遊戲:
+        <select id="gameSelector" onchange="switchGame(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
+            <option value="flight">✈️ 氣流飛行員</option>
+            <option value="painter">🎨 風之繪師</option>
+            <option value="candle">🕯️ 燭光遠征</option>
+            <option value="wizard">⚔️ 魔導士破魔</option>
+            <option value="dandelion">🌿 蒲公英快遞</option>
+            <option value="crystal">💎 玻璃心大師</option>
+        </select>
+    </label>
     `;
     mainPanel.insertAdjacentHTML('beforeend', html);
 }
@@ -2685,78 +2648,23 @@ function toggleSoundSetting(enabled) {
     }
 }
 
-function handleCustomMusicUpload(event) {
-    // 暫不實現
-}
-
-function toggleDevMode() {
-    const btn = document.getElementById('devModeToggle');
-    const indicator = document.getElementById('devIndicator');
-    if (btn) {
-        btn.textContent = btn.textContent.includes('ON') ? '🔧 開發模式 OFF' : '🔧 開發模式 ON';
-        btn.classList.toggle('active');
-    }
-    if (indicator) {
-        indicator.textContent = indicator.textContent.includes('開發中') ? '🎮 一般模式' : '🔧 開發中';
-        indicator.className = 'dev-mode-indicator ' + (indicator.textContent.includes('開發中') ? 'on' : 'off');
-    }
-}
-
-function setQuality(val) {
-    updateStatus(`🖥️ 畫質: ${val}`);
-}
-
-function openCustomQuality() {
-    alert('自訂畫質功能開發中');
-}
-
-function toggleLevelEditor() {
-    const editor = document.getElementById('levelEditor');
-    if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-}
-
-function toggleSkinEditor() {
-    const editor = document.getElementById('skinEditor');
-    if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-}
-
-function resetLevelProgress() {
-    if (confirm('確定要重置所有關卡進度嗎？')) {
-        if (currentGameMode === GAME_MODES.PAINTER) {
-            PainterGame.level = 1;
-            PainterGame.paintingsCompleted = 0;
-            PainterGame.updateStrokeCount();
-            PainterGame.generateShape();
-            PainterGame.updateUI();
-            showNotification('🔄 關卡進度已重置');
-        }
-    }
-}
-
 // =====================================================
 // 初始化
 // =====================================================
 function initExpansion() {
     resizeGameCanvas();
-    
-    // 設定視窗模式
     document.getElementById('viewModeSelect').value = 'both';
     switchViewMode('both');
-    
-    // 設定遊戲選擇器 - 預設為氣流飛行員
     document.getElementById('gameSelector').value = 'flight';
-    
-    // 初始化氣流飛行員
     initFlightGame();
     
-    // 啟動遊戲
     setTimeout(() => {
         switchGame(GAME_MODES.FLIGHT);
     }, 100);
     
     console.log('✅ 所有功能已載入！');
-    console.log('✈️ 氣流飛行員 - 原有遊戲 (完整)');
-    console.log('🎨 風之繪師 - 新增遊戲 (完整100關)');
+    console.log('✈️ 氣流飛行員 - 完整可玩');
+    console.log('🎨 風之繪師 - 完整100關 (含休息機制)');
     console.log('🕯️ 燭光遠征 - 開發中');
     console.log('⚔️ 魔導士破魔 - 開發中');
     console.log('🌿 蒲公英快遞 - 開發中');
@@ -2769,7 +2677,6 @@ if (document.readyState === 'loading') {
     initExpansion();
 }
 
-// 暴露全局變量
 window.switchGame = switchGame;
 window.restartGameEngine = restartGameEngine;
 window.toggleGamePause = toggleGamePause;
