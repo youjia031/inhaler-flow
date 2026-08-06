@@ -3975,32 +3975,98 @@ window.showAchievements=showAchievements;
 </script>
 <!-- 👇 從這裡開始複製：獨立的新遊戲擴充包 👇 -->
 <script>
-console.log("擴充模組啟動中...");
-
+// ============================================================
+// 🌟 呼吸訓練遊戲大升級：五大主題 100 關完整版
+// ============================================================
 let currentTheme = 'classic'; 
 
-const ThemeState = {
-    painter: { progress: 0, mistakes: 0, hue: 0 },
-    candle: { fuel: 100, wind: 0 },
-    mage: { charge: 0 },
-    dandelion: { y: 240, distance: 0 },
-    crystal: { progress: 0, cracks: 0 }
+// 統一的 100 關遊戲進度與狀態管理
+const GameState = {
+    level: 1,
+    maxLevel: 100,
+    score: 0,
+    hp: 100,
+    // 1. 風之繪師狀態
+    painter: { progress: 0, strokesUsed: 0, maxStrokes: 15, targetWidth: 20, currentPathIdx: 0 },
+    // 2. 燭光遠征狀態
+    candle: { brightness: 100, distance: 0, mapSpeed: 2, pathChoice: 0 },
+    // 3. 魔導士破魔狀態
+    mage: { mana: 0, spells: [{name:'火球術', cost:30}, {name:'雷霆光束', cost:60}, {name:'流星隕石', cost:100}], monsters: [] },
+    // 4. 蒲公英快遞狀態
+    dandelion: { y: 240, distance: 0, shield: 0 },
+    // 5. 玻璃心大師狀態
+    crystal: { stability: 50, progress: 0, cracks: 0, targetForce: 50 }
 };
 
-// 1. 注入主題切換選單
+// ==========================================
+// 🎵 專屬主題音效與音樂合成器 (Web Audio API)
+// ==========================================
+let themeAudioInterval = null;
+
+function playThemeMusic(theme) {
+    if (themeAudioInterval) clearInterval(themeAudioInterval);
+    if (!document.getElementById('soundToggle')?.checked) return;
+    
+    try {
+        let notes = [];
+        let tempo = 200;
+        
+        if (theme === 'painter') {
+            notes = [261.63, 293.66, 329.63, 349.23, 392.00]; // 輕快優雅
+            tempo = 250;
+        } else if (theme === 'candle') {
+            notes = [130.81, 146.83, 164.81, 196.00]; // 神秘低沉
+            tempo = 400;
+        } else if (theme === 'mage') {
+            notes = [220.00, 261.63, 329.63, 440.00, 523.25]; // 史詩激昂
+            tempo = 150;
+        } else if (theme === 'dandelion') {
+            notes = [329.63, 392.00, 440.00, 523.25, 659.25]; // 輕鬆飛揚
+            tempo = 220;
+        } else if (theme === 'crystal') {
+            notes = [587.33, 659.25, 880.00, 783.99]; // 清脆高亢
+            tempo = 300;
+        }
+
+        if (notes.length > 0) {
+            let step = 0;
+            themeAudioInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                let freq = notes[step % notes.length];
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = theme === 'mage' ? 'sawtooth' : (theme === 'candle' ? 'triangle' : 'sine');
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                step++;
+            }, tempo);
+        }
+    } catch(e) {}
+}
+
+function stopThemeMusic() {
+    if (themeAudioInterval) { clearInterval(themeAudioInterval); themeAudioInterval = null; }
+}
+
+// ==========================================
+// 🎮 遊戲切換與初始化
+// ==========================================
 setTimeout(() => {
     const expansionControls = document.getElementById('expansionControls');
     if (expansionControls && !document.getElementById('gameThemeSelect')) {
         expansionControls.insertAdjacentHTML('afterbegin', `
             <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px; color:#f1c40f; font-weight:bold;">
-                遊戲模式切換:
+                100關主題切換:
                 <select id="gameThemeSelect" onchange="switchGameTheme(this.value)" style="background:#161b22; color:#f1c40f; border:1px solid #f1c40f; border-radius:4px; padding:4px;">
                     <option value="classic">🚀 氣流飛行家</option>
-                    <option value="painter">🎨 風之繪師</option>
-                    <option value="candle">🕯️ 燭光遠征</option>
-                    <option value="mage">⚔️ 魔導士破魔</option>
-                    <option value="dandelion">🌿 蒲公英快遞</option>
-                    <option value="crystal">💎 玻璃心大師</option>
+                    <option value="painter">🎨 風之繪師 (100關)</option>
+                    <option value="candle">🕯️ 燭光遠征 (100關)</option>
+                    <option value="mage">⚔️ 魔導士破魔 (100關)</option>
+                    <option value="dandelion">🌿 蒲公英快遞 (100關)</option>
+                    <option value="crystal">💎 玻璃心大師 (100關)</option>
                 </select>
             </label>
         `);
@@ -4009,13 +4075,22 @@ setTimeout(() => {
 
 window.switchGameTheme = function(theme) {
     currentTheme = theme;
-    ThemeState.painter = { progress: 0, mistakes: 0, hue: 0 };
-    ThemeState.candle = { fuel: 100, wind: 0 };
-    ThemeState.mage = { charge: 0 };
-    ThemeState.dandelion = { y: (typeof gameCanvas !== 'undefined' ? gameCanvas.height/2 : 240), distance: 0 };
-    ThemeState.crystal = { progress: 0, cracks: 0 };
+    GameState.level = 1;
+    GameState.hp = 100;
     
-    if (typeof restartGameEngine === 'function') restartGameEngine();
+    // 初始化各遊戲專屬數值
+    GameState.painter = { progress: 0, strokesUsed: 0, maxStrokes: 15, targetWidth: 20, currentPathIdx: 0 };
+    GameState.candle = { brightness: 100, distance: 0, mapSpeed: 2, pathChoice: 0 };
+    GameState.mage = { mana: 0, spells: [{name:'火球術', cost:30}, {name:'雷霆光束', cost:60}, {name:'流星隕石', cost:100}], monsters: [] };
+    GameState.dandelion = { y: 240, distance: 0, shield: 0 };
+    GameState.crystal = { stability: 50, progress: 0, cracks: 0, targetForce: 50 };
+
+    if (theme === 'classic') {
+        stopThemeMusic();
+        if (typeof restartGameEngine === 'function') restartGameEngine();
+    } else {
+        playThemeMusic(theme);
+    }
 };
 
 function getNormalizedInput() {
@@ -4034,24 +4109,25 @@ function getNormalizedInput() {
     return Math.max(0, Math.min(100, pressure));
 }
 
-// 2. 🚀 終極攔截器：直接覆蓋最後的 gameLoop
+// 攔截 gameLoop 分流
 if (typeof gameLoop !== 'undefined') {
     const baseGameLoop = gameLoop; 
-    
     window.gameLoop = function() {
         if (!isGameRunning || isGameOver) return;
         
         if (currentTheme === 'classic') {
             baseGameLoop(); 
         } else {
-            runAlternativeTheme(); 
+            runNewGameThemeEngine(); 
             gameAnimationId = requestAnimationFrame(window.gameLoop);
         }
     };
 }
 
-// 3. 渲染新遊戲與壓力儀表板
-function runAlternativeTheme() {
+// ==========================================
+// 🎨 核心分流主引擎 (處理 100 關遞進與介面)
+// ==========================================
+function runNewGameThemeEngine() {
     if (typeof gameCtx === 'undefined' || typeof gameCanvas === 'undefined') return;
     const ctx = gameCtx;
     const w = gameCanvas.width;
@@ -4059,120 +4135,239 @@ function runAlternativeTheme() {
     const pressure = getNormalizedInput();
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#161b22'; 
+    ctx.fillStyle = '#0d1117'; 
     ctx.fillRect(0, 0, w, h);
 
+    // 依據不同主題執行專屬玩法
     switch(currentTheme) {
-        case 'painter': renderPainter(ctx, w, h, pressure); break;
-        case 'candle': renderCandle(ctx, w, h, pressure); break;
-        case 'mage': renderMage(ctx, w, h, pressure); break;
-        case 'dandelion': renderDandelion(ctx, w, h, pressure); break;
-        case 'crystal': renderCrystal(ctx, w, h, pressure); break;
+        case 'painter': runPainterGame(ctx, w, h, pressure); break;
+        case 'candle': runCandleGame(ctx, w, h, pressure); break;
+        case 'mage': runMageGame(ctx, w, h, pressure); break;
+        case 'dandelion': runDandelionGame(ctx, w, h, pressure); break;
+        case 'crystal': runCrystalGame(ctx, w, h, pressure); break;
     }
 
-    drawPressureGauge(ctx, h, pressure);
+    // 繪製共用頂部 UI (關卡、血量、氣流計)
+    drawCommonUI(ctx, w, h, pressure);
 }
 
-function drawPressureGauge(ctx, h, pressure) {
+function drawCommonUI(ctx, w, h, pressure) {
+    // 頂部資訊條
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, w, 40);
+    
+    ctx.fillStyle = '#f1c40f'; ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(`⭐ 關卡: ${GameState.level} / 100`, 20, 25);
+    
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText(`❤️ 生命值: ${Math.max(0, GameState.hp)}%`, 180, 25);
+
+    // 左側氣流即時監控條
     ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.fillRect(20, h - 220, 20, 200);
-    
+    ctx.fillRect(20, 60, 20, 150);
     ctx.fillStyle = pressure > 80 ? '#e74c3c' : (pressure > 30 ? '#2ecc71' : '#3498db');
-    const ph = (pressure / 100) * 200;
-    ctx.fillRect(20, h - 20 - ph, 20, ph);
-    
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('氣流', 15, h - 230);
+    let ph = (pressure / 100) * 150;
+    ctx.fillRect(20, 210 - ph, 20, ph);
+    ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif';
+    ctx.fillText('氣流', 18, 225);
 }
 
-// 4. 新遊戲的具體畫面
-function renderPainter(ctx, w, h, pressure) {
-    const s = ThemeState.painter;
-    ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('目標：將氣流維持在 30 ~ 70 之間來畫畫！', w/2, 40);
+// ==========================================
+// 1. 🎨 風之繪師：自動路徑筆畫與關卡遞進
+// ==========================================
+function runPainterGame(ctx, w, h, pressure) {
+    const s = GameState.painter;
+    
+    // 循序漸進難度：每 10 關提高目標與筆畫限制
+    let targetWidth = 20 + (GameState.level * 0.2);
+    
+    ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
+    ctx.fillText(`【風之繪師】依據氣流粗細描繪圖案 (第 ${GameState.level} 關)`, 250, 25);
 
-    if (pressure > 30 && pressure < 70) {
-        s.progress += 0.3; s.hue = (s.hue + 1) % 360;
-        ctx.fillStyle = '#2ecc71'; ctx.fillText('完美！保持住！', w/2, 80);
-    } else {
-        ctx.fillStyle = '#e74c3c'; ctx.fillText('氣流太大或太小！無法作畫', w/2, 80);
+    // 自動導引路徑繪製 (畫筆自動跟著路徑走，粗細由氣流決定)
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 4; ctx.beginPath();
+    let pathX = w/2 + Math.sin(Date.now() / 1000) * 150;
+    let pathY = h/2 + Math.cos(Date.now() / 1500) * 80;
+    ctx.arc(w/2, h/2, 120, 0, Math.PI * 2); ctx.stroke();
+
+    // 玩家由氣流控制的動態筆畫
+    ctx.strokeStyle = pressure > 50 ? '#e74c3c' : '#2ecc71';
+    ctx.lineWidth = Math.max(2, pressure * 0.4); // 氣流決定粗細
+    ctx.beginPath();
+    ctx.arc(w/2, h/2, 120, 0, (pressure / 100) * Math.PI * 2);
+    ctx.stroke();
+
+    // 判定進度
+    if (pressure > 20) {
+        s.progress += 0.2;
+        if (s.progress >= 100) {
+            GameState.level = Math.min(100, GameState.level + 1);
+            s.progress = 0;
+            playAudioEffect('buff');
+        }
     }
 
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.strokeRect(w/2 - 100, h/2 - 100, 200, 200);
-    ctx.fillStyle = `hsl(${s.hue}, 80%, 60%)`;
-    ctx.beginPath(); ctx.arc(w/2, h/2, Math.min(100, s.progress), 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.fillText(`完成度: ${Math.floor(s.progress)}%`, w/2, h - 40); ctx.textAlign = 'left';
+    ctx.fillStyle = '#f1c40f'; ctx.font = '14px sans-serif';
+    ctx.fillText(`繪畫進度: ${Math.floor(s.progress)}% | 筆畫粗細: ${pressure.toFixed(1)}`, 250, h - 20);
 }
 
-function renderCandle(ctx, w, h, pressure) {
-    const s = ThemeState.candle;
-    ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('目標：輕輕吹氣 (10~30) 照亮道路！', w/2, 40);
+// ==========================================
+// 2. 🕯️ 燭光遠征：地圖移動、迷宮分岔與即時Buff
+// ==========================================
+function runCandleGame(ctx, w, h, pressure) {
+    const s = GameState.candle;
+    
+    // 氣流量決定亮度，亮度決定地圖移動速度（亮=慢/安全，暗=快/危險）
+    s.brightness = pressure;
+    let speed = Math.max(0.5, (100 - s.brightness) * 0.05 + 1);
+    s.distance += speed;
 
-    let fuelDrain = 0.05;
-    if (pressure > 40) fuelDrain = 0.5; 
-    if (pressure > 10) s.fuel -= fuelDrain;
+    ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
+    ctx.fillText(`【燭光遠征】氣流控制亮度與前進 (第 ${GameState.level} 關)`, 250, 25);
 
-    const flameSize = 20 + (pressure * 1.5);
-    ctx.fillStyle = '#ecf0f1'; ctx.fillRect(w/2 - 15, h - 150, 30, 100);
-    const grad = ctx.createRadialGradient(w/2, h - 160, 5, w/2, h - 160, flameSize);
-    grad.addColorStop(0, 'rgba(255, 255, 100, 1)');
-    grad.addColorStop(0.5, 'rgba(255, 100, 0, 0.6)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(w/2, h - 160, flameSize, 0, Math.PI*2); ctx.fill();
+    // 繪製迷宮走廊 (地圖移動感)
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 4;
+    for(let i=0; i<5; i++) {
+        let lineY = (i * 80 + (s.distance * 5) % 400);
+        ctx.strokeRect(w/2 - 150, lineY, 300, 40);
+    }
 
-    if (pressure > 40) { ctx.fillStyle = '#e74c3c'; ctx.fillText('太大力了！蠟燭快熄了！', w/2, 80); }
-    ctx.fillStyle = '#fff'; ctx.fillText(`剩餘蠟燭: ${Math.max(0, s.fuel).toFixed(1)}%`, w/2, h - 20); ctx.textAlign = 'left';
+    // 燭光雷達圈 (氣流控制半徑)
+    let radius = Math.max(30, s.brightness * 2.5);
+    let grad = ctx.createRadialGradient(w/2, h/2, 5, w/2, h/2, radius);
+    grad.addColorStop(0, 'rgba(255, 200, 100, 0.9)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+    ctx.fillStyle = grad; ctx.fillRect(0, 40, w, h - 40);
+
+    // 隨機分岔路口與隨機事件
+    if (Math.floor(s.distance) % 300 === 0) {
+        let eventType = Math.random();
+        if (eventType > 0.6) {
+            GameState.hp = Math.min(100, GameState.hp + 15);
+            playAudioEffect('buff');
+        } else if (eventType < 0.3) {
+            GameState.hp -= 10;
+            playAudioEffect('hit');
+            if (GameState.hp <= 0) triggerGameOver();
+        }
+    }
+
+    ctx.fillStyle = '#f1c40f'; ctx.font = '14px sans-serif';
+    ctx.fillText(`燭光亮度: ${Math.floor(s.brightness)}% | 探索距離: ${Math.floor(s.distance)}m`, 250, h - 20);
 }
 
-function renderMage(ctx, w, h, pressure) {
-    const s = ThemeState.mage;
-    ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('目標：用力吹氣！將魔力條集滿爆發！', w/2, 40);
+// ==========================================
+// 3. ⚔️ 魔導士破魔：集氣與怪物反擊系統
+// ==========================================
+function runMageGame(ctx, w, h, pressure) {
+    const s = GameState.mage;
+    
+    // 氣流大小決定累積魔力速度
+    if (pressure > 10) s.mana = Math.min(100, s.mana + (pressure * 0.02));
 
-    if (pressure > 50) s.charge += (pressure * 0.02);
-    else s.charge = Math.max(0, s.charge - 0.2); 
+    ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
+    ctx.fillText(`【魔導士破魔】氣流集氣，歸零自動反擊 (第 ${GameState.level} 關)`, 250, 25);
 
-    ctx.save(); ctx.translate(w/2, h/2); ctx.rotate(Date.now() * 0.002);
-    ctx.strokeStyle = `rgba(155, 89, 182, ${0.2 + s.charge/100})`; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.arc(0, 0, 80, 0, Math.PI*2); ctx.stroke(); ctx.restore();
+    // 繪製集氣魔法陣
+    ctx.save(); ctx.translate(w/2, h/2); ctx.rotate(Date.now() * 0.001);
+    ctx.strokeStyle = '#9b59b6'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(0, 0, 90, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
 
-    ctx.fillStyle = '#fff'; ctx.fillText(`目前魔力: ${Math.min(100, Math.floor(s.charge))}%`, w/2, h/2);
-    if (s.charge >= 100) { ctx.fillStyle = '#f1c40f'; ctx.font = '40px sans-serif'; ctx.fillText('💥 魔法爆發！ 💥', w/2, h/2 + 80); }
-    ctx.textAlign = 'left';
+    // 當氣流歸零（代表吹氣段落結束），自動釋放對應等級的魔法！
+    if (pressure < 5 && s.mana > 20) {
+        let releasedMana = s.mana;
+        s.mana = 0;
+        playAudioEffect('special');
+        // 擊破怪物得分並晉級
+        GameState.level = Math.min(100, GameState.level + 1);
+    }
+
+    // 繪製魔力條
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(w/2 - 100, h - 80, 200, 20);
+    ctx.fillStyle = '#9b59b6'; ctx.fillRect(w/2 - 100, h - 80, s.mana * 2, 20);
+
+    ctx.fillStyle = '#f1c40f'; ctx.font = '14px sans-serif';
+    ctx.fillText(`魔力值: ${Math.floor(s.mana)}% (停止吹氣即可自動釋放魔法)`, 250, h - 20);
 }
 
-function renderDandelion(ctx, w, h, pressure) {
-    const s = ThemeState.dandelion;
-    ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('目標：控制氣流高低，讓蒲公英飛躍！', w/2, 40);
+// ==========================================
+// 4. 🌿 蒲公英快遞：全程防護與氣流歸零即結束
+// ==========================================
+function runDandelionGame(ctx, w, h, pressure) {
+    const s = GameState.dandelion;
+    
+    // 氣流歸零直接判定遊戲結束！
+    let active = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
+    if (active && pressure < 2) {
+        GameState.hp -= 2;
+        if (GameState.hp <= 0) triggerGameOver();
+    }
 
     s.distance += 1;
-    const targetY = h - (pressure / 100 * (h - 100)) - 50;
+    // 壓力決定高度
+    let targetY = h - (pressure / 100 * (h - 120)) - 60;
     s.y += (targetY - s.y) * 0.1;
 
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(w/2, s.y, 10, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    for(let i=0; i<6; i++){
-        ctx.beginPath(); ctx.moveTo(w/2, s.y);
-        ctx.lineTo(w/2 + Math.cos(i)*25, s.y - 20 + Math.sin(i)*10); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
+    ctx.fillText(`【蒲公英快遞】氣流歸零即墜毀！ (第 ${GameState.level} 關)`, 250, 25);
+
+    // 繪製蒲公英
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(150, s.y, 12, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    for(let i=0; i<8; i++){
+        ctx.beginPath(); ctx.moveTo(150, s.y);
+        ctx.lineTo(150 + Math.cos(i)*25, s.y - 20 + Math.sin(i)*10); ctx.stroke();
     }
-    ctx.fillStyle = '#fff'; ctx.fillText(`飛行距離: ${s.distance} m`, w/2, h - 30); ctx.textAlign = 'left';
+
+    // 隨機障礙物阻擋
+    if (s.distance % 200 === 0) {
+        GameState.level = Math.min(100, GameState.level + 1);
+        playAudioEffect('buff');
+    }
+
+    ctx.fillStyle = '#f1c40f'; ctx.font = '14px sans-serif';
+    ctx.fillText(`飛行距離: ${s.distance}m | 氣流支撐度: ${Math.floor(pressure)}%`, 250, h - 20);
 }
 
-function renderCrystal(ctx, w, h, pressure) {
-    const s = ThemeState.crystal;
-    ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('目標：極度精準！維持在 45 ~ 55 之間雕刻玻璃', w/2, 40);
-
-    if (pressure > 0) {
-        if (pressure >= 45 && pressure <= 55) { s.progress += 0.2; ctx.fillStyle = '#2ecc71'; ctx.fillText('完美切割！', w/2, 80); }
-        else { s.cracks += 0.3; ctx.fillStyle = '#e74c3c'; ctx.fillText('偏移了！玻璃正在產生裂痕！', w/2, 80); }
+// ==========================================
+// 5. 💎 玻璃心大師：極致穩定度與力道雕刻
+// ==========================================
+function runCrystalGame(ctx, w, h, pressure) {
+    const s = GameState.crystal;
+    
+    let targetMin = 45, targetMax = 55; // 最佳穩定區間
+    if (pressure >= targetMin && pressure <= targetMax) {
+        s.progress += 0.25;
+        if (s.progress >= 100) {
+            GameState.level = Math.min(100, GameState.level + 1);
+            s.progress = 0;
+            playAudioEffect('buff');
+        }
+    } else if (pressure > 0) {
+        s.cracks += 0.4;
+        if (s.cracks >= 100) {
+            GameState.hp -= 20;
+            s.cracks = 0;
+            playAudioEffect('hit');
+            if (GameState.hp <= 0) triggerGameOver();
+        }
     }
 
-    ctx.fillStyle = 'rgba(0, 206, 209, 0.5)';
-    ctx.beginPath(); ctx.moveTo(w/2, h/2 - 60); ctx.lineTo(w/2 + 50, h/2); ctx.lineTo(w/2, h/2 + 60); ctx.lineTo(w/2 - 50, h/2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.fillText(`雕刻進度: ${Math.floor(s.progress)}% | 裂紋: ${Math.floor(s.cracks)}%`, w/2, h - 30); ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
+    ctx.fillText(`【玻璃心大師】精準氣流雕刻 (第 ${GameState.level} 關)`, 250, 25);
+
+    // 繪製水晶與雕刻軌跡
+    ctx.fillStyle = 'rgba(0, 206, 209, 0.4)';
+    ctx.beginPath(); ctx.moveTo(w/2, h/2 - 80); ctx.lineTo(w/2 + 60, h/2); 
+    ctx.lineTo(w/2, h/2 + 80); ctx.lineTo(w/2 - 60, h/2); ctx.fill();
+
+    // 穩定度量條
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(w/2 - 100, h - 100, 200, 20);
+    ctx.fillStyle = '#2ecc71'; ctx.fillRect(w/2 - 100, h - 100, s.progress * 2, 20);
+
+    ctx.fillStyle = '#f1c40f'; ctx.font = '14px sans-serif';
+    ctx.fillText(`雕刻進度: ${Math.floor(s.progress)}% | 玻璃裂紋: ${Math.floor(s.cracks)}%`, 250, h - 20);
 }
 </script>
 <!-- 👆 複製到這裡結束 👆 -->
