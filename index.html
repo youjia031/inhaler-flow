@@ -4053,5 +4053,460 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+<script>
+// ============================================================
+// 🌟 五大獨立遊戲模式：地板高度修正與全域音效隔離版
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const viewSelect = document.getElementById('viewModeSelect');
+    if (viewSelect && !document.getElementById('opt_painter')) {
+        viewSelect.innerHTML = `
+            <option value="chart">📊 專業圖表</option>
+            <option value="classic" selected>🚀 氣流飛行家 (獨立模式)</option>
+            <option value="painter" id="opt_painter">🎨 風之繪師 (自由穩定訓練)</option>
+            <option value="candle" id="opt_candle">🕯️ 燭光遠征 (動態分岔迷宮)</option>
+            <option value="mage" id="opt_mage">⚔️ 魔導士破魔 (中央防衛戰)</option>
+            <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (可見地板與墜毀)</option>
+            <option value="crystal" id="opt_crystal">💎 玻璃心大師 (100關進階雕刻)</option>
+            <option value="both">全模式 (圖表+飛行家)</option>
+            <option value="intro">📖 介紹圖鑑</option>
+        `;
+    }
+
+    const mainGameContainer = document.getElementById('gameContainer');
+    if (mainGameContainer && mainGameContainer.parentNode && !document.getElementById('subGameWrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'subGameWrapper';
+        wrapper.innerHTML = `
+            <div class="game-container" id="subGameContainer" style="display:none; position:relative;">
+                <canvas id="subGameCanvas" style="width:100%; height:100%; display:block; cursor:crosshair;"></canvas>
+                <div class="game-ui-overlay" style="position:absolute; top:15px; left:20px; right:20px; display:flex; justify-content:space-between; color:#fff; font-family:'Segoe UI',monospace; font-size:15px; font-weight:600; pointer-events:none; z-index:5;">
+                    <div class="hud-badge" id="subHudTitle" style="background:rgba(22,27,34,0.88); padding:8px 16px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);">⭐ 模式: 載入中</div>
+                    <div class="hud-badge" id="subHudHp" style="background:rgba(22,27,34,0.88); padding:8px 16px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);">❤️ 生命值: 100%</div>
+                </div>
+            </div>
+        `;
+        mainGameContainer.parentNode.insertBefore(wrapper, mainGameContainer.nextSibling);
+    }
+});
+
+let subGameAnimId = null;
+let currentActiveSubTheme = null;
+let subAudioInterval = null;
+
+function playSubThemeMusic(theme) {
+    if (subAudioInterval) clearInterval(subAudioInterval);
+    if (!document.getElementById('soundToggle')?.checked) return;
+    try {
+        let notes = [261, 293, 329, 349, 392, 440, 523];
+        let step = 0;
+        subAudioInterval = setInterval(() => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(notes[step % notes.length], audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            step++;
+        }, 300);
+    } catch(e) {}
+}
+
+function stopSubThemeMusic() {
+    if (subAudioInterval) { clearInterval(subAudioInterval); subAudioInterval = null; }
+}
+
+function getSubPressureInput() {
+    let pressure = 0;
+    let active = typeof isMeasuring !== 'undefined' ? isMeasuring : false;
+    let flow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? Math.abs(smoothedEst) : 0;
+    if (active && flow > 0.5) pressure = Math.min(100, flow * 2.5);
+    else if (typeof keyboardY !== 'undefined' && keyboardY !== null) pressure = 100 - (keyboardY / 480 * 100);
+    else if (typeof mouseY !== 'undefined' && mouseY !== null) pressure = 100 - (mouseY / 480 * 100);
+    return Math.max(0, Math.min(100, pressure));
+}
+
+// 🛑 徹底隔離原版飛行家 BGM 與音效的全面升級版 switchViewMode
+window.switchViewMode = function(mode) {
+    const chartBox = document.querySelector('.chart-container');
+    const classicGameBox = document.getElementById('gameContainer');
+    const subGameBox = document.getElementById('subGameContainer');
+    const introBox = document.getElementById('introContainer');
+
+    if (chartBox) chartBox.style.display = 'none';
+    if (classicGameBox) classicGameBox.style.display = 'none';
+    if (subGameBox) subGameBox.style.display = 'none';
+    if (introBox) introBox.style.display = 'none';
+
+    // 強制停止原版飛行家引擎與強制關閉全域 BGM 音樂
+    if (typeof stopGameEngine === 'function') stopGameEngine();
+    if (typeof stopBGM === 'function') stopBGM();
+    
+    // 額外保險：如果原版有全域音訊變數或計時器，直接暴力歸零
+    try {
+        if (typeof bgmInterval !== 'undefined') clearInterval(bgmInterval);
+    } catch(e) {}
+
+    if (subGameAnimId) { cancelAnimationFrame(subGameAnimId); subGameAnimId = null; }
+    stopSubThemeMusic();
+
+    currentActiveSubTheme = null;
+
+    if (mode === 'chart') {
+        if (chartBox) chartBox.style.display = 'block';
+    } 
+    else if (mode === 'classic') {
+        if (classicGameBox) classicGameBox.style.display = 'block';
+        if (typeof startBGM === 'function' && isMeasuring) startBGM();
+        setTimeout(() => {
+            if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+            if (typeof restartGameEngine === 'function') restartGameEngine();
+        }, 100);
+    } 
+    else if (mode === 'both') {
+        if (chartBox) { chartBox.style.display = 'block'; chartBox.style.marginBottom = '15px'; }
+        if (classicGameBox) { classicGameBox.style.display = 'block'; }
+        if (typeof startBGM === 'function' && isMeasuring) startBGM();
+        setTimeout(() => {
+            if (typeof resizeGameCanvas === 'function') resizeGameCanvas();
+            if (typeof restartGameEngine === 'function') restartGameEngine();
+        }, 100);
+    } 
+    else if (mode === 'intro') {
+        if (introBox) introBox.style.display = 'block';
+    } 
+    else {
+        // 切換到五大獨立遊戲模式時，絕對禁止任何原版音樂啟動
+        currentActiveSubTheme = mode;
+        if (subGameBox) subGameBox.style.display = 'block';
+        playSubThemeMusic(mode);
+        startSubGameEngine(mode);
+    }
+};
+
+// ============================================================
+// 🎮 遊戲核心引擎
+// ============================================================
+function startSubGameEngine(theme) {
+    const canvas = document.getElementById('subGameCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = canvas.parentElement.clientWidth || 800;
+    canvas.height = canvas.parentElement.clientHeight || 480;
+
+    let state = {
+        hp: 100, frame: 0, level: 1, score: 0, isGameOver: false,
+        painter: { cursorX: canvas.width/2, cursorY: canvas.height/2, lines: [] },
+        candle: { pathX: canvas.width / 2, angle: 0, obstacles: [], items: [], distance: 0 },
+        mage: { spells: [], enemies: [], chargeTime: 0 },
+        dandelion: { y: canvas.height / 2, weather: 'sunny', obstacles: [], distance: 0 },
+        crystal: { cracksPercent: 0, level: 1 }
+    };
+
+    const themeNames = {
+        painter: '🎨 風之繪師',
+        candle: '🕯️ 燭光遠征',
+        mage: '⚔️ 魔導士破魔',
+        dandelion: '🌿 蒲公英快遞',
+        crystal: '💎 玻璃心大師'
+    };
+
+    let mousePos = { x: canvas.width/2, y: canvas.height/2 };
+    canvas.onmousemove = (e) => {
+        let rect = canvas.getBoundingClientRect();
+        mousePos.x = e.clientX - rect.left;
+        mousePos.y = e.clientY - rect.top;
+    };
+
+    function triggerGameOver(reason) {
+        state.isGameOver = true;
+        alert(`💥 遊戲結束！\n📌 失敗模式：${themeNames[theme]}\n💀 致命死因：${reason}`);
+        state.hp = 100;
+        state.level = 1;
+        state.score = 0;
+        state.isGameOver = false;
+        state.mage.enemies = [];
+        state.candle.obstacles = [];
+        state.dandelion.obstacles = [];
+        state.dandelion.y = canvas.height / 2;
+    }
+
+    function loop() {
+        if (currentActiveSubTheme !== theme || state.isGameOver) return;
+        let w = canvas.width, h = canvas.height;
+        let pressure = getSubPressureInput();
+        state.frame++;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // 🎨 1. 風之繪師
+        if (theme === 'painter') {
+            ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, w, h);
+            state.painter.cursorX += (mousePos.x - state.painter.cursorX) * 0.1;
+            state.painter.cursorY += (mousePos.y - state.painter.cursorY) * 0.1;
+
+            if (pressure > 2) {
+                let strokeWidth = Math.max(3, pressure * 0.4);
+                state.painter.lines.push({ x: state.painter.cursorX, y: state.painter.cursorY, w: strokeWidth });
+                if (state.painter.lines.length > 150) state.painter.lines.shift();
+            }
+
+            for (let i = 1; i < state.painter.lines.length; i++) {
+                let p1 = state.painter.lines[i-1];
+                let p2 = state.painter.lines[i];
+                ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = p2.w; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+            }
+
+            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(state.painter.cursorX, state.painter.cursorY, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【風之繪師】移動滑鼠自由繪製，穩定氣流維持筆寬一致`, 40, 30);
+        }
+
+        // 🕯️ 2. 燭光遠征
+        else if (theme === 'candle') {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+            state.candle.distance += 2;
+            state.candle.angle += 0.02;
+
+            let targetCenterX = w / 2 + Math.sin(state.candle.angle) * 180 + Math.cos(state.candle.angle * 0.5) * 100;
+            state.candle.pathX += (targetCenterX - state.candle.pathX) * 0.05;
+
+            if (state.frame % 45 === 0) {
+                state.candle.obstacles.push({ x: state.candle.pathX + (Math.random() > 0.5 ? 120 : -140), y: h + 30 });
+                if (Math.random() > 0.4) state.candle.items.push({ x: state.candle.pathX + (Math.random() - 0.5) * 80, y: h + 30 });
+            }
+
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillRect(0, 0, state.candle.pathX - 100, h);
+            ctx.fillRect(state.candle.pathX + 100, 0, w - (state.candle.pathX + 100), h);
+
+            state.candle.obstacles.forEach((obs, idx) => {
+                obs.y -= 3;
+                ctx.fillStyle = '#ff3366'; ctx.fillRect(obs.x - 12, obs.y - 12, 24, 24);
+                if (Math.hypot(state.candle.pathX - obs.x, h/2 - obs.y) < 25) {
+                    state.hp -= 15; state.candle.obstacles.splice(idx, 1);
+                    if (state.hp <= 0) { triggerGameOver('燭光碰撞障礙物，光源熄滅'); return; }
+                }
+                if (obs.y < -40) state.candle.obstacles.splice(idx, 1);
+            });
+
+            state.candle.items.forEach((item, idx) => {
+                item.y -= 3;
+                ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(item.x, item.y, 10, 0, Math.PI*2); ctx.fill();
+                if (Math.hypot(state.candle.pathX - item.x, h/2 - item.y) < 25) {
+                    state.hp = Math.min(100, state.hp + 10); state.candle.items.splice(idx, 1);
+                }
+                if (item.y < -40) state.candle.items.splice(idx, 1);
+            });
+
+            let radius = Math.max(45, pressure * 3.2);
+            let grad = ctx.createRadialGradient(state.candle.pathX, h/2, 5, state.candle.pathX, h/2, radius);
+            grad.addColorStop(0, 'rgba(255, 220, 150, 0.95)'); grad.addColorStop(1, 'rgba(0, 0, 0, 0.98)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【燭光遠征】動態轉彎與分岔迷宮：控制視野尋找燈油`, 40, 30);
+        }
+
+        // ⚔️ 3. 魔導士破魔
+        else if (theme === 'mage') {
+            ctx.fillStyle = '#110c1d'; ctx.fillRect(0, 0, w, h);
+            let centerX = w / 2, centerY = h / 2;
+
+            if (pressure > 8) {
+                state.mage.chargeTime += 0.5;
+            } else if (state.mage.chargeTime > 4) {
+                let targetEnemy = null, minDist = Infinity;
+                state.mage.enemies.forEach(e => {
+                    let d = Math.hypot(e.x - centerX, e.y - centerY);
+                    if (d < minDist) { minDist = d; targetEnemy = e; }
+                });
+                state.mage.spells.push({ x: centerX, y: centerY, target: targetEnemy, power: state.mage.chargeTime });
+                state.mage.chargeTime = 0;
+            } else {
+                state.mage.chargeTime = 0;
+            }
+
+            let spawnInterval = Math.max(20, 70 - state.level * 3);
+            if (state.frame % spawnInterval === 0) {
+                let angle = Math.random() * Math.PI * 2;
+                let spawnDist = Math.max(w, h) * 0.6;
+                state.mage.enemies.push({
+                    x: centerX + Math.cos(angle) * spawnDist,
+                    y: centerY + Math.sin(angle) * spawnDist,
+                    hp: 20 + state.level * 5,
+                    speed: 1 + state.level * 0.1
+                });
+            }
+
+            ctx.fillStyle = '#9b59b6'; ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(centerX, centerY, 24, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+            state.mage.spells.forEach((s, idx) => {
+                if (s.target && s.target.hp > 0) {
+                    let angle = Math.atan2(s.target.y - s.y, s.target.x - s.x);
+                    s.x += Math.cos(angle) * 8; s.y += Math.sin(angle) * 8;
+                } else {
+                    s.x += 8;
+                }
+                ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(s.x, s.y, 8, 0, Math.PI*2); ctx.fill();
+
+                state.mage.enemies.forEach((e, eIdx) => {
+                    if (Math.hypot(s.x - e.x, s.y - e.y) < 25) {
+                        e.hp -= s.power * 10;
+                        state.mage.spells.splice(idx, 1);
+                        if (e.hp <= 0) {
+                            state.mage.enemies.splice(eIdx, 1);
+                            state.score += 10;
+                            if (state.score % 50 === 0) state.level++;
+                        }
+                    }
+                });
+            });
+
+            state.mage.enemies.forEach((e, idx) => {
+                let angle = Math.atan2(centerY - e.y, centerX - e.x);
+                e.x += Math.cos(angle) * e.speed;
+                e.y += Math.sin(angle) * e.speed;
+
+                ctx.fillStyle = '#ff3366'; ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
+                ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText(`HP:${Math.floor(e.hp)}`, e.x - 15, e.y - 15);
+
+                if (Math.hypot(centerX - e.x, centerY - e.y) < 30) {
+                    state.hp -= (15 + state.level * 3);
+                    state.mage.enemies.splice(idx, 1);
+                    if (state.hp <= 0) {
+                        triggerGameOver('中央防衛結界被大量暗黑魔物攻破，魔導士陣亡');
+                        return;
+                    }
+                }
+            });
+
+            ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(40, h - 40, 180, 16);
+            ctx.fillStyle = '#9b59b6'; ctx.fillRect(40, h - 40, Math.min(180, state.mage.chargeTime * 12), 16);
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【魔導士破魔】中央防衛戰 (關卡: ${state.level})：氣流集氣攻擊最近魔物`, 40, 30);
+        }
+
+        // 🌿 4. 蒲公英快遞 (修復地板高度，觸地即死)
+        else if (theme === 'dandelion') {
+            state.dandelion.distance++;
+            if (state.dandelion.distance % 500 === 0) {
+                let weathers = ['sunny', 'rainy', 'snowy'];
+                state.dandelion.weather = weathers[Math.floor(Math.random() * weathers.length)];
+            }
+
+            ctx.fillStyle = state.dandelion.weather === 'rainy' ? '#112233' : (state.dandelion.weather === 'snowy' ? '#223344' : '#224466');
+            ctx.fillRect(0, 0, w, h);
+
+            if (state.frame % 70 === 0) {
+                state.dandelion.obstacles.push({ x: w + 50, y: Math.random() * (h - 140) + 40 });
+            }
+
+            state.dandelion.obstacles.forEach((obs, idx) => {
+                obs.x -= 3;
+                ctx.fillStyle = '#e74c3c'; ctx.fillRect(obs.x, obs.y, 25, 25);
+                if (Math.hypot(180 - obs.x, state.dandelion.y - obs.y) < 25) {
+                    state.hp -= 20; state.dandelion.obstacles.splice(idx, 1);
+                    if (state.hp <= 0) { triggerGameOver('蒲公英飛行途中撞擊障礙物墜毀'); return; }
+                }
+                if (obs.x < -50) state.dandelion.obstacles.splice(idx, 1);
+            });
+
+            // 氣流高度計算 (將可見地板拉高到畫面下方 80 像素處)
+            let groundLevel = h - 80;
+            let targetY = groundLevel - (pressure / 100 * (groundLevel - 80));
+            state.dandelion.y += (targetY - state.dandelion.y) * 0.1;
+
+            // 🛑 觸地判定：一碰到地面立刻判定墜毀死亡
+            if (state.dandelion.y >= groundLevel - 15) {
+                triggerGameOver('氣流完全中斷，蒲公英重摔落地墜毀');
+                return;
+            }
+
+            // 畫出清晰可見的地面
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, groundLevel, w, 80);
+            ctx.fillStyle = '#27ae60'; ctx.fillRect(0, groundLevel, w, 10); // 草皮
+
+            // 畫空中蒲公英
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(180, state.dandelion.y, 16, 0, Math.PI*2); ctx.fill();
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【蒲公英快遞】可見地面與嚴格墜毀：氣流不足觸地即死`, 40, 30);
+        }
+
+        // 💎 5. 玻璃心大師
+        else if (theme === 'crystal') {
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+
+            let tolerance = Math.max(4, 22 - Math.floor(state.crystal.level / 5));
+            let targetCenter = 50;
+            let targetMin = targetCenter - tolerance;
+            let targetMax = targetCenter + tolerance;
+
+            if (pressure >= targetMin && pressure <= targetMax) {
+                state.crystal.cracksPercent = Math.max(0, state.crystal.cracksPercent - 0.6);
+            } else if (pressure > 2) {
+                state.crystal.cracksPercent += (0.5 + state.crystal.level * 0.05);
+                if (state.crystal.cracksPercent >= 100) {
+                    state.hp -= 20;
+                    state.crystal.cracksPercent = 0;
+                    state.crystal.level = Math.min(100, state.crystal.level + 1);
+                    if (state.hp <= 0) { triggerGameOver('水晶雕刻過度碎裂崩塌，大師心態炸裂'); return; }
+                }
+            }
+
+            ctx.save();
+            ctx.translate(w/2, h/2);
+            let scale = 1 - (state.crystal.cracksPercent / 350);
+            ctx.scale(scale, scale);
+
+            ctx.fillStyle = '#3498db'; ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, -90); ctx.lineTo(70, -20); ctx.lineTo(40, 80); ctx.lineTo(-40, 80); ctx.lineTo(-70, -20);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+
+            ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 3;
+            if (state.crystal.cracksPercent > 25) {
+                ctx.beginPath(); ctx.moveTo(0, -90); ctx.lineTo(15, 20); ctx.lineTo(-20, 50); ctx.stroke();
+            }
+            if (state.crystal.cracksPercent > 60) {
+                ctx.beginPath(); ctx.moveTo(70, -20); ctx.lineTo(0, 10); ctx.lineTo(25, 70); ctx.stroke();
+            }
+            if (state.crystal.cracksPercent > 85) {
+                ctx.beginPath(); ctx.moveTo(-70, -20); ctx.lineTo(-15, 0); ctx.lineTo(0, 40); ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(w/2 - 150, h - 80, 300, 22);
+            ctx.fillStyle = state.crystal.cracksPercent > 70 ? '#ff3366' : '#f1c40f';
+            ctx.fillRect(w/2 - 150, h - 80, state.crystal.cracksPercent * 3, 22);
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【玻璃心大師】第 ${state.crystal.level}/100 關 (維持 ${targetMin}~${targetMax}) 碎裂度: ${Math.floor(state.crystal.cracksPercent)}%`, 40, 30);
+        }
+
+        // 左側氣流柱
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(20, 60, 20, 150);
+        ctx.fillStyle = pressure > 80 ? '#e74c3c' : (pressure > 30 ? '#2ecc71' : '#3498db');
+        let ph = (pressure / 100) * 150;
+        ctx.fillRect(20, 210 - ph, 20, ph);
+        ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText('氣流', 18, 225);
+
+        document.getElementById('subHudTitle').innerText = `⭐ ${themeNames[theme]}`;
+        document.getElementById('subHudHp').innerText = `❤️ 生命值: ${Math.max(0, Math.floor(state.hp))}%`;
+
+        subGameAnimId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+</script>
 </body>
 </html>
