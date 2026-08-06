@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>呼吸訓練器 - 插件化架構</title>
+<title>呼吸訓練器 - 完整版 v6.0</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <style>
-/* ===== 原有樣式保持不變（此處省略以節省空間，實際使用時保留完整） ===== */
+/* ===== 所有原有樣式保持不變 ===== */
 * { box-sizing: border-box; }
 body {
 font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -622,11 +622,11 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="header">
 <div class="main-title">呼吸訓練器</div>
 <h1>Inhaler Flow Monitor</h1>
-<p>Acoustic inhaler flow visualization & Plugin Games</p>
+<p>Acoustic inhaler flow visualization & Flight Game</p>
 </div>
 
 <!-- ===== 控制面板 ===== -->
-<div class="control-panel" id="mainControlPanel">
+<div class="control-panel">
 <button id="connectBtn" class="btn accent">Connect</button>
 <button id="startBtn" class="btn" disabled>Start</button>
 <button id="segmentBtn" class="btn accent">PKL Index 切分</button>
@@ -646,7 +646,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 
 <!-- ===== 圖表 ===== -->
-<div class="chart-container" id="chartContainer">
+<div class="chart-container">
 <canvas id="flowChart"></canvas>
 </div>
 
@@ -660,7 +660,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 </div>
 <div class="game-ui-overlay">
 <div class="hud-badge" id="gameHUD">
-<!-- 由遊戲插件動態生成 -->
+<!-- 由遊戲動態更新 -->
 </div>
 <div class="hud-badge">
 <button id="fullscreenBtn" class="btn purple-btn" style="padding:4px 10px; font-size:12px;" onclick="toggleFullscreen()">全螢幕 🖥️</button>
@@ -681,7 +681,7 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="modal-screen" id="winScreen" style="display: none;">
 <div class="modal-card">
 <h1 style="color: #2ecc71; margin-top:0; font-size: 36px;">🎉 恭喜過關！🎉</h1>
-<p style="color: #ccc; font-size: 18px;" id="winMessage">你完成了所有挑戰！</p>
+<p style="color: #ccc; font-size: 18px;" id="winMessage">你贏了！</p>
 <button class="btn game-btn" style="padding: 10px 25px; font-size: 16px;" onclick="restartGameEngine()">🔄 再玩一次</button>
 </div>
 </div>
@@ -693,6 +693,13 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <p style="font-size: 13px; color: #7f8c8d;">倒數結束後將自動繼續</p>
 </div>
 </div>
+<div id="finalBossOverlay">
+<div class="boss-title">👾 虛空領主 · 降臨</div>
+<div class="boss-subtitle">⚔️ 最終試煉 · 第 100 關 ⚔️</div>
+<video id="bossVideo" muted playsinline><source src="" type="video/mp4"></video>
+<audio id="bossAudio" loop></audio>
+<button class="boss-skip-btn" onclick="skipBossSequence()">⏭️ 跳過動畫</button>
+</div>
 
 <div class="control-hint" id="controlHint">
 🌬️ 呼吸: <span id="hintBreath">等待啟動</span> ｜ 
@@ -700,12 +707,14 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 🖱️ 滑鼠: <span id="hintMouse">移動</span>
 </div>
 
+<div class="boss-warning-text" id="bossWarningText">⚠️ 技能來襲！</div>
+
 <button class="help-btn" id="helpBtn" onclick="toggleControlGuide()" title="操控說明">❓</button>
 
 <div class="control-guide" id="controlGuide">
     <h4 id="guideTitle">🎮 操控說明</h4>
     <div id="guideContent">
-        <!-- 由遊戲插件動態生成 -->
+        <!-- 由遊戲動態更新 -->
     </div>
 </div>
 </div>
@@ -714,11 +723,11 @@ animation: warningPulse 0.5s ease-in-out infinite alternate;
 <div class="statusbar" id="status">Not connected</div>
 
 <!-- ============================================================ -->
-<!-- JavaScript - 核心系統 -->
+<!-- JavaScript -->
 <!-- ============================================================ -->
 <script>
 // =====================================================
-// 1. 核心系統 - 教育引導線
+// 教育引導線
 // =====================================================
 const EDUCATION_PROGRAM = [
 ["inhalation", 0, 3], ["inhalation", 60, 2], ["inhalation", 0, 1],
@@ -755,7 +764,7 @@ const inhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.inh[i]}));
 const exhaleGuidePoints=guideData.times.map((t,i)=>({x:t,y:guideData.exh[i]}));
 
 // =====================================================
-// 2. 核心系統 - 全域變數 (串口相關)
+// 全域變數
 // =====================================================
 let port=null,reader=null,isMeasuring=false;
 let records=[],flowHistory=[],windowHistory=[false,false,false];
@@ -767,7 +776,7 @@ let predictionBuffer=[];
 let lastConfirmedMode="inhalation";
 
 // =====================================================
-// 3. 核心系統 - 鍵盤與滑鼠操控
+// 鍵盤與滑鼠操控
 // =====================================================
 let keyboardControlEnabled = true;
 let mouseControlEnabled = true;
@@ -778,7 +787,7 @@ let useMouseControl = false;
 let keyboardTimeout = null;
 
 // =====================================================
-// 4. 核心系統 - 遊戲相關全域變數
+// 遊戲相關變數
 // =====================================================
 const gameCanvas = document.getElementById('gameCanvas');
 const gameCtx = gameCanvas.getContext('2d');
@@ -789,13 +798,1584 @@ let isGameOver = false;
 let isResting = false;
 let restTimer = null;
 let sessionStartTime = 0;
-let playerHP = 100;
-
-// 當前選擇的遊戲ID
-let currentGameId = 'painter';
 
 // =====================================================
-// 5. 核心系統 - 音效
+// 遊戲模式定義 - 包含氣流飛行員
+// =====================================================
+const GAME_MODES = {
+    FLIGHT: 'flight',      // 原有的氣流飛行員
+    PAINTER: 'painter',    // 風之繪師
+    CANDLE: 'candle',      // 燭光遠征
+    WIZARD: 'wizard',      // 魔導士破魔
+    DANDELION: 'dandelion',// 蒲公英快遞
+    CRYSTAL: 'crystal'     // 玻璃心大師
+};
+
+let currentGameMode = GAME_MODES.FLIGHT; // 預設為氣流飛行員
+
+// =====================================================
+// 氣流飛行員 - 原有的遊戲 (完整保留)
+// =====================================================
+let rocket={x:120,y:240,angle:0,radius:18};
+let stars=[], particles=[], collectibles=[], obstacles=[];
+let gameScore=0, gameCombo=0, playerHP=100;
+let hasShield=false, feverTimer=0, magnetTimer=0, doubleScoreTimer=0, slowDebuffTimer=0;
+let bossActive=false, currentBoss=null;
+let bossSkillWarning=null, bossSkillType=null;
+let poisonTimer=0, poisonDamage=0, freezeTimer=0, attackCooldown=0;
+let shieldCharges=0, invincibleActive=false, invincibleTimer=0;
+
+// 原有道具、障礙物、Boss定義
+const ITEM_TYPES = [
+    {type:'coin', emoji:'🪙', color:'#f1c40f', label:'金幣', score:50, category:'positive'},
+    {type:'heart', emoji:'❤️', color:'#e74c3c', label:'治癒之心', heal:25, category:'positive'},
+    {type:'shield', emoji:'🛡️', color:'#3498db', label:'護盾', category:'positive'},
+    {type:'magnet', emoji:'🧲', color:'#e74c3c', label:'磁鐵', category:'positive'},
+    {type:'double', emoji:'💎', color:'#9b59b6', label:'雙倍積分', category:'positive'},
+    {type:'fever', emoji:'⚡', color:'#e67e22', label:'FEVER', category:'positive'},
+    {type:'missile', emoji:'🚀', color:'#e74c3c', label:'飛彈', attack:30, attackType:'missile', category:'attack'},
+    {type:'bomb', emoji:'💣', color:'#e74c3c', label:'炸彈', attack:50, attackType:'bomb', category:'attack'},
+    {type:'laser', emoji:'🔫', color:'#e74c3c', label:'雷射', attack:25, attackType:'laser', category:'attack'},
+];
+
+const OBSTACLE_TYPES = [
+    {type:'cloud', emoji:'⛈️', color:'#34495e', label:'雷暴雲', damage:25},
+    {type:'poison', emoji:'🟣', color:'#8e44ad', label:'毒霧', damage:40},
+    {type:'spike', emoji:'🔺', color:'#e74c3c', label:'尖刺', damage:30},
+    {type:'fire', emoji:'🔥', color:'#e67e22', label:'火焰', damage:35},
+];
+
+const BOSS_TYPES = [
+    {type:'boss_fire', name:'🔥 火龍', emoji:'🐉', color:'#e74c3c', hp:200, speed:1.2, radius:30, skills:['火焰吐息']},
+    {type:'boss_ice', name:'❄️ 冰霜巨人', emoji:'🧊', color:'#3498db', hp:300, speed:0.8, radius:35, skills:['冰凍光環']},
+    {type:'boss_shadow', name:'🌑 暗影刺客', emoji:'🗡️', color:'#8e44ad', hp:150, speed:2.0, radius:22, skills:['暗影突襲']},
+];
+
+function initFlightGame() {
+    const h = gameCanvas.height || 480;
+    rocket.x = 120;
+    rocket.y = h / 2;
+    rocket.angle = 0;
+    gameScore = 0;
+    gameCombo = 0;
+    playerHP = 100;
+    hasShield = false;
+    feverTimer = 0;
+    magnetTimer = 0;
+    doubleScoreTimer = 0;
+    slowDebuffTimer = 0;
+    bossActive = false;
+    currentBoss = null;
+    collectibles = [];
+    obstacles = [];
+    particles = [];
+    stars = [];
+    initStars();
+}
+
+function initStars() {
+    const count = 50;
+    stars = [];
+    const w = gameCanvas.width || 800;
+    const h = gameCanvas.height || 480;
+    for (let i = 0; i < count; i++) {
+        stars.push({x: Math.random() * w, y: Math.random() * h, size: Math.random() * 2 + 1, baseSpeed: Math.random() * 2 + 0.5});
+    }
+}
+
+function drawRocket(x, y, angle) {
+    if (isNaN(x) || isNaN(y) || isNaN(angle)) { return; }
+    gameCtx.save();
+    gameCtx.translate(x, y);
+    gameCtx.rotate(angle);
+    gameCtx.fillStyle = '#ecf0f1';
+    gameCtx.beginPath();
+    gameCtx.moveTo(20, 0);
+    gameCtx.lineTo(-12, -10);
+    gameCtx.lineTo(-8, 0);
+    gameCtx.lineTo(-12, 10);
+    gameCtx.closePath();
+    gameCtx.fill();
+    gameCtx.fillStyle = '#3498db';
+    gameCtx.beginPath();
+    gameCtx.moveTo(-4, -6);
+    gameCtx.lineTo(-14, -14);
+    gameCtx.lineTo(-8, 0);
+    gameCtx.lineTo(-14, 14);
+    gameCtx.lineTo(-4, 6);
+    gameCtx.closePath();
+    gameCtx.fill();
+    gameCtx.restore();
+}
+
+function drawObstacle(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 14;
+    const obs = OBSTACLE_TYPES.find(o => o.type === type);
+    const emoji = obs?.emoji || '💥';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 1.2}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 1);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+function drawItem(ctx, x, y, type, radius) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = radius || 14;
+    const item = ITEM_TYPES.find(i => i.type === type);
+    const emoji = item?.emoji || '?';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 1.5}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 1);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+function drawBoss(ctx, x, y, boss) {
+    ctx.save();
+    ctx.translate(x, y);
+    const r = boss.radius || 30;
+    ctx.shadowColor = boss.color || '#8e44ad';
+    ctx.shadowBlur = 40;
+    ctx.fillStyle = boss.color || '#8e44ad';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+    ctx.font = `${r * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(boss.emoji || '👹', 0, 0);
+    ctx.restore();
+}
+
+// =====================================================
+// 氣流飛行員 - 更新與渲染
+// =====================================================
+function updateFlightGame(breathFlow) {
+    if (isPaused || isGameOver) return;
+    
+    const w = gameCanvas.width || 800;
+    const h = gameCanvas.height || 480;
+    const flowMag = Math.abs(breathFlow);
+    const isExhaling = breathFlow < 0;
+    const speedMult = parseFloat(document.getElementById('gameSpeedSelect')?.value || '1.0');
+    const diff = document.getElementById('gameDifficultySelect')?.value || 'normal';
+    const diffMult = (diff === 'hard') ? 1.3 : (diff === 'easy' ? 0.85 : 1.0);
+    const userSpeedMult = (slowDebuffTimer > 0) ? (speedMult * diffMult * 0.5) : (speedMult * diffMult);
+    
+    // 呼吸控制飛船
+    if (isMeasuring && flowMag > 3) {
+        const sensitivity = (diff === 'easy') ? 1.8 : (diff === 'hard' ? 0.8 : 1.2);
+        let targetY = h / 2 - (breathFlow * 2.2 * sensitivity);
+        targetY = Math.max(30, Math.min(h - 30, targetY));
+        let dy = targetY - rocket.y;
+        if (isNaN(dy)) dy = 0;
+        rocket.y += dy * 0.1;
+        rocket.angle = Math.atan2(dy, 25);
+    }
+    
+    // 鍵盤控制
+    if (keyboardControlEnabled && useKeyboardControl && keyboardY !== null) {
+        const dy = keyboardY - rocket.y;
+        rocket.y += dy * 0.15;
+        rocket.angle = Math.atan2(dy, 25);
+    }
+    
+    // 滑鼠控制
+    if (mouseControlEnabled && useMouseControl && mouseY !== null) {
+        const dy = mouseY - rocket.y;
+        rocket.y += dy * 0.15;
+        rocket.angle = Math.atan2(dy, 25);
+    }
+    
+    // 更新星星
+    stars.forEach(s => { s.x -= s.baseSpeed * userSpeedMult; if (s.x < 0) s.x = w; });
+    
+    // 生成道具
+    if (Math.random() < 0.008 * userSpeedMult) {
+        const item = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+        collectibles.push({...item, x: w + 20, y: Math.random() * (h - 100) + 50, radius: 12, baseSpeed: 3, collected: false});
+    }
+    
+    // 生成障礙物
+    if (Math.random() < 0.01 * userSpeedMult) {
+        const obs = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
+        obstacles.push({...obs, x: w + 30, y: Math.random() * (h - 100) + 50, radius: 14, baseSpeed: 4, hit: false});
+    }
+    
+    // 更新道具
+    collectibles.forEach(c => {
+        c.x -= c.baseSpeed * userSpeedMult;
+        drawItem(gameCtx, c.x, c.y, c.type, c.radius);
+        let dist = Math.hypot(c.x - rocket.x, c.y - rocket.y);
+        if (dist < c.radius + rocket.radius) {
+            if (c.type === 'coin') { gameScore += 50; gameCombo++; playAudioEffect('coin'); }
+            else if (c.type === 'heart') { playerHP = Math.min(100, playerHP + 25); playAudioEffect('buff'); }
+            else if (c.type === 'shield') { hasShield = true; playAudioEffect('buff'); }
+            else if (c.type === 'magnet') { magnetTimer = 350; playAudioEffect('buff'); }
+            else if (c.type === 'double') { doubleScoreTimer = 350; playAudioEffect('buff'); }
+            else if (c.type === 'fever') { feverTimer = 300; playAudioEffect('buff'); }
+            c.collected = true;
+        }
+    });
+    collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
+    
+    // 更新障礙物
+    obstacles.forEach(o => {
+        o.x -= o.baseSpeed * userSpeedMult;
+        drawObstacle(gameCtx, o.x, o.y, o.type, o.radius);
+        let dist = Math.hypot(o.x - rocket.x, o.y - rocket.y);
+        if (dist < o.radius + rocket.radius) {
+            if (hasShield) { hasShield = false; }
+            else { playerHP = Math.max(0, playerHP - (o.damage || 10)); }
+            o.hit = true;
+            playAudioEffect('hit');
+        }
+    });
+    obstacles = obstacles.filter(o => o.x > -20 && !o.hit);
+    
+    // Boss 出現
+    if (!bossActive && Math.random() < 0.002 * userSpeedMult) {
+        const bossIdx = Math.floor(Math.random() * BOSS_TYPES.length);
+        const boss = BOSS_TYPES[bossIdx];
+        currentBoss = {...boss, x: w + 50, y: Math.random() * (h - 100) + 50, hp: boss.hp, maxHp: boss.hp, skillTimer: 0};
+        bossActive = true;
+        playAudioEffect('boss');
+    }
+    
+    // Boss 行為
+    if (bossActive && currentBoss) {
+        currentBoss.x -= (currentBoss.speed || 1) * userSpeedMult;
+        drawBoss(gameCtx, currentBoss.x, currentBoss.y, currentBoss);
+        const hpPct = currentBoss.hp / currentBoss.maxHp;
+        gameCtx.fillStyle = 'rgba(0,0,0,0.7)';
+        gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60, 6);
+        gameCtx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
+        gameCtx.fillRect(currentBoss.x - 30, currentBoss.y - currentBoss.radius - 12, 60 * hpPct, 6);
+        const bossDist = Math.hypot(currentBoss.x - rocket.x, currentBoss.y - rocket.y);
+        if (bossDist < currentBoss.radius + rocket.radius) {
+            if (hasShield) { hasShield = false; }
+            else { playerHP = Math.max(0, playerHP - 15); playAudioEffect('hit'); }
+        }
+        if (currentBoss.x < -50) { bossActive = false; currentBoss = null; }
+    }
+    
+    // 更新計時器
+    if (feverTimer > 0) feverTimer--;
+    if (magnetTimer > 0) magnetTimer--;
+    if (doubleScoreTimer > 0) doubleScoreTimer--;
+    if (slowDebuffTimer > 0) slowDebuffTimer--;
+    
+    // 更新UI
+    document.getElementById('gameScore').textContent = gameScore;
+    document.getElementById('gameCombo').textContent = gameCombo;
+    document.getElementById('hpFill').style.width = `${playerHP}%`;
+    document.getElementById('feverBadge').style.display = feverTimer > 0 ? 'inline' : 'none';
+    document.getElementById('shieldBadge').style.display = hasShield ? 'inline' : 'none';
+    document.getElementById('magnetBadge').style.display = magnetTimer > 0 ? 'inline' : 'none';
+    document.getElementById('doubleBadge').style.display = doubleScoreTimer > 0 ? 'inline' : 'none';
+    document.getElementById('slowBadge').style.display = slowDebuffTimer > 0 ? 'inline' : 'none';
+    document.getElementById('bossWarning').style.display = bossActive ? 'inline' : 'none';
+    
+    if (playerHP <= 0) {
+        triggerGameOver('氣流飛行員');
+    }
+}
+
+function renderFlightGame() {
+    const w = gameCanvas.width || 800;
+    const h = gameCanvas.height || 480;
+    
+    // 背景
+    gameCtx.fillStyle = '#0d1117';
+    gameCtx.fillRect(0, 0, w, h);
+    
+    // 星星
+    stars.forEach(s => {
+        gameCtx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.3})`;
+        gameCtx.fillRect(s.x, s.y, s.size, s.size);
+    });
+    
+    // 繪製火箭
+    drawRocket(rocket.x, rocket.y, rocket.angle);
+}
+
+// =====================================================
+// 風之繪師 - 遊戲 (完整版)
+// =====================================================
+const PainterGame = {
+    level: 1,
+    maxLevel: 100,
+    hp: 100,
+    maxHp: 100,
+    isPlaying: false,
+    isPaused: false,
+    isGameOver: false,
+    
+    brushX: 0,
+    brushY: 0,
+    brushSize: 3,
+    brushAlpha: 0.8,
+    brushColor: '#8B6914',
+    
+    isDrawing: false,
+    drawPoints: [],
+    strokeProgress: 0,
+    strokePoints: [],
+    strokesPerPainting: 1,
+    currentStroke: 0,
+    
+    shapePath: [],
+    currentShapeIndex: 0,
+    shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
+    
+    particles: [],
+    items: [],
+    hasPalette: false,
+    hasFineBrush: false,
+    paletteTimer: 0,
+    fineBrushTimer: 0,
+    
+    paintingsCompleted: 0,
+    errors: 0,
+    maxErrors: 5,
+    
+    musicInterval: null,
+    musicStep: 0,
+    musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319],
+    
+    shapeNames: {
+        'circle': '⭕ 圓形', 'square': '⬜ 方形', 'triangle': '🔺 三角形',
+        'star': '⭐ 星星', 'heart': '❤️ 愛心', 'flower': '🌸 花朵',
+        'butterfly': '🦋 蝴蝶', 'diamond': '💎 鑽石', 'moon': '🌙 月亮', 'spiral': '🌀 螺旋'
+    },
+    
+    init() {
+        this.level = 1;
+        this.hp = this.maxHp;
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.isGameOver = false;
+        this.drawPoints = [];
+        this.particles = [];
+        this.items = [];
+        this.paintingsCompleted = 0;
+        this.errors = 0;
+        this.maxErrors = 5;
+        this.hasPalette = false;
+        this.hasFineBrush = false;
+        this.paletteTimer = 0;
+        this.fineBrushTimer = 0;
+        this.strokeProgress = 0;
+        this.currentStroke = 0;
+        
+        this.updateStrokeCount();
+        this.generateShape();
+        
+        const canvas = document.getElementById('gameCanvas');
+        if (canvas) {
+            this.brushX = canvas.width / 2;
+            this.brushY = canvas.height / 2;
+        }
+        this.updateUI();
+        this.startMusic();
+    },
+    
+    startMusic() {
+        this.stopMusic();
+        if (!document.getElementById('soundToggle')?.checked) return;
+        this.musicInterval = setInterval(() => {
+            if (this.isPaused || this.isGameOver) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                const now = audioCtx.currentTime;
+                const note = this.musicNotes[this.musicStep % this.musicNotes.length];
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(note, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+                this.musicStep++;
+            } catch(e) {}
+        }, 380);
+    },
+    
+    stopMusic() {
+        if (this.musicInterval) {
+            clearInterval(this.musicInterval);
+            this.musicInterval = null;
+            this.musicStep = 0;
+        }
+    },
+    
+    updateStrokeCount() {
+        if (this.level <= 20) this.strokesPerPainting = 1;
+        else if (this.level <= 40) this.strokesPerPainting = 2;
+        else if (this.level <= 60) this.strokesPerPainting = 3;
+        else if (this.level <= 80) this.strokesPerPainting = 4;
+        else this.strokesPerPainting = 5;
+        this.currentStroke = 0;
+        this.strokeProgress = 0;
+    },
+    
+    generateShape() {
+        const canvas = document.getElementById('gameCanvas');
+        if (!canvas) return;
+        const w = canvas.width, h = canvas.height;
+        const cx = w / 2, cy = h / 2;
+        const size = Math.min(w, h) * 0.22 * (1 + (this.level - 1) * 0.003);
+        const shapeCount = Math.min(Math.floor(this.level / 8) + 1, this.shapeTypes.length);
+        const shapeType = this.shapeTypes[this.currentShapeIndex % shapeCount];
+        this.shapePath = this.generateShapePoints(shapeType, cx, cy, Math.min(size, Math.min(w, h) * 0.35));
+        this.strokePoints = [];
+        this.strokeProgress = 0;
+        this.drawPoints = [];
+        this.splitIntoStrokes();
+        this.updateUI();
+    },
+    
+    generateShapePoints(type, cx, cy, size) {
+        const points = [];
+        const steps = 80 + Math.floor(this.level / 2);
+        switch(type) {
+            case 'circle':
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    points.push({x: cx + size * Math.cos(angle), y: cy + size * Math.sin(angle)});
+                }
+                break;
+            case 'square': {
+                const halfSize = size * 0.7;
+                for (let i = 0; i < steps; i++) {
+                    const progress = i / steps;
+                    const corner = Math.floor(progress * 4);
+                    const cp = (progress * 4) - corner;
+                    const angle = (corner / 4) * Math.PI * 2;
+                    const nextAngle = ((corner + 1) / 4) * Math.PI * 2;
+                    points.push({
+                        x: cx + halfSize * (Math.cos(angle) + cp * (Math.cos(nextAngle) - Math.cos(angle))),
+                        y: cy + halfSize * (Math.sin(angle) + cp * (Math.sin(nextAngle) - Math.sin(angle)))
+                    });
+                }
+                break;
+            }
+            case 'triangle': {
+                for (let i = 0; i < steps; i++) {
+                    const progress = i / steps;
+                    const corner = Math.floor(progress * 3);
+                    const cp = (progress * 3) - corner;
+                    const angle = (corner / 3) * Math.PI * 2 - Math.PI / 2;
+                    const nextAngle = ((corner + 1) / 3) * Math.PI * 2 - Math.PI / 2;
+                    points.push({
+                        x: cx + size * 0.7 * (Math.cos(angle) + cp * (Math.cos(nextAngle) - Math.cos(angle))),
+                        y: cy + size * 0.7 * (Math.sin(angle) + cp * (Math.sin(nextAngle) - Math.sin(angle)))
+                    });
+                }
+                break;
+            }
+            case 'star': {
+                for (let i = 0; i < steps; i++) {
+                    const progress = i / steps;
+                    const angle = progress * Math.PI * 2 - Math.PI / 2;
+                    const radius = (Math.floor(progress * 10) % 2 === 0) ? size : size * 0.4;
+                    points.push({x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle)});
+                }
+                break;
+            }
+            case 'heart': {
+                for (let i = 0; i < steps; i++) {
+                    const t = (i / steps) * Math.PI * 2;
+                    points.push({
+                        x: cx + size * 0.6 * (16 * Math.pow(Math.sin(t), 3)),
+                        y: cy - size * 0.6 * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t))
+                    });
+                }
+                break;
+            }
+            case 'flower': {
+                const petals = 5 + Math.floor(this.level / 15);
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    const r = size * (0.6 + 0.4 * Math.sin(petals * angle));
+                    points.push({x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle)});
+                }
+                break;
+            }
+            case 'butterfly': {
+                for (let i = 0; i < steps; i++) {
+                    const t = (i / steps) * Math.PI * 2;
+                    const r = size * (0.7 + 0.3 * Math.sin(3 * t));
+                    points.push({x: cx + r * Math.cos(t) * 0.7, y: cy + r * Math.sin(t) * 0.5});
+                }
+                break;
+            }
+            case 'diamond': {
+                for (let i = 0; i < steps; i++) {
+                    const progress = i / steps;
+                    const corner = Math.floor(progress * 4);
+                    const cp = (progress * 4) - corner;
+                    const angle = (corner / 4) * Math.PI * 2 + Math.PI / 4;
+                    const nextAngle = ((corner + 1) / 4) * Math.PI * 2 + Math.PI / 4;
+                    points.push({
+                        x: cx + size * 0.8 * (Math.cos(angle) + cp * (Math.cos(nextAngle) - Math.cos(angle))),
+                        y: cy + size * 0.8 * (Math.sin(angle) + cp * (Math.sin(nextAngle) - Math.sin(angle)))
+                    });
+                }
+                break;
+            }
+            case 'moon': {
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    const r = size * (0.5 + 0.5 * Math.sin(angle));
+                    points.push({x: cx + r * Math.cos(angle) * 0.8, y: cy + r * Math.sin(angle) * 0.8});
+                }
+                break;
+            }
+            case 'spiral': {
+                const turns = 2 + Math.floor(this.level / 20);
+                for (let i = 0; i < steps * 2; i++) {
+                    const progress = i / (steps * 2);
+                    const angle = progress * Math.PI * 2 * turns;
+                    const r = size * 0.1 + size * 0.8 * progress;
+                    points.push({x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle)});
+                }
+                break;
+            }
+            default: {
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    points.push({x: cx + size * Math.cos(angle), y: cy + size * Math.sin(angle)});
+                }
+            }
+        }
+        return points;
+    },
+    
+    splitIntoStrokes() {
+        const totalPoints = this.shapePath.length;
+        const pointsPerStroke = Math.floor(totalPoints / this.strokesPerPainting);
+        this.strokePoints = [];
+        for (let i = 0; i < this.strokesPerPainting; i++) {
+            const start = i * pointsPerStroke;
+            const end = (i === this.strokesPerPainting - 1) ? totalPoints : (i + 1) * pointsPerStroke;
+            this.strokePoints.push(this.shapePath.slice(start, end));
+        }
+        const remaining = totalPoints - (this.strokesPerPainting * pointsPerStroke);
+        if (remaining > 0 && this.strokePoints.length > 0) {
+            const lastStroke = this.strokePoints[this.strokePoints.length - 1];
+            for (let i = totalPoints - remaining; i < totalPoints; i++) {
+                lastStroke.push(this.shapePath[i]);
+            }
+        }
+        this.strokeIndex = 0;
+        this.strokeProgress = 0;
+        this.currentStroke = 0;
+    },
+    
+    update(breathFlow) {
+        if (this.isPaused || this.isGameOver) return;
+        const flowMag = Math.abs(breathFlow);
+        const isExhaling = breathFlow < 0;
+        
+        if (isExhaling && flowMag > 3) {
+            this.isDrawing = true;
+            this.brushSize = Math.min(3 + flowMag / 5, 20);
+            this.brushAlpha = Math.min(1, 0.3 + flowMag / 40);
+            if (this.hasPalette) {
+                const hue = (Date.now() / 50 + this.level * 10) % 360;
+                this.brushColor = `hsl(${hue}, 70%, 55%)`;
+            } else {
+                const colors = ['#8B6914', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#D35400'];
+                this.brushColor = colors[Math.floor((this.level - 1) / 15) % colors.length];
+            }
+            this.drawAlongPath(flowMag);
+        } else {
+            this.isDrawing = false;
+        }
+        this.updateParticles();
+        this.updateItems();
+        if (this.paletteTimer > 0) this.paletteTimer--;
+        if (this.fineBrushTimer > 0) this.fineBrushTimer--;
+        if (this.hp <= 0) this.triggerGameOver();
+        this.updateUI();
+    },
+    
+    drawAlongPath(flowMag) {
+        if (this.currentStroke >= this.strokesPerPainting) return;
+        const currentStrokePoints = this.strokePoints[this.currentStroke];
+        if (!currentStrokePoints || currentStrokePoints.length === 0) {
+            this.currentStroke++;
+            this.strokeProgress = 0;
+            return;
+        }
+        const speed = Math.min(0.8 + flowMag / 40, 3.0);
+        this.strokeProgress += speed / currentStrokePoints.length;
+        const totalToDraw = Math.floor(this.strokeProgress * currentStrokePoints.length);
+        for (let i = this.drawPoints.length; i < totalToDraw && i < currentStrokePoints.length; i++) {
+            const point = currentStrokePoints[i];
+            if (point) {
+                this.drawPoints.push({
+                    x: point.x, y: point.y,
+                    size: this.brushSize,
+                    alpha: this.brushAlpha,
+                    color: this.brushColor
+                });
+                this.brushX = point.x;
+                this.brushY = point.y;
+            }
+        }
+        if (Math.random() < 0.2 && this.drawPoints.length > 0) {
+            const last = this.drawPoints[this.drawPoints.length - 1];
+            this.particles.push({
+                x: last.x + (Math.random() - 0.5) * 8,
+                y: last.y + (Math.random() - 0.5) * 8,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5 - 0.5,
+                size: 1 + Math.random() * 3,
+                color: this.brushColor,
+                life: 1.0,
+                decay: 0.01 + Math.random() * 0.02
+            });
+        }
+        if (this.strokeProgress >= 1) this.finishStroke();
+    },
+    
+    finishStroke() {
+        this.currentStroke++;
+        this.strokeProgress = 0;
+        if (this.drawPoints.length > 0) {
+            const last = this.drawPoints[this.drawPoints.length - 1];
+            this.createSplashParticles(last.x, last.y, this.brushColor);
+        }
+        playAudioEffect('buff');
+        if (this.currentStroke >= this.strokesPerPainting) {
+            this.completePainting();
+        } else {
+            showNotification(`🖌️ 第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆，繼續！`);
+        }
+    },
+    
+    completePainting() {
+        this.paintingsCompleted++;
+        this.currentStroke = 0;
+        this.strokeProgress = 0;
+        this.drawPoints = [];
+        for (let i = 0; i < 60; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 6;
+            this.particles.push({
+                x: this.brushX, y: this.brushY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1,
+                size: 2 + Math.random() * 5,
+                color: ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#8e44ad'][Math.floor(Math.random() * 5)],
+                life: 1.0,
+                decay: 0.005 + Math.random() * 0.015
+            });
+        }
+        playAudioEffect('special');
+        this.level++;
+        this.updateStrokeCount();
+        this.currentShapeIndex++;
+        this.generateShape();
+        if (this.level % 10 === 0) {
+            this.hp = Math.min(this.maxHp, this.hp + 20);
+            showNotification(`🎉 第 ${this.level} 關！HP +20！`);
+        }
+        if (this.level > this.maxLevel) { this.triggerWin(); return; }
+        showNotification(`🎨 完成第 ${this.paintingsCompleted} 幅畫！進入第 ${this.level} 關`);
+    },
+    
+    updateUI() {
+        const el1 = document.getElementById('painterLevel');
+        if (el1) el1.textContent = `${this.level}/${this.maxLevel}`;
+        const el2 = document.getElementById('painterPaintings');
+        if (el2) el2.textContent = this.paintingsCompleted;
+        const el3 = document.getElementById('painterStroke');
+        if (el3) el3.textContent = `${this.currentStroke + 1}/${this.strokesPerPainting}`;
+        const el4 = document.getElementById('painterErrors');
+        if (el4) el4.textContent = `${this.errors}/${this.maxErrors}`;
+        const hpFill = document.getElementById('hpFill');
+        if (hpFill) hpFill.style.width = `${(this.hp / this.maxHp) * 100}%`;
+        const progressFill = document.getElementById('painterProgressFill');
+        if (progressFill) progressFill.style.width = `${Math.min(this.strokeProgress * 100, 100)}%`;
+        const shapeName = document.getElementById('painterShapeName');
+        if (shapeName) {
+            const type = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
+            shapeName.textContent = this.shapeNames[type] || '未知';
+        }
+        const strokesNeeded = document.getElementById('painterStrokesNeeded');
+        if (strokesNeeded) strokesNeeded.textContent = this.strokesPerPainting;
+    },
+    
+    createSplashParticles(x, y, color) {
+        for (let i = 0; i < 30; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 5;
+            this.particles.push({
+                x, y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1,
+                size: 2 + Math.random() * 4,
+                color,
+                life: 1.0,
+                decay: 0.008 + Math.random() * 0.015
+            });
+        }
+    },
+    
+    updateParticles() {
+        for (const p of this.particles) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05;
+            p.life -= p.decay;
+        }
+        this.particles = this.particles.filter(p => p.life > 0);
+    },
+    
+    updateItems() {
+        if (Math.random() < 0.001) {
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+            const w = canvas.width, h = canvas.height;
+            const itemType = Math.random() < 0.5 ? 'palette' : 'fineBrush';
+            this.items.push({
+                type: itemType,
+                x: 50 + Math.random() * (w - 100),
+                y: 50 + Math.random() * (h - 100),
+                radius: 20,
+                life: 300
+            });
+        }
+        for (const item of this.items) {
+            item.life--;
+            const dist = Math.hypot(item.x - this.brushX, item.y - this.brushY);
+            if (dist < item.radius + 15) {
+                if (item.type === 'palette') {
+                    this.hasPalette = true;
+                    this.paletteTimer = 600;
+                    playAudioEffect('buff');
+                    showNotification('🎨 調色盤！顏色變得更豐富！');
+                } else if (item.type === 'fineBrush') {
+                    this.hasFineBrush = true;
+                    this.fineBrushTimer = 600;
+                    playAudioEffect('buff');
+                    showNotification('🖌️ 細筆！失誤懲罰降低！');
+                }
+                item.life = 0;
+            }
+        }
+        this.items = this.items.filter(item => item.life > 0);
+    },
+    
+    render(ctx) {
+        const canvas = document.getElementById('gameCanvas');
+        if (!canvas) return;
+        const w = canvas.width, h = canvas.height;
+        
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#fdf6f0');
+        grad.addColorStop(1, '#f5ece4');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        
+        for (let i = 0; i < 80; i++) {
+            ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
+            ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
+        }
+        
+        ctx.save();
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.2)';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(15, 15, w - 30, h - 30);
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.1)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 20, w - 40, h - 40);
+        ctx.restore();
+        
+        if (this.shapePath.length > 0) {
+            ctx.save();
+            const glow = 0.3 + 0.2 * Math.sin(Date.now() / 1000);
+            ctx.shadowColor = '#8B6914';
+            ctx.shadowBlur = 20 * glow;
+            ctx.strokeStyle = `rgba(139, 105, 20, ${0.2 + 0.1 * Math.sin(Date.now() / 1500)})`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 8]);
+            ctx.beginPath();
+            ctx.moveTo(this.shapePath[0].x, this.shapePath[0].y);
+            for (let i = 1; i < this.shapePath.length; i++) {
+                ctx.lineTo(this.shapePath[i].x, this.shapePath[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+        
+        if (this.currentStroke < this.strokesPerPainting) {
+            const nextPoints = this.strokePoints[this.currentStroke];
+            if (nextPoints && nextPoints.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(139, 105, 20, 0.1)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 8]);
+                ctx.beginPath();
+                const startIdx = Math.floor(this.strokeProgress * nextPoints.length);
+                if (startIdx < nextPoints.length) {
+                    ctx.moveTo(nextPoints[startIdx].x, nextPoints[startIdx].y);
+                    for (let i = startIdx + 1; i < nextPoints.length; i++) {
+                        ctx.lineTo(nextPoints[i].x, nextPoints[i].y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+        }
+        
+        for (const point of this.drawPoints) {
+            ctx.save();
+            ctx.globalAlpha = point.alpha || 0.8;
+            ctx.fillStyle = point.color || '#8B6914';
+            ctx.shadowColor = point.color || '#8B6914';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, point.size || 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        if (this.isDrawing) {
+            ctx.save();
+            ctx.shadowColor = this.brushColor;
+            ctx.shadowBlur = 30;
+            ctx.globalAlpha = this.brushAlpha;
+            ctx.fillStyle = this.brushColor;
+            ctx.beginPath();
+            ctx.arc(this.brushX, this.brushY, this.brushSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        } else {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(92, 61, 46, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            const pulse = 15 + 5 * Math.sin(Date.now() / 500);
+            ctx.beginPath();
+            ctx.arc(this.brushX, this.brushY, pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(92, 61, 46, 0.2)';
+            ctx.beginPath();
+            ctx.arc(this.brushX, this.brushY, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        for (const p of this.particles) {
+            ctx.save();
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        for (const item of this.items) {
+            const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
+            ctx.save();
+            ctx.translate(item.x, item.y);
+            ctx.scale(pulse, pulse);
+            ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
+            ctx.shadowBlur = 20;
+            ctx.font = '32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
+            ctx.restore();
+        }
+        
+        const px = 60, py = h - 40, pw = w - 120, ph = 10;
+        ctx.save();
+        ctx.fillStyle = 'rgba(139, 115, 85, 0.2)';
+        ctx.beginPath();
+        ctx.roundRect(px, py, pw, ph, 5);
+        ctx.fill();
+        const pct = this.strokeProgress;
+        ctx.fillStyle = '#8B6914';
+        ctx.beginPath();
+        ctx.roundRect(px, py, pw * pct, ph, 5);
+        ctx.fill();
+        ctx.fillStyle = '#5c3d2e';
+        ctx.font = '11px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`第 ${this.currentStroke + 1}/${this.strokesPerPainting} 筆  ${Math.round(pct * 100)}%`, w / 2, py - 6);
+        ctx.restore();
+        
+        ctx.save();
+        ctx.fillStyle = 'rgba(92, 61, 46, 0.3)';
+        ctx.font = '13px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const currentShape = this.shapeTypes[this.currentShapeIndex % this.shapeTypes.length];
+        ctx.fillText(`🎨 ${this.shapeNames[currentShape] || '繪畫'}  |  關卡 ${this.level}  |  筆畫 ${this.strokesPerPainting}`, w / 2, 20);
+        ctx.restore();
+    },
+    
+    triggerGameOver() {
+        this.isGameOver = true;
+        this.isPlaying = false;
+        this.stopMusic();
+        playAudioEffect('hit');
+        document.getElementById('finalScore').textContent = this.paintingsCompleted;
+        document.getElementById('gameOverMessage').textContent = `到達第 ${this.level} 關`;
+        document.getElementById('gameOverScreen').style.display = 'flex';
+        isGameOver = true;
+        isGameRunning = false;
+    },
+    
+    triggerWin() {
+        this.isGameOver = true;
+        this.isPlaying = false;
+        this.stopMusic();
+        playAudioEffect('special');
+        document.getElementById('winMessage').textContent = `🎉 你完成了所有 ${this.maxLevel} 關！`;
+        document.getElementById('winScreen').style.display = 'flex';
+        isGameOver = true;
+        isGameRunning = false;
+    }
+};
+
+// =====================================================
+// 其他遊戲的佔位符 (燭光遠征、魔導士破魔、蒲公英快遞、玻璃心大師)
+// =====================================================
+const CandleGame = {
+    name: '燭光遠征',
+    emoji: '🕯️',
+    init() { showNotification('🕯️ 燭光遠征 開發中'); },
+    update(flow) {},
+    render(ctx) {
+        const w = gameCanvas.width, h = gameCanvas.height;
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#f5e6ca';
+        ctx.font = '24px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('🕯️ 燭光遠征', w/2, h/2 - 20);
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', w/2, h/2 + 30);
+        // 顯示燭光效果
+        const glow = 20 + 10 * Math.sin(Date.now() / 500);
+        const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, glow);
+        grad.addColorStop(0, 'rgba(255, 200, 100, 0.15)');
+        grad.addColorStop(1, 'rgba(255, 200, 100, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+    },
+    getHUD() { return '🕯️ 燭光遠征 - 開發中'; },
+    getGuide() { return '<div class="priority-note">🚧 此遊戲正在開發中</div>'; }
+};
+
+const WizardGame = {
+    name: '魔導士破魔',
+    emoji: '⚔️',
+    init() { showNotification('⚔️ 魔導士破魔 開發中'); },
+    update(flow) {},
+    render(ctx) {
+        const w = gameCanvas.width, h = gameCanvas.height;
+        ctx.fillStyle = '#0d0a1a';
+        ctx.fillRect(0, 0, w, h);
+        // 魔法陣效果
+        ctx.save();
+        ctx.translate(w/2, h/2);
+        for (let i = 0; i < 3; i++) {
+            ctx.rotate(Date.now() / 2000);
+            ctx.strokeStyle = `rgba(155, 89, 182, ${0.1 + i * 0.05})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 60 + i * 30, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        ctx.restore();
+        ctx.fillStyle = '#f0e6ff';
+        ctx.font = '24px Verdana, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚔️ 魔導士破魔', w/2, h/2 - 50);
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', w/2, h/2 + 40);
+    },
+    getHUD() { return '⚔️ 魔導士破魔 - 開發中'; },
+    getGuide() { return '<div class="priority-note">🚧 此遊戲正在開發中</div>'; }
+};
+
+const DandelionGame = {
+    name: '蒲公英快遞',
+    emoji: '🌿',
+    init() { showNotification('🌿 蒲公英快遞 開發中'); },
+    update(flow) {},
+    render(ctx) {
+        const w = gameCanvas.width, h = gameCanvas.height;
+        ctx.fillStyle = '#e8f5e9';
+        ctx.fillRect(0, 0, w, h);
+        // 草地和蒲公英效果
+        for (let i = 0; i < 20; i++) {
+            ctx.fillStyle = `rgba(76, 175, 80, ${0.05 + Math.random() * 0.1})`;
+            ctx.fillRect(Math.random() * w, h - 20 - Math.random() * 30, 3, 10 + Math.random() * 20);
+        }
+        ctx.fillStyle = '#1b5e20';
+        ctx.font = '24px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🌿 蒲公英快遞', w/2, h/2 - 20);
+        ctx.fillStyle = '#4a7a4a';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', w/2, h/2 + 30);
+    },
+    getHUD() { return '🌿 蒲公英快遞 - 開發中'; },
+    getGuide() { return '<div class="priority-note">🚧 此遊戲正在開發中</div>'; }
+};
+
+const CrystalGame = {
+    name: '玻璃心大師',
+    emoji: '💎',
+    init() { showNotification('💎 玻璃心大師 開發中'); },
+    update(flow) {},
+    render(ctx) {
+        const w = gameCanvas.width, h = gameCanvas.height;
+        ctx.fillStyle = '#e3f2fd';
+        ctx.fillRect(0, 0, w, h);
+        // 水晶效果
+        ctx.save();
+        ctx.translate(w/2, h/2);
+        for (let i = 0; i < 6; i++) {
+            const angle = i / 6 * Math.PI * 2 + Date.now() / 3000;
+            ctx.fillStyle = `rgba(66, 165, 245, ${0.1 + 0.05 * Math.sin(Date.now() / 1000 + i)})`;
+            ctx.beginPath();
+            ctx.moveTo(0, -40);
+            ctx.lineTo(20, 0);
+            ctx.lineTo(0, 40);
+            ctx.lineTo(-20, 0);
+            ctx.closePath();
+            ctx.rotate(angle);
+            ctx.fill();
+        }
+        ctx.restore();
+        ctx.fillStyle = '#0d47a1';
+        ctx.font = '24px Tahoma, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('💎 玻璃心大師', w/2, h/2 - 50);
+        ctx.fillStyle = '#4a7a9a';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🚧 開發中，敬請期待！', w/2, h/2 + 40);
+    },
+    getHUD() { return '💎 玻璃心大師 - 開發中'; },
+    getGuide() { return '<div class="priority-note">🚧 此遊戲正在開發中</div>'; }
+};
+
+// =====================================================
+// 遊戲切換函數
+// =====================================================
+function switchGame(mode) {
+    // 停止當前遊戲
+    if (gameAnimationId) {
+        cancelAnimationFrame(gameAnimationId);
+        gameAnimationId = null;
+    }
+    isGameRunning = false;
+    isGameOver = false;
+    isPaused = false;
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('winScreen').style.display = 'none';
+    document.getElementById('gamePauseBtn').innerText = '暫停';
+    document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
+    
+    // 停止音樂
+    PainterGame.stopMusic();
+    stopBGM();
+    
+    currentGameMode = mode;
+    const hud = document.getElementById('gameHUD');
+    const guideTitle = document.getElementById('guideTitle');
+    const guideContent = document.getElementById('guideContent');
+    const startPrompt = document.getElementById('gameStartPrompt');
+    
+    switch(mode) {
+        case GAME_MODES.FLIGHT:
+            // ===== 氣流飛行員 =====
+            startPrompt.style.display = 'none';
+            hud.innerHTML = `
+                🚀 SCORE: <span id="gameScore" style="color:#f1c40f">0</span>
+                | 🔥 COMBO: <span id="gameCombo" style="color:#e74c3c">0</span>
+                <span id="feverBadge" style="display:none; color:#a55eea;">⚡ FEVER</span>
+                <span id="shieldBadge" style="display:none; color:#00d2d3;">🛡️</span>
+                <span id="magnetBadge" style="display:none; color:#f39c12;">🧲</span>
+                <span id="doubleBadge" style="display:none; color:#2ecc71;">💎 2X</span>
+                <span id="slowBadge" style="display:none; color:#e67e22;">🕸️</span>
+                <span id="bossWarning" style="display:none; color:#e74c3c;">👹 BOSS!</span>
+            `;
+            guideTitle.textContent = '✈️ 氣流飛行員 操控說明';
+            guideContent.innerHTML = `
+                <div class="key-row">
+                    <span class="key primary">🌬️</span>
+                    <span class="action">呼吸裝置 → 飛船升降 <span class="highlight">(最優先)</span></span>
+                </div>
+                <div class="divider"></div>
+                <div class="key-row">
+                    <span class="key secondary">↑</span>
+                    <span class="key secondary">W</span>
+                    <span class="action">飛船 <span class="highlight">向上</span></span>
+                </div>
+                <div class="key-row">
+                    <span class="key secondary">↓</span>
+                    <span class="key secondary">S</span>
+                    <span class="action">飛船 <span class="highlight">向下</span></span>
+                </div>
+                <div class="key-row">
+                    <span class="key special">Space</span>
+                    <span class="action">暫停 / 繼續遊戲</span>
+                </div>
+                <div class="divider"></div>
+                <div class="mouse-row">
+                    <span class="icon">🖱️</span>
+                    <span class="action">移動滑鼠 → 飛船跟隨</span>
+                </div>
+                <div class="priority-note">
+                    ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
+                </div>
+                <div class="priority-note warning">
+                    ⚠️ Boss 技能有 2 秒預警！
+                </div>
+            `;
+            initFlightGame();
+            isGameRunning = true;
+            gameLoop();
+            updateStatus('✈️ 氣流飛行員');
+            break;
+            
+        case GAME_MODES.PAINTER:
+            // ===== 風之繪師 =====
+            startPrompt.style.display = 'none';
+            hud.innerHTML = `
+                🎨 關卡: <span id="painterLevel">1/100</span>
+                | 🖼️ 畫作: <span id="painterPaintings">0</span>
+                | 🖌️ 筆觸: <span id="painterStroke">0/1</span>
+                | ❌ 失誤: <span id="painterErrors">0/5</span>
+                | <span class="level-progress"><span class="level-progress-fill" id="painterProgressFill" style="width:1%;"></span></span>
+                | <span id="painterShapeName">⭕ 圓形</span>
+                | <span id="painterStrokesNeeded" style="display:none;">1</span>
+            `;
+            guideTitle.textContent = '🎨 風之繪師 操控說明';
+            guideContent.innerHTML = `
+                <div class="key-row">
+                    <span class="key primary">🌬️</span>
+                    <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
+                </div>
+                <div class="key-row">
+                    <span class="key primary">🌬️</span>
+                    <span class="action">吸氣 → 暫停繪畫</span>
+                </div>
+                <div class="divider"></div>
+                <div class="key-row">
+                    <span class="key secondary">↑↓</span>
+                    <span class="action">微調畫筆位置</span>
+                </div>
+                <div class="key-row">
+                    <span class="key special">Space</span>
+                    <span class="action">暫停 / 繼續</span>
+                </div>
+                <div class="divider"></div>
+                <div class="priority-note">
+                    ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
+                </div>
+                <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
+                    🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
+                </div>
+            `;
+            PainterGame.init();
+            PainterGame.isPlaying = true;
+            isGameRunning = true;
+            gameLoop();
+            updateStatus('🎨 風之繪師');
+            break;
+            
+        case GAME_MODES.CANDLE:
+            startPrompt.style.display = 'none';
+            hud.innerHTML = '🕯️ 燭光遠征 - 開發中';
+            guideTitle.textContent = '🕯️ 燭光遠征';
+            guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
+            CandleGame.init();
+            isGameRunning = true;
+            gameLoop();
+            updateStatus('🕯️ 燭光遠征 (開發中)');
+            break;
+            
+        case GAME_MODES.WIZARD:
+            startPrompt.style.display = 'none';
+            hud.innerHTML = '⚔️ 魔導士破魔 - 開發中';
+            guideTitle.textContent = '⚔️ 魔導士破魔';
+            guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
+            WizardGame.init();
+            isGameRunning = true;
+            gameLoop();
+            updateStatus('⚔️ 魔導士破魔 (開發中)');
+            break;
+            
+        case GAME_MODES.DANDELION:
+            startPrompt.style.display = 'none';
+            hud.innerHTML = '🌿 蒲公英快遞 - 開發中';
+            guideTitle.textContent = '🌿 蒲公英快遞';
+            guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
+            DandelionGame.init();
+            isGameRunning = true;
+            gameLoop();
+            updateStatus('🌿 蒲公英快遞 (開發中)');
+            break;
+            
+        case GAME_MODES.CRYSTAL:
+            startPrompt.style.display = 'none';
+            hud.innerHTML = '💎 玻璃心大師 - 開發中';
+            guideTitle.textContent = '💎 玻璃心大師';
+            guideContent.innerHTML = '<div class="priority-note">🚧 此遊戲正在開發中</div>';
+            CrystalGame.init();
+            isGameRunning = true;
+            gameLoop();
+            updateStatus('💎 玻璃心大師 (開發中)');
+            break;
+    }
+}
+
+// =====================================================
+// 主遊戲循環
+// =====================================================
+function gameLoop() {
+    if (!isGameRunning || isGameOver) {
+        if (isGameOver) {
+            if (gameAnimationId) {
+                cancelAnimationFrame(gameAnimationId);
+                gameAnimationId = null;
+            }
+        }
+        return;
+    }
+    
+    // 取得呼吸數據
+    let breathFlow = 0;
+    if (isMeasuring && !isPaused && !isGameOver) {
+        breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
+    }
+    
+    // 根據當前遊戲模式更新
+    switch(currentGameMode) {
+        case GAME_MODES.FLIGHT:
+            updateFlightGame(breathFlow);
+            renderFlightGame();
+            break;
+        case GAME_MODES.PAINTER:
+            PainterGame.update(breathFlow);
+            PainterGame.render(gameCtx);
+            break;
+        case GAME_MODES.CANDLE:
+            CandleGame.update(breathFlow);
+            CandleGame.render(gameCtx);
+            break;
+        case GAME_MODES.WIZARD:
+            WizardGame.update(breathFlow);
+            WizardGame.render(gameCtx);
+            break;
+        case GAME_MODES.DANDELION:
+            DandelionGame.update(breathFlow);
+            DandelionGame.render(gameCtx);
+            break;
+        case GAME_MODES.CRYSTAL:
+            CrystalGame.update(breathFlow);
+            CrystalGame.render(gameCtx);
+            break;
+    }
+    
+    // 繼續循環
+    gameAnimationId = requestAnimationFrame(gameLoop);
+}
+
+// =====================================================
+// 遊戲控制函數
+// =====================================================
+function restartGameEngine() {
+    if (gameAnimationId) {
+        cancelAnimationFrame(gameAnimationId);
+        gameAnimationId = null;
+    }
+    isGameRunning = false;
+    isGameOver = false;
+    isPaused = false;
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('winScreen').style.display = 'none';
+    document.getElementById('gamePauseBtn').innerText = '暫停';
+    document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
+    document.getElementById('hpFill').style.width = '100%';
+    
+    switch(currentGameMode) {
+        case GAME_MODES.FLIGHT:
+            initFlightGame();
+            break;
+        case GAME_MODES.PAINTER:
+            PainterGame.init();
+            PainterGame.isPlaying = true;
+            break;
+        case GAME_MODES.CANDLE:
+            CandleGame.init();
+            break;
+        case GAME_MODES.WIZARD:
+            WizardGame.init();
+            break;
+        case GAME_MODES.DANDELION:
+            DandelionGame.init();
+            break;
+        case GAME_MODES.CRYSTAL:
+            CrystalGame.init();
+            break;
+    }
+    
+    isGameRunning = true;
+    gameLoop();
+}
+
+function toggleGamePause() {
+    if (!isGameRunning || isGameOver) return;
+    isPaused = !isPaused;
+    const btn = document.getElementById('gamePauseBtn');
+    if (isPaused) {
+        btn.innerText = '繼續';
+        btn.style.backgroundColor = '#f39c12';
+        if (currentGameMode === GAME_MODES.PAINTER) {
+            PainterGame.stopMusic();
+        }
+        stopBGM();
+    } else {
+        btn.innerText = '暫停';
+        btn.style.backgroundColor = '#27ae60';
+        if (currentGameMode === GAME_MODES.PAINTER) {
+            PainterGame.startMusic();
+        }
+        startBGM();
+    }
+}
+
+function triggerGameOver(gameName) {
+    isGameOver = true;
+    isGameRunning = false;
+    if (gameAnimationId) {
+        cancelAnimationFrame(gameAnimationId);
+        gameAnimationId = null;
+    }
+    document.getElementById('gameOverScreen').style.display = 'flex';
+    if (currentGameMode === GAME_MODES.PAINTER) {
+        PainterGame.stopMusic();
+    }
+    stopBGM();
+}
+
+// =====================================================
+// 核心系統 - 串口功能 (完整保留)
+// =====================================================
+async function loadPKLModel(){
+try{onnxSession=await ort.InferenceSession.create('./rf_model.onnx');updateStatus('✅ PKL 模型載入成功！');}catch(err){console.warn("未檢測到 rf_model.onnx",err);}
+}
+loadPKLModel();
+
+const customOverlayPlugin={
+id:'customOverlayPlugin',
+beforeDatasetsDraw(chart){
+if(pklSegments.length>0){
+const{ctx,scales:{x,y}}=chart;ctx.save();
+pklSegments.forEach(seg=>{
+const startX=x.getPixelForValue(seg.start_time);
+const endX=x.getPixelForValue(seg.end_time);
+ctx.fillStyle=(seg.state==="Inspiration")?"rgba(135,206,235,0.35)":"rgba(240,128,128,0.35)";
+ctx.fillRect(startX,y.top,endX-startX,y.bottom-y.top);
+});
+ctx.restore();
+}
+}
+};
+const ctx=document.getElementById('flowChart').getContext('2d');
+const flowChart=new Chart(ctx,{
+type:'line',
+data:{datasets:[
+{label:'Inhale guide',data:inhaleGuidePoints,borderColor:'#2e7d32',borderWidth:1.8,borderDash:[5,5],fill:false,pointRadius:0,tension:0.4},
+{label:'Exhale guide',data:exhaleGuidePoints,borderColor:'#1565c0',borderWidth:1.8,borderDash:[5,5],fill:false,pointRadius:0,tension:0.4},
+{label:'Patient Flow',data:[],borderColor:'#c0392b',borderWidth:2.4,fill:false,pointRadius:0,tension:0.4}
+]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Inhaler Flow Profile',font:{size:16,weight:'bold'},color:'#1f4e79'}},scales:{x:{type:'linear',min:0,max:20,title:{display:true,text:'Time (secs)'}},y:{min:-120,max:120,title:{display:true,text:'Flow (L/min)'}}}},
+plugins:[customOverlayPlugin]
+});
+
+async function detectBreathModePKL(fft){
+if(!fft)return"inhalation";
+let e1=fft[1]||0,e2=fft[2]||0,e3=fft[3]||0,e4=fft[4]||0,e5=fft[5]||0;
+let totalE=e1+e2+e3+e4+e5;
+if(totalE<20000){predictionBuffer=[];lastConfirmedMode="inhalation";return"inhalation";}
+let rawMode="inhalation";
+let ratio_3to1=e1>0?(e3/e1):0;
+if(totalE<250000){rawMode=(ratio_3to1>0.45)?"exhalation":"inhalation";}else{
+if(onnxSession){try{const inputTensor=new ort.Tensor('float32',new Float32Array([e1,e2,e3,e4,e5]),[1,5]);const results=await onnxSession.run({float_input:inputTensor});rawMode=(results.label.data[0]===0)?"inhalation":"exhalation";}catch(e){rawMode=(ratio_3to1>0.7)?"exhalation":"inhalation";}}else{rawMode=(ratio_3to1>0.7)?"exhalation":"inhalation";}
+}
+predictionBuffer.push(rawMode);if(predictionBuffer.length>3)predictionBuffer.shift();
+let exhCount=predictionBuffer.filter(m=>m==="exhalation").length;
+let currentVote=(exhCount>=2)?"exhalation":"inhalation";
+if(totalE<300000&&lastConfirmedMode==="exhalation"){if(predictionBuffer.filter(m=>m==="inhalation").length<3){currentVote="exhalation";}}
+lastConfirmedMode=currentVote;
+return currentVote;
+}
+
+async function runPKLIndexSegmentation(){
+if(records.length===0){alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！");return;}
+updateStatus("正在進行 PKL Index 切分中...");
+let predictions=[];
+for(let i=0;i<records.length;i++){let rec=records[i];if(!rec.flowYes||Math.abs(rec.est)<5.0){predictions.push(-1);}else{let mode=await detectBreathModePKL(rec.fft);predictions.push(mode==="inhalation"?0:1);}}
+pklSegments=[];
+let currentS=predictions[0];
+let startIdx=0;
+for(let i=1;i<predictions.length;i++){if(predictions[i]!==currentS){if(currentS!==-1){pklSegments.push({state:(currentS===0)?"Inspiration":"Expiration",start_index:startIdx,end_index:i-1,start_time:records[startIdx].elapsed,end_time:records[i-1].elapsed});}currentS=predictions[i];startIdx=i;}}
+if(currentS!==-1){pklSegments.push({state:(currentS===0)?"Inspiration":"Expiration",start_index:startIdx,end_index:records.length-1,start_time:records[startIdx].elapsed,end_time:records[records.length-1].elapsed});}
+updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
+flowChart.update();
+}
+
+function detectFlowRate(mode,estFlow){let presets=(mode==="inhalation")?[30,60,90]:[60,90,120];return presets.reduce((prev,curr)=>Math.abs(curr-estFlow)<Math.abs(prev-estFlow)?curr:prev);}
+function resetUIState(){port=null;reader=null;isMeasuring=false;document.getElementById('connectBtn').innerText='Connect';document.getElementById('startBtn').innerText='Start';document.getElementById('startBtn').disabled=true;updateStatus('Disconnected / Ready to connect');}
+if('serial' in navigator){navigator.serial.addEventListener('disconnect',()=>{resetUIState();});}
+window.addEventListener('beforeunload',async()=>{try{if(reader)await reader.cancel();if(port)await port.close();}catch(e){}});
+document.getElementById('connectBtn').addEventListener('click',toggleConnection);
+document.getElementById('startBtn').addEventListener('click',toggleMeasuring);
+document.getElementById('segmentBtn').addEventListener('click',runPKLIndexSegmentation);
+document.getElementById('clearBtn').addEventListener('click',clearPlot);
+document.getElementById('saveBtn').addEventListener('click',saveCSV);
+
+async function toggleConnection(){
+if(!port){try{port=await navigator.serial.requestPort();await port.open({baudRate:115200});document.getElementById('connectBtn').innerText='Disconnect';document.getElementById('startBtn').disabled=false;updateStatus('Connected. Press Start to begin.');readLoop();}catch(err){updateStatus('Connection failed: '+err.message);resetUIState();}}else{try{isMeasuring=false;if(reader)await reader.cancel();if(port)await port.close();}catch(err){}finally{resetUIState();}}
+}
+
+async function readLoop(){
+if(!port||!port.readable)return;
+const textDecoder=new TextDecoderStream();
+const readableStreamClosed=port.readable.pipeTo(textDecoder.writable);
+reader=textDecoder.readable.getReader();
+let buffer='';
+try{while(true){const{value,done}=await reader.read();if(done)break;buffer+=value;let lines=buffer.split('\n');buffer=lines.pop();if(lines.length>10)lines=lines.slice(-3);for(let line of lines){line=line.trim();if(isMeasuring)await parseLine(line);}}}catch(err){console.warn("串口讀取中斷",err);}finally{try{reader.releaseLock();}catch(e){}try{await readableStreamClosed.catch(()=>{});}catch(e){}if(!port)resetUIState();}
+}
+
+async function parseLine(line){
+if(line.includes('[FFT]')){const matches=line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);for(const match of matches){lastFFT[match[1]]=parseFloat(match[2]);}return;}
+if(line.includes('[DETECT]')){
+const flowMatch=line.match(/Flow\s*=\s*(YES|no)/i);
+const estMatch=line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
+const lowMatch=line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
+if(!flowMatch)return;
+let flowYes=flowMatch[1].toUpperCase()==='YES';
+let est=estMatch?parseFloat(estMatch[1]):0.0;
+let lowE=lowMatch?parseInt(lowMatch[1]):0;
+let isCandidate=false;
+if(flowYes||(lowE>800000&&est>0.0))isCandidate=true;
+if(lastFFT[1]>800000&&lastFFT[8]<5000)isCandidate=false;
+windowHistory.shift();windowHistory.push(isCandidate);
+let trueCount=windowHistory.filter(x=>x===true).length;
+if(trueCount>=2){flowYes=true;if(est===0.0&&lowE>1000000)est=15.0;}else{flowYes=false;est=0.0;}
+if(startTime===null)startTime=Date.now();
+let elapsed=(Date.now()-startTime)/1000;
+let manualMode=document.getElementById('modeSelect').value;
+if(manualMode!=="auto"){currentMode=manualMode;}else{currentMode=await detectBreathModePKL(lastFFT);}
+if(est>0){let dFlow=detectFlowRate(currentMode,est);document.getElementById('detectedMode').innerText=`Detected: ${currentMode} @ ${dFlow} L/min`;}else{document.getElementById('detectedMode').innerText=`Detected: Idle`;}
+if(currentMode==="exhalation"){if(est===0.0&&lowE>800000)est=30.0;if(est>0)est=-Math.abs(est);}else if(currentMode==="inhalation"&&est<0){est=Math.abs(est);}
+flowHistory.push(est);if(flowHistory.length>5)flowHistory.shift();
+smoothedEst=flowHistory.reduce((a,b)=>a+b,0)/flowHistory.length;
+records.push({elapsed,flowYes,est:smoothedEst,lowE,fft:{...lastFFT}});
+document.getElementById('recordCount').innerText=`Records: ${records.length}`;
+document.getElementById('saveBtn').disabled=false;
+flowChart.data.datasets[2].data.push({x:elapsed,y:smoothedEst});
+let windowStart=Math.floor(elapsed/20)*20;
+flowChart.options.scales.x.min=windowStart;
+flowChart.options.scales.x.max=windowStart+20;
+let allFlows=records.map(r=>Math.abs(r.est));
+let maxPeak=Math.max(...allFlows,0);
+document.getElementById('peakFlow').innerText=`Peak: ${maxPeak.toFixed(1)} L/min`;
+flowChart.update('none');
+}
+}
+
+function toggleMeasuring(){
+isMeasuring=!isMeasuring;
+if(isMeasuring){if(startTime===null)startTime=Date.now();document.getElementById('startBtn').innerText='Stop';updateStatus('Measuring...');}else{document.getElementById('startBtn').innerText='Start';updateStatus('Measurement stopped (waveform frozen).');}
+if (isMeasuring) {
+    document.getElementById('hintBreath').textContent = '🌬️ 使用中';
+    document.getElementById('hintBreath').style.color = '#2ecc71';
+    if (!isGameRunning && !isGameOver) {
+        restartGameEngine();
+    }
+} else {
+    document.getElementById('hintBreath').textContent = '等待啟動';
+    document.getElementById('hintBreath').style.color = '';
+}
+}
+
+function clearPlot(){
+startTime=null;records=[];flowHistory=[];pklSegments=[];predictionBuffer=[];
+lastConfirmedMode="inhalation";smoothedEst=0;
+flowChart.data.datasets[2].data=[];
+flowChart.options.scales.x.min=0;flowChart.options.scales.x.max=20;
+flowChart.update();
+document.getElementById('recordCount').innerText='Records: 0';
+document.getElementById('peakFlow').innerText='Peak: --- L/min';
+document.getElementById('detectedMode').innerText='Detected: ---';
+document.getElementById('saveBtn').disabled=true;
+}
+
+function saveCSV(){
+let patientId=document.getElementById('patientId').value.trim()||'inhaler_data';
+let csvContent="data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
+for(let i=1;i<=20;i++)csvContent+=`,${i}kHz`;
+csvContent+="\n";
+records.forEach(r=>{
+let row=`${patientId},${r.elapsed.toFixed(2)},${r.flowYes?'YES':'no'},${r.est.toFixed(1)},${r.lowE}`;
+for(let i=1;i<=20;i++){row+=`,${r.fft[i]||''}`;}
+csvContent+=row+"\n";
+});
+const encodedUri=encodeURI(csvContent);
+const link=document.createElement("a");
+link.setAttribute("href",encodedUri);
+link.setAttribute("download",`inhaler_data_${patientId}.csv`);
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+}
+
+function updateStatus(msg){document.getElementById('status').innerText=msg;}
+
+// =====================================================
+// 核心系統 - 音效
 // =====================================================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let bgmInterval = null;
@@ -835,6 +2415,19 @@ function playAudioEffect(type) {
             osc.frequency.setValueAtTime(1318.51, now + 0.08);
             gain.gain.setValueAtTime(0.25, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        } else if (type === 'boss') {
+            for (let i = 0; i < 3; i++) {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = 'square';
+                o.frequency.setValueAtTime(150 + i * 50, now + i * 0.15);
+                g.gain.setValueAtTime(0.15, now + i * 0.15);
+                g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start(now + i * 0.15);
+                o.stop(now + i * 0.15 + 0.2);
+            }
         }
         osc.start(now);
         osc.stop(now + 0.3);
@@ -842,7 +2435,7 @@ function playAudioEffect(type) {
 }
 
 function startBGM() {
-    // 由各遊戲插件自行實現
+    // 由各遊戲自行實現
 }
 
 function stopBGM() {
@@ -854,348 +2447,10 @@ function stopBGM() {
 }
 
 // =====================================================
-// 6. 核心系統 - 串口功能 (完整保留)
-// =====================================================
-async function loadPKLModel() {
-    try {
-        onnxSession = await ort.InferenceSession.create('./rf_model.onnx');
-        updateStatus('✅ PKL 模型載入成功！');
-    } catch(err) {
-        console.warn("未檢測到 rf_model.onnx", err);
-    }
-}
-loadPKLModel();
-
-const customOverlayPlugin = {
-    id: 'customOverlayPlugin',
-    beforeDatasetsDraw(chart) {
-        if (pklSegments.length > 0) {
-            const { ctx, scales: { x, y } } = chart;
-            ctx.save();
-            pklSegments.forEach(seg => {
-                const startX = x.getPixelForValue(seg.start_time);
-                const endX = x.getPixelForValue(seg.end_time);
-                ctx.fillStyle = (seg.state === "Inspiration") ? "rgba(135,206,235,0.35)" : "rgba(240,128,128,0.35)";
-                ctx.fillRect(startX, y.top, endX - startX, y.bottom - y.top);
-            });
-            ctx.restore();
-        }
-    }
-};
-
-const ctx = document.getElementById('flowChart').getContext('2d');
-const flowChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        datasets: [
-            { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-            { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
-            { label: 'Patient Flow', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            title: { display: true, text: 'Inhaler Flow Profile', font: { size: 16, weight: 'bold' }, color: '#1f4e79' }
-        },
-        scales: {
-            x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
-            y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
-        }
-    },
-    plugins: [customOverlayPlugin]
-});
-
-async function detectBreathModePKL(fft) {
-    if (!fft) return "inhalation";
-    let e1 = fft[1] || 0, e2 = fft[2] || 0, e3 = fft[3] || 0, e4 = fft[4] || 0, e5 = fft[5] || 0;
-    let totalE = e1 + e2 + e3 + e4 + e5;
-    if (totalE < 20000) { predictionBuffer = []; lastConfirmedMode = "inhalation"; return "inhalation"; }
-    let rawMode = "inhalation";
-    let ratio_3to1 = e1 > 0 ? (e3 / e1) : 0;
-    if (totalE < 250000) {
-        rawMode = (ratio_3to1 > 0.45) ? "exhalation" : "inhalation";
-    } else {
-        if (onnxSession) {
-            try {
-                const inputTensor = new ort.Tensor('float32', new Float32Array([e1, e2, e3, e4, e5]), [1, 5]);
-                const results = await onnxSession.run({ float_input: inputTensor });
-                rawMode = (results.label.data[0] === 0) ? "inhalation" : "exhalation";
-            } catch (e) {
-                rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
-            }
-        } else {
-            rawMode = (ratio_3to1 > 0.7) ? "exhalation" : "inhalation";
-        }
-    }
-    predictionBuffer.push(rawMode);
-    if (predictionBuffer.length > 3) predictionBuffer.shift();
-    let exhCount = predictionBuffer.filter(m => m === "exhalation").length;
-    let currentVote = (exhCount >= 2) ? "exhalation" : "inhalation";
-    if (totalE < 300000 && lastConfirmedMode === "exhalation") {
-        if (predictionBuffer.filter(m => m === "inhalation").length < 3) { currentVote = "exhalation"; }
-    }
-    lastConfirmedMode = currentVote;
-    return currentVote;
-}
-
-async function runPKLIndexSegmentation() {
-    if (records.length === 0) { alert("目前沒有錄製數據，請先點擊 Start 錄製一段波形！"); return; }
-    updateStatus("正在進行 PKL Index 切分中...");
-    let predictions = [];
-    for (let i = 0; i < records.length; i++) {
-        let rec = records[i];
-        if (!rec.flowYes || Math.abs(rec.est) < 5.0) {
-            predictions.push(-1);
-        } else {
-            let mode = await detectBreathModePKL(rec.fft);
-            predictions.push(mode === "inhalation" ? 0 : 1);
-        }
-    }
-    pklSegments = [];
-    let currentS = predictions[0];
-    let startIdx = 0;
-    for (let i = 1; i < predictions.length; i++) {
-        if (predictions[i] !== currentS) {
-            if (currentS !== -1) {
-                pklSegments.push({
-                    state: (currentS === 0) ? "Inspiration" : "Expiration",
-                    start_index: startIdx,
-                    end_index: i - 1,
-                    start_time: records[startIdx].elapsed,
-                    end_time: records[i - 1].elapsed
-                });
-            }
-            currentS = predictions[i];
-            startIdx = i;
-        }
-    }
-    if (currentS !== -1) {
-        pklSegments.push({
-            state: (currentS === 0) ? "Inspiration" : "Expiration",
-            start_index: startIdx,
-            end_index: records.length - 1,
-            start_time: records[startIdx].elapsed,
-            end_time: records[records.length - 1].elapsed
-        });
-    }
-    updateStatus(`PKL 切分完成！共劃分出 ${pklSegments.length} 個有效區段。`);
-    flowChart.update();
-}
-
-function detectFlowRate(mode, estFlow) {
-    let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
-    return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - estFlow) ? curr : prev);
-}
-
-function resetUIState() {
-    port = null;
-    reader = null;
-    isMeasuring = false;
-    document.getElementById('connectBtn').innerText = 'Connect';
-    document.getElementById('startBtn').innerText = 'Start';
-    document.getElementById('startBtn').disabled = true;
-    updateStatus('Disconnected / Ready to connect');
-}
-
-if ('serial' in navigator) {
-    navigator.serial.addEventListener('disconnect', () => { resetUIState(); });
-}
-window.addEventListener('beforeunload', async () => {
-    try { if (reader) await reader.cancel(); if (port) await port.close(); } catch (e) {}
-});
-document.getElementById('connectBtn').addEventListener('click', toggleConnection);
-document.getElementById('startBtn').addEventListener('click', toggleMeasuring);
-document.getElementById('segmentBtn').addEventListener('click', runPKLIndexSegmentation);
-document.getElementById('clearBtn').addEventListener('click', clearPlot);
-document.getElementById('saveBtn').addEventListener('click', saveCSV);
-
-async function toggleConnection() {
-    if (!port) {
-        try {
-            port = await navigator.serial.requestPort();
-            await port.open({ baudRate: 115200 });
-            document.getElementById('connectBtn').innerText = 'Disconnect';
-            document.getElementById('startBtn').disabled = false;
-            updateStatus('Connected. Press Start to begin.');
-            readLoop();
-        } catch (err) {
-            updateStatus('Connection failed: ' + err.message);
-            resetUIState();
-        }
-    } else {
-        try {
-            isMeasuring = false;
-            if (reader) await reader.cancel();
-            if (port) await port.close();
-        } catch (err) {} finally { resetUIState(); }
-    }
-}
-
-async function readLoop() {
-    if (!port || !port.readable) return;
-    const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-    reader = textDecoder.readable.getReader();
-    let buffer = '';
-    try {
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += value;
-            let lines = buffer.split('\n');
-            buffer = lines.pop();
-            if (lines.length > 10) lines = lines.slice(-3);
-            for (let line of lines) {
-                line = line.trim();
-                if (isMeasuring) await parseLine(line);
-            }
-        }
-    } catch (err) {
-        console.warn("串口讀取中斷", err);
-    } finally {
-        try { reader.releaseLock(); } catch (e) {}
-        try { await readableStreamClosed.catch(() => {}); } catch (e) {}
-        if (!port) resetUIState();
-    }
-}
-
-async function parseLine(line) {
-    if (line.includes('[FFT]')) {
-        const matches = line.matchAll(/(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g);
-        for (const match of matches) {
-            lastFFT[match[1]] = parseFloat(match[2]);
-        }
-        return;
-    }
-    if (line.includes('[DETECT]')) {
-        const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
-        const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
-        const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
-        if (!flowMatch) return;
-        let flowYes = flowMatch[1].toUpperCase() === 'YES';
-        let est = estMatch ? parseFloat(estMatch[1]) : 0.0;
-        let lowE = lowMatch ? parseInt(lowMatch[1]) : 0;
-        let isCandidate = false;
-        if (flowYes || (lowE > 800000 && est > 0.0)) isCandidate = true;
-        if (lastFFT[1] > 800000 && lastFFT[8] < 5000) isCandidate = false;
-        windowHistory.shift();
-        windowHistory.push(isCandidate);
-        let trueCount = windowHistory.filter(x => x === true).length;
-        if (trueCount >= 2) {
-            flowYes = true;
-            if (est === 0.0 && lowE > 1000000) est = 15.0;
-        } else {
-            flowYes = false;
-            est = 0.0;
-        }
-        if (startTime === null) startTime = Date.now();
-        let elapsed = (Date.now() - startTime) / 1000;
-        let manualMode = document.getElementById('modeSelect').value;
-        if (manualMode !== "auto") {
-            currentMode = manualMode;
-        } else {
-            currentMode = await detectBreathModePKL(lastFFT);
-        }
-        if (est > 0) {
-            let dFlow = detectFlowRate(currentMode, est);
-            document.getElementById('detectedMode').innerText = `Detected: ${currentMode} @ ${dFlow} L/min`;
-        } else {
-            document.getElementById('detectedMode').innerText = `Detected: Idle`;
-        }
-        if (currentMode === "exhalation") {
-            if (est === 0.0 && lowE > 800000) est = 30.0;
-            if (est > 0) est = -Math.abs(est);
-        } else if (currentMode === "inhalation" && est < 0) {
-            est = Math.abs(est);
-        }
-        flowHistory.push(est);
-        if (flowHistory.length > 5) flowHistory.shift();
-        smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
-        records.push({ elapsed, flowYes, est: smoothedEst, lowE, fft: { ...lastFFT } });
-        document.getElementById('recordCount').innerText = `Records: ${records.length}`;
-        document.getElementById('saveBtn').disabled = false;
-        flowChart.data.datasets[2].data.push({ x: elapsed, y: smoothedEst });
-        let windowStart = Math.floor(elapsed / 20) * 20;
-        flowChart.options.scales.x.min = windowStart;
-        flowChart.options.scales.x.max = windowStart + 20;
-        let allFlows = records.map(r => Math.abs(r.est));
-        let maxPeak = Math.max(...allFlows, 0);
-        document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
-        flowChart.update('none');
-    }
-}
-
-function toggleMeasuring() {
-    isMeasuring = !isMeasuring;
-    if (isMeasuring) {
-        if (startTime === null) startTime = Date.now();
-        document.getElementById('startBtn').innerText = 'Stop';
-        updateStatus('Measuring...');
-    } else {
-        document.getElementById('startBtn').innerText = 'Start';
-        updateStatus('Measurement stopped (waveform frozen).');
-    }
-    if (isMeasuring) {
-        document.getElementById('hintBreath').textContent = '🌬️ 使用中';
-        document.getElementById('hintBreath').style.color = '#2ecc71';
-    } else {
-        document.getElementById('hintBreath').textContent = '等待啟動';
-        document.getElementById('hintBreath').style.color = '';
-    }
-    // 通知當前遊戲插件測量狀態改變
-    if (currentPlugin && currentPlugin.onMeasureToggle) {
-        currentPlugin.onMeasureToggle(isMeasuring);
-    }
-}
-
-function clearPlot() {
-    startTime = null;
-    records = [];
-    flowHistory = [];
-    pklSegments = [];
-    predictionBuffer = [];
-    lastConfirmedMode = "inhalation";
-    smoothedEst = 0;
-    flowChart.data.datasets[2].data = [];
-    flowChart.options.scales.x.min = 0;
-    flowChart.options.scales.x.max = 20;
-    flowChart.update();
-    document.getElementById('recordCount').innerText = 'Records: 0';
-    document.getElementById('peakFlow').innerText = 'Peak: --- L/min';
-    document.getElementById('detectedMode').innerText = 'Detected: ---';
-    document.getElementById('saveBtn').disabled = true;
-}
-
-function saveCSV() {
-    let patientId = document.getElementById('patientId').value.trim() || 'inhaler_data';
-    let csvContent = "data:text/csv;charset=utf-8,patient_id,elapsed_s,flow,est_flow_Lpm,low_energy";
-    for (let i = 1; i <= 20; i++) csvContent += `,${i}kHz`;
-    csvContent += "\n";
-    records.forEach(r => {
-        let row = `${patientId},${r.elapsed.toFixed(2)},${r.flowYes ? 'YES' : 'no'},${r.est.toFixed(1)},${r.lowE}`;
-        for (let i = 1; i <= 20; i++) { row += `,${r.fft[i] || ''}`; }
-        csvContent += row + "\n";
-    });
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `inhaler_data_${patientId}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function updateStatus(msg) {
-    document.getElementById('status').innerText = msg;
-}
-
-// =====================================================
-// 7. 核心系統 - 視窗模式切換
+// 核心系統 - 視窗模式切換
 // =====================================================
 function switchViewMode(mode) {
-    const chartBox = document.getElementById('chartContainer');
+    const chartBox = document.querySelector('.chart-container');
     const gameBox = document.getElementById('gameContainer');
     if (chartBox) chartBox.style.display = (mode === 'chart' || mode === 'both') ? 'block' : 'none';
     if (gameBox) gameBox.style.display = (mode === 'game' || mode === 'both') ? 'block' : 'none';
@@ -1231,9 +2486,8 @@ function resizeGameCanvas() {
         gameCanvas.height = h;
         gameCanvas.style.width = w + 'px';
         gameCanvas.style.height = h + 'px';
-        // 通知當前遊戲插件畫布大小改變
-        if (currentPlugin && currentPlugin.onResize) {
-            currentPlugin.onResize(w, h);
+        if (currentGameMode === GAME_MODES.FLIGHT) {
+            initStars();
         }
     }
 }
@@ -1248,11 +2502,130 @@ function toggleControlGuide() {
     }
 }
 
+function showNotification(msg) {
+    const status = document.getElementById('status');
+    if (status) {
+        const orig = status.innerText;
+        status.innerText = `🎯 ${msg}`;
+        status.style.background = '#8e44ad';
+        setTimeout(() => {
+            status.innerText = orig;
+            status.style.background = '#1f4e79';
+        }, 2500);
+    }
+}
+
 // =====================================================
-// 8. 核心系統 - 擴充控制面板
+// 核心系統 - 鍵盤事件
 // =====================================================
-const controlPanel = document.getElementById('mainControlPanel');
-if (controlPanel) {
+document.addEventListener('keydown', function(e) {
+    if (!keyboardControlEnabled || !isGameRunning || isPaused || isGameOver) return;
+    
+    if (currentGameMode === GAME_MODES.FLIGHT) {
+        const step = 15;
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            e.preventDefault();
+            if (keyboardY === null) keyboardY = rocket.y;
+            keyboardY = Math.max(30, keyboardY - step);
+            useKeyboardControl = true;
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            if (keyboardY === null) keyboardY = rocket.y;
+            keyboardY = Math.min(gameCanvas.height - 30, keyboardY + step);
+            useKeyboardControl = true;
+        }
+    } else if (currentGameMode === GAME_MODES.PAINTER) {
+        const step = 10;
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            e.preventDefault();
+            PainterGame.brushY = Math.max(30, PainterGame.brushY - step);
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            PainterGame.brushY = Math.min(gameCanvas.height - 30, PainterGame.brushY + step);
+        }
+    }
+    
+    if (e.key === ' ' || e.key === 'Space') {
+        e.preventDefault();
+        toggleGamePause();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (gameCanvas) {
+        gameCanvas.addEventListener('mousemove', function(e) {
+            if (!mouseControlEnabled || !isGameRunning || isPaused || isGameOver) return;
+            const rect = gameCanvas.getBoundingClientRect();
+            const scaleY = gameCanvas.height / rect.height;
+            const mouseRelativeY = (e.clientY - rect.top) * scaleY;
+            mouseY = Math.max(30, Math.min(gameCanvas.height - 30, mouseRelativeY));
+            useMouseControl = true;
+        });
+        gameCanvas.addEventListener('mouseleave', function() {
+            setTimeout(() => {
+                if (useMouseControl) {
+                    useMouseControl = false;
+                    mouseY = null;
+                }
+            }, 2000);
+        });
+        gameCanvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!mouseControlEnabled || !isGameRunning || isPaused || isGameOver) return;
+            const touch = e.touches[0];
+            const rect = gameCanvas.getBoundingClientRect();
+            const scaleY = gameCanvas.height / rect.height;
+            const touchRelativeY = (touch.clientY - rect.top) * scaleY;
+            mouseY = Math.max(30, Math.min(gameCanvas.height - 30, touchRelativeY));
+            useMouseControl = true;
+        }, { passive: false });
+    }
+});
+
+function toggleKeyboardControl() {
+    keyboardControlEnabled = !keyboardControlEnabled;
+    if (!keyboardControlEnabled) {
+        keyboardY = null;
+        useKeyboardControl = false;
+    }
+    updateStatus(keyboardControlEnabled ? '⌨️ 鍵盤操控已開啟' : '⌨️ 鍵盤操控已關閉');
+}
+
+function toggleMouseControl() {
+    mouseControlEnabled = !mouseControlEnabled;
+    if (!mouseControlEnabled) {
+        mouseY = null;
+        useMouseControl = false;
+    }
+    updateStatus(mouseControlEnabled ? '🖱️ 滑鼠操控已開啟' : '🖱️ 滑鼠操控已關閉');
+}
+
+// =====================================================
+// 擴充 roundRect 方法
+// =====================================================
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (r > w/2) r = w/2;
+        if (r > h/2) r = h/2;
+        this.moveTo(x + r, y);
+        this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r);
+        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        this.closePath();
+        return this;
+    };
+}
+
+// =====================================================
+// 控制面板擴充
+// =====================================================
+const mainPanel = document.querySelector('.control-panel');
+if (mainPanel) {
     const html = `
     <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
         視窗:<select id="viewModeSelect" onchange="switchViewMode(this.value)">
@@ -1263,1283 +2636,131 @@ if (controlPanel) {
     </label>
     <label>難度:<select id="gameDifficultySelect"><option value="easy">輕鬆</option><option value="normal" selected>標準</option><option value="hard">專家</option></select></label>
     <label>⚡ 倍速:<select id="gameSpeedSelect"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.5">1.5x</option><option value="2.0">2.0x</option><option value="2.5">2.5x</option></select></label>
+    <label class="music-upload-btn">🎵 自選音樂 MP3<input type="file" id="customMusicInput" accept="audio/*" style="display:none;" onchange="handleCustomMusicUpload(event)"></label>
+    <span id="musicStatus" style="font-size:12px;color:#8e44ad;font-weight:bold;">預設主題曲</span>
     <label><input type="checkbox" id="soundToggle" checked onchange="toggleSoundSetting(this.checked)"> 🔊 音樂</label>
-    <label style="border-left:2px solid #ccc;padding-left:10px;">
-        🎮 遊戲:
-        <select id="gameSelector" onchange="switchGame(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
-            <option value="painter">🎨 風之繪師</option>
-            <option value="candle">🕯️ 燭光遠征</option>
-            <option value="wizard">⚔️ 魔導士破魔</option>
-            <option value="dandelion">🌿 蒲公英快遞</option>
-            <option value="crystal">💎 玻璃心大師</option>
-        </select>
-    </label>
-    <span id="gamePluginStatus" style="font-size:11px;color:#8b949e;">插件: 未載入</span>
+    <span id="expansionControls">
+        <span id="levelInfo">🏁 Lv.<span id="levelDisplay">1</span><span class="level-progress"><span class="level-progress-fill" id="levelProgressFill" style="width:1%;"></span></span><span id="bossSkillDisplay"></span></span>
+        <label>🖥️ 畫質:<select id="qualitySelect" onchange="setQuality(this.value)"><option value="ultra">極致</option><option value="high" selected>高</option><option value="medium">中</option><option value="low">低</option><option value="potato">馬鈴薯</option></select></label>
+        <span class="control-toggle">
+            <input type="checkbox" id="keyboardToggle" checked onchange="toggleKeyboardControl()">
+            <label for="keyboardToggle">⌨️ 鍵盤</label>
+            <input type="checkbox" id="mouseToggle" checked onchange="toggleMouseControl()" style="margin-left:6px;">
+            <label for="mouseToggle">🖱️ 滑鼠</label>
+        </span>
+        <span id="devControls" style="display:flex;gap:6px;align-items:center;">
+            <button id="devModeToggle" class="btn dev-toggle active" onclick="toggleDevMode()">🔧 開發模式 ON</button>
+            <span id="devIndicator" class="dev-mode-indicator on">🔧 開發中</span>
+        </span>
+        <span class="dev-btn" style="display:flex;gap:6px;align-items:center;">
+            <button class="btn purple-btn" onclick="openCustomQuality()" style="padding:4px 12px;font-size:12px;">⚙️ 自訂畫質</button>
+            <button class="btn purple-btn" onclick="toggleLevelEditor()" style="padding:4px 12px;font-size:12px;">🧩 自訂關卡</button>
+            <button class="btn teal-btn" onclick="toggleSkinEditor()" style="padding:4px 12px;font-size:12px;">🎨 自訂外觀</button>
+            <button class="btn orange-btn" onclick="resetLevelProgress()" style="padding:4px 12px;font-size:12px;">🔄 重置</button>
+        </span>
+        <label style="border-left:2px solid #ccc;padding-left:10px;margin-left:5px;">
+            🎮 遊戲:
+            <select id="gameSelector" onchange="switchGame(this.value)" style="padding:4px 8px; border-radius:4px; border:1px solid #bcc6cf; background:white; font-size:13px;">
+                <option value="flight">✈️ 氣流飛行員</option>
+                <option value="painter">🎨 風之繪師</option>
+                <option value="candle">🕯️ 燭光遠征</option>
+                <option value="wizard">⚔️ 魔導士破魔</option>
+                <option value="dandelion">🌿 蒲公英快遞</option>
+                <option value="crystal">💎 玻璃心大師</option>
+            </select>
+        </label>
+    </span>
     `;
-    controlPanel.insertAdjacentHTML('beforeend', html);
+    mainPanel.insertAdjacentHTML('beforeend', html);
 }
 
 function toggleSoundSetting(enabled) {
-    if (!enabled) stopBGM();
-    else if (currentPlugin && currentPlugin.onSoundToggle) {
-        currentPlugin.onSoundToggle(enabled);
-    }
-}
-
-// =====================================================
-// 9. 插件系統 - 核心架構
-// =====================================================
-// 插件註冊表
-const pluginRegistry = {};
-
-// 當前活動的插件
-let currentPlugin = null;
-
-// 插件接口規範：
-// {
-//   id: 'painter',           // 唯一ID
-//   name: '風之繪師',         // 顯示名稱
-//   emoji: '🎨',             // 圖示
-//   version: '1.0.0',        // 版本
-//   description: '...',      // 描述
-//   author: '...',           // 作者
-//   
-//   // 生命週期方法
-//   init: function(core) {},              // 初始化，傳入核心API
-//   destroy: function() {},                // 銷毀
-//   onMeasureToggle: function(isOn) {},   // 測量開關切換時
-//   onSoundToggle: function(isOn) {},     // 音效開關切換時
-//   onResize: function(w, h) {},          // 畫布大小改變時
-//   onPause: function() {},               // 暫停時
-//   onResume: function() {},              // 繼續時
-//   
-//   // 核心方法
-//   update: function(breathFlow) {},      // 更新遊戲邏輯
-//   render: function(ctx) {},             // 渲染遊戲畫面
-//   getHUD: function() {},                // 返回HUD HTML
-//   getGuide: function() {},              // 返回操控說明 HTML
-//   getTitle: function() {},              // 返回標題
-//   
-//   // 事件
-//   onGameOver: function() {},            // 遊戲結束
-//   onWin: function() {},                 // 過關
-// }
-
-// 核心API，提供給插件使用
-const coreAPI = {
-    // 取得呼吸數據
-    getBreathFlow: function() {
-        return isMeasuring ? smoothedEst : 0;
-    },
-    getIsMeasuring: function() {
-        return isMeasuring;
-    },
-    // 音效
-    playSound: function(type) {
-        playAudioEffect(type);
-    },
-    // 狀態顯示
-    showStatus: function(msg) {
-        updateStatus(msg);
-    },
-    showNotification: function(msg) {
-        const status = document.getElementById('status');
-        if (status) {
-            const orig = status.innerText;
-            status.innerText = `🎯 ${msg}`;
-            status.style.background = '#8e44ad';
-            setTimeout(() => {
-                status.innerText = orig;
-                status.style.background = '#1f4e79';
-            }, 2500);
-        }
-    },
-    // 遊戲狀態
-    getGameState: function() {
-        return { isRunning: isGameRunning, isPaused: isGamePaused, isOver: isGameOver };
-    },
-    setGameOver: function(score, msg) {
-        document.getElementById('finalScore').innerText = score || 0;
-        document.getElementById('gameOverMessage').innerText = msg || '遊戲結束！';
-        document.getElementById('gameOverScreen').style.display = 'flex';
-        isGameOver = true;
-        isGameRunning = false;
+    if (!enabled) {
+        PainterGame.stopMusic();
         stopBGM();
-    },
-    setWin: function(msg) {
-        document.getElementById('winMessage').innerText = msg || '你贏了！';
-        document.getElementById('winScreen').style.display = 'flex';
-        isGameOver = true;
-        isGameRunning = false;
-        stopBGM();
-    },
-    // HUD控制
-    setHUD: function(html) {
-        document.getElementById('gameHUD').innerHTML = html;
-    },
-    setGuide: function(title, html) {
-        document.getElementById('guideTitle').innerText = title || '操控說明';
-        document.getElementById('guideContent').innerHTML = html || '';
-    },
-    // HP控制
-    setHP: function(hp, maxHp) {
-        playerHP = hp || 100;
-        const pct = Math.max(0, Math.min(100, (playerHP / (maxHp || 100)) * 100));
-        document.getElementById('hpFill').style.width = pct + '%';
-    },
-    getHP: function() {
-        return playerHP;
-    },
-    // 畫布
-    getCanvas: function() {
-        return gameCanvas;
-    },
-    getContext: function() {
-        return gameCtx;
-    },
-    // 遊戲循環控制
-    startLoop: function() {
-        if (!isGameRunning) {
-            isGameRunning = true;
-            isGameOver = false;
-            gameLoop();
-        }
-    },
-    stopLoop: function() {
-        isGameRunning = false;
-        if (gameAnimationId) {
-            cancelAnimationFrame(gameAnimationId);
-            gameAnimationId = null;
-        }
-    },
-    // 暫停控制
-    pause: function() {
-        isPaused = true;
-        document.getElementById('gamePauseBtn').innerText = '繼續';
-        document.getElementById('gamePauseBtn').style.backgroundColor = '#f39c12';
-        if (currentPlugin && currentPlugin.onPause) currentPlugin.onPause();
-    },
-    resume: function() {
-        isPaused = false;
-        document.getElementById('gamePauseBtn').innerText = '暫停';
-        document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
-        if (currentPlugin && currentPlugin.onResume) currentPlugin.onResume();
-    }
-};
-
-// =====================================================
-// 10. 遊戲插件 - 風之繪師 (完整實作)
-// =====================================================
-const PainterPlugin = {
-    id: 'painter',
-    name: '風之繪師',
-    emoji: '🎨',
-    version: '1.0.0',
-    description: '以呼吸控制畫筆完成水彩畫作',
-    author: 'System',
-    
-    // 遊戲狀態
-    state: {
-        level: 1,
-        maxLevel: 100,
-        hp: 100,
-        maxHp: 100,
-        brushX: 0,
-        brushY: 0,
-        brushSize: 4,
-        brushAlpha: 0.8,
-        brushColor: '#8B6914',
-        isDrawing: false,
-        drawPoints: [],
-        strokeProgress: 0,
-        strokePoints: [],
-        strokesPerPainting: 1,
-        currentStroke: 0,
-        shapePath: [],
-        shapeIdx: 0,
-        shapeTypes: ['circle', 'square', 'triangle', 'star', 'heart', 'flower', 'butterfly', 'diamond', 'moon', 'spiral'],
-        shapeNames: { circle: '圓形', square: '方形', triangle: '三角形', star: '星星', heart: '愛心', flower: '花朵', butterfly: '蝴蝶', diamond: '鑽石', moon: '月亮', spiral: '螺旋' },
-        particles: [],
-        items: [],
-        hasPalette: false,
-        hasFineBrush: false,
-        paletteTimer: 0,
-        fineBrushTimer: 0,
-        paintings: 0,
-        errors: 0,
-        maxErrors: 5,
-        musicTimer: null,
-        musicStep: 0,
-        musicNotes: [523, 587, 659, 784, 880, 988, 1175, 1319]
-    },
-    
-    // 核心API引用
-    core: null,
-    
-    init: function(core) {
-        this.core = core;
-        const s = this.state;
-        s.level = 1;
-        s.hp = s.maxHp;
-        s.paintings = 0;
-        s.errors = 0;
-        s.drawPoints = [];
-        s.particles = [];
-        s.items = [];
-        s.hasPalette = false;
-        s.hasFineBrush = false;
-        s.paletteTimer = 0;
-        s.fineBrushTimer = 0;
-        s.currentStroke = 0;
-        s.strokeProgress = 0;
-        s.shapeIdx = 0;
-        this.updateStrokeCount();
-        this.generateShape();
-        const canvas = core.getCanvas();
-        s.brushX = canvas.width / 2;
-        s.brushY = canvas.height / 2;
-        this.updateUI();
-        this.startMusic();
-        core.showStatus('🎨 風之繪師 已載入');
-    },
-    
-    destroy: function() {
-        this.stopMusic();
-        if (this.core) {
-            this.core.stopLoop();
-        }
-    },
-    
-    updateStrokeCount: function() {
-        const s = this.state;
-        const lv = s.level;
-        if (lv <= 20) s.strokesPerPainting = 1;
-        else if (lv <= 40) s.strokesPerPainting = 2;
-        else if (lv <= 60) s.strokesPerPainting = 3;
-        else if (lv <= 80) s.strokesPerPainting = 4;
-        else s.strokesPerPainting = 5;
-        s.currentStroke = 0;
-        s.strokeProgress = 0;
-    },
-    
-    generateShape: function() {
-        const s = this.state;
-        const canvas = this.core.getCanvas();
-        const w = canvas.width, h = canvas.height;
-        const cx = w / 2, cy = h / 2;
-        const size = Math.min(w, h) * 0.2 * (1 + (s.level - 1) * 0.004);
-        const cnt = Math.min(Math.floor(s.level / 8) + 1, s.shapeTypes.length);
-        const type = s.shapeTypes[s.shapeIdx % cnt];
-        s.shapePath = this.genShapePoints(type, cx, cy, Math.min(size, Math.min(w, h) * 0.33));
-        s.strokePoints = [];
-        s.drawPoints = [];
-        s.strokeProgress = 0;
-        s.currentStroke = 0;
-        const total = s.shapePath.length;
-        const per = Math.floor(total / s.strokesPerPainting);
-        for (let i = 0; i < s.strokesPerPainting; i++) {
-            const start = i * per;
-            const end = (i === s.strokesPerPainting - 1) ? total : (i + 1) * per;
-            s.strokePoints.push(s.shapePath.slice(start, end));
-        }
-        const remain = total - s.strokesPerPainting * per;
-        if (remain > 0 && s.strokePoints.length > 0) {
-            const last = s.strokePoints[s.strokePoints.length - 1];
-            for (let i = total - remain; i < total; i++) last.push(s.shapePath[i]);
-        }
-        this.updateUI();
-    },
-    
-    genShapePoints: function(type, cx, cy, size) {
-        const pts = [];
-        const steps = 80 + Math.floor(this.state.level / 2);
-        switch(type) {
-            case 'circle':
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    pts.push({ x: cx + size * Math.cos(a), y: cy + size * Math.sin(a) });
-                }
-                break;
-            case 'square': {
-                const hs = size * 0.7;
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const c = Math.floor(p * 4);
-                    const cp = (p * 4) - c;
-                    const a = (c / 4) * Math.PI * 2;
-                    const na = ((c + 1) / 4) * Math.PI * 2;
-                    pts.push({
-                        x: cx + hs * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
-                        y: cy + hs * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
-                    });
-                }
-                break;
-            }
-            case 'triangle': {
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const c = Math.floor(p * 3);
-                    const cp = (p * 3) - c;
-                    const a = (c / 3) * Math.PI * 2 - Math.PI / 2;
-                    const na = ((c + 1) / 3) * Math.PI * 2 - Math.PI / 2;
-                    pts.push({
-                        x: cx + size * 0.7 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
-                        y: cy + size * 0.7 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
-                    });
-                }
-                break;
-            }
-            case 'star':
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const a = p * Math.PI * 2 - Math.PI / 2;
-                    const r = (Math.floor(p * 10) % 2 === 0) ? size : size * 0.4;
-                    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-                }
-                break;
-            case 'heart':
-                for (let i = 0; i < steps; i++) {
-                    const t = i / steps * Math.PI * 2;
-                    pts.push({
-                        x: cx + size * 0.6 * 16 * Math.pow(Math.sin(t), 3),
-                        y: cy - size * 0.6 * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
-                    });
-                }
-                break;
-            case 'flower': {
-                const petals = 5 + Math.floor(this.state.level / 15);
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    const r = size * (0.6 + 0.4 * Math.sin(petals * a));
-                    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-                }
-                break;
-            }
-            case 'butterfly':
-                for (let i = 0; i < steps; i++) {
-                    const t = i / steps * Math.PI * 2;
-                    const r = size * (0.7 + 0.3 * Math.sin(3 * t));
-                    pts.push({ x: cx + r * Math.cos(t) * 0.7, y: cy + r * Math.sin(t) * 0.5 });
-                }
-                break;
-            case 'diamond': {
-                for (let i = 0; i < steps; i++) {
-                    const p = i / steps;
-                    const c = Math.floor(p * 4);
-                    const cp = (p * 4) - c;
-                    const a = (c / 4) * Math.PI * 2 + Math.PI / 4;
-                    const na = ((c + 1) / 4) * Math.PI * 2 + Math.PI / 4;
-                    pts.push({
-                        x: cx + size * 0.8 * (Math.cos(a) + cp * (Math.cos(na) - Math.cos(a))),
-                        y: cy + size * 0.8 * (Math.sin(a) + cp * (Math.sin(na) - Math.sin(a)))
-                    });
-                }
-                break;
-            }
-            case 'moon':
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    const r = size * (0.5 + 0.5 * Math.sin(a));
-                    pts.push({ x: cx + r * Math.cos(a) * 0.8, y: cy + r * Math.sin(a) * 0.8 });
-                }
-                break;
-            case 'spiral': {
-                const turns = 2 + Math.floor(this.state.level / 20);
-                for (let i = 0; i < steps * 2; i++) {
-                    const p = i / (steps * 2);
-                    const a = p * Math.PI * 2 * turns;
-                    const r = size * 0.1 + size * 0.8 * p;
-                    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-                }
-                break;
-            }
-            default:
-                for (let i = 0; i < steps; i++) {
-                    const a = i / steps * Math.PI * 2;
-                    pts.push({ x: cx + size * Math.cos(a), y: cy + size * Math.sin(a) });
-                }
-        }
-        return pts;
-    },
-    
-    update: function(breathFlow) {
-        const s = this.state;
-        if (isPaused || isGameOver) return;
-        const flow = Math.abs(breathFlow);
-        const exhale = breathFlow < 0;
-        
-        if (exhale && flow > 3) {
-            s.isDrawing = true;
-            s.brushSize = Math.min(4 + flow / 5, 22);
-            s.brushAlpha = Math.min(1, 0.3 + flow / 45);
-            if (s.hasPalette) {
-                const hue = (Date.now() / 50 + s.level * 10) % 360;
-                s.brushColor = `hsl(${hue}, 70%, 55%)`;
-            } else {
-                const colors = ['#8B6914', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#D35400'];
-                s.brushColor = colors[Math.floor((s.level - 1) / 15) % colors.length];
-            }
-            this.drawAlongPath(flow);
-        } else {
-            s.isDrawing = false;
-        }
-        this.updateParticles();
-        this.updateItems();
-        if (s.paletteTimer > 0) s.paletteTimer--;
-        if (s.fineBrushTimer > 0) s.fineBrushTimer--;
-        if (s.hp <= 0) {
-            this.core.setGameOver(s.paintings, `到達第 ${s.level} 關`);
-            this.stopMusic();
-        }
-        this.updateUI();
-    },
-    
-    drawAlongPath: function(flow) {
-        const s = this.state;
-        if (s.currentStroke >= s.strokesPerPainting) return;
-        const pts = s.strokePoints[s.currentStroke];
-        if (!pts || pts.length === 0) { s.currentStroke++; s.strokeProgress = 0; return; }
-        const speed = Math.min(0.8 + flow / 40, 3.0);
-        s.strokeProgress += speed / pts.length;
-        const toDraw = Math.floor(s.strokeProgress * pts.length);
-        for (let i = s.drawPoints.length; i < toDraw && i < pts.length; i++) {
-            const p = pts[i];
-            if (p) {
-                s.drawPoints.push({
-                    x: p.x, y: p.y,
-                    size: s.brushSize,
-                    alpha: s.brushAlpha,
-                    color: s.brushColor
-                });
-                s.brushX = p.x;
-                s.brushY = p.y;
-            }
-        }
-        if (Math.random() < 0.2 && s.drawPoints.length > 0) {
-            const last = s.drawPoints[s.drawPoints.length - 1];
-            s.particles.push({
-                x: last.x + (Math.random() - 0.5) * 8,
-                y: last.y + (Math.random() - 0.5) * 8,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5 - 0.5,
-                size: 1 + Math.random() * 3,
-                color: s.brushColor,
-                life: 1,
-                decay: 0.01 + Math.random() * 0.02
-            });
-        }
-        if (s.strokeProgress >= 1) this.finishStroke();
-    },
-    
-    finishStroke: function() {
-        const s = this.state;
-        s.currentStroke++;
-        s.strokeProgress = 0;
-        if (s.drawPoints.length > 0) {
-            const last = s.drawPoints[s.drawPoints.length - 1];
-            this.splash(last.x, last.y, s.brushColor);
-        }
-        this.core.playSound('buff');
-        if (s.currentStroke >= s.strokesPerPainting) {
-            this.completePainting();
-        } else {
-            this.core.showNotification(`🖌️ 第 ${s.currentStroke + 1}/${s.strokesPerPainting} 筆`);
-        }
-        this.updateUI();
-    },
-    
-    completePainting: function() {
-        const s = this.state;
-        s.paintings++;
-        s.currentStroke = 0;
-        s.strokeProgress = 0;
-        s.drawPoints = [];
-        for (let i = 0; i < 50; i++) {
-            const a = Math.random() * Math.PI * 2;
-            const sp = 2 + Math.random() * 6;
-            s.particles.push({
-                x: s.brushX, y: s.brushY,
-                vx: Math.cos(a) * sp,
-                vy: Math.sin(a) * sp - 1,
-                size: 2 + Math.random() * 5,
-                color: ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#8e44ad'][Math.floor(Math.random() * 5)],
-                life: 1,
-                decay: 0.005 + Math.random() * 0.015
-            });
-        }
-        this.core.playSound('special');
-        s.level++;
-        this.updateStrokeCount();
-        s.shapeIdx++;
-        this.generateShape();
-        if (s.level % 10 === 0) {
-            s.hp = Math.min(s.maxHp, s.hp + 20);
-            this.core.showNotification(`🎉 第${s.level}關！HP+20`);
-        }
-        if (s.level > s.maxLevel) {
-            this.core.setWin(`🎉 你完成了所有 ${s.maxLevel} 關！`);
-            this.stopMusic();
-            return;
-        }
-        this.core.showNotification(`🎨 完成第${s.paintings}幅畫！第${s.level}關`);
-        this.updateUI();
-    },
-    
-    splash: function(x, y, c) {
-        const s = this.state;
-        for (let i = 0; i < 25; i++) {
-            const a = Math.random() * Math.PI * 2;
-            const sp = 2 + Math.random() * 5;
-            s.particles.push({
-                x, y,
-                vx: Math.cos(a) * sp,
-                vy: Math.sin(a) * sp - 1,
-                size: 2 + Math.random() * 4,
-                color: c,
-                life: 1,
-                decay: 0.008 + Math.random() * 0.015
-            });
-        }
-    },
-    
-    updateParticles: function() {
-        const s = this.state;
-        for (let p of s.particles) {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.05;
-            p.life -= p.decay;
-        }
-        s.particles = s.particles.filter(p => p.life > 0);
-    },
-    
-    updateItems: function() {
-        const s = this.state;
-        const canvas = this.core.getCanvas();
-        if (Math.random() < 0.001) {
-            const w = canvas.width, h = canvas.height;
-            const type = Math.random() < 0.5 ? 'palette' : 'fineBrush';
-            s.items.push({
-                type,
-                x: 50 + Math.random() * (w - 100),
-                y: 50 + Math.random() * (h - 100),
-                radius: 20,
-                life: 300
-            });
-        }
-        for (let item of s.items) {
-            item.life--;
-            const d = Math.hypot(item.x - s.brushX, item.y - s.brushY);
-            if (d < item.radius + 15) {
-                if (item.type === 'palette') {
-                    s.hasPalette = true;
-                    s.paletteTimer = 600;
-                    this.core.playSound('buff');
-                    this.core.showNotification('🎨 調色盤！顏色變得更豐富！');
-                } else if (item.type === 'fineBrush') {
-                    s.hasFineBrush = true;
-                    s.fineBrushTimer = 600;
-                    this.core.playSound('buff');
-                    this.core.showNotification('🖌️ 細筆！失誤懲罰降低！');
-                }
-                item.life = 0;
-            }
-        }
-        s.items = s.items.filter(i => i.life > 0);
-    },
-    
-    updateUI: function() {
-        const s = this.state;
-        const el = document.getElementById('painterLevel');
-        if (el) el.textContent = `${s.level}/${s.maxLevel}`;
-        const el2 = document.getElementById('painterPaintings');
-        if (el2) el2.textContent = s.paintings;
-        const el3 = document.getElementById('painterStroke');
-        if (el3) el3.textContent = `${s.currentStroke + 1}/${s.strokesPerPainting}`;
-        const el4 = document.getElementById('painterErrors');
-        if (el4) el4.textContent = `${s.errors}/${s.maxErrors}`;
-        this.core.setHP(s.hp, s.maxHp);
-        const pct = s.strokeProgress * 100;
-        const fill = document.getElementById('painterProgressFill');
-        if (fill) fill.style.width = `${Math.min(pct, 100)}%`;
-        const nameEl = document.getElementById('painterShapeName');
-        if (nameEl) {
-            const type = s.shapeTypes[s.shapeIdx % s.shapeTypes.length];
-            nameEl.textContent = s.shapeNames[type] || '未知';
-        }
-        const needEl = document.getElementById('painterStrokesNeeded');
-        if (needEl) needEl.textContent = s.strokesPerPainting;
-    },
-    
-    render: function(ctx) {
-        const s = this.state;
-        const canvas = this.core.getCanvas();
-        const w = canvas.width, h = canvas.height;
-        
-        // 背景
-        const grad = ctx.createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, '#fdf6f0');
-        grad.addColorStop(1, '#f5ece4');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-        
-        // 紙紋理
-        for (let i = 0; i < 60; i++) {
-            ctx.fillStyle = `rgba(212, 163, 115, ${Math.random() * 0.03})`;
-            ctx.fillRect(Math.random() * w, Math.random() * h, Math.random() * 30 + 10, Math.random() * 30 + 10);
-        }
-        
-        // 邊框
-        ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(15, 15, w - 30, h - 30);
-        
-        // 目標形狀
-        if (s.shapePath.length > 0) {
-            ctx.save();
-            ctx.shadowColor = '#8B6914';
-            ctx.shadowBlur = 15 * (0.3 + 0.2 * Math.sin(Date.now() / 1000));
-            ctx.strokeStyle = `rgba(139, 105, 20, ${0.2 + 0.1 * Math.sin(Date.now() / 1500)})`;
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([6, 8]);
-            ctx.beginPath();
-            ctx.moveTo(s.shapePath[0].x, s.shapePath[0].y);
-            for (let i = 1; i < s.shapePath.length; i++) {
-                ctx.lineTo(s.shapePath[i].x, s.shapePath[i].y);
-            }
-            ctx.closePath();
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-        }
-        
-        // 未完成筆畫提示
-        if (s.currentStroke < s.strokesPerPainting) {
-            const next = s.strokePoints[s.currentStroke];
-            if (next && next.length > 0) {
-                ctx.save();
-                ctx.strokeStyle = 'rgba(139, 105, 20, 0.08)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 8]);
-                ctx.beginPath();
-                const start = Math.floor(s.strokeProgress * next.length);
-                if (start < next.length) {
-                    ctx.moveTo(next[start].x, next[start].y);
-                    for (let i = start + 1; i < next.length; i++) {
-                        ctx.lineTo(next[i].x, next[i].y);
-                    }
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.restore();
-            }
-        }
-        
-        // 已畫筆觸
-        for (let p of s.drawPoints) {
-            ctx.globalAlpha = p.alpha || 0.8;
-            ctx.fillStyle = p.color || '#8B6914';
-            ctx.shadowColor = p.color || '#8B6914';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size || 4, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.shadowBlur = 0;
-        
-        // 畫筆
-        if (s.isDrawing) {
-            ctx.save();
-            ctx.shadowColor = s.brushColor;
-            ctx.shadowBlur = 30;
-            ctx.globalAlpha = s.brushAlpha;
-            ctx.fillStyle = s.brushColor;
-            ctx.beginPath();
-            ctx.arc(s.brushX, s.brushY, s.brushSize, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        } else {
-            ctx.save();
-            ctx.strokeStyle = 'rgba(92, 61, 46, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]);
-            const pulse = 15 + 5 * Math.sin(Date.now() / 500);
-            ctx.beginPath();
-            ctx.arc(s.brushX, s.brushY, pulse, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-        }
-        
-        // 粒子
-        for (let p of s.particles) {
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.shadowBlur = 0;
-        
-        // 道具
-        for (let item of s.items) {
-            const pulse = 1 + 0.1 * Math.sin(Date.now() / 300 + item.x);
-            ctx.save();
-            ctx.translate(item.x, item.y);
-            ctx.scale(pulse, pulse);
-            ctx.shadowColor = item.type === 'palette' ? '#e67e22' : '#3498db';
-            ctx.shadowBlur = 20;
-            ctx.font = '28px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(item.type === 'palette' ? '🎨' : '🖌️', 0, 0);
-            ctx.restore();
-        }
-        
-        // 進度條
-        const px = 50, py = h - 35, pw = w - 100, ph = 8;
-        ctx.fillStyle = 'rgba(139, 115, 85, 0.15)';
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(px, py, pw, ph, 4);
-        else { ctx.rect(px, py, pw, ph); }
-        ctx.fill();
-        const pct = s.strokeProgress;
-        ctx.fillStyle = '#8B6914';
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(px, py, pw * pct, ph, 4);
-        else { ctx.rect(px, py, pw * pct, ph); }
-        ctx.fill();
-        ctx.fillStyle = 'rgba(92, 61, 46, 0.4)';
-        ctx.font = '10px Georgia, serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`第${s.currentStroke + 1}/${s.strokesPerPainting}筆 ${Math.round(pct * 100)}%`, w / 2, py - 4);
-        
-        // 頂部標題
-        ctx.fillStyle = 'rgba(92, 61, 46, 0.25)';
-        ctx.font = '12px Georgia, serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        const type = s.shapeTypes[s.shapeIdx % s.shapeTypes.length];
-        ctx.fillText(`🎨 ${s.shapeNames[type] || '繪畫'}  Lv.${s.level}  筆畫${s.strokesPerPainting}`, w / 2, 18);
-    },
-    
-    // 音樂
-    startMusic: function() {
-        this.stopMusic();
-        if (!document.getElementById('soundToggle')?.checked) return;
-        const s = this.state;
-        s.musicTimer = setInterval(() => {
-            if (isPaused || isGameOver) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            try {
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(s.musicNotes[s.musicStep % s.musicNotes.length], now);
-                gain.gain.setValueAtTime(0.04, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.3);
-                s.musicStep++;
-            } catch(e) {}
-        }, 380);
-    },
-    
-    stopMusic: function() {
-        const s = this.state;
-        if (s.musicTimer) {
-            clearInterval(s.musicTimer);
-            s.musicTimer = null;
-            s.musicStep = 0;
-        }
-    },
-    
-    // 插件接口方法
-    onMeasureToggle: function(isOn) {
-        if (isOn && !isGameRunning && !isGameOver) {
-            this.core.startLoop();
-        }
-    },
-    
-    onSoundToggle: function(isOn) {
-        if (isOn && !isPaused && !isGameOver) {
-            this.startMusic();
-        } else {
-            this.stopMusic();
-        }
-    },
-    
-    onResize: function(w, h) {
-        const s = this.state;
-        s.brushX = Math.min(s.brushX, w - 10);
-        s.brushY = Math.min(s.brushY, h - 10);
-        this.generateShape();
-    },
-    
-    onPause: function() {
-        this.stopMusic();
-    },
-    
-    onResume: function() {
-        if (document.getElementById('soundToggle')?.checked) {
-            this.startMusic();
-        }
-    },
-    
-    getHUD: function() {
-        return `
-            🎨 關卡: <span id="painterLevel">1/100</span>
-            | 🖼️ 畫作: <span id="painterPaintings">0</span>
-            | 🖌️ 筆觸: <span id="painterStroke">0/1</span>
-            | ❌ 失誤: <span id="painterErrors">0/5</span>
-            | <span class="level-progress"><span class="level-progress-fill" id="painterProgressFill" style="width:1%;"></span></span>
-            | <span id="painterShapeName">圓形</span>
-            | <span id="painterStrokesNeeded" style="display:none;">1</span>
-        `;
-    },
-    
-    getGuide: function() {
-        return `
-            <div class="key-row">
-                <span class="key primary">🌬️</span>
-                <span class="action">吐氣強度 → 控制筆觸粗細 <span class="highlight">(最優先)</span></span>
-            </div>
-            <div class="key-row">
-                <span class="key primary">🌬️</span>
-                <span class="action">吸氣 → 暫停繪畫</span>
-            </div>
-            <div class="divider"></div>
-            <div class="key-row">
-                <span class="key secondary">↑↓</span>
-                <span class="action">微調畫筆位置</span>
-            </div>
-            <div class="key-row">
-                <span class="key special">Space</span>
-                <span class="action">暫停 / 繼續</span>
-            </div>
-            <div class="divider"></div>
-            <div class="priority-note">
-                ⚡ 優先級：呼吸裝置 ＞ 鍵盤 ＞ 滑鼠
-            </div>
-            <div class="priority-note" style="border-top-color:#d4a373; color:#d4a373;">
-                🎯 每關筆畫數：1-20關:1筆 | 21-40:2筆 | 41-60:3筆 | 61-80:4筆 | 81-100:5筆
-            </div>
-        `;
-    },
-    
-    getTitle: function() {
-        return '🎨 風之繪師 操控說明';
-    }
-};
-
-// =====================================================
-// 11. 遊戲插件 - 燭光遠征 (骨架)
-// =====================================================
-const CandlePlugin = {
-    id: 'candle',
-    name: '燭光遠征',
-    emoji: '🕯️',
-    version: '0.5.0',
-    description: '控制燭火亮度在黑暗迷宮中尋找出口',
-    author: 'System',
-    
-    core: null,
-    
-    init: function(core) {
-        this.core = core;
-        core.showStatus('🕯️ 燭光遠征 開發中');
-        core.setHUD(`🕯️ 燭光遠征 - 開發中`);
-        core.setGuide('🕯️ 燭光遠征', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
-        core.startLoop();
-    },
-    
-    destroy: function() {},
-    
-    update: function(breathFlow) {},
-    
-    render: function(ctx) {
-        const canvas = this.core.getCanvas();
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#f5e6ca';
-        ctx.font = '24px "Courier New", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('🕯️ 燭光遠征', canvas.width/2, canvas.height/2 - 20);
-        ctx.fillStyle = '#8b949e';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
-    },
-    
-    getHUD: function() {
-        return `🕯️ 燭光遠征 - 開發中`;
-    },
-    
-    getGuide: function() {
-        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
-    },
-    
-    getTitle: function() {
-        return '🕯️ 燭光遠征';
-    }
-};
-
-// =====================================================
-// 12. 遊戲插件 - 魔導士破魔 (骨架)
-// =====================================================
-const WizardPlugin = {
-    id: 'wizard',
-    name: '魔導士破魔',
-    emoji: '⚔️',
-    version: '0.5.0',
-    description: '呼吸充能釋放法術擊敗敵人',
-    author: 'System',
-    
-    core: null,
-    
-    init: function(core) {
-        this.core = core;
-        core.showStatus('⚔️ 魔導士破魔 開發中');
-        core.setHUD(`⚔️ 魔導士破魔 - 開發中`);
-        core.setGuide('⚔️ 魔導士破魔', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
-        core.startLoop();
-    },
-    
-    destroy: function() {},
-    
-    update: function(breathFlow) {},
-    
-    render: function(ctx) {
-        const canvas = this.core.getCanvas();
-        ctx.fillStyle = '#0d0a1a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#f0e6ff';
-        ctx.font = '24px Verdana, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('⚔️ 魔導士破魔', canvas.width/2, canvas.height/2 - 20);
-        ctx.fillStyle = '#8b949e';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
-    },
-    
-    getHUD: function() {
-        return `⚔️ 魔導士破魔 - 開發中`;
-    },
-    
-    getGuide: function() {
-        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
-    },
-    
-    getTitle: function() {
-        return '⚔️ 魔導士破魔';
-    }
-};
-
-// =====================================================
-// 13. 遊戲插件 - 蒲公英快遞 (骨架)
-// =====================================================
-const DandelionPlugin = {
-    id: 'dandelion',
-    name: '蒲公英快遞',
-    emoji: '🌿',
-    version: '0.5.0',
-    description: '控制蒲公英飛行運送花粉',
-    author: 'System',
-    
-    core: null,
-    
-    init: function(core) {
-        this.core = core;
-        core.showStatus('🌿 蒲公英快遞 開發中');
-        core.setHUD(`🌿 蒲公英快遞 - 開發中`);
-        core.setGuide('🌿 蒲公英快遞', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
-        core.startLoop();
-    },
-    
-    destroy: function() {},
-    
-    update: function(breathFlow) {},
-    
-    render: function(ctx) {
-        const canvas = this.core.getCanvas();
-        ctx.fillStyle = '#e8f5e9';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#1b5e20';
-        ctx.font = '24px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🌿 蒲公英快遞', canvas.width/2, canvas.height/2 - 20);
-        ctx.fillStyle = '#4a7a4a';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
-    },
-    
-    getHUD: function() {
-        return `🌿 蒲公英快遞 - 開發中`;
-    },
-    
-    getGuide: function() {
-        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
-    },
-    
-    getTitle: function() {
-        return '🌿 蒲公英快遞';
-    }
-};
-
-// =====================================================
-// 14. 遊戲插件 - 玻璃心大師 (骨架)
-// =====================================================
-const CrystalPlugin = {
-    id: 'crystal',
-    name: '玻璃心大師',
-    emoji: '💎',
-    version: '0.5.0',
-    description: '呼吸控制壓力雕刻水晶',
-    author: 'System',
-    
-    core: null,
-    
-    init: function(core) {
-        this.core = core;
-        core.showStatus('💎 玻璃心大師 開發中');
-        core.setHUD(`💎 玻璃心大師 - 開發中`);
-        core.setGuide('💎 玻璃心大師', `<div class="priority-note">🚧 此遊戲正在開發中，敬請期待！</div>`);
-        core.startLoop();
-    },
-    
-    destroy: function() {},
-    
-    update: function(breathFlow) {},
-    
-    render: function(ctx) {
-        const canvas = this.core.getCanvas();
-        ctx.fillStyle = '#e3f2fd';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#0d47a1';
-        ctx.font = '24px Tahoma, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('💎 玻璃心大師', canvas.width/2, canvas.height/2 - 20);
-        ctx.fillStyle = '#4a7a9a';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('🚧 開發中，敬請期待！', canvas.width/2, canvas.height/2 + 30);
-    },
-    
-    getHUD: function() {
-        return `💎 玻璃心大師 - 開發中`;
-    },
-    
-    getGuide: function() {
-        return `<div class="priority-note">🚧 此遊戲正在開發中</div>`;
-    },
-    
-    getTitle: function() {
-        return '💎 玻璃心大師';
-    }
-};
-
-// =====================================================
-// 15. 插件註冊與切換
-// =====================================================
-// 註冊所有插件
-pluginRegistry['painter'] = PainterPlugin;
-pluginRegistry['candle'] = CandlePlugin;
-pluginRegistry['wizard'] = WizardPlugin;
-pluginRegistry['dandelion'] = DandelionPlugin;
-pluginRegistry['crystal'] = CrystalPlugin;
-
-function switchGame(gameId) {
-    // 停止當前遊戲
-    if (gameAnimationId) {
-        cancelAnimationFrame(gameAnimationId);
-        gameAnimationId = null;
-    }
-    isGameRunning = false;
-    isGameOver = false;
-    isPaused = false;
-    document.getElementById('gameOverScreen').style.display = 'none';
-    document.getElementById('winScreen').style.display = 'none';
-    document.getElementById('gamePauseBtn').innerText = '暫停';
-    document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
-    
-    // 銷毀當前插件
-    if (currentPlugin && currentPlugin.destroy) {
-        currentPlugin.destroy();
-    }
-    
-    // 更新狀態顯示
-    document.getElementById('gamePluginStatus').textContent = `插件: ${gameId}`;
-    
-    // 載入新插件
-    const PluginClass = pluginRegistry[gameId];
-    if (!PluginClass) {
-        updateStatus(`❌ 找不到遊戲: ${gameId}`);
-        return;
-    }
-    
-    // 創建插件實例
-    currentPlugin = Object.create(PluginClass);
-    
-    // 初始化
-    if (currentPlugin.init) {
-        currentPlugin.init(coreAPI);
-    }
-    
-    // 更新HUD
-    if (currentPlugin.getHUD) {
-        document.getElementById('gameHUD').innerHTML = currentPlugin.getHUD();
-    }
-    
-    // 更新操控說明
-    if (currentPlugin.getGuide && currentPlugin.getTitle) {
-        document.getElementById('guideTitle').innerText = currentPlugin.getTitle();
-        document.getElementById('guideContent').innerHTML = currentPlugin.getGuide();
-    }
-    
-    // 更新遊戲標題
-    document.getElementById('gameStartPrompt').style.display = 'none';
-    
-    // 開始遊戲循環
-    if (!isGameRunning) {
-        isGameRunning = true;
-        gameLoop();
-    }
-    
-    updateStatus(`🎮 切換至 ${currentPlugin.name || gameId}`);
-    console.log(`✅ 插件載入: ${gameId}`);
-}
-
-// =====================================================
-// 16. 主遊戲循環
-// =====================================================
-function gameLoop() {
-    if (!isGameRunning || isGameOver) {
-        // 如果遊戲結束但循環還在跑，停止
-        if (isGameOver) {
-            if (gameAnimationId) {
-                cancelAnimationFrame(gameAnimationId);
-                gameAnimationId = null;
-            }
-        }
-        return;
-    }
-    
-    // 取得呼吸數據
-    let breathFlow = 0;
-    if (isMeasuring && !isPaused && !isGameOver) {
-        breathFlow = (typeof smoothedEst !== 'undefined' && !isNaN(smoothedEst)) ? smoothedEst : 0;
-    }
-    
-    // 更新當前插件
-    if (currentPlugin && currentPlugin.update) {
-        currentPlugin.update(breathFlow);
-    }
-    
-    // 渲染
-    if (currentPlugin && currentPlugin.render) {
-        currentPlugin.render(gameCtx);
     } else {
-        // 預設渲染
-        gameCtx.fillStyle = '#0d1117';
-        gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-        gameCtx.fillStyle = '#f0f6fc';
-        gameCtx.font = '24px sans-serif';
-        gameCtx.textAlign = 'center';
-        gameCtx.fillText('🎮 遊戲載入中...', gameCanvas.width/2, gameCanvas.height/2);
-    }
-    
-    // 繼續循環
-    gameAnimationId = requestAnimationFrame(gameLoop);
-}
-
-// =====================================================
-// 17. 遊戲控制函數
-// =====================================================
-function restartGameEngine() {
-    // 重置遊戲
-    if (currentPlugin && currentPlugin.destroy) {
-        currentPlugin.destroy();
-    }
-    
-    isGameRunning = false;
-    isGameOver = false;
-    isPaused = false;
-    document.getElementById('gameOverScreen').style.display = 'none';
-    document.getElementById('winScreen').style.display = 'none';
-    document.getElementById('gamePauseBtn').innerText = '暫停';
-    document.getElementById('gamePauseBtn').style.backgroundColor = '#27ae60';
-    document.getElementById('hpFill').style.width = '100%';
-    
-    // 重新初始化當前插件
-    if (currentPlugin && currentPlugin.init) {
-        currentPlugin.init(coreAPI);
-    }
-    
-    // 更新HUD
-    if (currentPlugin && currentPlugin.getHUD) {
-        document.getElementById('gameHUD').innerHTML = currentPlugin.getHUD();
-    }
-    
-    isGameRunning = true;
-    gameLoop();
-}
-
-function toggleGamePause() {
-    if (!isGameRunning || isGameOver) return;
-    isPaused = !isPaused;
-    const btn = document.getElementById('gamePauseBtn');
-    if (isPaused) {
-        btn.innerText = '繼續';
-        btn.style.backgroundColor = '#f39c12';
-        if (currentPlugin && currentPlugin.onPause) {
-            currentPlugin.onPause();
+        if (currentGameMode === GAME_MODES.PAINTER && isGameRunning && !isPaused) {
+            PainterGame.startMusic();
         }
-    } else {
-        btn.innerText = '暫停';
-        btn.style.backgroundColor = '#27ae60';
-        if (currentPlugin && currentPlugin.onResume) {
-            currentPlugin.onResume();
+    }
+}
+
+function handleCustomMusicUpload(event) {
+    // 暫不實現
+}
+
+function toggleDevMode() {
+    const btn = document.getElementById('devModeToggle');
+    const indicator = document.getElementById('devIndicator');
+    if (btn) {
+        btn.textContent = btn.textContent.includes('ON') ? '🔧 開發模式 OFF' : '🔧 開發模式 ON';
+        btn.classList.toggle('active');
+    }
+    if (indicator) {
+        indicator.textContent = indicator.textContent.includes('開發中') ? '🎮 一般模式' : '🔧 開發中';
+        indicator.className = 'dev-mode-indicator ' + (indicator.textContent.includes('開發中') ? 'on' : 'off');
+    }
+}
+
+function setQuality(val) {
+    updateStatus(`🖥️ 畫質: ${val}`);
+}
+
+function openCustomQuality() {
+    alert('自訂畫質功能開發中');
+}
+
+function toggleLevelEditor() {
+    const editor = document.getElementById('levelEditor');
+    if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleSkinEditor() {
+    const editor = document.getElementById('skinEditor');
+    if (editor) editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+}
+
+function resetLevelProgress() {
+    if (confirm('確定要重置所有關卡進度嗎？')) {
+        if (currentGameMode === GAME_MODES.PAINTER) {
+            PainterGame.level = 1;
+            PainterGame.paintingsCompleted = 0;
+            PainterGame.updateStrokeCount();
+            PainterGame.generateShape();
+            PainterGame.updateUI();
+            showNotification('🔄 關卡進度已重置');
         }
     }
 }
 
 // =====================================================
-// 18. 初始化
+// 初始化
 // =====================================================
 function initExpansion() {
+    resizeGameCanvas();
+    
     // 設定視窗模式
     document.getElementById('viewModeSelect').value = 'both';
     switchViewMode('both');
     
-    // 設定遊戲選擇器
-    document.getElementById('gameSelector').value = 'painter';
+    // 設定遊戲選擇器 - 預設為氣流飛行員
+    document.getElementById('gameSelector').value = 'flight';
     
-    // 初始化遊戲
+    // 初始化氣流飛行員
+    initFlightGame();
+    
+    // 啟動遊戲
     setTimeout(() => {
-        switchGame('painter');
+        switchGame(GAME_MODES.FLIGHT);
     }, 100);
     
-    // 註冊事件
-    document.getElementById('gamePauseBtn').addEventListener('click', toggleGamePause);
-    document.getElementById('gameRestartBtn').addEventListener('click', restartGameEngine);
-    document.getElementById('gameSelector').addEventListener('change', function() {
-        switchGame(this.value);
-    });
-    document.getElementById('viewModeSelect').addEventListener('change', function() {
-        switchViewMode(this.value);
-    });
-    
-    console.log('✅ 插件系統已初始化');
-    console.log('📦 已載入插件:');
-    for (let id in pluginRegistry) {
-        console.log(`   - ${pluginRegistry[id].emoji} ${pluginRegistry[id].name} (${id})`);
-    }
+    console.log('✅ 所有功能已載入！');
+    console.log('✈️ 氣流飛行員 - 原有遊戲 (完整)');
+    console.log('🎨 風之繪師 - 新增遊戲 (完整100關)');
+    console.log('🕯️ 燭光遠征 - 開發中');
+    console.log('⚔️ 魔導士破魔 - 開發中');
+    console.log('🌿 蒲公英快遞 - 開發中');
+    console.log('💎 玻璃心大師 - 開發中');
 }
 
 if (document.readyState === 'loading') {
@@ -2555,8 +2776,7 @@ window.toggleGamePause = toggleGamePause;
 window.toggleFullscreen = toggleFullscreen;
 window.switchViewMode = switchViewMode;
 window.toggleControlGuide = toggleControlGuide;
-window.resizeGameCanvas = resizeGameCanvas;
-window.pluginRegistry = pluginRegistry;
+window.GAME_MODES = GAME_MODES;
 </script>
 </body>
 </html>
