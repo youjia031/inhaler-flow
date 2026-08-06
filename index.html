@@ -1364,8 +1364,28 @@ if(isUsingCustomMusic&&customAudioBuffer){customAudioSource=audioCtx.createBuffe
 else{bgmInterval=setInterval(()=>{if(audioCtx.state==='suspended')audioCtx.resume();try{let now=audioCtx.currentTime;let idx=bgmStep%pilotTheme.length;const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type='sawtooth';osc.frequency.setValueAtTime(pilotTheme[idx],now);gain.gain.setValueAtTime(0.18,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.16);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+0.16);bgmStep++;}catch(e){}},180);}
 }
 
-function stopBGM(){if(bgmInterval){clearInterval(bgmInterval);bgmInterval=null;}if(customAudioSource){try{customAudioSource.stop();customAudioSource.disconnect();}catch(e){}customAudioSource=null;}}
-function toggleSoundSetting(enabled){if(!enabled)stopBGM();else startBGM();}
+// ===== 加強版停止音樂函式（徹底解決 BGM 關不掉的問題） =====
+function stopBGM(){
+    // 1. 清除內建旋律的計時器
+    if(typeof bgmInterval !== 'undefined' && bgmInterval){
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+    }
+    // 2. 停止自選音訊節點
+    if(typeof customAudioSource !== 'undefined' && customAudioSource){
+        try{
+            customAudioSource.stop();
+            customAudioSource.disconnect();
+        }catch(e){}
+        customAudioSource = null;
+    }
+    // 3. 安全網：強制關閉可能殘留的全域音訊上下文或停止所有聲音
+    try {
+        if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'running') {
+            audioCtx.suspend();
+        }
+    } catch(e) {}
+}
 
 // ===== 視窗模式切換 =====
 // ===== 視窗模式切換 =====
