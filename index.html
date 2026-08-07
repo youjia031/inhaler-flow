@@ -4055,7 +4055,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script>
 // ============================================================
-// 🌟 五大獨立遊戲模式：蒲公英重生定位與精準死因回報版
+// 🌟 八大獨立遊戲模式：完整擴充版 (含蒲公英重生與精準死因)
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -4069,6 +4069,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="mage" id="opt_mage">⚔️ 魔導士破魔 (中央防衛戰)</option>
             <option value="dandelion" id="opt_dandelion">🌿 蒲公英快遞 (空中起飛與嚴格墜毀)</option>
             <option value="crystal" id="opt_crystal">💎 玻璃心大師 (100關進階雕刻)</option>
+            <option value="volcano" id="opt_volcano">🌋 火山爆發 (漸強暖身訓練)</option>
+            <option value="rocket" id="opt_rocket">🚀 太空火箭 (突破屏障升空)</option>
+            <option value="wave" id="opt_wave">🌊 對抗巨浪 (蓄力與爆發切換)</option>
             <option value="both">全模式 (圖表+飛行家)</option>
             <option value="intro">📖 介紹圖鑑</option>
         `;
@@ -4197,7 +4200,11 @@ function startSubGameEngine(theme) {
         candle: { pathX: canvas.width / 2, angle: 0, obstacles: [], items: [], distance: 0 },
         mage: { spells: [], enemies: [], chargeTime: 0 },
         dandelion: { y: canvas.height / 2, weather: 'sunny', obstacles: [], distance: 0 },
-        crystal: { cracksPercent: 0, level: 1 }
+        crystal: { cracksPercent: 0, level: 1 },
+        // 新增三款遊戲的狀態
+        volcano: { magma: 0 },
+        rocket: { altitude: 0, barrier: 30, lastForce: 0, plateau: 0, shaking: false },
+        wave: { phase: 'inhale', targets: [40, 55, 70], targetIdx: 0, maxP: 0, shield: 0, incoming: false }
     };
 
     const themeNames = {
@@ -4205,7 +4212,11 @@ function startSubGameEngine(theme) {
         candle: '🕯️ 燭光遠征',
         mage: '⚔️ 魔導士破魔',
         dandelion: '🌿 蒲公英快遞',
-        crystal: '💎 玻璃心大師'
+        crystal: '💎 玻璃心大師',
+        // 新增三款遊戲的名稱
+        volcano: '🌋 火山爆發',
+        rocket: '🚀 太空火箭',
+        wave: '🌊 對抗巨浪'
     };
 
     let mousePos = { x: canvas.width/2, y: canvas.height/2 };
@@ -4227,6 +4238,10 @@ function startSubGameEngine(theme) {
         state.candle.obstacles = [];
         state.dandelion.obstacles = [];
         state.dandelion.y = canvas.height / 2; // 重置回空中中心
+        // 重置三款新遊戲的狀態
+        state.volcano = { magma: 0 };
+        state.rocket = { altitude: 0, barrier: 30, lastForce: 0, plateau: 0, shaking: false };
+        state.wave = { phase: 'inhale', targets: [40, 55, 70], targetIdx: 0, maxP: 0, shield: 0, incoming: false };
     }
 
     function loop() {
@@ -4388,7 +4403,7 @@ function startSubGameEngine(theme) {
             ctx.fillText(`【魔導士破魔】中央防衛戰 (關卡: ${state.level})：氣流集氣攻擊最近魔物`, 40, 30);
         }
 
-        // 🌿 4. 蒲公英快遞 (空中完美起飛與嚴格墜地判定)
+        // 🌿 4. 蒲公英快遞
         else if (theme === 'dandelion') {
             state.dandelion.distance++;
             if (state.dandelion.distance % 500 === 0) {
@@ -4413,11 +4428,9 @@ function startSubGameEngine(theme) {
                 if (obs.x < -50) state.dandelion.obstacles.splice(idx, 1);
             });
 
-            // 氣流高度計算
             let targetY = h - (pressure / 100 * (h - 120)) - 60;
             state.dandelion.y += (targetY - state.dandelion.y) * 0.1;
 
-            // 🛑 嚴格落地判定：觸地直接扣至血量歸零並回報死因
             let groundLevel = h - 45;
             if (state.dandelion.y >= groundLevel) {
                 state.hp = 0;
@@ -4425,10 +4438,7 @@ function startSubGameEngine(theme) {
                 return;
             }
 
-            // 畫地板
             ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, h - 30, w, 30);
-
-            // 畫空中蒲公英
             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(180, state.dandelion.y, 16, 0, Math.PI*2); ctx.fill();
 
             ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
@@ -4484,6 +4494,159 @@ function startSubGameEngine(theme) {
 
             ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
             ctx.fillText(`【玻璃心大師】第 ${state.crystal.level}/100 關 (維持 ${targetMin}~${targetMax}) 碎裂度: ${Math.floor(state.crystal.cracksPercent)}%`, 40, 30);
+        }
+
+        // 🌋 6. 火山爆發 (漸強暖身)
+        else if (theme === 'volcano') {
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, 0, w, h);
+            let seconds = state.frame / 60;
+            let threshold = 15;
+            let msg = "暖身期：保持輕柔吹氣 (15%)";
+            
+            if (seconds > 5) {
+                let phase = Math.floor((seconds - 5) / 2);
+                threshold = 20 + (phase * 10);
+                if (threshold > 80) threshold = 80;
+                msg = "岩漿上升！逐漸加大力度！";
+            }
+
+            if (pressure >= threshold) {
+                state.volcano.magma += 0.4;
+                if (state.volcano.magma >= 100) {
+                    state.score += 100;
+                    state.volcano.magma = 0;
+                    state.frame = 0; // 成功爆發，重置難度重新開始
+                    alert("🌋 完美爆發！獲得 100 分，進入下一輪挑戰！");
+                }
+            } else {
+                state.volcano.magma -= 0.8;
+                if (state.volcano.magma < 0) state.volcano.magma = 0;
+                if (seconds > 5) {
+                    state.hp -= 0.2;
+                    if (state.hp <= 0) { triggerGameOver('氣力不足，岩漿冷卻凝固，火山爆發失敗'); return; }
+                }
+            }
+
+            // 畫火山
+            ctx.fillStyle = '#7f8c8d';
+            ctx.beginPath(); ctx.moveTo(w/2 - 120, h); ctx.lineTo(w/2 - 60, h - 300);
+            ctx.lineTo(w/2 + 60, h - 300); ctx.lineTo(w/2 + 120, h); ctx.fill();
+            
+            // 畫岩漿
+            let magmaH = (Math.min(state.volcano.magma, 100) / 100) * 300;
+            ctx.fillStyle = '#e74c3c'; ctx.fillRect(w/2 - 50, h - magmaH, 100, magmaH);
+            
+            // 畫門檻線
+            let targetY = h - (threshold / 100 * 300);
+            ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(w/2 - 80, targetY); ctx.lineTo(w/2 + 80, targetY); ctx.stroke();
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【火山爆發】門檻: ${threshold}% | 目前: ${Math.floor(pressure)}% | ${msg}`, 40, 30);
+        }
+
+        // 🚀 7. 太空火箭 (突破屏障)
+        else if (theme === 'rocket') {
+            let bgLight = Math.max(0, 255 - (state.rocket.altitude / 100) * 255);
+            ctx.fillStyle = `rgb(${bgLight/3}, ${bgLight/2}, ${bgLight})`; ctx.fillRect(0, 0, w, h);
+
+            // 設定屏障門檻
+            if (state.rocket.altitude > 80) state.rocket.barrier = 80;
+            else if (state.rocket.altitude > 50) state.rocket.barrier = 50;
+            else if (state.rocket.altitude > 20) state.rocket.barrier = 20;
+
+            // 偵測氣力停滯
+            if (pressure > 10 && Math.abs(pressure - state.rocket.lastForce) < 2) state.rocket.plateau++;
+            else state.rocket.plateau = 0;
+            state.rocket.shaking = (state.rocket.plateau > 45); // 停滯太久開始震動
+
+            let msg = "升空中！繼續加大力度突破大氣層！";
+            if (pressure >= state.rocket.barrier && !state.rocket.shaking) {
+                state.rocket.altitude += 0.2;
+            } else if (state.rocket.shaking) {
+                state.rocket.altitude -= 0.5;
+                msg = "⚠️ 力度停滯！火箭失去動力！";
+                state.hp -= 0.5;
+                if (state.hp <= 0) { triggerGameOver('推力停滯過久，火箭墜毀'); return; }
+            } else if (pressure < state.rocket.barrier && pressure > 5) {
+                msg = "⚠️ 力度不足以突破屏障！";
+                state.rocket.altitude -= 0.1;
+            }
+
+            if (state.rocket.altitude < 0) state.rocket.altitude = 0;
+            if (state.rocket.altitude >= 100) {
+                state.score += 200; state.rocket.altitude = 0;
+                alert("🌌 突破大氣層抵達外太空！獲得 200 分！");
+            }
+            state.rocket.lastForce = pressure;
+
+            // 畫屏障線
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 15]);
+            [20, 50, 80].forEach(level => {
+                let y = h - (level/100 * h);
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            });
+            ctx.setLineDash([]);
+
+            // 畫火箭
+            let rY = h - (state.rocket.altitude / 100 * h) - 40;
+            let shakeX = state.rocket.shaking ? (Math.random()*10 - 5) : 0;
+            ctx.fillStyle = '#ecf0f1'; ctx.fillRect(w/2 - 15 + shakeX, Math.max(rY, 50), 30, 60);
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath(); ctx.moveTo(w/2 - 15 + shakeX, Math.max(rY, 50));
+            ctx.lineTo(w/2 + shakeX, Math.max(rY, 50) - 30);
+            ctx.lineTo(w/2 + 15 + shakeX, Math.max(rY, 50)); ctx.fill();
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【太空火箭】需要推力: ${state.rocket.barrier}% | 目前: ${Math.floor(pressure)}% | ${msg}`, 40, 30);
+        }
+
+        // 🌊 8. 對抗巨浪 (蓄力與爆發切換)
+        else if (theme === 'wave') {
+            ctx.fillStyle = '#34495e'; ctx.fillRect(0, 0, w, h);
+            let msg = "";
+
+            if (state.wave.phase === 'inhale') {
+                let target = state.wave.targets[state.wave.targetIdx];
+                if (pressure > state.wave.maxP) { state.wave.maxP = pressure; state.wave.shield = pressure; }
+
+                if (state.wave.maxP >= target) {
+                    state.wave.targetIdx++;
+                    if (state.wave.targetIdx >= state.wave.targets.length) {
+                        state.wave.phase = 'exhale'; state.wave.incoming = true;
+                        state.wave.shield = state.wave.targets[2];
+                    } else {
+                        state.wave.maxP = 0; // 進階下一波蓄力
+                    }
+                }
+                msg = `蓄力階段：請達到 ${target}% 力度 (目前進度: ${state.wave.targetIdx}/3)`;
+            } 
+            else if (state.wave.phase === 'exhale') {
+                let reqExhale = 80;
+                if (pressure >= reqExhale) {
+                    state.wave.incoming = false;
+                    state.score += 150;
+                    state.wave.phase = 'inhale'; state.wave.targetIdx = 0; state.wave.maxP = 0; // 重置循環
+                    alert("🎉 成功擊退巨浪！獲得 150 分！");
+                } else if (state.wave.incoming) {
+                    state.wave.shield -= 0.6;
+                    state.hp -= 0.3;
+                    if (state.hp <= 0) { triggerGameOver('護盾破裂，被巨浪吞噬'); return; }
+                }
+                msg = `🌊 巨浪來襲！猛烈爆發 (目標: 80%)！`;
+                // 畫巨浪
+                ctx.fillStyle = 'rgba(41, 128, 185, 0.8)'; ctx.fillRect(w - 200, 0, 200, h);
+                ctx.fillStyle = '#fff'; ctx.font = '20px sans-serif'; ctx.fillText("🌊 大浪", w - 120, h/2);
+            }
+
+            // 畫護盾與角色
+            let sR = Math.max(0, state.wave.shield * 1.5);
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+            ctx.beginPath(); ctx.arc(150, h/2, sR, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.fillRect(140, h/2 - 20, 20, 40);
+
+            ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+            ctx.fillText(`【對抗巨浪】目前力度: ${Math.floor(pressure)}% | ${msg}`, 40, 30);
         }
 
         // 左側氣流柱
